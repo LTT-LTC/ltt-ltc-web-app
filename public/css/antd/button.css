@@ -1,0 +1,10 @@
+.ant-btn-icon {
+  margin-top: 2px !important;
+}
+
+.ant-btn-lg {
+  .ant-btn-icon {
+    margin-top: 3px !important;
+  }
+}
+

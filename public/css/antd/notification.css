@@ -1,0 +1,61 @@
+.ant-notification-notice-wrapper {
+  border-radius: 8px !important;
+}
+
+/* ===== SWT Custom Notification ===== */
+.swt-notification.ant-notification-notice {
+  padding: 16px 20px !important;
+  border: none !important;
+  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08),
+    0 3px 6px -4px rgba(0, 0, 0, 0.12),
+    0 9px 28px 8px rgba(0, 0, 0, 0.05) !important;
+}
+
+.swt-notification .ant-notification-notice-icon {
+  margin-inline-start: 0 !important;
+  font-size: 22px !important;
+}
+
+.swt-notification .ant-notification-notice-message {
+  color: #fff !important;
+  font-weight: 600 !important;
+  font-size: 15px !important;
+  margin-bottom: 4px !important;
+}
+
+.swt-notification .ant-notification-notice-description {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 13px !important;
+}
+
+.swt-notification .ant-notification-notice-close {
+  color: rgba(255, 255, 255, 0.8) !important;
+  top: 16px !important;
+  inset-inline-end: 16px !important;
+}
+
+.swt-notification .ant-notification-notice-close:hover {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* ---- Variants ---- */
+.swt-notification.swt-notification-success.ant-notification-notice {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
+}
+
+.swt-notification.swt-notification-error.ant-notification-notice {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+}
+
+.swt-notification.swt-notification-info.ant-notification-notice {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+}
+
+.swt-notification.swt-notification-warning.ant-notification-notice {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+}
+
+.swt-notification.ant-notification-notice .ant-notification-notice-wrapper {
+  border-radius: 16px !important;
+}

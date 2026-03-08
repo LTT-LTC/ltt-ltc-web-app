@@ -1,0 +1,19 @@
+.ant-tag.ant-tag-success {
+  color: #118d57 !important;
+  background: #22c55e29 !important;
+}
+
+.ant-tag.ant-tag-processing {
+  color: #0351ab !important;
+  background: #ccf4fe !important;
+}
+
+.ant-tag.ant-tag-error {
+  color: #b71d18 !important;
+  background: #ffe9d5 !important;
+}
+
+.ant-tag.ant-tag-warning {
+  color: #b76e00 !important;
+  background: #fff5cc !important;
+}

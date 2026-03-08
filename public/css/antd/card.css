@@ -1,0 +1,4 @@
+.ant-card {
+    box-shadow: var(--shadow-card)!important;
+    border-radius: 8px!important;
+}

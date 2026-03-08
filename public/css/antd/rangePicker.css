@@ -1,0 +1,9 @@
+@media (max-width: 640px) {
+  .ant-picker-dropdown,
+  .ant-picker-panel-container,
+  .ant-picker-content,
+  .ant-picker {
+    max-width: 68vw !important;
+    overflow-x: auto !important;
+  }
+}

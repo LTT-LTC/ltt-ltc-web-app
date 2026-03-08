@@ -1,0 +1,113 @@
+.antd-custom-table .ant-table-thead > tr > th {
+  font-size: 14px;
+  padding: 8px !important;
+  background-color: #f4f7fe;
+  font-weight: 600;
+}
+
+.antd-custom-table .ant-table-thead > tr > th:first-child {
+  text-align: left;
+  padding-left: 20px !important;
+}
+
+[dir="rtl"] .antd-custom-table .ant-table-thead > tr > th:first-child {
+  text-align: right;
+  padding-left: 0;
+  padding-right: 20px;
+}
+
+.antd-custom-table .ant-table-thead > tr > th:last-child {
+  padding-right: 20px;
+}
+
+[dir="rtl"] .antd-custom-table .ant-table-thead > tr > th:last-child {
+  padding-right: 0;
+  padding-left: 20px;
+}
+
+.antd-custom-table .ant-table-thead > tr > th[colspan="5"] {
+  padding: 0 !important;
+}
+.antd-custom-table .ant-table-measure-row {
+  display: none;
+}
+.antd-custom-table .ant-table-tbody > tr > td {
+  padding: 8px !important;
+}
+
+.antd-custom-table .ant-table-tbody > tr > td:first-child {
+  text-align: left;
+  padding-left: 20px !important;
+}
+
+[dir="rtl"] .antd-custom-table .ant-table-tbody > tr > td:first-child {
+  text-align: right;
+  padding-left: 0;
+  padding-right: 20px;
+}
+
+.antd-custom-table .ant-table-tbody > tr > td:last-child {
+  padding-right: 20px !important;
+}
+
+[dir="rtl"] .antd-custom-table .ant-table-tbody > tr > td:last-child {
+  padding-right: 0;
+  padding-left: 20px;
+}
+
+.antd-custom-table .ant-table-tbody > tr > td a {
+  color: #0691d8 !important;
+}
+
+/* Empty table */
+.antd-custom-table-empty .ant-table-tbody > tr > td {
+  padding: 0px;
+}
+
+.antd-custom-table-empty .ant-table-tbody > tr > td:first-child {
+  text-align: left;
+  padding-left: 0px;
+}
+
+[dir="rtl"] .antd-custom-table-empty .ant-table-tbody > tr > td:first-child {
+  text-align: right;
+  padding-left: 0;
+  padding-right: 0px;
+}
+
+.antd-custom-table-empty .ant-table-tbody > tr > td:last-child {
+  padding-right: 0px;
+}
+
+[dir="rtl"] .antd-custom-table-empty .ant-table-tbody > tr > td:last-child {
+  padding-right: 0;
+  padding-left: 0px;
+}
+
+.antd-custom-table-empty .ant-table-tbody > tr > td a {
+  color: #0691d8 !important;
+}
+
+/* No border */
+.antd-table-no-border .ant-table-thead > tr > th:first-child {
+  padding-left: 20px;
+  border-start-start-radius: 0 !important;
+}
+
+.antd-table-no-border .ant-table-thead > tr > th:last-child {
+  padding-right: 20px;
+  border-end-end-radius: 0 !important;
+  border-start-end-radius: 0 !important;
+}
+
+/* General table cells */
+.ant-table-cell {
+  height: 41px !important;
+}
+
+.ant-table-cell-ellipsis a {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+

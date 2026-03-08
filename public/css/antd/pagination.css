@@ -1,0 +1,16 @@
+/* Bo góc các nút số trang */
+.ant-pagination .ant-pagination-item,
+.ant-pagination .ant-pagination-prev,
+.ant-pagination .ant-pagination-next,
+.ant-pagination .ant-pagination-options .ant-select-selector {
+  border-radius: 8px !important;
+}
+
+/* Khi active */
+.ant-pagination .ant-pagination-item-active {
+  border-radius: 8px !important;
+}
+
+.ant-pagination-options-size-changer{
+    border-radius: 8px !important;
+}

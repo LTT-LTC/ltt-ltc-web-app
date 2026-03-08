@@ -1,0 +1,7 @@
+.ant-form-item-label {
+  padding: 0 !important;
+}
+
+.custom-form-input .ant-form-item-control-input {
+  min-height: 0 !important;
+}
