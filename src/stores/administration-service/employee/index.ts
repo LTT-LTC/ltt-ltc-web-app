@@ -2,7 +2,7 @@ import { administrationService } from "@/src/services/administration-service/adm
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { initState } from "./index.state";
 import { GetListEmployeeInputDto } from "@/src/services/administration-service/employee/models/input.model";
-const serviceName = "administration-service";
+const serviceName = "(administration)-service";
 
 const getEmployeeList = createAsyncThunk(
     `/${serviceName}/employee/getEmployeeList`,

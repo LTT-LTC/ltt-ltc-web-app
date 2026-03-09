@@ -16,6 +16,7 @@
     "antd-img-crop": "^4.29.0",
     "axios": "^1.13.5",
     "clsx": "^2.1.1",
+    "material-symbols": "^0.40.2",
     "next": "16.1.1",
     "qs": "^6.15.0",
     "react": "19.2.3",
