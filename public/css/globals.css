@@ -1,7 +1,8 @@
 /* @import "tailwindcss"; */
 @import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;700&display=swap") layer(base);
-@tailwind base;
-@tailwind components;
+@import "tailwindcss/preflight";
+/*@tailwind base;*/
+/*@tailwind components;*/
 @tailwind utilities;
 @import "./loader.css" layer(base);
 @import "./base.css" layer(base);
@@ -93,7 +94,7 @@
 
     --color-primary-lighter: #f4f7fe;
     --color-primary-light: #31abe8;
-    --color-primary: #0CC0DF;
+    --color-primary: #cc3434;
 
     --color-secondary-lighter: #efd6ff;
     --color-secondary-light: #c684ff;
@@ -288,4 +289,5 @@ html,
 body {
     height: 100%;
     background-color: #fcfcfc;
+    font-family: "Be Vietnam Pro", sans-serif;
 }

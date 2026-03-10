@@ -29,7 +29,14 @@ export default function RootLayout({
             <body className={`dark:bg-gray-900`}>
                 <Provider store={store}>
                     <StyleProvider hashPriority="low">
-                        <ConfigProvider locale={viVN}>
+                        <ConfigProvider 
+                            locale={viVN}
+                            theme={{
+                                token: {
+                                    fontFamily: '"Be Vietnam Pro", sans-serif',
+                                },
+                            }}
+                        >
                             <ThemeProvider>
                                 <MessageInitializer>
                                     <SidebarProvider>{children}</SidebarProvider>

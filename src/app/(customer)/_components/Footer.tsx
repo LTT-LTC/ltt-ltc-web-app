@@ -8,8 +8,8 @@ const Footer: React.FC = () => {
             {/* Top separator */}
             <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
 
-            <div className="py-16">
-                <div className="w-[70%] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16">
+            <div className="py-8 sm:py-16">
+                <div className="w-[92%] lg:w-[70%] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-12 lg:gap-16">
                     {/* Column 1: CinemaHome Vietnam */}
                     <div>
                         <h4 className="text-white font-black uppercase text-sm border-b-2 border-primary pb-3 mb-6">LTCinema</h4>
@@ -86,23 +86,9 @@ const Footer: React.FC = () => {
                 </div>
 
                 {/* Bottom bar */}
-                <div className="w-[60%] mx-auto mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-6">
+                <div className="w-[92%] lg:w-[70%] mx-auto mt-8 sm:mt-16 pt-6 sm:pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
                     <div className="flex items-center gap-3">
-                        <div className="bg-white/10 p-1.5 rounded text-white">
-                            <span className="material-symbols-outlined text-sm">movie</span>
-                        </div>
                         <p className="text-xs">&copy; 2026 LTT-LTCinema. All Rights Reserved.</p>
-                    </div>
-                    <div className="flex gap-3">
-                        <div className="h-7 w-14 border border-white/15 rounded flex items-center justify-center hover:border-white/40 transition-all cursor-pointer">
-                            <span className="text-[9px] font-black text-slate-400">VISA</span>
-                        </div>
-                        <div className="h-7 w-20 border border-white/15 rounded flex items-center justify-center hover:border-white/40 transition-all cursor-pointer">
-                            <span className="text-[9px] font-black text-slate-400">MASTERCARD</span>
-                        </div>
-                        <div className="h-7 w-14 border border-white/15 rounded flex items-center justify-center hover:border-white/40 transition-all cursor-pointer">
-                            <span className="text-[9px] font-black text-slate-400">MOMO</span>
-                        </div>
                     </div>
                 </div>
             </div>

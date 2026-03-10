@@ -32,9 +32,9 @@ const Hero: React.FC = () => {
     }, [isHovered, next]);
 
     return (
-        <section className="w-full flex justify-center py-6 bg-background-light dark:bg-background-dark">
+        <section className="w-full flex justify-center px-4 lg:px-0 py-4 sm:py-6 bg-background-light dark:bg-background-dark">
             <div
-                className="relative w-[70%] overflow-hidden rounded-xl"
+                className="relative w-full lg:w-[70%] overflow-hidden rounded-xl"
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
             >
@@ -59,19 +59,19 @@ const Hero: React.FC = () => {
                 {/* Prev / Next arrows */}
                 <button
                     onClick={prev}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 size-10 rounded-full bg-black/30 hover:bg-black/60 text-white flex items-center justify-center transition-all backdrop-blur-sm"
+                    className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 size-8 sm:size-10 rounded-full bg-black/30 hover:bg-black/60 text-white flex items-center justify-center transition-all backdrop-blur-sm"
                 >
-                    <span className="material-symbols-outlined">chevron_left</span>
+                    <span className="material-symbols-outlined text-lg sm:text-2xl">chevron_left</span>
                 </button>
                 <button
                     onClick={next}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 size-10 rounded-full bg-black/30 hover:bg-black/60 text-white flex items-center justify-center transition-all backdrop-blur-sm"
+                    className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 size-8 sm:size-10 rounded-full bg-black/30 hover:bg-black/60 text-white flex items-center justify-center transition-all backdrop-blur-sm"
                 >
                     <span className="material-symbols-outlined">chevron_right</span>
                 </button>
 
                 {/* Dot indicators */}
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                <div className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2">
                     {banners.map((_, index) => (
                         <button
                             key={index}
