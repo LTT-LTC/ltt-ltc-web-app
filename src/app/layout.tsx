@@ -23,7 +23,7 @@ export default function RootLayout({
     return (
         <html lang="en">
             <head>
-                <title>LTT</title>
+                <title>LTC-Cinema</title>
                 <link rel="icon" type="image/png" href="/images/main/app-logo-transparent.png"></link>
             </head>
             <body className={`dark:bg-gray-900`}>
