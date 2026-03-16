@@ -24,9 +24,9 @@ jobs:
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_25519
-          ssh-key-scan -H 100.109.240.84 >> ~/.ssh/known_hosts
-          ls -ls ~./ssh
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 100.109.240.84 >> ~/.ssh/known_hosts
+          ls -la ~/.ssh
 
       - name: SSH Deploy
         run: |
@@ -38,5 +38,5 @@ jobs:
             git pull origin main --no-rebase
             cd ../
             cd ../
-            docker conpose up --build -d ltt-ltc-web-app
+            docker compose up --build -d ltt-ltc-web-app
           EOF
