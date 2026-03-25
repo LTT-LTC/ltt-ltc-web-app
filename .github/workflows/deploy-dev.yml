@@ -25,7 +25,7 @@ jobs:
           docker build \
             --build-arg NEXT_PUBLIC_API_URL=${{ secrets.API_URL }} \
             -t $IMAGE_NAME:latest \
-            ./FE/ltt-ltc-web-app
+            ./ltt-ltc-web-app
           docker push $IMAGE_NAME:latest
 
       - name: Connect to Tailscale
