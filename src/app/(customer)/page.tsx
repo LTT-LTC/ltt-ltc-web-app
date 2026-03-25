@@ -5,4 +5,4 @@ export default function CustomerRootPage() {
     redirect("/homepage");
 }
 
-// Testing CI/ID pipeline
+// Testing the new CI/ID pipeline
