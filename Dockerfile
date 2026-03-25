@@ -2,25 +2,32 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
 
-ARG ENV_FILE
-COPY package*.json ./
-RUN yarn install
+# Install deps
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
 
+# Copy source
 COPY . .
-#RUN npm run build
-RUN npx env-cmd -f $ENV_FILE npm run build
+
+# Inject build-time env (IMPORTANT)
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
+# Build app
+RUN yarn build
 
 # ----------- Production Stage -----------
-FROM node:22-alpine
+FROM node:22-alpine AS runner
 WORKDIR /app
-RUN mkdir .next
 
+ENV NODE_ENV=production
+ENV PORT=4200
+
+# Copy standalone output
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
 EXPOSE 4200
-
-ENV PORT=4200
 
 CMD ["node", "server.js"]
