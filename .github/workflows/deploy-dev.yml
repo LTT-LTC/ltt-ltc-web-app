@@ -18,10 +18,11 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      # Build & Push image
       - name: Build and Push Docker Image
         run: |
-          docker build -t $IMAGE_NAME:latest .
+          docker build \
+            --build-arg NEXT_PUBLIC_API_URL=${{ secrets.API_URL }} \
+            -t $IMAGE_NAME:latest .
           docker push $IMAGE_NAME:latest
       # Connect Tailscale
       - name: Connect to Tailscale
