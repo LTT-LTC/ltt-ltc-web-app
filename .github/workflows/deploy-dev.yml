@@ -1,4 +1,5 @@
 name: Deployment
+
 on:
   push:
     branches:
@@ -6,37 +7,40 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    env:
+      IMAGE_NAME: dranov220805/ltt-ltc-web-app
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
+      # Login Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build and Push Docker Image
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_API_URL=${{ secrets.API_URL }} \
+            -t $IMAGE_NAME:latest .
+          docker push $IMAGE_NAME:latest
+      # Connect Tailscale
       - name: Connect to Tailscale
         uses: tailscale/github-action@v2
         with:
           authkey: ${{ secrets.TS_AUTHKEY }}
-
+      # Setup SSH
       - name: Setup SSH key
-        shell: bash
         run: |
-          set -e
-          echo "Creating SSH directory"
           mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -H 100.109.240.84 >> ~/.ssh/known_hosts
-          ls -la ~/.ssh
-
+      # Deploy on server
       - name: SSH Deploy
         run: |
-          sudo apt-get update
-          sudo apt-get install -y openssh-client
-        
-          ssh -o StrictHostKeyChecking=no dranov@100.109.240.84 << 'EOF'
-            cd /home/dranov/Desktop/ltt-ltc/FE/ltt-ltc-web-app
-            git pull origin main --no-rebase
-            cd ../
-            cd ../
-            docker compose up --build -d ltt-ltc-web-app
+          ssh dranov@100.109.240.84 << 'EOF'
+            cd /home/dranov/Desktop/ltt-ltc
+            docker compose pull ltt-ltc-web-app
+            docker compose up -d --no-deps ltt-ltc-web-app
           EOF
