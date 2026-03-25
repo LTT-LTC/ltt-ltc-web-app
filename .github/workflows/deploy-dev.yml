@@ -39,11 +39,8 @@ jobs:
       # Deploy on server
       - name: SSH Deploy
         run: |
-          ssh -o StrictHostKeyChecking=no dranov@100.109.240.84 << 'EOF'
-            docker pull dranov220805/ltt-ltc-web-app:latest
+          ssh dranov@100.109.240.84 << 'EOF'
             cd /home/dranov/Desktop/ltt-ltc
-            # Stop old container
-            docker compose down
-            # Update image and restart
-            docker compose up -d
+            docker compose pull ltt-ltc-web-app
+            docker compose up -d --no-deps ltt-ltc-web-app
           EOF
