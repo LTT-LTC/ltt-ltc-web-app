@@ -4,4 +4,4 @@ export default function RootPage() {
     redirect("/homepage");
 }
 
-// test CI/CD pipeline
+// test CI/CD pipeline 01
