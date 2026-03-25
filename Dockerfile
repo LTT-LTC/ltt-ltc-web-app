@@ -1,27 +1,18 @@
-# ----------- Build Stage -----------
-FROM node:22-alpine AS builder
-WORKDIR /app
+FROM node:22-alpine
+WORKDIR /workspace
 
+# Install deps first (cached layer)
 COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
+RUN corepack enable && yarn install
 
+# Copy source
 COPY . .
 
-ENV NODE_ENV=production
+# Build args for Next.js public env vars
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 RUN yarn build
 
-# ----------- Production Stage -----------
-FROM node:22-alpine
-WORKDIR /app
-
-ENV NODE_ENV=production
-ENV PORT=4200
-
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
-
 EXPOSE 4200
-
-CMD ["node", "server.js"]
+CMD ["yarn", "start", "-p", "4200"]
