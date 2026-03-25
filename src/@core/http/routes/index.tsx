@@ -1,13 +1,13 @@
-import GamePadIcon from "../../component/SWTIcon/iconoir/gamepad";
-import GroupUserIcon from "../../component/SWTIcon/iconoir/group-user";
-import LaptopFixIcon from "../../component/SWTIcon/iconoir/laptop-fix";
-import MoneySquareIcon from "../../component/SWTIcon/iconoir/money-square";
-import NetworkLeftIcon from "../../component/SWTIcon/iconoir/network-left";
-import TaskListIcon from "../../component/SWTIcon/iconoir/task-list";
-import TimerIcon from "../../component/SWTIcon/iconoir/timer";
-import UserCartIcon from "../../component/SWTIcon/iconoir/user-cart";
-import ViewGridIcon from "../../component/SWTIcon/iconoir/view-grid";
-import QuestionMarkIcon from "../../component/SWTIcon/iconoir/question-mark"
+import GamePadIcon from "../../component/LTTIcon/iconoir/gamepad";
+import GroupUserIcon from "../../component/LTTIcon/iconoir/group-user";
+import LaptopFixIcon from "../../component/LTTIcon/iconoir/laptop-fix";
+import MoneySquareIcon from "../../component/LTTIcon/iconoir/money-square";
+import NetworkLeftIcon from "../../component/LTTIcon/iconoir/network-left";
+import TaskListIcon from "../../component/LTTIcon/iconoir/task-list";
+import TimerIcon from "../../component/LTTIcon/iconoir/timer";
+import UserCartIcon from "../../component/LTTIcon/iconoir/user-cart";
+import ViewGridIcon from "../../component/LTTIcon/iconoir/view-grid";
+import QuestionMarkIcon from "../../component/LTTIcon/iconoir/question-mark"
 type NavItem = {
   name: string;
   icon: React.ReactNode;

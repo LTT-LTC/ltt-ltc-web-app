@@ -217,7 +217,7 @@ export default function MovieDetailPage({
                 title={`${movie.title} — Trailer`}
                 className="trailer-modal"
                 styles={{
-                    content: { padding: 0 },
+                    body: { padding: 0 },
                     mask: { backdropFilter: "blur(8px)", background: "rgba(0,0,0,0.75)" },
                 }}
             >
