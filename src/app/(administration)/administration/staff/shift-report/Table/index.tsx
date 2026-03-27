@@ -1,0 +1,55 @@
+﻿"use client";
+
+import LTTTable from "@/src/@core/component/AntD/LTTTable";
+import { columns } from "./table.type";
+import LTTBreadcrumb from "@/src/@core/component/AntD/LTTBreadcrumb";
+import LTTCard from "@/src/@core/component/AntD/LTTCard";
+import LTTButton from "@/src/@core/component/AntD/LTTButton";
+import LTTTabs from "@/src/@core/component/AntD/LTTTabs";
+import ShiftReportFilter from "../Filter";
+import Link from "next/link";
+
+const ShiftReportListPage = () => {
+  return (
+    <>
+      <LTTBreadcrumb
+        items={[
+          { title: "Nhan vien" },
+          { title: <Link href="/administration/staff/shift-report">Bao cao ca</Link> },
+        ]}
+      />
+      <div className="flex justify-end">
+        <LTTButton className="mb-3 mr-3">
+          Chot ca
+        </LTTButton>
+        <LTTButton className="mb-3 mr-3">
+          In bao cao
+        </LTTButton>
+      </div>
+      <LTTCard
+        height="table"
+        title="Bao cao ca"
+        className="mt-3"
+      >
+        <div className="search flex flex-row items-center gap-2 mt-0">
+          <ShiftReportFilter />
+        </div>
+        <LTTTabs
+          defaultActiveKey="1"
+          onChange={() => {}}
+          items={[
+    { key: "1", label: "Ca hien tai" },
+    { key: "2", label: "Lich su" },
+          ]}
+        />
+        <LTTTable
+          columns={columns()}
+          dataSource={[]}
+          loading={false}
+        />
+      </LTTCard>
+    </>
+  );
+};
+
+export default ShiftReportListPage;

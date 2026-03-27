@@ -5,7 +5,7 @@ type Props = React.SVGProps<SVGSVGElement> & {
   variant?: ColorKey;
 };
 
-export default function SWTEyeIcon({
+export default function LTTEyeIcon({
   variant = "secondary",
   ...props
 }: Props) {
