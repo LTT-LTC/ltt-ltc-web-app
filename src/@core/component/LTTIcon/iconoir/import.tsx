@@ -5,7 +5,7 @@ type Props = React.SVGProps<SVGSVGElement> & {
   variant?: ColorKey;
 };
 
-const SWTImportIcon = ({ variant = "primary", className, ...props }: Props) => {
+const LTTImportIcon = ({ variant = "primary", className, ...props }: Props) => {
   return (
     <svg
       {...props}
@@ -36,4 +36,4 @@ const SWTImportIcon = ({ variant = "primary", className, ...props }: Props) => {
   );
 };
 
-export default SWTImportIcon;
+export default LTTImportIcon;

@@ -5,7 +5,7 @@ type Props = React.SVGProps<SVGSVGElement> & {
   variant?: ColorKey;
 };
 
-const SWTSearchEngineIcon = ({
+const LTTSearchEngineIcon = ({
   variant = "primary",
   className,
   ...props
@@ -33,4 +33,4 @@ const SWTSearchEngineIcon = ({
   );
 };
 
-export default SWTSearchEngineIcon;
+export default LTTSearchEngineIcon;

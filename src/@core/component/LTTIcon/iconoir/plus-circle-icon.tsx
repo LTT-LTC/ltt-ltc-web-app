@@ -5,7 +5,7 @@ type Props = React.SVGProps<SVGSVGElement> & {
   variant?: ColorKey;
 };
 
-const SWTPlusCircleIcon = ({
+const LTTPlusCircleIcon = ({
   variant = "primary",
   className,
   ...props
@@ -40,4 +40,4 @@ const SWTPlusCircleIcon = ({
   );
 };
 
-export default SWTPlusCircleIcon;
+export default LTTPlusCircleIcon;
