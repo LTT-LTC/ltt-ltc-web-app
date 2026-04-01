@@ -13,10 +13,11 @@ const LTTPagination = (props: LTTPaginationProps) => {
       total={props?.total || 0}
       pageSizeOptions={[10, 20, 50, 100]}
       showTotal={
-        (total: number, range: [number, number]) => `${range[0]}-${range[1]} trong ${total}`
+        (total: number, range: [number, number]) => `${range[0]}-${range[1]} of ${total}`
       }
     />
   );
 };
 
 export default LTTPagination;
+

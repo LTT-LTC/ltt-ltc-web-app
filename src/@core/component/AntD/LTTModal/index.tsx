@@ -10,7 +10,7 @@ const LTTModal = ({ children, loading = false, ...props }: LTTModalProps) => {
     <LTTSpin spinning={loading}>
       <Modal
         {...props}
-        title={props?.title || "Xác nhận thao tác"}
+        title={props.title !== undefined ? props.title : "Confirm Action"}
         closable={{ "aria-label": "Custom Close Button" }}
         open={props?.open}
         onOk={props?.onOk}
@@ -23,3 +23,4 @@ const LTTModal = ({ children, loading = false, ...props }: LTTModalProps) => {
 };
 
 export default LTTModal;
+

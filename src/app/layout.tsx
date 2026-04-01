@@ -34,6 +34,7 @@ export default function RootLayout({
                             theme={{
                                 token: {
                                     fontFamily: '"Be Vietnam Pro", sans-serif',
+                                    colorPrimary: '#cc3434',
                                 },
                             }}
                         >

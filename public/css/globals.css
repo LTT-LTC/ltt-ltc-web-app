@@ -195,66 +195,94 @@
 
     --animate-float: float 5s linear 0s infinite normal none running;
     --animate-shake: shake 15s ease 0s infinite normal none running;
+    --animate-fade-in-up: fadeInUp 0.4s ease-out forwards;
 
     @keyframes float {
+
         0%,
         100% {
             transform: translateY(0);
         }
+
         50% {
             transform: translateY(-20px);
         }
     }
+
     @keyframes shake {
+
         0%,
         100% {
             transform: translate3d(100%, 100%, 0) scale(0.3);
             opacity: 0;
         }
+
         5% {
             transform: translate3d(0, 0, 0) scale(1);
             opacity: 1;
         }
+
         6% {
             transform: rotate(-5deg);
             opacity: 1;
         }
+
         6.4% {
             transform: rotate(5deg);
             opacity: 1;
         }
+
         6.8% {
             transform: rotate(-5deg);
             opacity: 1;
         }
+
         7.2% {
             transform: rotate(5deg);
             opacity: 1;
         }
+
         7.4% {
             transform: rotate(-5deg);
             opacity: 1;
         }
+
         7.8% {
             transform: rotate(5deg);
             opacity: 1;
         }
+
         8.2% {
             transform: rotate(-5deg);
             opacity: 1;
         }
+
         8.4% {
             transform: rotate(5deg);
             opacity: 1;
         }
+
         33.33% {
             transform: translate3d(0, 0, 0) scale(1);
             opacity: 1;
         }
+
         40%,
         100% {
             transform: translate3d(100%, 100%, 0) scale(0.3);
             opacity: 0;
+        }
+    }
+
+    @keyframes fadeInUp {
+        0% {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0);
         }
     }
 }
@@ -268,6 +296,7 @@
   color utility to any element that depends on these defaults.
 */
 @layer base {
+
     *,
     ::after,
     ::before,

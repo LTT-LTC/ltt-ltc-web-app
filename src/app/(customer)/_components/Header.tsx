@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import LTTButton from "@/src/@core/component/AntD/LTTButton";
 import { DropdownItem } from "@/src/@core/component/LTTDropdown/DropdownItem";
 import LTTBadge from "@/src/@core/component/LTTBadge";
@@ -99,6 +100,16 @@ const NavDropdown: React.FC<{ item: NavItem }> = ({ item }) => {
 const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
     const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);
+    const pathname = usePathname();
+
+    const isChildActive = (href: string) => {
+        if (!href || href === "#") return false;
+        return pathname === href || pathname === `${href}/` || pathname.startsWith(`${href}/`);
+    };
+
+    const isParentActive = (children: { href: string }[]) => {
+        return children.some((child) => isChildActive(child.href));
+    };
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -113,6 +124,13 @@ const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen
         document.body.style.overflow = isOpen ? "hidden" : "";
         return () => { document.body.style.overflow = ""; };
     }, [isOpen]);
+
+    useEffect(() => {
+        if (isOpen) {
+            setExpandedIndex(null);
+            onClose();
+        }
+    }, [pathname]);
 
     return (
         <>
@@ -146,7 +164,10 @@ const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen
                         >
                             <button
                                 onClick={() => setExpandedIndex(expandedIndex === idx ? null : idx)}
-                                className="flex items-center justify-between w-full py-4 text-sm font-bold tracking-widest text-slate-700 dark:text-slate-200 cursor-pointer"
+                                className={`flex items-center justify-between w-full py-4 text-sm font-bold tracking-widest cursor-pointer transition-colors ${isParentActive(item.children)
+                                        ? "text-[#cc3434]"
+                                        : "text-slate-700 dark:text-slate-200"
+                                    }`}
                             >
                                 {item.label}
                                 <NavArrowDownIcon
@@ -158,7 +179,7 @@ const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen
                             <div
                                 className="overflow-hidden transition-[max-height,opacity] duration-300 ease-in-out"
                                 style={{
-                                    maxHeight: expandedIndex === idx ? `${item.children.length * 48}px` : "0px",
+                                    maxHeight: expandedIndex === idx ? "420px" : "0px",
                                     opacity: expandedIndex === idx ? 1 : 0,
                                 }}
                             >
@@ -168,7 +189,10 @@ const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen
                                         tag="a"
                                         href={child.href}
                                         onItemClick={onClose}
-                                        baseClassName="flex items-center gap-2 w-full pl-4 pr-2 py-3 text-sm text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors duration-150"
+                                        baseClassName={`flex items-center gap-2 w-full pl-4 pr-2 py-3 text-sm rounded-lg transition-colors duration-150 ${isChildActive(child.href)
+                                                ? "bg-[#fff1f1] !text-[#cc3434] hover:!text-[#cc3434] visited:!text-[#cc3434] focus:!text-[#cc3434]"
+                                                : "!text-slate-600 dark:!text-slate-400 hover:!text-[#cc3434] visited:!text-slate-600 focus:!text-[#cc3434] hover:bg-[#fff1f1]"
+                                            }`}
                                     >
                                         {child.label}
                                         <LTTRenderIf condition={!!child.badge}>
@@ -235,9 +259,9 @@ const Header: React.FC = () => {
                             <CartIcon className="!w-5 !h-5" />
                         </button>
                         {/* User */}
-                        <button className="hidden sm:flex items-center justify-center size-10 rounded-full hover:bg-primary/5 text-slate-500 hover:text-primary transition-all duration-200 cursor-pointer">
+                        <Link href="/my-ltc" className="hidden sm:flex items-center justify-center size-10 rounded-full hover:bg-primary/5 text-slate-500 hover:text-primary transition-all duration-200 cursor-pointer">
                             <UserIcon className="!w-5 !h-5" />
-                        </button>
+                        </Link>
 
                         {/* Book Now - desktop */}
                         <div className="hidden lg:block ml-2">

@@ -16,7 +16,7 @@ const TopBar: React.FC = () => {
                 <Link href="#" className="hover:text-white/60 transition-colors flex items-center gap-1 whitespace-nowrap">
                     <span className="material-symbols-outlined text-[16px]">confirmation_number</span> <span className="hidden sm:inline">My Ticket</span>
                 </Link>
-                <Link href="#" className="hover:text-white/60 transition-colors flex items-center gap-1 whitespace-nowrap">
+                <Link href="/my-ltc" className="hover:text-white/60 transition-colors flex items-center gap-1 whitespace-nowrap">
                     <span className="material-symbols-outlined text-[16px]">account_circle</span> <span className="hidden sm:inline">Account</span>
                 </Link>
                 <LTTLanguageSwitch />

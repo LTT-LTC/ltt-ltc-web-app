@@ -1,10 +1,10 @@
 "use client";
 
 import React from "react";
-import { Menu } from "antd";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
+import LTTCard from "../AntD/LTTCard";
 import { AdminRole, type NavItemConfig } from "../../type/permission.types";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useSidebar } from "../../provider/sidebar-provider";
@@ -25,44 +25,25 @@ export default function LTTAdminSubDomainLayout({
   children,
 }: LTTAdminSubDomainLayoutProps) {
   const { hasPermission } = usePermissions(role);
-  const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
-  const router = useRouter();
+  const { isMobileOpen } = useSidebar();
   const pathname = usePathname();
 
   const filteredItems = navItems.filter(
     (item) => !item.permissionKey || hasPermission(item.permissionKey)
   );
 
-  const activeKey =
-    filteredItems.find((item) => pathname?.startsWith(item.path))?.key ||
-    filteredItems[0]?.key;
-
-  const menuItems = filteredItems.map((item) => ({
-    key: item.key,
-    label: item.label,
-  }));
-
-  const isOpen = isExpanded || isMobileOpen || isHovered;
+  const isTabActive = (path: string) => {
+    return pathname === path || pathname === `${path}/` || pathname.startsWith(`${path}/`);
+  };
 
   return (
     <div style={{ display: "flex", minHeight: "calc(100vh - 64px)" }}>
       <aside
-        className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
-          ${
-            isOpen
-              ? "w-[290px]"
-              : "w-[90px]"
-          }
+        className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 w-[290px]
           ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
           lg:translate-x-0`}
-        onMouseEnter={() => !isExpanded && setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
-        <div
-          className={`py-3 flex ${
-            !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
-          }`}
-        >
+        <div className="py-3 flex justify-start">
           <Link href="/">
             <Image
               src="/images/main/app-logo.png"
@@ -73,17 +54,27 @@ export default function LTTAdminSubDomainLayout({
           </Link>
         </div>
 
-        <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar mt-2">
-          <Menu
-            mode="inline"
-            selectedKeys={[activeKey]}
-            items={isOpen ? menuItems : menuItems.map((m) => ({ ...m, label: undefined }))}
-            onClick={({ key }) => {
-              const item = filteredItems.find((i) => i.key === key);
-              if (item) router.push(item.path);
-            }}
-            style={{ borderRight: 0 }}
-          />
+        <div className="flex-1 min-h-0 flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar mt-2 pb-4">
+          <LTTCard className="p-0 overflow-hidden shadow-sm h-full flex flex-col" styles={{ body: { padding: 0, flex: 1, display: "flex", flexDirection: "column" } }}>
+            <nav className="flex flex-row md:flex-col overflow-x-auto custom-scrollbar">
+              {filteredItems.map((item, index) => {
+                const isActive = isTabActive(item.path);
+                return (
+                  <Link
+                    key={item.key}
+                    href={item.path}
+                    style={{ animationDelay: `${index * 40}ms` }}
+                    className={`group relative px-6 py-4 whitespace-nowrap text-sm md:text-base border-l-4 md:border-l-4 md:border-b-0 border-b-4 transition-all duration-300 ease-out animate-[fadeInUp_0.35s_ease-out_forwards] ${isActive
+                        ? "bg-[#cc3434] !text-white hover:!text-white focus:!text-white visited:!text-white border-[#cc3434] font-semibold shadow-sm"
+                        : "text-gray-700 hover:bg-[#fff1f1] hover:text-[#cc3434] focus:text-[#cc3434] focus:outline-none [-webkit-tap-highlight-color:transparent] border-transparent"
+                      }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </LTTCard>
         </div>
       </aside>
 
