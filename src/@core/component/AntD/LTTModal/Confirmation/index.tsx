@@ -14,7 +14,7 @@ const LTTConfirmationModal = ({
     <LTTSpin spinning={loading}>
       <Modal
         {...props}
-        title={props?.title || "Xác nhận thao tác"}
+        title={props?.title || "Confirm Action"}
         closable={{ "aria-label": "Custom Close Button" }}
         open={props?.open}
         onOk={props?.onOk}
@@ -27,3 +27,4 @@ const LTTConfirmationModal = ({
 };
 
 export default LTTConfirmationModal;
+

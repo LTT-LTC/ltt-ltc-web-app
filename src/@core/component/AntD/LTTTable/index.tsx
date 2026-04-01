@@ -28,6 +28,7 @@ const LTTTable = ({
       <Table
         rowKey={props?.rowKey ?? "id"}
         {...props}
+        scroll={{ x: "max-content", ...(props?.scroll || {}) }}
         columns={columns}
         dataSource={dataSource}
         pagination={false}

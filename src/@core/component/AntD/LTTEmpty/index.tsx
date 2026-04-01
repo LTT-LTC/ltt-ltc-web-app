@@ -6,10 +6,11 @@ const LTTEmpty = ({ ...props }: LTTEmptyProps) => {
   return (
     <Empty
       {...props}
-      description={props.description ?? "Không có dữ liệu"}
+      description={props.description ?? "No data"}
       image={Empty.PRESENTED_IMAGE_SIMPLE}
     />
   );
 };
 
 export default LTTEmpty;
+

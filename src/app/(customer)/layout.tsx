@@ -1,4 +1,5 @@
 import CustomerLayout from "@/src/layouts/CustomerLayout";
+import LTTGlobalLoader from "@/src/@core/component/LTTGlobalLoader";
 
 export default function Layout({
     children,
@@ -6,9 +7,11 @@ export default function Layout({
     children: React.ReactNode;
 }>) {
     return (
-        <CustomerLayout>
-            {children}
-        </CustomerLayout>
+        <LTTGlobalLoader>
+            <CustomerLayout>
+                {children}
+            </CustomerLayout>
+        </LTTGlobalLoader>
     );
 }
 

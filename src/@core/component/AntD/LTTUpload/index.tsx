@@ -124,7 +124,7 @@ const LTTUpload = ({
           rotationSlider
           aspect={aspect}
           showGrid
-          modalTitle="Chỉnh sửa ảnh"
+          modalTitle="Edit Image"
         >
           {renderUpload}
         </ImgCrop>
@@ -136,3 +136,4 @@ const LTTUpload = ({
 };
 
 export default LTTUpload;
+
