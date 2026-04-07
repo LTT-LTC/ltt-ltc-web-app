@@ -76,15 +76,14 @@ export default function AllCinemasPage() {
               <span className="material-symbols-outlined text-[#E50914] mr-2">location_on</span>
               Chọn Tỉnh/Thành Phố
             </h2>
-            
+
             <div className="flex flex-wrap gap-x-6 gap-y-4 border-b border-gray-100 pb-6 mb-6">
               {PROVINCES.map((p) => (
                 <button
                   key={p}
                   onClick={() => setSelectedProvince(p)}
-                  className={`text-[13px] transition-colors hover:text-[#E50914] ${
-                    selectedProvince === p ? 'text-[#E50914] font-bold' : 'text-gray-600'
-                  }`}
+                  className={`text-[13px] transition-colors hover:text-[#E50914] ${selectedProvince === p ? 'text-[#E50914] font-bold' : 'text-gray-600'
+                    }`}
                 >
                   {p}
                 </button>
@@ -97,11 +96,10 @@ export default function AllCinemasPage() {
                 <button
                   key={c.id}
                   onClick={() => setSelectedCinema(c)}
-                  className={`px-4 py-2 border rounded-md text-[13px] transition-colors cursor-pointer ${
-                    selectedCinema?.id === c.id 
-                    ? 'bg-[#cd1e25] border-[#cd1e25] text-white hover:bg-[#b01a20]' 
-                    : 'bg-white border-gray-300 text-gray-700 hover:border-[#cd1e25] hover:text-[#cd1e25]'
-                  }`}
+                  className={`px-4 py-2 border rounded-md text-[13px] transition-colors cursor-pointer ${selectedCinema?.id === c.id
+                      ? 'bg-[#cd1e25] border-[#cd1e25] text-white hover:bg-[#b01a20]'
+                      : 'bg-white border-gray-300 text-gray-700 hover:border-[#cd1e25] hover:text-[#cd1e25]'
+                    }`}
                 >
                   {c.name}
                 </button>
@@ -141,11 +139,10 @@ export default function AllCinemasPage() {
                       <button
                         key={idx}
                         onClick={() => setSelectedDate(date)}
-                        className={`flex flex-col items-center justify-center min-w-[50px] h-[65px] border rounded transition-colors cursor-pointer ${
-                          isSelected 
-                          ? 'border-[#cd1e25] bg-red-50/20' 
-                          : 'border-transparent hover:border-gray-200 bg-white hover:bg-gray-50'
-                        }`}
+                        className={`flex flex-col items-center justify-center min-w-[50px] h-[65px] border rounded transition-colors cursor-pointer ${isSelected
+                            ? 'border-[#cd1e25] bg-red-50/20'
+                            : 'border-transparent hover:border-gray-200 bg-white hover:bg-gray-50'
+                          }`}
                       >
                         <span className={`text-[11px] font-bold ${isSelected ? 'text-[#cd1e25]' : 'text-gray-800'}`}>{dayOfWeek}</span>
                         <span className={`text-[17px] font-bold leading-tight ${isSelected ? 'text-[#cd1e25]' : 'text-gray-800'}`}>{date.date()}</span>
@@ -165,26 +162,26 @@ export default function AllCinemasPage() {
           {/* TICKET PRICE */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-6 overflow-x-auto">
             <h2 className="text-base font-bold text-gray-800 mb-6">Bảng Giá Vé</h2>
-            
+
             {/* Standard 2D Table */}
             <div className="mb-8 min-w-[800px]">
               <div className="bg-[#cd1e25] text-white text-center py-2 font-bold text-[13px] rounded-t-lg">TICKET PRICE</div>
               <table className="w-full text-center text-[12px] border-collapse border border-gray-200">
                 <thead>
                   <tr>
-                    <th className="border border-gray-200 py-3 bg-gray-50/50 w-1/4">From Monday To<br/>Sunday</th>
+                    <th className="border border-gray-200 py-3 bg-gray-50/50 w-1/4">From Monday To<br />Sunday</th>
                     <th className="border border-gray-200 py-2" colSpan={3}>Monday, Tuesday, Thursday</th>
-                    <th className="border border-gray-200 py-3 w-[12%]">Happy<br/>Wednesday</th>
-                    <th className="border border-gray-200 py-2" colSpan={3}>Friday, Saturday, Sunday,<br/>& Public Holiday</th>
+                    <th className="border border-gray-200 py-3 w-[12%]">Happy<br />Wednesday</th>
+                    <th className="border border-gray-200 py-2" colSpan={3}>Friday, Saturday, Sunday,<br />& Public Holiday</th>
                   </tr>
                   <tr className="text-gray-500 font-normal">
                     <th className="border border-gray-200 py-2"></th>
                     <th className="border border-gray-200 py-2 px-2">Senior, Child</th>
-                    <th className="border border-gray-200 py-2 px-2">Members 23<br/>Years Old & Under</th>
+                    <th className="border border-gray-200 py-2 px-2">Members 23<br />Years Old & Under</th>
                     <th className="border border-gray-200 py-2 px-2">Adult</th>
                     <th className="border border-gray-200 py-2"></th>
                     <th className="border border-gray-200 py-2 px-2">Senior, Child</th>
-                    <th className="border border-gray-200 py-2 px-2">Members 23<br/>Years Old & Under</th>
+                    <th className="border border-gray-200 py-2 px-2">Members 23<br />Years Old & Under</th>
                     <th className="border border-gray-200 py-2 px-2">Adult</th>
                   </tr>
                 </thead>
@@ -215,17 +212,17 @@ export default function AllCinemasPage() {
               <table className="w-full text-center text-[12px] border-collapse border border-gray-200">
                 <thead>
                   <tr>
-                    <th className="border border-gray-200 py-3 bg-gray-50/50 w-1/4">From Monday To<br/>Sunday</th>
+                    <th className="border border-gray-200 py-3 bg-gray-50/50 w-1/4">From Monday To<br />Sunday</th>
                     <th className="border border-gray-200 py-2" colSpan={3}>Monday, Tuesday, Thursday</th>
-                    <th className="border border-gray-200 py-2" colSpan={3}>Friday, Saturday, Sunday,<br/>& Public Holiday</th>
+                    <th className="border border-gray-200 py-2" colSpan={3}>Friday, Saturday, Sunday,<br />& Public Holiday</th>
                   </tr>
                   <tr className="text-gray-500 font-normal">
                     <th className="border border-gray-200 py-2"></th>
                     <th className="border border-gray-200 py-2 px-2 w-[12.5%]">Senior, Child</th>
-                    <th className="border border-gray-200 py-2 px-2 w-[12.5%]">Members 23<br/>Years Old & Under</th>
+                    <th className="border border-gray-200 py-2 px-2 w-[12.5%]">Members 23<br />Years Old & Under</th>
                     <th className="border border-gray-200 py-2 px-2 w-[12.5%]">Adult</th>
                     <th className="border border-gray-200 py-2 px-2 w-[12.5%]">Senior, Child</th>
-                    <th className="border border-gray-200 py-2 px-2 w-[12.5%]">Members 23<br/>Years Old & Under</th>
+                    <th className="border border-gray-200 py-2 px-2 w-[12.5%]">Members 23<br />Years Old & Under</th>
                     <th className="border border-gray-200 py-2 px-2 w-[12.5%]">Adult</th>
                   </tr>
                 </thead>
@@ -253,17 +250,17 @@ export default function AllCinemasPage() {
               <table className="w-full text-center text-[12px] border-collapse border border-gray-200">
                 <thead>
                   <tr>
-                    <th className="border border-gray-200 py-3 bg-gray-50/50 w-1/4">From Monday To<br/>Sunday</th>
+                    <th className="border border-gray-200 py-3 bg-gray-50/50 w-1/4">From Monday To<br />Sunday</th>
                     <th className="border border-gray-200 py-2" colSpan={3}>Monday, Tuesday, Thursday</th>
-                    <th className="border border-gray-200 py-2" colSpan={3}>Friday, Saturday, Sunday,<br/>& Public Holiday</th>
+                    <th className="border border-gray-200 py-2" colSpan={3}>Friday, Saturday, Sunday,<br />& Public Holiday</th>
                   </tr>
                   <tr className="text-gray-500 font-normal">
                     <th className="border border-gray-200 py-2"></th>
                     <th className="border border-gray-200 py-2 px-2 w-[12.5%]">Senior, Child</th>
-                    <th className="border border-gray-200 py-2 px-2 w-[12.5%]">Members 23<br/>Years Old & Under</th>
+                    <th className="border border-gray-200 py-2 px-2 w-[12.5%]">Members 23<br />Years Old & Under</th>
                     <th className="border border-gray-200 py-2 px-2 w-[12.5%]">Adult</th>
                     <th className="border border-gray-200 py-2 px-2 w-[12.5%]">Senior, Child</th>
-                    <th className="border border-gray-200 py-2 px-2 w-[12.5%]">Members 23<br/>Years Old & Under</th>
+                    <th className="border border-gray-200 py-2 px-2 w-[12.5%]">Members 23<br />Years Old & Under</th>
                     <th className="border border-gray-200 py-2 px-2 w-[12.5%]">Adult</th>
                   </tr>
                 </thead>

@@ -1,5 +1,5 @@
 /* @import "tailwindcss"; */
-@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;700&display=swap") layer(base);
+@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&display=swap") layer(base);
 @import "tailwindcss/preflight";
 /*@tailwind base;*/
 /*@tailwind components;*/
@@ -30,6 +30,9 @@
 @theme {
     --font-*: initial;
     --font-outfit: "Be Vietnam Pro", sans-serif;
+    --font-sans: var(--font-outfit);
+    --font-serif: var(--font-outfit);
+    --font-mono: var(--font-outfit);
 
     --breakpoint-*: initial;
     --breakpoint-2xsm: 375px;
@@ -318,5 +321,13 @@ html,
 body {
     height: 100%;
     background-color: #fcfcfc;
-    font-family: "Be Vietnam Pro", sans-serif;
+    font-family: var(--font-outfit, "Be Vietnam Pro", sans-serif);
+}
+
+button,
+input,
+optgroup,
+select,
+textarea {
+    font: inherit;
 }

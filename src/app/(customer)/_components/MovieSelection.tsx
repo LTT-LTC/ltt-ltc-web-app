@@ -3,6 +3,7 @@ import React, { useState, useMemo, useCallback, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import LTTMovieCard from "@/src/@core/component/LTTMovieCard";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 // Placeholder data — will be replaced by BE service fetch (input.model / output.model)
 const movies = [
@@ -102,6 +103,7 @@ const movies = [
 const PAGE_SIZE = 8;
 
 const MovieSelection: React.FC = () => {
+    const { t } = useLocalization();
     const router = useRouter();
     const [page, setPage] = useState(0);
     const [loading, setLoading] = useState(false);
@@ -133,13 +135,13 @@ const MovieSelection: React.FC = () => {
             <div className="flex flex-col gap-4 sm:gap-6 mb-6 sm:mb-10 border-b border-slate-200 dark:border-slate-800 pb-4">
                 <div className="flex items-center gap-3 sm:gap-4">
                     <span className="material-symbols-outlined text-primary text-3xl sm:text-4xl">movie_filter</span>
-                    <h2 className="text-xl sm:text-3xl font-black tracking-tight uppercase">Movie Selection</h2>
+                    <h2 className="text-xl sm:text-3xl font-black tracking-tight uppercase">{t("customer.homepage.movie_selection") || "Movie Selection"}</h2>
                 </div>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
                     <div className="flex overflow-x-auto gap-1 pb-1 scrollbar-hide w-full sm:w-auto">
-                        <button className="px-4 sm:px-6 py-2 bg-primary text-white font-bold rounded-t-lg text-xs sm:text-sm whitespace-nowrap">NOW SHOWING</button>
-                        <button className="px-4 sm:px-6 py-2 text-slate-500 hover:bg-slate-100 font-bold rounded-t-lg text-xs sm:text-sm whitespace-nowrap">COMING SOON</button>
-                        <button className="px-4 sm:px-6 py-2 text-slate-500 hover:bg-slate-100 font-bold rounded-t-lg text-xs sm:text-sm whitespace-nowrap">SPECIAL SCREENING</button>
+                        <button className="px-4 sm:px-6 py-2 bg-primary text-white font-bold rounded-t-lg text-xs sm:text-sm whitespace-nowrap">{t("customer.homepage.now_showing") || "NOW SHOWING"}</button>
+                        <button className="px-4 sm:px-6 py-2 text-slate-500 hover:bg-slate-100 font-bold rounded-t-lg text-xs sm:text-sm whitespace-nowrap">{t("customer.homepage.coming_soon") || "COMING SOON"}</button>
+                        <button className="px-4 sm:px-6 py-2 text-slate-500 hover:bg-slate-100 font-bold rounded-t-lg text-xs sm:text-sm whitespace-nowrap">{t("customer.homepage.special_screening") || "SPECIAL SCREENING"}</button>
                     </div>
                     {totalPages > 1 && (
                         <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">

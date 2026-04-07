@@ -1,8 +1,10 @@
 "use client";
 import React from "react";
 import Link from "next/link";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 const Footer: React.FC = () => {
+    const { t } = useLocalization();
     return (
         <footer className="bg-slate-900 text-slate-400">
             {/* Top separator */}
@@ -14,22 +16,22 @@ const Footer: React.FC = () => {
                     <div>
                         <h4 className="text-white font-black uppercase text-sm border-b-2 border-primary pb-3 mb-6">LTCinema</h4>
                         <ul className="space-y-4 text-sm">
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">About Us</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">Use Giftcode Card</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">Career Opportunities</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">Contact LTT</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">For Business Partners</Link></li>
+                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.about_us") || "About Us"}</Link></li>
+                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.use_giftcard") || "Use Giftcode Card"}</Link></li>
+                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.career") || "Career Opportunities"}</Link></li>
+                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.contact") || "Contact LTT"}</Link></li>
+                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.for_partners") || "For Business Partners"}</Link></li>
                         </ul>
                     </div>
 
                     {/* Column 2: Policy & Legal */}
                     <div>
-                        <h4 className="text-white font-black uppercase text-sm border-b-2 border-primary pb-3 mb-6">Policy & Legal</h4>
+                        <h4 className="text-white font-black uppercase text-sm border-b-2 border-primary pb-3 mb-6">{t("customer.footer.policy_legal") || "Policy & Legal"}</h4>
                         <ul className="space-y-4 text-sm">
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">Conditions of Website Use</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">Terms of Use</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">Payment Policy</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">Privacy Policy</Link></li>
+                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.website_conditions") || "Conditions of Website Use"}</Link></li>
+                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.terms_of_use") || "Terms of Use"}</Link></li>
+                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.payment_policy") || "Payment Policy"}</Link></li>
+                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.privacy_policy") || "Privacy Policy"}</Link></li>
                             <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">Cinema Rules</Link></li>
                             <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">F.A.Q.</Link></li>
                         </ul>
@@ -56,14 +58,14 @@ const Footer: React.FC = () => {
                         {/*</div>*/}
                     </div>
 
-                    {/* Column 4: Customer Service */}
+                    {/* Column 4: {t("customer.footer.customer_service") || "Customer Service"} */}
                     <div>
-                        <h4 className="text-white font-black uppercase text-sm border-b-2 border-primary pb-3 mb-6">Customer Service</h4>
+                        <h4 className="text-white font-black uppercase text-sm border-b-2 border-primary pb-3 mb-6">{t("customer.footer.customer_service") || "Customer Service"}</h4>
                         <div className="space-y-6">
                             <div className="flex items-start gap-3">
                                 <span className="material-symbols-outlined text-primary text-xl mt-0.5">headset_mic</span>
                                 <div>
-                                    <p className="text-white font-bold">Hotline: 0123 456 789</p>
+                                    <p className="text-white font-bold">{t("customer.footer.hotline") || "Hotline"}: 0123 456 789</p>
                                     <p className="text-xs opacity-75 mt-1">Available 8:00 - 22:00 (Daily)</p>
                                 </div>
                             </div>

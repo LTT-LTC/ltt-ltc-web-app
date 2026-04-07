@@ -11,8 +11,8 @@ export default function AuthPage() {
             <FormComponent />
             <div className="hidden lg:flex w-full lg:w-1/2 justify-center items-center bg-gray-50 dark:bg-gray-800">
                 <div className="text-center p-8">
-                    <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-4">Chào mừng đến với hệ thống</h2>
-                    <p className="text-gray-600 dark:text-gray-400">Tham gia để trải nghiệm dịch vụ tốt nhất</p>
+                    <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-4">Hệ thống Quản Trị LTC</h2>
+                    <p className="text-gray-600 dark:text-gray-400">Đăng nhập phần mềm quản lý hệ thống LTC</p>
                 </div>
             </div>
             <div className="hidden lg:flex absolute left-1/2 top-0 bottom-0 justify-center h-full items-center -translate-x-1/2">

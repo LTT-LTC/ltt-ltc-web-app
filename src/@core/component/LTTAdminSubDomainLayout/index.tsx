@@ -8,6 +8,7 @@ import LTTCard from "../AntD/LTTCard";
 import { AdminRole, type NavItemConfig } from "../../type/permission.types";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useSidebar } from "../../provider/sidebar-provider";
+import { useLocalization } from "../../hooks/use-localization";
 
 interface LTTAdminSubDomainLayoutProps {
   role: AdminRole;
@@ -26,6 +27,7 @@ export default function LTTAdminSubDomainLayout({
 }: LTTAdminSubDomainLayoutProps) {
   const { hasPermission } = usePermissions(role);
   const { isMobileOpen } = useSidebar();
+  const { t } = useLocalization();
   const pathname = usePathname();
 
   const filteredItems = navItems.filter(
@@ -65,11 +67,11 @@ export default function LTTAdminSubDomainLayout({
                     href={item.path}
                     style={{ animationDelay: `${index * 40}ms` }}
                     className={`group relative px-6 py-4 whitespace-nowrap text-sm md:text-base border-l-4 md:border-l-4 md:border-b-0 border-b-4 transition-all duration-300 ease-out animate-[fadeInUp_0.35s_ease-out_forwards] ${isActive
-                        ? "bg-[#cc3434] !text-white hover:!text-white focus:!text-white visited:!text-white border-[#cc3434] font-semibold shadow-sm"
-                        : "text-gray-700 hover:bg-[#fff1f1] hover:text-[#cc3434] focus:text-[#cc3434] focus:outline-none [-webkit-tap-highlight-color:transparent] border-transparent"
+                      ? "bg-[#cc3434] !text-white hover:!text-white focus:!text-white visited:!text-white border-[#cc3434] font-semibold shadow-sm"
+                      : "text-gray-700 hover:bg-[#fff1f1] hover:text-[#cc3434] focus:text-[#cc3434] focus:outline-none [-webkit-tap-highlight-color:transparent] border-transparent"
                       }`}
                   >
-                    {item.label}
+                    {t(item.label)}
                   </Link>
                 );
               })}

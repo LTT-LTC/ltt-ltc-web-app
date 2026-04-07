@@ -1,11 +1,11 @@
 "use client";
 import NavArrowLeftIcon from "@/src/@core/component/LTTIcon/iconoir/nav-arrow-left";
 import Link from "next/link";
-import FormDetail from "./components/SignInForm";
+import FormDetail from "./components/RegisterForm";
 import useLTTTitle from "@/src/@core/hooks/useLTTTitle";
 
 export default function AuthIndex() {
-    useLTTTitle("Đăng nhập");
+    useLTTTitle("Đăng ký");
 
     return (
         <div className="flex flex-col flex-1 lg:w-1/2 w-full justify-center py-5 sm:py-10 bg-white dark:bg-transparent">
@@ -22,10 +22,10 @@ export default function AuthIndex() {
                 <div className="mb-10">
                     <div className="mb-6 sm:mb-8">
                         <h1 className="mb-2 font-bold text-gray-800 text-3xl dark:text-white/90">
-                            Chào mừng trở lại
+                            Tạo tài khoản mới
                         </h1>
                         <p className="text-gray-500 dark:text-gray-400">
-                            Vui lòng đăng nhập để tiếp tục.
+                            Tạo tài khoản dành cho nhân viên quản trị.
                         </p>
                     </div>
                     <FormDetail />

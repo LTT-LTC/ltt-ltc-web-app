@@ -7,6 +7,7 @@ import UserDropdown from "@/src/layouts/components/header/UserDropdown";
 import { DropdownItem } from "@/src/@core/component/LTTDropdown/DropdownItem";
 import LTTBadge from "@/src/@core/component/LTTBadge";
 import LTTRenderIf from "@/src/@core/component/LTTRenderIf";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 import NavArrowDownIcon from "@/src/@core/component/LTTIcon/iconoir/nav-arrow-down";
 import SearchIcon from "@/src/@core/component/LTTIcon/iconoir/search";
 import UserIcon from "@/src/@core/component/LTTIcon/iconoir/user";
@@ -18,32 +19,36 @@ interface NavItem {
     children: { label: string; href: string; badge?: string }[];
 }
 
-const NAV_ITEMS: NavItem[] = [
-    {
-        label: "MOVIES",
-        children: [
-            { label: "Now Showing", href: "/now-showing", badge: "Hot" },
-            { label: "Coming Soon", href: "/coming-soon" },
-        ],
-    },
-    {
-        label: "THEATERS",
-        children: [
-            { label: "All Cinemas", href: "/theaters/all-cinemas" },
-            { label: "Special Cinemas", href: "#" },
-            { label: "3D Cinemas", href: "#" },
-        ],
-    },
-    {
-        label: "CULTUREPLEX",
-        children: [
-            { label: "Online Store", href: "#" },
-            { label: "Group Tickets", href: "#" },
-            { label: "Giftcodes & Vouchers", href: "/my-ltc/vouchers" },
-            { label: "Cinema Rules", href: "#" },
-        ],
-    }
-];
+// --- Navigation data hook ---
+const useNavItems = () => {
+    const { t } = useLocalization();
+    return [
+        {
+            label: t("customer.nav.movies") || "MOVIES",
+            children: [
+                { label: t("customer.nav.now_showing") || "Now Showing", href: "/now-showing", badge: "Hot" },
+                { label: t("customer.nav.coming_soon") || "Coming Soon", href: "/coming-soon" },
+            ],
+        },
+        {
+            label: t("customer.nav.theaters") || "THEATERS",
+            children: [
+                { label: t("customer.nav.all_cinemas") || "All Cinemas", href: "/theaters/all-cinemas" },
+                { label: t("customer.nav.special_cinemas") || "Special Cinemas", href: "#" },
+                { label: t("customer.nav.cinemas_3d") || "3D Cinemas", href: "#" },
+            ],
+        },
+        {
+            label: t("customer.nav.cultureplex") || "CULTUREPLEX",
+            children: [
+                { label: t("customer.nav.online_store") || "Online Store", href: "#" },
+                { label: t("customer.nav.group_tickets") || "Group Tickets", href: "#" },
+                { label: t("customer.nav.giftcodes_vouchers") || "Giftcodes & Vouchers", href: "/my-ltc/vouchers" },
+                { label: t("customer.nav.cinema_rules") || "Cinema Rules", href: "#" },
+            ],
+        }
+    ];
+};
 
 // --- Desktop nav dropdown ---
 const NavDropdown: React.FC<{ item: NavItem }> = ({ item }) => {
@@ -102,6 +107,7 @@ const NavDropdown: React.FC<{ item: NavItem }> = ({ item }) => {
 
 // --- Mobile nav menu ---
 const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
+    const navItems = useNavItems();
     const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
@@ -165,7 +171,7 @@ const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen
 
                 {/* Menu items */}
                 <nav className="px-4 pb-8 overflow-y-auto max-h-[calc(100vh-80px)]">
-                    {NAV_ITEMS.map((item, idx) => (
+                    {navItems.map((item, idx) => (
                         <div
                             key={item.label}
                             className="border-b border-slate-100 dark:border-slate-800"
@@ -216,7 +222,7 @@ const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen
                     {/* Mobile CTA */}
                     <div className="mt-6">
                         <LTTButton variant="primary" size="lg" className="!w-full !bg-primary !text-white">
-                            Book Now
+                            {useLocalization().t("customer.nav.book_now") || "Book Now"}
                         </LTTButton>
                     </div>
                 </nav>
@@ -227,6 +233,7 @@ const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen
 
 // --- Main Header ---
 const Header: React.FC = () => {
+    const navItems = useNavItems();
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -256,7 +263,7 @@ const Header: React.FC = () => {
 
                     {/* Desktop navigation */}
                     <nav className="hidden lg:flex items-center gap-6">
-                        {NAV_ITEMS.map((item) => (
+                        {navItems.map((item) => (
                             <NavDropdown key={item.label} item={item} />
                         ))}
                     </nav>

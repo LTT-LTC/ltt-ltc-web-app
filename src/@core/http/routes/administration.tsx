@@ -4,91 +4,91 @@ import { type NavItemConfig } from "../../type/permission.types";
 export const adminNavItems: NavItemConfig[] = [
     {
         key: "dashboard",
-        label: "Dashboard",
+        label: "admin.menu.dashboard",
         path: "/administration/admin/dashboard",
         permissionKey: "admin:dashboard"
     },
     {
         key: "tenants",
-        label: "Tenant Management",
+        label: "admin.menu.tenant_management",
         path: "/administration/admin/tenants",
         permissionKey: "admin:tenants"
     },
     {
         key: "service-packages",
-        label: "Service Packages",
+        label: "admin.menu.service_packages",
         path: "/administration/admin/service-packages",
         permissionKey: "admin:service-packages"
     },
     {
         key: "cinema",
-        label: "Cinema",
+        label: "admin.menu.cinema",
         path: "/administration/admin/cinema",
         permissionKey: "admin:cinema"
     },
     {
         key: "movies",
-        label: "Movies",
+        label: "admin.menu.movies",
         path: "/administration/admin/movies",
         permissionKey: "admin:movies"
     },
     {
         key: "showtimes",
-        label: "Showtimes",
+        label: "admin.menu.showtimes",
         path: "/administration/admin/showtimes",
         permissionKey: "admin:showtimes"
     },
     {
         key: "seatmap",
-        label: "Seat Map",
+        label: "admin.menu.seat_map",
         path: "/administration/admin/seatmap",
         permissionKey: "admin:seatmap"
     },
     {
         key: "staff",
-        label: "Staff",
+        label: "admin.menu.staff",
         path: "/administration/admin/staff",
         permissionKey: "admin:staff"
     },
     {
         key: "fnb",
-        label: "F&B",
+        label: "admin.menu.fnb",
         path: "/administration/admin/fnb",
         permissionKey: "admin:fnb"
     },
     {
         key: "reports",
-        label: "Reports",
+        label: "admin.menu.reports",
         path: "/administration/admin/reports",
         permissionKey: "admin:reports"
     },
     {
         key: "promotions",
-        label: "Promotions",
+        label: "admin.menu.promotions",
         path: "/administration/admin/promotions",
         permissionKey: "admin:promotions"
     },
     {
         key: "crm",
-        label: "CRM",
+        label: "admin.menu.crm",
         path: "/administration/admin/crm",
         permissionKey: "admin:crm"
     },
     {
         key: "incident",
-        label: "Incidents",
+        label: "admin.menu.incidents",
         path: "/administration/admin/incident",
         permissionKey: "admin:incident"
     },
     {
         key: "refunds",
-        label: "Refunds",
+        label: "admin.menu.refunds",
         path: "/administration/admin/refunds",
         permissionKey: "admin:refunds"
     },
     {
         key: "settings",
-        label: "Settings",
+        label: "admin.menu.settings",
         path: "/administration/admin/settings",
         permissionKey: "admin:settings"
     },
@@ -98,87 +98,102 @@ export const adminNavItems: NavItemConfig[] = [
 export const managerNavItems: NavItemConfig[] = [
     {
         key: "dashboard",
-        label: "Executive Dashboard",
+        label: "admin.menu.executive_dashboard",
         path: "/administration/manager/dashboard",
         permissionKey: "manager:dashboard"
     },
     {
         key: "cinema",
-        label: "Cinema Configuration",
+        label: "admin.menu.cinema_configuration",
         path: "/administration/manager/cinema",
-        permissionKey: "manager:cinema" },
+        permissionKey: "manager:cinema"
+    },
     {
         key: "movies",
-        label: "Movies & Showtimes",
+        label: "admin.menu.movies_and_showtimes",
         path: "/administration/manager/movies",
-        permissionKey: "manager:movies" },
+        permissionKey: "manager:movies"
+    },
     {
         key: "showtimes",
-        label: "Showtime Scheduler",
+        label: "admin.menu.showtime_scheduler",
         path: "/administration/manager/showtimes",
-        permissionKey: "manager:showtimes" },
+        permissionKey: "manager:showtimes"
+    },
     {
         key: "seatmap",
-        label: "Seat Map Editor",
+        label: "admin.menu.seat_map_editor",
         path: "/administration/manager/seatmap",
-        permissionKey: "manager:seatmap" },
+        permissionKey: "manager:seatmap"
+    },
     {
         key: "staff",
-        label: "Staff & RBAC",
+        label: "admin.menu.staff_and_rbac",
         path: "/administration/manager/staff",
-        permissionKey: "manager:staff" },
+        permissionKey: "manager:staff"
+    },
     {
         key: "fnb",
-        label: "F&B / Concessions",
+        label: "admin.menu.fnb_and_concessions",
         path: "/administration/manager/fnb",
-        permissionKey: "manager:fnb" },
+        permissionKey: "manager:fnb"
+    },
     {
         key: "reports",
-        label: "Revenue Reports",
+        label: "admin.menu.revenue_reports",
         path: "/administration/manager/reports",
-        permissionKey: "manager:reports" },
+        permissionKey: "manager:reports"
+    },
     {
-        key: "promotions", label: "Promotions & Gift Cards", path: "/administration/manager/promotions", permissionKey: "manager:promotions" },
+        key: "promotions", label: "admin.menu.promotions_and_gift_cards", path: "/administration/manager/promotions", permissionKey: "manager:promotions"
+    },
     {
-        key: "crm", label: "CRM & Incidents", path: "/administration/manager/crm", permissionKey: "manager:crm" },
+        key: "crm", label: "admin.menu.crm_and_incidents", path: "/administration/manager/crm", permissionKey: "manager:crm"
+    },
     {
-        key: "refunds", label: "Refund Approval", path: "/administration/manager/refunds", permissionKey: "manager:refunds" },
+        key: "refunds", label: "admin.menu.refund_approval", path: "/administration/manager/refunds", permissionKey: "manager:refunds"
+    },
 ];
 
 /** Navigation items for Cinema Staff sub-domain */
 export const staffNavItems: NavItemConfig[] = [
     {
         key: "dashboard",
-        label: "My Dashboard",
+        label: "admin.menu.my_dashboard",
         path: "/administration/staff/dashboard",
-        permissionKey: "staff:dashboard" },
+        permissionKey: "staff:dashboard"
+    },
     {
         key: "ticket-sales",
-        label: "Ticket Sales",
+        label: "admin.menu.ticket_sales",
         path: "/administration/staff/ticket-sales",
-        permissionKey: "staff:ticket-sales" },
+        permissionKey: "staff:ticket-sales"
+    },
     {
         key: "qr-checkin",
-        label: "QR Check-in",
+        label: "admin.menu.qr_checkin",
         path: "/administration/staff/qr-checkin",
-        permissionKey: "staff:qr-checkin" },
+        permissionKey: "staff:qr-checkin"
+    },
     {
         key: "my-transactions",
-        label: "My Transactions",
+        label: "admin.menu.my_transactions",
         path: "/administration/staff/my-transactions",
-        permissionKey: "staff:my-transactions" },
+        permissionKey: "staff:my-transactions"
+    },
     {
         key: "shift-report",
-        label: "Shift Report",
+        label: "admin.menu.shift_report",
         path: "/administration/staff/shift-report",
-        permissionKey: "staff:shift-report" },
+        permissionKey: "staff:shift-report"
+    },
 ];
 
 /** Navigation items for POS Machine sub-domain */
 export const posNavItems: NavItemConfig[] = [
     {
         key: "ticket-sales",
-        label: "Ticket Sales",
+        label: "admin.menu.ticket_sales",
         path: "/administration/pos/ticket-sales",
         permissionKey: "pos:ticket-sales"
     },

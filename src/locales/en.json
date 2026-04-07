@@ -1,0 +1,91 @@
+{
+  "http": {
+    "network_error": "Network error, please try again later.",
+    "unknown_error": "Unknown error, please contact administrators."
+  },
+  "admin": {
+    "menu": {
+      "dashboard": "Dashboard",
+      "tenant_management": "Tenant Management",
+      "service_packages": "Service Packages",
+      "cinema": "Cinema",
+      "movies": "Movies",
+      "showtimes": "Showtimes",
+      "seat_map": "Seat Map",
+      "staff": "Staff",
+      "fnb": "F&B",
+      "reports": "Reports",
+      "promotions": "Promotions",
+      "crm": "CRM",
+      "incidents": "Incidents",
+      "refunds": "Refunds",
+      "settings": "Settings",
+      "executive_dashboard": "Executive Dashboard",
+      "cinema_configuration": "Cinema Configuration",
+      "movies_and_showtimes": "Movies & Showtimes",
+      "showtime_scheduler": "Showtime Scheduler",
+      "seat_map_editor": "Seat Map Editor",
+      "staff_and_rbac": "Staff & RBAC",
+      "fnb_and_concessions": "F&B / Concessions",
+      "revenue_reports": "Revenue Reports",
+      "promotions_and_gift_cards": "Promotions & Gift Cards",
+      "crm_and_incidents": "CRM & Incidents",
+      "refund_approval": "Refund Approval",
+      "my_dashboard": "My Dashboard",
+      "ticket_sales": "Ticket Sales",
+      "qr_checkin": "QR Check-in",
+      "my_transactions": "My Transactions",
+      "shift_report": "Shift Report",
+      "notification": "Notification"
+    }
+  },
+  "customer": {
+    "nav": {
+      "movies": "MOVIES",
+      "now_showing": "Now Showing",
+      "coming_soon": "Coming Soon",
+      "theaters": "THEATERS",
+      "all_cinemas": "All Cinemas",
+      "special_cinemas": "Special Cinemas",
+      "cinemas_3d": "3D Cinemas",
+      "cultureplex": "CULTUREPLEX",
+      "online_store": "Online Store",
+      "group_tickets": "Group Tickets",
+      "giftcodes_vouchers": "Giftcodes & Vouchers",
+      "cinema_rules": "Cinema Rules",
+      "promotions": "PROMOTIONS",
+      "search_movies": "Search movies...",
+      "book_now": "Book Now"
+    },
+    "footer": {
+      "about_us": "About Us",
+      "use_giftcard": "Use Giftcode Card",
+      "career": "Career Opportunities",
+      "contact": "Contact LTT",
+      "for_partners": "For Business Partners",
+      "policy_legal": "Policy & Legal",
+      "website_conditions": "Conditions of Website Use",
+      "terms_of_use": "Terms of Use",
+      "payment_policy": "Payment Policy",
+      "privacy_policy": "Privacy Policy",
+      "faq": "FAQ",
+      "customer_service": "Customer Service",
+      "hotline": "Hotline",
+      "working_hours": "Working hours",
+      "email_support": "Email support",
+      "social_media": "Kết Nối Với Chúng Tôi / Connect with Us",
+      "copyright": "COPYRIGHT 2026 LTC."
+    },
+    "homepage": {
+      "movie_selection": "Movie Selection",
+      "now_showing": "NOW SHOWING",
+      "coming_soon": "COMING SOON",
+      "special_screening": "SPECIAL SCREENING",
+      "view_details": "VIEW DETAILS"
+    }
+  },
+  "NewsAndOffers": "News and Offers",
+  "MyTicket": "My Ticket",
+  "MyLTC": "My LTC",
+  "LoginRegister": "Login / Register"
+}

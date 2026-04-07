@@ -2,7 +2,7 @@ import LTTButton from "@/src/@core/component/AntD/LTTButton";
 import LTTForm from "@/src/@core/component/AntD/LTTForm";
 import LTTFormItem from "@/src/@core/component/AntD/LTTFormItem";
 import LTTInput from "@/src/@core/component/AntD/LTTInput";
-import LTTSelect from "@/src/@core/component/AntD/LTTSelect";
+
 import LTTEyeIcon from "@/src/@core/component/LTTIcon/iconoir/eye";
 import LTTEyeClosedIcon from "@/src/@core/component/LTTIcon/iconoir/eye-closed";
 import Link from "next/link";
@@ -22,7 +22,7 @@ import { getCookie, setCookie } from "@/src/@core/utils/cookie";
 import LTTGoogleButton from "@/src/@core/component/AntD/LTTButton/LTTGoogleButton";
 import { showNotificationSuccess } from "@/src/@core/utils/message";
 
-const tenants = JSON.parse(process.env.NEXT_PUBLIC_TENANTS || "[]");
+
 
 const FormDetail = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -33,6 +33,9 @@ const FormDetail = () => {
         const accessToken = getCookie(ACCESS_TOKEN_KEY);
         if (accessToken) {
             window.location.href = "/employee";
+        } else {
+            localStorage.setItem(TENANT_KEY, "LTC");
+
         }
     }, []);
 
@@ -67,13 +70,7 @@ const FormDetail = () => {
         } as LoginInputDto);
     };
 
-    const onChangeTenant = (value: string) => {
-        if (value) {
-            localStorage.setItem(TENANT_KEY, value);
-        } else {
-            localStorage.removeItem(TENANT_KEY);
-        }
-    };
+
 
     return (
         <div>
@@ -85,26 +82,14 @@ const FormDetail = () => {
                     <div className="w-full border-t border-gray-200 dark:border-gray-800"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-          <span className="p-2 text-gray-400 bg-white dark:bg-gray-900 sm:px-5 sm:py-2">
-            Hoặc
-          </span>
+                    <span className="p-2 text-gray-400 bg-white dark:bg-gray-900 sm:px-5 sm:py-2">
+                        Hoặc
+                    </span>
                 </div>
             </div>
             <LTTForm form={form} onFinish={onSubmit}>
                 <div className="space-y-6">
-                    <LTTFormItem
-                        label="Tenant"
-                        name="tenant"
-                        rules={[rules.required]}
-                        className="mb-3"
-                    >
-                        <LTTSelect
-                            label="Tenant"
-                            onChange={onChangeTenant}
-                            className="w-full h-10"
-                            options={tenants}
-                        />
-                    </LTTFormItem>
+
 
                     <LTTFormItem
                         label="Tài khoản"

@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
+import LTTButton from "@/src/@core/component/AntD/LTTButton";
 import { Dropdown } from "@/src/@core/component/LTTDropdown/Dropdown";
 import { DropdownItem } from "@/src/@core/component/LTTDropdown/DropdownItem";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
@@ -21,20 +22,22 @@ export default function UserDropdown() {
       setIsLoggedIn(true);
       setUserInfo(getUserInfoFromToken(accessToken));
     } else {
-        setIsLoggedIn(false);
-        setUserInfo(null);
+      setIsLoggedIn(false);
+      setUserInfo(null);
     }
   }, []);
 
-  const { mutation } = useLTTMutation<boolean, void>({
+  const { mutation, isLoading } = useLTTMutation<boolean, void>({
     mutationFn: () => {
       const isAdmin = typeof window !== 'undefined' && (
-        window.location.pathname.startsWith("/admin") || 
-        window.location.pathname.startsWith("/manager") || 
-        window.location.pathname.startsWith("/staff") || 
+        window.location.pathname.startsWith("/administration") ||
+        window.location.pathname.startsWith("/admin") ||
+        window.location.pathname.startsWith("/employee") ||
+        window.location.pathname.startsWith("/manager") ||
+        window.location.pathname.startsWith("/staff") ||
         window.location.pathname.startsWith("/pos")
       );
-                      
+
       if (isAdmin) {
         return administrationService.authService.logOutAsync({});
       } else {
@@ -52,20 +55,22 @@ export default function UserDropdown() {
 
   const handleLocalLogout = () => {
     const isAdmin = typeof window !== 'undefined' && (
-      window.location.pathname.startsWith("/admin") || 
-      window.location.pathname.startsWith("/manager") || 
-      window.location.pathname.startsWith("/staff") || 
+      window.location.pathname.startsWith("/administration") ||
+      window.location.pathname.startsWith("/admin") ||
+      window.location.pathname.startsWith("/employee") ||
+      window.location.pathname.startsWith("/manager") ||
+      window.location.pathname.startsWith("/staff") ||
       window.location.pathname.startsWith("/pos")
     );
 
     localStorage.removeItem(TENANT_KEY);
     removeCookie(ACCESS_TOKEN_KEY);
     removeCookie(REFRESH_TOKEN_KEY);
-    
+
     if (isAdmin) {
-      window.location.href = "/signin/";
+      window.location.href = "/administration/login";
     } else {
-      window.location.href = "/customer-login/";
+      window.location.href = "/";
     }
   };
 
@@ -79,6 +84,9 @@ export default function UserDropdown() {
   }
 
   const logOut = () => {
+    if (isLoading) {
+      return;
+    }
     mutation();
   };
 
@@ -87,14 +95,19 @@ export default function UserDropdown() {
   const email = userInfo?.email || "datta@gmail.com";
 
   if (!isLoggedIn) {
-     const isCustomer = typeof window !== 'undefined' && !window.location.pathname.includes("/(administration)");
-     if (isCustomer) {
-       return (
-         <Link href="/customer-login" className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-all duration-200 font-bold text-sm tracking-widest no-underline">
+    const isCustomer = typeof window !== 'undefined' && !window.location.pathname.includes("/(administration)");
+    if (isCustomer) {
+      return (
+        <Link href="/customer-login" className="no-underline">
+          <LTTButton
+            variant="primary"
+            className="flex items-center gap-2 px-4 py-2 font-bold text-sm tracking-widest bg-primary text-white transition-all duration-200 hover:scale-105 hover:!bg-primary hover:!text-white"
+          >
             Login / Register
-         </Link>
-       );
-     }
+          </LTTButton>
+        </Link>
+      );
+    }
   }
 
   return (
@@ -106,9 +119,8 @@ export default function UserDropdown() {
         <span className="font-medium text-theme-sm">{fullName}</span>
 
         <svg
-          className={`ml-2 stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
-            isOpen ? "rotate-180" : ""
-          }`}
+          className={`ml-2 stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""
+            }`}
           width="18"
           height="18"
           viewBox="0 0 18 20"
@@ -163,13 +175,17 @@ export default function UserDropdown() {
             </DropdownItem>
           </li>
         </ul>
-        <div
+        <LTTButton
+          loading={isLoading}
+          disabled={isLoading}
           onClick={logOut}
-          className="cursor-pointer flex items-center gap-3 px-3 py-2 mt-1 font-medium text-red-600 rounded-lg group text-theme-sm hover:bg-red-50 transition-colors"
+          className="!w-full !mt-1 !px-3 !py-2 !h-auto !border-none !shadow-none !bg-transparent !text-red-600 hover:!bg-red-50 hover:!text-red-700 !justify-start"
         >
-          <span className="material-symbols-outlined text-red-500 group-hover:text-red-700">logout</span>
+          {!isLoading && (
+            <span className="material-symbols-outlined text-red-500 group-hover:text-red-700">logout</span>
+          )}
           Đăng xuất
-        </div>
+        </LTTButton>
       </Dropdown>
     </div>
   );
