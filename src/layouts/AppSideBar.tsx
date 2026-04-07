@@ -11,6 +11,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "@/src/@core/provider/sidebar-provider";
 import { navItems, AppNavItems } from "@/src/@core/http/routes";
+import UserDropdown from "./components/header/UserDropdown";
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
@@ -290,6 +291,11 @@ const AppSidebar: React.FC = () => {
         </Link>
       </div>
       <div className="flex flex-col flex-1 overflow-y-auto duration-300 ease-linear no-scrollbar">
+        {(isExpanded || isHovered || isMobileOpen) && (
+          <div className="flex px-4 py-4 mb-4 border-b border-gray-200 dark:border-gray-800 lg:hidden">
+            <UserDropdown />
+          </div>
+        )}
         <nav className="mb-6">
           <div className="flex flex-col gap-4">
             <div>{renderMenuItems(navItems, "main")}</div>

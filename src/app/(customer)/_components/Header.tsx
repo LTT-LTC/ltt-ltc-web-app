@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LTTButton from "@/src/@core/component/AntD/LTTButton";
+import UserDropdown from "@/src/layouts/components/header/UserDropdown";
 import { DropdownItem } from "@/src/@core/component/LTTDropdown/DropdownItem";
 import LTTBadge from "@/src/@core/component/LTTBadge";
 import LTTRenderIf from "@/src/@core/component/LTTRenderIf";
@@ -28,16 +29,9 @@ const NAV_ITEMS: NavItem[] = [
     {
         label: "THEATERS",
         children: [
-            { label: "All Cinemas", href: "#" },
+            { label: "All Cinemas", href: "/theaters/all-cinemas" },
             { label: "Special Cinemas", href: "#" },
             { label: "3D Cinemas", href: "#" },
-        ],
-    },
-    {
-        label: "MEMBERSHIP",
-        children: [
-            { label: "My Cinema", href: "#" },
-            { label: "Member Benefits", href: "#" },
         ],
     },
     {
@@ -45,37 +39,47 @@ const NAV_ITEMS: NavItem[] = [
         children: [
             { label: "Online Store", href: "#" },
             { label: "Group Tickets", href: "#" },
-            { label: "Giftcodes & Vouchers", href: "#" },
+            { label: "Giftcodes & Vouchers", href: "/my-ltc/vouchers" },
             { label: "Cinema Rules", href: "#" },
         ],
-    },
+    }
 ];
 
 // --- Desktop nav dropdown ---
 const NavDropdown: React.FC<{ item: NavItem }> = ({ item }) => {
+    const [isOpen, setIsOpen] = useState(false);
     return (
-        <div className="relative group py-6">
+        <div
+            className="relative group py-6"
+            onMouseEnter={() => setIsOpen(true)}
+            onMouseLeave={() => setIsOpen(false)}
+        >
             {/* Trigger */}
-            <button className="flex items-center gap-1 font-bold text-sm tracking-widest text-slate-700 dark:text-slate-200 hover:text-primary transition-colors duration-200 cursor-pointer">
+            <button
+                onClick={(e) => {
+                    e.preventDefault();
+                    setIsOpen(!isOpen);
+                }}
+                className="flex items-center gap-1 font-bold text-sm tracking-widest text-slate-700 dark:text-slate-200 hover:text-primary transition-colors duration-200 cursor-pointer"
+            >
                 {item.label}
                 <NavArrowDownIcon
-                    className="!w-4 !h-4 transition-transform duration-300 group-hover:rotate-180"
+                    className={`!w-4 !h-4 transition-transform duration-300 ${isOpen ? 'rotate-180' : 'group-hover:rotate-180'}`}
                 />
             </button>
 
             {/* Animated underline */}
-            <span className="absolute bottom-4 left-0 h-0.5 w-0 bg-primary transition-all duration-300 group-hover:w-full rounded-full" />
+            <span className={`absolute bottom-4 left-0 h-0.5 bg-primary transition-all duration-300 rounded-full ${isOpen ? 'w-full' : 'w-0 group-hover:w-full'}`} />
 
             {/* Dropdown panel */}
             <div
-                className="
+                className={`
                     absolute top-full left-1/2 -translate-x-1/2 min-w-[200px]
                     bg-white dark:bg-slate-800 shadow-xl border border-slate-100 dark:border-slate-700 rounded-xl
                     py-2 origin-top
-                    scale-y-0 opacity-0 pointer-events-none
-                    group-hover:scale-y-100 group-hover:opacity-100 group-hover:pointer-events-auto
                     transition-[transform,opacity] duration-300 ease-[cubic-bezier(.4,0,.2,1)]
-                "
+                    ${isOpen ? 'scale-y-100 opacity-100 pointer-events-auto' : 'scale-y-0 opacity-0 pointer-events-none group-hover:scale-y-100 group-hover:opacity-100 group-hover:pointer-events-auto'}
+                `}
             >
                 {item.children.map((child, idx) => (
                     <DropdownItem
@@ -154,6 +158,11 @@ const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen
                     </button>
                 </div>
 
+                {/* User section */}
+                <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-end">
+                    <UserDropdown />
+                </div>
+
                 {/* Menu items */}
                 <nav className="px-4 pb-8 overflow-y-auto max-h-[calc(100vh-80px)]">
                     {NAV_ITEMS.map((item, idx) => (
@@ -165,8 +174,8 @@ const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen
                             <button
                                 onClick={() => setExpandedIndex(expandedIndex === idx ? null : idx)}
                                 className={`flex items-center justify-between w-full py-4 text-sm font-bold tracking-widest cursor-pointer transition-colors ${isParentActive(item.children)
-                                        ? "text-[#cc3434]"
-                                        : "text-slate-700 dark:text-slate-200"
+                                    ? "text-[#cc3434]"
+                                    : "text-slate-700 dark:text-slate-200"
                                     }`}
                             >
                                 {item.label}
@@ -190,8 +199,8 @@ const MobileMenu: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen
                                         href={child.href}
                                         onItemClick={onClose}
                                         baseClassName={`flex items-center gap-2 w-full pl-4 pr-2 py-3 text-sm rounded-lg transition-colors duration-150 ${isChildActive(child.href)
-                                                ? "bg-[#fff1f1] !text-[#cc3434] hover:!text-[#cc3434] visited:!text-[#cc3434] focus:!text-[#cc3434]"
-                                                : "!text-slate-600 dark:!text-slate-400 hover:!text-[#cc3434] visited:!text-slate-600 focus:!text-[#cc3434] hover:bg-[#fff1f1]"
+                                            ? "bg-[#fff1f1] !text-[#cc3434] hover:!text-[#cc3434] visited:!text-[#cc3434] focus:!text-[#cc3434]"
+                                            : "!text-slate-600 dark:!text-slate-400 hover:!text-[#cc3434] visited:!text-slate-600 focus:!text-[#cc3434] hover:bg-[#fff1f1]"
                                             }`}
                                     >
                                         {child.label}
@@ -259,20 +268,20 @@ const Header: React.FC = () => {
                             <CartIcon className="!w-5 !h-5" />
                         </button>
                         {/* User */}
-                        <Link href="/my-ltc" className="hidden sm:flex items-center justify-center size-10 rounded-full hover:bg-primary/5 text-slate-500 hover:text-primary transition-all duration-200 cursor-pointer">
-                            <UserIcon className="!w-5 !h-5" />
-                        </Link>
+                        <div className="hidden sm:flex items-center">
+                            <UserDropdown />
+                        </div>
 
                         {/* Book Now - desktop */}
-                        <div className="hidden lg:block ml-2">
-                            <LTTButton
-                                variant="primary"
-                                size="sm"
-                                className="!bg-primary !text-white hover:!scale-105 transition-transform duration-200"
-                            >
-                                Book Now
-                            </LTTButton>
-                        </div>
+                        {/*<div className="hidden lg:block ml-2">*/}
+                        {/*    <LTTButton*/}
+                        {/*        variant="primary"*/}
+                        {/*        size="sm"*/}
+                        {/*        className="!bg-primary !text-white hover:!scale-105 transition-transform duration-200"*/}
+                        {/*    >*/}
+                        {/*        Book Now*/}
+                        {/*    </LTTButton>*/}
+                        {/*</div>*/}
 
                         {/* Hamburger - mobile */}
                         <button
