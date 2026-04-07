@@ -1,17 +1,32 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import LTTCard from '@/src/@core/component/AntD/LTTCard';
 import LTTButton from '@/src/@core/component/AntD/LTTButton';
 import { customerMockData } from './_mock/data';
+import { getCookie } from '@/src/@core/utils/cookie';
+import { ACCESS_TOKEN_KEY } from '@/src/@core/const';
+import { getUserInfoFromToken } from '@/src/@core/utils/jwt';
 
 export default function DashboardPage() {
-    const { customer } = customerMockData;
+    const { customer: mockCustomer } = customerMockData;
     const router = useRouter();
     const compactViewButtonClass = "bg-[#cc3434] text-white border-none rounded hover:bg-[#a52626] !h-8 !min-h-0 !px-4 !text-sm";
+
+    const [displayName, setDisplayName] = useState(mockCustomer.fullName);
+
+    useEffect(() => {
+        const token = getCookie(ACCESS_TOKEN_KEY);
+        if (token) {
+            const userInfo = getUserInfoFromToken(token);
+            if (userInfo?.fullName || userInfo?.userName) {
+                setDisplayName(userInfo.fullName || userInfo.userName || "");
+            }
+        }
+    }, []);
 
     const handleCardClick = (path: string) => {
         router.push(path);
@@ -34,7 +49,7 @@ export default function DashboardPage() {
                             />
                         </div>
                         <div className="flex flex-col text-center md:text-left">
-                            <h3 className="text-xl font-bold">Hello {customer.fullName},</h3>
+                            <h3 className="text-xl font-bold">Hello {displayName},</h3>
                             <p className="text-gray-500 mb-2">Manage all of your account information.</p>
                             <LTTButton className="w-fit self-center md:self-start mt-2" onClick={() => router.push('/my-ltc/account-details')}>
                                 Edit
@@ -55,7 +70,7 @@ export default function DashboardPage() {
                             </div>
                         </div>
                         <p className="text-xs text-center text-gray-500 tracking-wider">
-                            {customer.memberId}
+                            {mockCustomer.memberId}
                         </p>
                     </div>
                 </div>
@@ -63,7 +78,7 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center">
                         <span className="text-sm text-gray-500 mb-1">Membership Tier</span>
-                        <span className="font-bold text-lg mb-3">{customer.memberLevel}</span>
+                        <span className="font-bold text-lg mb-3">{mockCustomer.memberLevel}</span>
                         <LTTButton
                             className={compactViewButtonClass}
                             size="sm"
@@ -75,7 +90,7 @@ export default function DashboardPage() {
 
                     <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center">
                         <span className="text-sm text-gray-500 mb-1">Total Spent</span>
-                        <span className="font-bold text-lg mb-3">{customer.totalSpent}đ</span>
+                        <span className="font-bold text-lg mb-3">{mockCustomer.totalSpent}đ</span>
                         <LTTButton
                             className={compactViewButtonClass}
                             size="sm"
@@ -87,7 +102,7 @@ export default function DashboardPage() {
 
                     <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center">
                         <span className="text-sm text-gray-500 mb-1">LTC Points</span>
-                        <span className="font-bold text-lg mb-3">{customer.currentPoints} P</span>
+                        <span className="font-bold text-lg mb-3">{mockCustomer.currentPoints} P</span>
                         <LTTButton
                             className={compactViewButtonClass}
                             size="sm"
@@ -99,7 +114,7 @@ export default function DashboardPage() {
 
                     <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center">
                         <span className="text-sm text-gray-500 mb-1">Voucher</span>
-                        <span className="font-bold text-lg mb-3">{customer.voucherCount}</span>
+                        <span className="font-bold text-lg mb-3">{mockCustomer.voucherCount}</span>
                         <LTTButton
                             className={compactViewButtonClass}
                             size="sm"
@@ -113,4 +128,3 @@ export default function DashboardPage() {
         </div>
     );
 }
-

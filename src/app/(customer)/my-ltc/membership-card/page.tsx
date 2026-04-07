@@ -56,28 +56,31 @@ export default function MembershipCardPage() {
 
     return (
         <div className="flex flex-col gap-6 animate-fade-in-up w-full">
-            {/* Digital Card Design */}
-            <div className="relative w-full max-w-lg mx-auto">
+            <div className="relative w-full max-w-lg mx-auto transform hover:scale-[1.02] transition-transform duration-500">
                 <button
                     type="button"
                     onClick={() => setOpenTierInfo(true)}
-                    className="absolute -top-3 -right-3 z-20 h-10 w-10 rounded-full border-2 border-[#cc3434] bg-white text-[#cc3434] font-bold shadow-md transition-all duration-300 hover:bg-[#cc3434] hover:text-white hover:scale-105"
+                    className="absolute -top-3 -right-3 z-30 h-10 w-10 rounded-full border-2 border-white bg-[#cc3434] text-white font-black shadow-lg transition-all duration-300 hover:bg-white hover:text-[#cc3434] hover:border-[#cc3434] hover:scale-110 flex items-center justify-center cursor-pointer"
                     aria-label="View membership tier info"
                 >
-                    i
+                    <span className="material-symbols-outlined text-[20px]">info</span>
                 </button>
 
-                <div className="relative bg-gradient-to-br from-[#e03a3a] to-[#8f1919] rounded-2xl p-6 shadow-xl text-white aspect-[1.58] flex flex-col justify-between overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -mr-32 -mt-32"></div>
-                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-black opacity-5 rounded-full -ml-24 -mb-24"></div>
-
-                    <div className="flex justify-between items-start z-10 w-full mb-6">
+                <div className="relative bg-gradient-to-br from-[#cc3434] via-[#b22a2a] to-[#7a1414] rounded-2xl p-8 shadow-2xl text-white aspect-[1.58] flex flex-col justify-between overflow-hidden group">
+                    {/* Decorative Elements */}
+                    <div className="absolute top-0 right-0 w-80 h-80 bg-white opacity-5 rounded-full -mr-40 -mt-40 transition-transform duration-700 group-hover:scale-110"></div>
+                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-black opacity-10 rounded-full -ml-32 -mb-32 transition-transform duration-700 group-hover:scale-110"></div>
+                    
+                    <div className="flex justify-between items-start z-10 w-full mb-4">
                         <div>
-                            <h3 className="text-xs tracking-widest opacity-80 uppercase mb-1">LTC CINEMA</h3>
-                            <h2 className="text-3xl font-black uppercase tracking-wider">{customer.memberLevel}</h2>
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="material-symbols-outlined text-[#ffc1c1] text-[20px]">movie</span>
+                                <h3 className="text-[10px] font-black tracking-[0.2em] text-[#ffc1c1] uppercase">LTC CINEMA</h3>
+                            </div>
+                            <h2 className="text-4xl font-black uppercase tracking-tighter italic">{customer.memberLevel}</h2>
                         </div>
-                        <div className="bg-white p-2 rounded-xl">
-                            <div className="w-16 h-16 grid grid-cols-5 grid-rows-5 gap-[2px] bg-black p-1">
+                        <div className="bg-white/10 backdrop-blur-md p-2.5 rounded-xl border border-white/20 shadow-inner">
+                            <div className="w-14 h-14 grid grid-cols-5 grid-rows-5 gap-[2px] bg-black p-1 rounded-sm">
                                 <div className="bg-white col-span-2 row-span-2"></div>
                                 <div className="bg-white col-span-1 row-span-1"></div>
                                 <div className="bg-white col-span-2 row-span-2 col-start-4"></div>
@@ -89,60 +92,69 @@ export default function MembershipCardPage() {
                     </div>
 
                     <div className="z-10 mt-auto">
-                        <div className="font-mono text-xl md:text-2xl tracking-widest mb-6 opacity-95">
-                            {customer.memberId}
+                        <div className="flex flex-col mb-6">
+                            <span className="text-[9px] uppercase tracking-widest text-[#ffc1c1] font-bold mb-1">MEMBERSHIP ID</span>
+                            <div className="font-mono text-2xl tracking-[0.15em] font-medium drop-shadow-md">
+                                {customer.memberId}
+                            </div>
                         </div>
 
-                        <div className="flex justify-between items-end">
+                        <div className="flex justify-between items-end border-t border-white/20 pt-4">
                             <div>
-                                <p className="text-[10px] uppercase opacity-70 mb-1">CARD HOLDER</p>
-                                <p className="font-semibold text-lg">{customer.fullName}</p>
+                                <p className="text-[9px] uppercase font-bold text-[#ffc1c1] mb-1">CARD HOLDER</p>
+                                <p className="font-black text-xl tracking-tight uppercase leading-none">{customer.fullName}</p>
                             </div>
-                            <div className="text-right">
-                                <p className="text-[10px] uppercase opacity-70 mb-1">VALID THRU</p>
-                                <p className="font-semibold">{customer.validThru}</p>
+                            <div className="flex gap-4">
+                                <div className="text-right">
+                                    <p className="text-[9px] uppercase font-bold text-[#ffc1c1] mb-1">REGISTERED</p>
+                                    <p className="font-bold text-sm tracking-tighter">01/01/2024</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[9px] uppercase font-bold text-[#ffc1c1] mb-1">VALID THRU</p>
+                                    <p className="font-bold text-sm tracking-tighter">{customer.validThru}</p>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <LTTCard className="p-6 md:p-8 shadow-sm border border-gray-100 rounded-xl bg-white mt-4">
-                <div className="flex flex-col md:flex-row gap-8 lg:gap-16">
-                    <div>
-                        <p className="text-sm text-gray-500 mb-2">Current Points</p>
-                        <p className="text-3xl font-bold text-[#cc3434]">{customer.currentPoints} P</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                <LTTCard className="p-6 md:p-8 shadow-sm border border-gray-100 rounded-xl bg-white flex flex-col justify-center">
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center text-[#cc3434]">
+                            <span className="material-symbols-outlined text-[28px]">stars</span>
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Current Points</p>
+                            <p className="text-4xl font-black text-[#cc3434] tracking-tighter">{customer.currentPoints.toLocaleString()} <span className="text-lg font-bold">P</span></p>
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-sm text-gray-500 mb-2">Total Spent Points</p>
-                        <p className="text-3xl font-bold text-gray-800">{customer.totalSpent} P</p>
+                </LTTCard>
+
+                <LTTCard className="p-6 md:p-8 shadow-sm border border-gray-100 rounded-xl bg-white flex flex-col justify-center">
+                    <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-600">
+                            <span className="material-symbols-outlined text-[28px]">payments</span>
+                        </div>
+                        <div>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Spent Points</p>
+                            <p className="text-4xl font-black text-gray-900 tracking-tighter">{customer.totalSpent.toLocaleString()} <span className="text-lg font-bold">P</span></p>
+                        </div>
                     </div>
-                </div>
-            </LTTCard>
+                </LTTCard>
+            </div>
 
             <LTTCard className="p-6 md:p-8 shadow-sm border border-gray-100 rounded-xl bg-white">
-                <h2 className="text-xl font-bold mb-6 text-gray-800">Card Management</h2>
-
-                <div className="flex flex-wrap gap-4">
-                    <LTTButton className="text-gray-700 bg-white hover:bg-gray-50 hover:text-black border-gray-300 px-6 font-medium">
-                        Request new card
-                    </LTTButton>
-                    <LTTButton className="text-gray-700 bg-white hover:bg-gray-50 hover:text-black border-gray-300 px-6 font-medium">
-                        Update information
-                    </LTTButton>
-                    <LTTButton className="text-[#cc3434] bg-white border-[#cc3434] hover:bg-[#cc3434] hover:text-white px-6 font-medium ml-0 md:ml-auto">
-                        Delete card
-                    </LTTButton>
+                <div className="flex items-center gap-3 mb-8">
+                    <div className="w-1.5 h-6 bg-[#cc3434] rounded-full"></div>
+                    <h2 className="text-xl font-black text-gray-900 tracking-tight uppercase">Point Transaction History</h2>
                 </div>
-            </LTTCard>
-
-            <LTTCard className="p-6 md:p-8 shadow-sm border border-gray-100 rounded-xl bg-white">
-                <h2 className="text-xl font-bold mb-6 text-gray-800">Point History</h2>
                 <LTTTable
                     columns={pointHistoryColumns}
                     dataSource={pagedPointHistory}
                     rowKey="id"
-                    className="border border-gray-100 rounded-lg"
+                    className="border border-gray-50 rounded-xl overflow-hidden"
                     pagination={{
                         totalCount: pointHistory.length,
                         page: pointPagination.page,
@@ -152,6 +164,25 @@ export default function MembershipCardPage() {
                         },
                     }}
                 />
+            </LTTCard>
+
+            <LTTCard className="p-6 md:p-8 shadow-sm border border-gray-100 rounded-xl bg-white mb-8">
+                <div className="flex items-center gap-3 mb-8">
+                    <div className="w-1.5 h-6 bg-[#cc3434] rounded-full"></div>
+                    <h2 className="text-xl font-black text-gray-900 tracking-tight uppercase">Card Management</h2>
+                </div>
+
+                <div className="flex flex-wrap gap-4">
+                    <LTTButton className="rounded-xl font-bold bg-white text-gray-700 border-gray-200 hover:!border-[#cc3434] hover:!text-[#cc3434] h-12 px-6">
+                        Request new card
+                    </LTTButton>
+                    <LTTButton className="rounded-xl font-bold bg-white text-gray-700 border-gray-200 hover:!border-[#cc3434] hover:!text-[#cc3434] h-12 px-6">
+                        Update information
+                    </LTTButton>
+                    <LTTButton className="rounded-xl font-bold bg-white text-[#cc3434] border-[#cc3434] hover:!bg-[#cc3434] hover:!text-white h-12 px-6 ml-0 md:ml-auto">
+                        Delete card
+                    </LTTButton>
+                </div>
             </LTTCard>
 
             <LTTModal

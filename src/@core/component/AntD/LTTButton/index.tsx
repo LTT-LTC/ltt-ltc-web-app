@@ -17,6 +17,7 @@ const LTTButton = ({
   onClick,
   className = "",
   disabled = false,
+  loading = false,
   ...props
 }: LTTButtonProps) => {
   // Size Classes
@@ -45,6 +46,7 @@ const LTTButton = ({
         }`}
       onClick={onClick}
       disabled={disabled}
+      loading={loading}
       {...props}
     >
       {startIcon && <span className="flex items-center">{startIcon}</span>}
