@@ -18,7 +18,7 @@ import { administrationService } from "@/src/services/administration-service/adm
 import { customerService } from "@/src/services/customer-service/customer.service";
 import qs from "qs";
 import { showNotificationError } from "../utils/message";
-import { i18n } from "i18next";
+import i18n from "i18next";
 
 let isRefreshing = false;
 let refreshPromise: Promise<any> | null = null;

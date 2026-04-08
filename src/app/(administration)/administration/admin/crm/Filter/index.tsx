@@ -1,4 +1,4 @@
-﻿import LTTFilter, { FilterProps } from "@/src/@core/component/LTTFilter";
+import LTTFilter, { FilterProps } from "@/src/@core/component/LTTFilter";
 
 const CrmFilter = () => {
   const filterItems = [

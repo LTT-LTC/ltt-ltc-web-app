@@ -1,52 +1,86 @@
-﻿"use client";
-import { ColumnsType } from "antd/es/table";
+"use client";
+import { Space, Tag, Popconfirm } from "antd";
+import type { ColumnsType } from "antd/es/table";
+import { StaffMember } from "../_mock/data";
+import LTTButton from "@/src/@core/component/AntD/LTTButton";
 
-export interface StaffDataType {
-  id: string;
-  [key: string]: any;
-}
+const statusColor: Record<string, string> = {
+  active: "success",
+  inactive: "default",
+  suspended: "error",
+};
+const statusLabel: Record<string, string> = {
+  active: "Hoạt động",
+  inactive: "Ngưng",
+  suspended: "Tạm khóa",
+};
 
-export const columns = (): ColumnsType<StaffDataType> => [
+export const columns = (
+  handleEdit: (record: StaffMember) => void,
+  handleDelete: (id: string) => void
+): ColumnsType<StaffMember> => [
   {
-    title: "STT",
-    width: 20,
-    key: "id",
-    dataIndex: "id",
-  },
-  {
-    title: "Ho va ten",
-    width: 60,
-    key: "name",
-    dataIndex: "name",
+    title: "Họ tên",
+    dataIndex: "fullname",
+    key: "fullname",
   },
   {
     title: "Email",
-    width: 50,
-    key: "email",
     dataIndex: "email",
+    key: "email",
   },
   {
-    title: "Ma",
-    width: 30,
-    key: "code",
-    dataIndex: "code",
+    title: "SĐT",
+    dataIndex: "phone",
+    key: "phone",
   },
   {
-    title: "Vai tro",
-    width: 40,
-    key: "role",
+    title: "Vai trò",
     dataIndex: "role",
+    key: "role",
+    render: (role: string) => <Tag color="blue">{role}</Tag>,
   },
   {
-    title: "Chi nhanh",
-    width: 40,
-    key: "branch",
-    dataIndex: "branch",
+    title: "Rạp",
+    dataIndex: "cinemaName",
+    key: "cinemaName",
   },
   {
-    title: "Trang thai",
-    width: 30,
-    key: "status",
+    title: "Trạng thái",
     dataIndex: "status",
+    key: "status",
+    render: (status: string) => (
+      <Tag color={statusColor[status] || "default"}>
+        {statusLabel[status] || status}
+      </Tag>
+    ),
+  },
+  {
+    title: "Đăng nhập cuối",
+    dataIndex: "lastLogin",
+    key: "lastLogin",
+    render: (text: string) => text || "—",
+  },
+  {
+    title: "Thao tác",
+    key: "action",
+    align: "center",
+    render: (_, record) => (
+      <Space size="middle">
+        <LTTButton variant="outline" onClick={() => handleEdit(record)}>
+          Sửa
+        </LTTButton>
+        <Popconfirm
+          title="Bạn có chắc chắn muốn xoá nhân viên này?"
+          onConfirm={() => handleDelete(record.id)}
+          okText="Xoá"
+          cancelText="Huỷ"
+        >
+          <LTTButton danger variant="outline">
+            Xoá
+          </LTTButton>
+        </Popconfirm>
+      </Space>
+    ),
   },
 ];

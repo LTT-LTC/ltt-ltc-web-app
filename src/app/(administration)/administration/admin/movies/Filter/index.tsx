@@ -1,41 +1,24 @@
-﻿import LTTFilter, { FilterProps } from "@/src/@core/component/LTTFilter";
+import LTTFilter, { FilterProps } from "@/src/@core/component/LTTFilter";
 
-const MoviesFilter = () => {
+export interface MoviesFilterProps {
+  onSearch: (value: string) => void;
+}
+
+const MoviesFilter = ({ onSearch }: MoviesFilterProps) => {
   const filterItems = [
     {
       key: "keyword",
-      title: "Tim kiem phim",
+      title: "Tìm kiếm phim",
       type: "keyword",
       className: "w-[380px] py-3!",
-    },
-    {
-      key: "genre",
-      title: "The loai",
-      type: "multiSelect",
-      className: "w-[230px]",
-      options: [],
-    },
-    {
-      key: "rating",
-      title: "Phan loai do tuoi",
-      type: "multiSelect",
-      className: "w-[230px]",
-      options: [],
-    },
-    {
-      key: "format",
-      title: "Dinh dang",
-      type: "multiSelect",
-      className: "w-[230px]",
-      options: [],
-    },
+    }
   ] as FilterProps[];
 
   return (
     <LTTFilter
       filterItems={filterItems}
       onChange={(allValues) => {
-        // Will dispatch filter action when store is connected
+        onSearch(allValues.keyword || "");
       }}
     />
   );

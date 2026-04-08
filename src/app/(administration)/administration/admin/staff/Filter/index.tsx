@@ -1,36 +1,42 @@
-﻿import LTTFilter, { FilterProps } from "@/src/@core/component/LTTFilter";
+"use client";
+import { useEffect, useState } from "react";
+import LTTInput from "@/src/@core/component/AntD/LTTInput";
+import LTTSelect from "@/src/@core/component/AntD/LTTSelect";
+import { staffRoles } from "../_mock/data";
 
-const StaffFilter = () => {
-  const filterItems = [
-    {
-      key: "keyword",
-      title: "Tim kiem nhan vien",
-      type: "keyword",
-      className: "w-[380px] py-3!",
-    },
-    {
-      key: "role",
-      title: "Vai tro",
-      type: "multiSelect",
-      className: "w-[230px]",
-      options: [],
-    },
-    {
-      key: "branch",
-      title: "Chi nhanh",
-      type: "multiSelect",
-      className: "w-[230px]",
-      options: [],
-    },
-  ] as FilterProps[];
+interface StaffFilterProps {
+  onFilterChange: (filters: { roleId?: string; search?: string }) => void;
+}
+
+const StaffFilter = ({ onFilterChange }: StaffFilterProps) => {
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    onFilterChange({
+      roleId: roleFilter === "all" ? undefined : roleFilter,
+      search: search || undefined,
+    });
+  }, [roleFilter, search]);
 
   return (
-    <LTTFilter
-      filterItems={filterItems}
-      onChange={(allValues) => {
-        // Will dispatch filter action when store is connected
-      }}
-    />
+    <div className="flex items-center gap-3">
+      <LTTInput
+        placeholder="Tìm nhân viên..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{ width: 250 }}
+      />
+      <LTTSelect
+        value={roleFilter}
+        onChange={setRoleFilter}
+        style={{ width: 200 }}
+        options={[
+          { label: "Tất cả vai trò", value: "all" },
+          ...staffRoles.map((r) => ({ label: r, value: r })),
+        ]}
+      />
+    </div>
   );
 };
 

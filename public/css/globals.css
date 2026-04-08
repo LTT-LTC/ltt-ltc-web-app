@@ -4,6 +4,110 @@
 /*@tailwind base;*/
 /*@tailwind components;*/
 @tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Open+Sans:wght@400;500;600&display=swap');
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 13%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 13%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 13%;
+
+    --primary-shadcn: 0 66% 50%;
+    --primary-shadcn-foreground: 0 0% 100%;
+
+    --secondary-shadcn: 0 0% 96%;
+    --secondary-shadcn-foreground: 0 0% 13%;
+
+    --muted-shadcn: 0 0% 96%;
+    --muted-shadcn-foreground: 0 0% 45%;
+
+    --accent-shadcn: 0 66% 95%;
+    --accent-shadcn-foreground: 0 66% 40%;
+
+    --destructive-shadcn: 0 84.2% 60.2%;
+    --destructive-shadcn-foreground: 0 0% 100%;
+
+    --border-shadcn: 0 0% 90%;
+    --input-shadcn: 0 0% 90%;
+    --ring-shadcn: 0 66% 50%;
+
+    --radius-shadcn: 0.5rem;
+
+    --font-heading: 'Montserrat', sans-serif;
+    --font-body: 'Open Sans', sans-serif;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 0 0% 30%;
+    --sidebar-primary: 0 66% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 66% 95%;
+    --sidebar-accent-foreground: 0 66% 40%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 0 66% 50%;
+
+  }
+
+  .dark {
+    --background: 0 0% 7%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 95%;
+    --primary-shadcn: 0 66% 50%;
+    --primary-shadcn-foreground: 0 0% 100%;
+    --secondary-shadcn: 0 0% 15%;
+    --secondary-shadcn-foreground: 0 0% 95%;
+    --muted-shadcn: 0 0% 15%;
+    --muted-shadcn-foreground: 0 0% 65%;
+    --accent-shadcn: 0 66% 15%;
+    --accent-shadcn-foreground: 0 66% 80%;
+    --destructive-shadcn: 0 62.8% 30.6%;
+    --destructive-shadcn-foreground: 0 0% 95%;
+    --border-shadcn: 0 0% 20%;
+    --input-shadcn: 0 0% 20%;
+    --ring-shadcn: 0 66% 50%;
+  }
+}
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+}
+
+@layer components {
+  .showtime-btn {
+    @apply border border-border rounded px-3 py-1.5 text-sm font-medium hover:border-primary hover:text-primary transition-colors cursor-pointer;
+  }
+
+  .showtime-btn-active {
+    @apply border-primary bg-primary text-primary-foreground;
+  }
+
+  .province-tag {
+    @apply px-3 py-1.5 text-sm cursor-pointer rounded hover:text-primary transition-colors;
+  }
+
+  .province-tag-active {
+    @apply text-primary font-semibold;
+  }
+
+  .timeline-tab {
+    @apply flex flex-col items-center px-3 py-2 rounded cursor-pointer border border-transparent hover:border-primary/30 transition-all text-xs;
+  }
+
+  .timeline-tab-active {
+    @apply border-primary bg-accent text-accent-foreground font-semibold;
+  }
+}
+
 @import "./loader.css" layer(base);
 @import "./base.css" layer(base);
 @import "./antd/table.css" layer(components);
@@ -44,7 +148,52 @@
     --breakpoint-xl: 1280px;
     --breakpoint-2xl: 1536px;
 
-    --text-title-2xl: 72px;
+    --color-primary-shadcn: oklch(0.6 0.18 20); /* Approximating the red color */
+    --color-primary-shadcn-foreground: #ffffff;
+    --color-secondary-shadcn: #f8f9fa;
+    --color-secondary-shadcn-foreground: #212529;
+    --color-muted-shadcn: #f8f9fa;
+    --color-muted-shadcn-foreground: #6c757d;
+    --color-accent-shadcn: #fff5f5;
+    --color-accent-shadcn-foreground: #c92a2a;
+    --color-destructive-shadcn: #fa5252;
+    --color-destructive-shadcn-foreground: #ffffff;
+    --color-border-shadcn: #dee2e6;
+    --color-input-shadcn: #dee2e6;
+    --color-ring-shadcn: #c92a2a;
+
+    /* Base Shadcn variables for utility compatibility */
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary-shadcn);
+    --color-primary-foreground: var(--primary-shadcn-foreground);
+    --color-secondary: var(--secondary-shadcn);
+    --color-secondary-foreground: var(--secondary-shadcn-foreground);
+    --color-muted: var(--muted-shadcn);
+    --color-muted-foreground: var(--muted-shadcn-foreground);
+    --color-accent: var(--accent-shadcn);
+    --color-accent-foreground: var(--accent-shadcn-foreground);
+    --color-destructive: var(--destructive-shadcn);
+    --color-destructive-foreground: var(--destructive-shadcn-foreground);
+    --color-border: var(--border-shadcn);
+    --color-input: var(--input-shadcn);
+    --color-ring: var(--ring-shadcn);
+
+    --radius-shadcn: 0.5rem;
+    --color-sidebar: #f8f9fa;
+    --color-sidebar-foreground: #495057;
+    --color-sidebar-primary: #c92a2a;
+    --color-sidebar-primary-foreground: #ffffff;
+    --color-sidebar-accent: #fff5f5;
+    --color-sidebar-accent-foreground: #c92a2a;
+    --color-sidebar-border: #dee2e6;
+    --color-sidebar-ring: #c92a2a;
+
+
     --text-title-2xl--line-height: 90px;
     --text-title-xl: 60px;
     --text-title-xl--line-height: 72px;

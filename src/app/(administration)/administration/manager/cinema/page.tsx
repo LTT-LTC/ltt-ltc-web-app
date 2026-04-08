@@ -1,12 +1,8 @@
-﻿"use client";
+"use client";
 
-import LTTAppLoader from "@/src/@core/component/LTTAppLoader";
-import dynamic from "next/dynamic";
-
-const CinemaListPage = dynamic(() => import("./Table/index"), { loading: () => <LTTAppLoader />, ssr: false });
+import CinemaConfigPage from "../../admin/cinema/page";
 
 export default function CinemaPage() {
-  return (
-    <CinemaListPage />
-  );
+  return <CinemaConfigPage />;
 }
+

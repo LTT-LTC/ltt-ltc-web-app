@@ -1,53 +1,65 @@
-﻿"use client";
+'use client';
+import { useState, useMemo } from 'react';
+import { Tag, Typography, Descriptions, Form, Input } from 'antd';
+import { ClockCircleOutlined } from '@ant-design/icons';
+import LTTTable from '@/src/@core/component/AntD/LTTTable';
+import LTTButton from '@/src/@core/component/AntD/LTTButton';
+import LTTCard from '@/src/@core/component/AntD/LTTCard';
+import LTTBreadcrumb from '@/src/@core/component/AntD/LTTBreadcrumb';
+import LTTModal from '@/src/@core/component/AntD/LTTModal';
+import RefundsFilter from '../Filter';
+import { getColumns } from '../table.type';
+import { RefundRequest, mockRefunds } from '../_mock/data';
 
-import LTTTable from "@/src/@core/component/AntD/LTTTable";
-import { columns } from "./table.type";
-import LTTBreadcrumb from "@/src/@core/component/AntD/LTTBreadcrumb";
-import LTTCard from "@/src/@core/component/AntD/LTTCard";
-import LTTButton from "@/src/@core/component/AntD/LTTButton";
-import LTTTabs from "@/src/@core/component/AntD/LTTTabs";
-import RefundsFilter from "../Filter";
-import Link from "next/link";
+export default function RefundsListPage() {
+  const [items, setItems] = useState<RefundRequest[]>(mockRefunds);
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('all');
+  const [viewItem, setViewItem] = useState<RefundRequest | null>(null);
+  const [rejectModal, setRejectModal] = useState<{ open: boolean; id: string }>({ open: false, id: '' });
+  const [form] = Form.useForm();
 
-const RefundsListPage = () => {
+  const filtered = useMemo(() => {
+    let list = items;
+    if (status !== 'all') list = list.filter(i => i.status === status);
+    if (search) list = list.filter(i => i.customerName.toLowerCase().includes(search.toLowerCase()) || i.id.toLowerCase().includes(search.toLowerCase()));
+    return list;
+  }, [items, search, status]);
+
+  const handleApprove = (id: string) => {
+    setItems(items.map(i => i.id === id ? { ...i, status: 'approved' } : i));
+  };
+
+  const handleReject = (values: any) => {
+    setItems(items.map(i => i.id === rejectModal.id ? { ...i, status: 'rejected' } : i));
+    setRejectModal({ open: false, id: '' });
+    form.resetFields();
+  };
+
   return (
     <>
-      <LTTBreadcrumb
-        items={[
-          { title: "Quan ly rap" },
-          { title: <Link href="/administration/manager/refunds">Phe duyet hoan tra</Link> },
-        ]}
-      />
-      <div className="flex justify-end">
-        <LTTButton className="mb-3 mr-3">
-          Duyet hoan tra
-        </LTTButton>
-      </div>
-      <LTTCard
-        height="table"
-        title="Phe duyet hoan tra"
-        className="mt-3"
-      >
-        <div className="search flex flex-row items-center gap-2 mt-0">
-          <RefundsFilter />
-        </div>
-        <LTTTabs
-          defaultActiveKey="1"
-          onChange={() => {}}
-          items={[
-    { key: "1", label: "Cho duyet" },
-    { key: "2", label: "Da duyet" },
-    { key: "0", label: "Tu choi" },
-          ]}
-        />
-        <LTTTable
-          columns={columns()}
-          dataSource={[]}
-          loading={false}
-        />
+      <LTTBreadcrumb items={[{ title: 'Duyệt hoàn tiền' }]} />
+      <LTTCard title="Duyệt hoàn tiền" className="mt-4">
+        <RefundsFilter search={search} onSearch={setSearch} status={status} onStatus={setStatus} />
+        <LTTTable rowKey="id" columns={getColumns(setViewItem, handleApprove, (id) => setRejectModal({ open: true, id }))} dataSource={filtered} />
       </LTTCard>
+
+      <LTTModal open={!!viewItem} onCancel={() => setViewItem(null)} title="Chi tiết hoàn tiền" footer={null}>
+        {viewItem && (
+          <Descriptions column={1} bordered size="small">
+            <Descriptions.Item label="Khách hàng">{viewItem.customerName}</Descriptions.Item>
+            <Descriptions.Item label="Phim">{viewItem.movieTitle}</Descriptions.Item>
+            <Descriptions.Item label="Lý do">{viewItem.reason}</Descriptions.Item>
+            <Descriptions.Item label="Số tiền">{viewItem.amount.toLocaleString()}đ</Descriptions.Item>
+          </Descriptions>
+        )}
+      </LTTModal>
+
+      <LTTModal open={rejectModal.open} onCancel={() => setRejectModal({ open: false, id: '' })} title="Từ chối hoàn tiền" onOk={() => form.submit()}>
+        <Form form={form} layout="vertical" onFinish={handleReject}>
+          <Form.Item name="reason" label="Lý do từ chối" rules={[{ required: true }]}><Input.TextArea /></Form.Item>
+        </Form>
+      </LTTModal>
     </>
   );
-};
-
-export default RefundsListPage;
+}

@@ -3,9 +3,12 @@ import NavArrowLeftIcon from "@/src/@core/component/LTTIcon/iconoir/nav-arrow-le
 import Link from "next/link";
 import FormDetail from "./components/ResetPasswordForm";
 import useLTTTitle from "@/src/@core/hooks/useLTTTitle";
+import { Form } from "antd";
 
 export default function AuthIndex() {
     useLTTTitle("Khôi phục mật khẩu");
+    const [form] = Form.useForm();
+    const onFinish = async () => {};
 
     return (
         <div className="flex flex-col flex-1 lg:w-1/2 w-full justify-center py-5 sm:py-10 bg-white dark:bg-transparent">
@@ -28,7 +31,7 @@ export default function AuthIndex() {
                             Nhập thông tin của bạn để đặt lại mật khẩu.
                         </p>
                     </div>
-                    <FormDetail />
+                    <FormDetail form={form} onFinish={onFinish} />
                 </div>
             </div>
         </div>

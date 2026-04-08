@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import LTTAppLoader from "@/src/@core/component/LTTAppLoader";
 import dynamic from "next/dynamic";

@@ -1,29 +1,23 @@
-﻿import LTTFilter, { FilterProps } from "@/src/@core/component/LTTFilter";
+"use client";
 
-const FnbFilter = () => {
-  const filterItems = [
-    {
-      key: "keyword",
-      title: "Tim kiem san pham",
-      type: "keyword",
-      className: "w-[380px] py-3!",
-    },
-    {
-      key: "category",
-      title: "Danh muc",
-      type: "multiSelect",
-      className: "w-[230px]",
-      options: [],
-    },
-  ] as FilterProps[];
+import { Input } from "antd";
 
+interface FnbFilterProps {
+  onSearchChange: (search: string) => void;
+  search: string;
+}
+
+const FnbFilter = ({ onSearchChange, search }: FnbFilterProps) => {
   return (
-    <LTTFilter
-      filterItems={filterItems}
-      onChange={(allValues) => {
-        // Will dispatch filter action when store is connected
-      }}
-    />
+    <div className="w-[380px]">
+      <Input.Search 
+        placeholder="Tìm kiếm sản phẩm..."
+        allowClear
+        value={search}
+        onChange={(e) => onSearchChange(e.target.value)}
+        onSearch={(v) => onSearchChange(v)}
+      />
+    </div>
   );
 };
 

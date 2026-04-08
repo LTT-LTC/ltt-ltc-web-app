@@ -20,13 +20,13 @@ export function middleware(request: NextRequest) {
     }
 
     if (isSensitiveAdmin) {
-        const token = request.cookies.get('adminAccessToken') || request.cookies.get('accessToken'); // Assuming token logic. Usually admin might use a separate cookie or 'accessToken'.
-        if (!token || pathname === '/administration') { // If it's pure /administration, maybe redirect to a dashboard if logged in, else login. 
-            // Wait, "all default route come from the /administration need to be redirected to the login page of the administration domain (/administration-login)"
-            const loginUrl = new URL(`/administration-login`, request.url);
-            loginUrl.searchParams.set('returnUrl', pathname);
-            return NextResponse.redirect(loginUrl);
-        }
+        // const token = request.cookies.get('adminAccessToken') || request.cookies.get('accessToken'); // Assuming token logic. Usually admin might use a separate cookie or 'accessToken'.
+        // if (!token || pathname === '/administration') { // If it's pure /administration, maybe redirect to a dashboard if logged in, else login.
+        //     // Wait, "all default route come from the /administration need to be redirected to the login page of the administration domain (/administration-login)"
+        //     const loginUrl = new URL(`/administration-login`, request.url);
+        //     loginUrl.searchParams.set('returnUrl', pathname);
+        //     return NextResponse.redirect(loginUrl);
+        // }
     }
 
     return NextResponse.next();

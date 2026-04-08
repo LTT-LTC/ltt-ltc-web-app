@@ -1,12 +1,8 @@
-﻿"use client";
+"use client";
 
-import LTTAppLoader from "@/src/@core/component/LTTAppLoader";
-import dynamic from "next/dynamic";
+import StaffPage from "../../admin/staff/page";
 
-const StaffListPage = dynamic(() => import("./Table/index"), { loading: () => <LTTAppLoader />, ssr: false });
-
-export default function StaffPage() {
-  return (
-    <StaffListPage />
-  );
+export default function StaffManagerPage() {
+  return <StaffPage />;
 }
+

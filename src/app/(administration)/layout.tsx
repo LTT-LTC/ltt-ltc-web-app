@@ -1,35 +1,35 @@
 "use client";
 
-import React from "react";
-import AppHeader from "@/src/layouts/AppHeader";
-import { useSidebar } from "@/src/@core/provider/sidebar-provider";
-import BackDrop from "@/src/layouts/BackDrop";
+import React, { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
+import { AdminRole } from "@/src/@core/type/permission.types";
+import { adminNavItems, managerNavItems } from "@/src/@core/http/routes/administration";
+import LTTAdminSubDomainLayout from "@/src/@core/component/LTTAdminSubDomainLayout";
 
 /**
  * Top-level layout for the (administration) route group.
- * Provides the shared header (notification bell, user dropdown)
- * and backdrop for all sub-domains.
+ * Provides the shared header and sidebar dynamically based on path.
  */
 export default function AdministrationGroupLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { isExpanded, isHovered, isMobileOpen } = useSidebar();
+  const pathname = usePathname();
+
+  // If we are on the login page, don't show the layout
+  if (pathname.includes("/login")) {
+    return <>{children}</>;
+  }
+
+  const isAdmin = pathname.includes("/administration/admin");
+  const role = isAdmin ? AdminRole.ADMIN : AdminRole.MANAGER;
+  const navItems = isAdmin ? adminNavItems : managerNavItems;
 
   return (
-    <div className="min-h-screen">
-      <AppHeader />
-      <BackDrop />
-      <div
-        className={`transition-all duration-300 ease-in-out ${
-          isExpanded || isHovered
-            ? "lg:ml-[290px]"
-            : "lg:ml-[90px]"
-        }`}
-      >
-        {children}
-      </div>
-    </div>
+    <LTTAdminSubDomainLayout role={role} navItems={navItems}>
+      {children}
+    </LTTAdminSubDomainLayout>
   );
 }
+

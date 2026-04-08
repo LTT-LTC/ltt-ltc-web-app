@@ -1,0 +1,1270 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  DoorOpen,
+  MousePointer2,
+  AlertTriangle,
+  Footprints,
+  RotateCw,
+  Trash2,
+} from "lucide-react";
+import { toast } from "sonner";
+
+import { cn } from "@/src/@core/utils/cn";
+import { LTTDialog, LTTDialogContent, LTTDialogFooter, LTTDialogHeader, LTTDialogTitle } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
+import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
+import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
+import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
+import { LTTSelect, LTTSelectContent, LTTSelectItem, LTTSelectTrigger, LTTSelectValue } from "@/src/@core/component/LTTShadcnUI/LTTSelect";
+
+import {
+  type Screen,
+  type SeatLayout,
+  type SeatLayoutSeat,
+  mockAdminCinemas,
+  mockSeatTypes,
+  screenTypes,
+  type SeatType,
+} from "@/src/@core/const/mock/adminMockData";
+
+const LOCAL_STORAGE_KEY = "admin_screen_wizard_draft";
+
+type LayoutType = "rectangle" | "square" | "curve";
+
+type CellType =
+  | "seat"
+  | "seat_continuation"
+  | "empty"
+  | "walkway"
+  | "emergency_exit"
+  | "door";
+
+type BorderCellType = "empty" | "door" | "emergency_exit";
+
+interface GridCell {
+  row: string;
+  /** Seat number (compressed after recalc), not the physical index. */
+  col: number;
+  type: CellType;
+  seatTypeId: number;
+  seatCode: string;
+  /** For multi-cell seats, the origin cell indices. */
+  originCol?: number;
+  originRow?: number;
+}
+
+const SEAT_TYPE_COLORS: Record<number, string> = {
+  1: "bg-blue-500",
+  2: "bg-amber-500",
+  3: "bg-pink-500",
+  4: "bg-purple-500",
+  5: "bg-green-500",
+};
+
+interface Props {
+  onClose: () => void;
+  onCreated: (screen: Screen) => void;
+}
+
+export default function LTTScreenCreateWizard({ onClose, onCreated }: Props) {
+  const [step, setStep] = useState(1);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const SEAT_TYPES_STORAGE_KEY = "ltt_admin_mock_seat_types";
+  const [seatTypes, setSeatTypes] = useState<SeatType[]>(mockSeatTypes);
+
+  // Step 1 fields
+  const [tenantId, setTenantId] = useState("tenant-001");
+  const [cinemaId, setCinemaId] = useState("");
+  const [screenNumber, setScreenNumber] = useState("");
+  const [screenType, setScreenType] = useState("");
+  const [seatCount, setSeatCount] = useState("100");
+
+  // Step 2 fields
+  const [layoutType, setLayoutType] = useState<LayoutType>("rectangle");
+  const [gridSize, setGridSize] = useState(10); // square: single dimension
+  const [rows, setRows] = useState(8);
+  const [cols, setCols] = useState(12);
+
+  const [activeTool, setActiveTool] = useState<
+    "select" | "walkway" | "emergency_exit" | "door" | "delete"
+  >("select");
+  const [activeSeatTypeId, setActiveSeatTypeId] = useState(1);
+
+  const [grid, setGrid] = useState<GridCell[][]>([]);
+
+  // Outer border for door/emergency outside the seatmap
+  const [borderTop, setBorderTop] = useState<BorderCellType[]>([]);
+  const [borderBottom, setBorderBottom] = useState<BorderCellType[]>([]);
+  const [borderLeft, setBorderLeft] = useState<BorderCellType[]>([]);
+  const [borderRight, setBorderRight] = useState<BorderCellType[]>([]);
+
+  // Drag selection
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<{ r: number; c: number } | null>(null);
+  const [dragEnd, setDragEnd] = useState<{ r: number; c: number } | null>(null);
+
+  const gridRef = useRef<HTMLDivElement | null>(null);
+
+  const getSeatType = useCallback(
+    (id: number): SeatType | undefined => seatTypes.find((s) => s.id === id),
+    [seatTypes]
+  );
+
+  useEffect(() => {
+    try {
+      if (typeof window === "undefined") return;
+      const raw = localStorage.getItem(SEAT_TYPES_STORAGE_KEY);
+      if (raw) setSeatTypes(JSON.parse(raw) as SeatType[]);
+    } catch {}
+  }, []);
+
+  /**
+   * Recalculate seat codes:
+   * - compress numbering (single number for couple/sweetbox)
+   * - skip any row/column painted as `walkway`
+   * - skip columns that have no seat "origin" (seat_continuation only)
+   */
+  const recalcSeatCodes = useCallback((g: GridCell[][]): GridCell[][] => {
+    if (!g.length || !g[0].length) return g;
+
+    const numRows = g.length;
+    const numCols = g[0].length;
+
+    // Match the source behavior: only skip row/column fully painted as `walkway`.
+    // This ensures numbering compresses when the user converts an entire row/column into walkway,
+    // without wiping labels for partially-painted rows.
+    const walkwayRowIndices = new Set<number>();
+    for (let r = 0; r < numRows; r++) {
+      if (g[r].every((c) => c.type === "walkway")) walkwayRowIndices.add(r);
+    }
+
+    const walkwayColIndices = new Set<number>();
+    for (let c = 0; c < numCols; c++) {
+      if (g.every((row) => row[c]?.type === "walkway")) walkwayColIndices.add(c);
+    }
+
+    const originSeatRowIndices = new Set<number>();
+    const originSeatColIndices = new Set<number>();
+    for (let r = 0; r < numRows; r++) {
+      for (let c = 0; c < numCols; c++) {
+        if (g[r][c].type === "seat") {
+          originSeatRowIndices.add(r);
+          originSeatColIndices.add(c);
+        }
+      }
+    }
+
+    // Row labels
+    let rowLabelIdx = 0;
+    const rowLabels: string[] = [];
+    for (let r = 0; r < numRows; r++) {
+      if (walkwayRowIndices.has(r) || !originSeatRowIndices.has(r)) rowLabels[r] = "";
+      else {
+        rowLabels[r] = String.fromCharCode(65 + rowLabelIdx);
+        rowLabelIdx++;
+      }
+    }
+
+    // Column numbers (compressed; skip walkway columns and continuation-only columns)
+    let colNumIdx = 0;
+    const colNumbers: number[] = [];
+    for (let c = 0; c < numCols; c++) {
+      if (walkwayColIndices.has(c) || !originSeatColIndices.has(c)) colNumbers[c] = 0;
+      else {
+        colNumIdx++;
+        colNumbers[c] = colNumIdx;
+      }
+    }
+
+    const result = g.map((row, rIdx) =>
+      row.map((cell, cIdx) => {
+        const updated: GridCell = { ...cell };
+        updated.row = rowLabels[rIdx] || "";
+        updated.col = colNumbers[cIdx] || 0;
+
+        if (cell.type === "seat") {
+          const rl = rowLabels[rIdx];
+          const cn = colNumbers[cIdx];
+          updated.seatCode = rl && cn ? `${rl}${cn}` : "";
+        } else {
+          updated.seatCode = "";
+        }
+
+        return updated;
+      })
+    );
+
+    return result;
+  }, []);
+
+  const initGrid = useCallback(
+    (numRows: number, numCols: number, layout: LayoutType) => {
+      const g: GridCell[][] = [];
+
+      for (let r = 0; r < numRows; r++) {
+        const rowLabel = String.fromCharCode(65 + r);
+        const rowCells: GridCell[] = [];
+        for (let c = 0; c < numCols; c++) {
+          let type: CellType = "seat";
+
+          if (layout === "curve") {
+            // Shape seats like the source: carve the "front" area to form a curve.
+            if (r < numRows * 0.4) {
+              const rowRatio = 1 - r / (numRows * 0.4);
+              const colCenter = (numCols - 1) / 2;
+              const distFromCol = Math.abs(c - colCenter);
+              const maxDist = colCenter * (1 - rowRatio * 0.5);
+              if (distFromCol > maxDist) type = "empty";
+            }
+          }
+
+          rowCells.push({
+            row: rowLabel,
+            col: c + 1,
+            type,
+            seatTypeId: 1,
+            seatCode: type === "seat" ? `${rowLabel}${c + 1}` : "",
+          });
+        }
+        g.push(rowCells);
+      }
+
+      const recalced = recalcSeatCodes(g);
+      setGrid(recalced);
+
+      // Border cells wrap the internal seatmap:
+      // - top/bottom: (cols + 2) to include corners around left/right border cells
+      // - left/right: (rows)
+      const emptyBorderTop = Array(numCols + 2).fill("empty") as BorderCellType[];
+      setBorderTop(emptyBorderTop);
+      setBorderBottom([...emptyBorderTop]);
+      setBorderLeft(Array(numRows).fill("empty") as BorderCellType[]);
+      setBorderRight(Array(numRows).fill("empty") as BorderCellType[]);
+    },
+    [recalcSeatCodes]
+  );
+
+  const handleRegenerateGrid = () => {
+    if (layoutType === "square") {
+      initGrid(gridSize, gridSize, "square");
+      setRows(gridSize);
+      setCols(gridSize);
+    } else {
+      initGrid(rows, cols, layoutType);
+    }
+  };
+
+  // Load draft
+  useEffect(() => {
+    try {
+      if (typeof window === "undefined") return;
+      const draft = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (draft) {
+        const parsed = JSON.parse(draft);
+        if (parsed.step) setStep(parsed.step);
+        if (parsed.tenantId) setTenantId(parsed.tenantId);
+        if (parsed.cinemaId) setCinemaId(parsed.cinemaId);
+        if (parsed.screenNumber) setScreenNumber(parsed.screenNumber);
+        if (parsed.screenType) setScreenType(parsed.screenType);
+        if (parsed.seatCount) setSeatCount(parsed.seatCount);
+        if (parsed.rows) setRows(parsed.rows);
+        if (parsed.cols) setCols(parsed.cols);
+        if (parsed.gridSize) setGridSize(parsed.gridSize);
+        if (parsed.layoutType) setLayoutType(parsed.layoutType);
+        if (parsed.grid) setGrid(parsed.grid);
+        if (parsed.borderTop) setBorderTop(parsed.borderTop);
+        if (parsed.borderBottom) setBorderBottom(parsed.borderBottom);
+        if (parsed.borderLeft) setBorderLeft(parsed.borderLeft);
+        if (parsed.borderRight) setBorderRight(parsed.borderRight);
+        return;
+      }
+    } catch {}
+
+    initGrid(8, 12, "rectangle");
+  }, [initGrid]);
+
+  // Auto-save draft
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        if (typeof window === "undefined") return;
+        localStorage.setItem(
+          LOCAL_STORAGE_KEY,
+          JSON.stringify({
+            step,
+            tenantId,
+            cinemaId,
+            screenNumber,
+            screenType,
+            seatCount,
+            rows,
+            cols,
+            gridSize,
+            layoutType,
+            grid,
+            borderTop,
+            borderBottom,
+            borderLeft,
+            borderRight,
+          })
+        );
+      } catch {}
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [
+    step,
+    tenantId,
+    cinemaId,
+    screenNumber,
+    screenType,
+    seatCount,
+    rows,
+    cols,
+    gridSize,
+    layoutType,
+    grid,
+    borderTop,
+    borderBottom,
+    borderLeft,
+    borderRight,
+  ]);
+
+  const actualSeatCount = grid.flat().filter((c) => c.type === "seat").length;
+
+  const placeSeat = (g: GridCell[][], rIdx: number, cIdx: number, seatTypeId: number) => {
+    const st = getSeatType(seatTypeId);
+    const occupied = st?.seatOccupied || 1;
+    const orientation = st?.orientation || "square";
+
+    const next = g.map((row) => row.map((cell) => ({ ...cell })));
+
+    // Single-seat or square seats occupy 1 grid cell visually
+    if (occupied === 1 || orientation === "square") {
+      next[rIdx][cIdx].type = "seat";
+      next[rIdx][cIdx].seatTypeId = seatTypeId;
+      return next;
+    }
+
+    if (orientation === "horizontal") {
+      if (cIdx + occupied > next[0].length) return next;
+
+      next[rIdx][cIdx].type = "seat";
+      next[rIdx][cIdx].seatTypeId = seatTypeId;
+
+      for (let i = 1; i < occupied; i++) {
+        next[rIdx][cIdx + i].type = "seat_continuation";
+        next[rIdx][cIdx + i].seatTypeId = seatTypeId;
+        next[rIdx][cIdx + i].originCol = cIdx;
+        next[rIdx][cIdx + i].originRow = rIdx;
+      }
+      return next;
+    }
+
+    // vertical
+    if (rIdx + occupied > next.length) return next;
+
+    next[rIdx][cIdx].type = "seat";
+    next[rIdx][cIdx].seatTypeId = seatTypeId;
+
+    for (let i = 1; i < occupied; i++) {
+      next[rIdx + i][cIdx].type = "seat_continuation";
+      next[rIdx + i][cIdx].seatTypeId = seatTypeId;
+      next[rIdx + i][cIdx].originCol = cIdx;
+      next[rIdx + i][cIdx].originRow = rIdx;
+    }
+    return next;
+  };
+
+  const clearFootprint = (
+    g: GridCell[][],
+    rIdx: number,
+    cIdx: number,
+    toType: CellType
+  ) => {
+    const cell = g[rIdx][cIdx];
+
+    let oR = rIdx;
+    let oC = cIdx;
+    if (
+      cell.type === "seat_continuation" &&
+      cell.originRow !== undefined &&
+      cell.originCol !== undefined
+    ) {
+      oR = cell.originRow;
+      oC = cell.originCol;
+    }
+
+    const st = getSeatType(g[oR][oC].seatTypeId);
+    const occupied = st?.seatOccupied || 1;
+    const orientation = st?.orientation || "square";
+
+    const next = g.map((row) => row.map((cc) => ({ ...cc })));
+
+    if (orientation === "horizontal") {
+      for (let i = 0; i < occupied; i++) {
+        if (!next[oR]?.[oC + i]) continue;
+        next[oR][oC + i].type = toType;
+        next[oR][oC + i].seatTypeId = 0;
+      }
+    } else if (orientation === "vertical") {
+      for (let i = 0; i < occupied; i++) {
+        if (!next[oR + i]?.[oC]) continue;
+        next[oR + i][oC].type = toType;
+        next[oR + i][oC].seatTypeId = 0;
+      }
+    } else {
+      next[oR][oC].type = toType;
+      next[oR][oC].seatTypeId = 0;
+    }
+
+    return next;
+  };
+
+  const handleCellClick = (r: number, c: number) => {
+    setGrid((prev) => {
+      if (!prev.length) return prev;
+      const next = prev.map((row) => row.map((cell) => ({ ...cell })));
+      const cell = next[r][c];
+
+      if (activeTool === "select") {
+        const seatTypeId = activeSeatTypeId;
+
+        // If the clicked cell is already part of another multi-cell seat, clear that footprint first.
+        // This prevents overlapping "continuation" segments that would break numbering.
+        const isExistingSeatPart = cell.type === "seat" || cell.type === "seat_continuation";
+        const prepared = isExistingSeatPart ? clearFootprint(next, r, c, "empty") : next;
+
+        return recalcSeatCodes(placeSeat(prepared, r, c, seatTypeId));
+      }
+
+      if (activeTool === "delete") {
+        // If deleting a continuation, delete the origin footprint.
+        if (
+          cell.type === "seat_continuation" &&
+          cell.originRow !== undefined &&
+          cell.originCol !== undefined
+        ) {
+          const cleared = clearFootprint(next, r, c, "empty");
+          return recalcSeatCodes(cleared);
+        }
+
+        if (cell.type === "seat" || cell.type === "seat_continuation") {
+          const cleared = clearFootprint(next, r, c, "empty");
+          return recalcSeatCodes(cleared);
+        }
+
+        // empty/walkway/etc
+        next[r][c].type = "empty";
+        next[r][c].seatTypeId = 0;
+        return recalcSeatCodes(next);
+      }
+
+      // walkway/emergency_exit/door
+      // - If user converts any part of a multi-cell seat, convert the whole footprint.
+      const isSeatPart = cell.type === "seat" || cell.type === "seat_continuation";
+      if (isSeatPart && (cell.type === "seat" || cell.seatTypeId)) {
+        const converted = clearFootprint(
+          next,
+          r,
+          c,
+          activeTool as CellType
+        );
+        // Keep border seatTypeId as 0; recalc will handle seatCode/col.
+        return recalcSeatCodes(converted);
+      }
+
+      next[r][c].type = activeTool;
+      next[r][c].seatTypeId = 0;
+      return recalcSeatCodes(next);
+    });
+  };
+
+  const handleMouseDown = (r: number, c: number) => {
+    setIsDragging(true);
+    setDragStart({ r, c });
+    setDragEnd({ r, c });
+  };
+
+  const handleMouseOver = (r: number, c: number) => {
+    if (isDragging) setDragEnd({ r, c });
+  };
+
+  const handleMouseUp = () => {
+    if (!isDragging || !dragStart || !dragEnd) return;
+
+    const minR = Math.min(dragStart.r, dragEnd.r);
+    const maxR = Math.max(dragStart.r, dragEnd.r);
+    const minC = Math.min(dragStart.c, dragEnd.c);
+    const maxC = Math.max(dragStart.c, dragEnd.c);
+
+    setGrid((prev) => {
+      let next = prev.map((row) => row.map((cell) => ({ ...cell })));
+      for (let rr = minR; rr <= maxR; rr++) {
+        for (let cc = minC; cc <= maxC; cc++) {
+          if (activeTool === "select") {
+            const st = getSeatType(activeSeatTypeId);
+            const occupied = st?.seatOccupied || 1;
+            const orientation = st?.orientation || "square";
+
+            if (occupied > 1 && orientation === "horizontal") {
+              // place origins spaced by `occupied` to avoid overlapping footprints
+              if ((cc - minC) % occupied === 0) {
+                next = placeSeat(next, rr, cc, activeSeatTypeId);
+              }
+            } else if (occupied > 1 && orientation === "vertical") {
+              if ((rr - minR) % occupied === 0) {
+                next = placeSeat(next, rr, cc, activeSeatTypeId);
+              }
+            } else {
+              next[rr][cc].type = "seat";
+              next[rr][cc].seatTypeId = activeSeatTypeId;
+            }
+          } else if (activeTool === "delete") {
+            if (next[rr][cc].type === "seat" || next[rr][cc].type === "seat_continuation") {
+              next = clearFootprint(next, rr, cc, "empty");
+            } else {
+              next[rr][cc].type = "empty";
+              next[rr][cc].seatTypeId = 0;
+            }
+          } else {
+            // convert cell / footprint
+            if (
+              next[rr][cc].type === "seat" ||
+              next[rr][cc].type === "seat_continuation"
+            ) {
+              next = clearFootprint(next, rr, cc, activeTool as CellType);
+            } else {
+              next[rr][cc].type = activeTool;
+              next[rr][cc].seatTypeId = 0;
+            }
+          }
+        }
+      }
+      return recalcSeatCodes(next);
+    });
+
+    setIsDragging(false);
+    setDragStart(null);
+    setDragEnd(null);
+  };
+
+  const isInDragArea = (r: number, c: number) => {
+    if (!isDragging || !dragStart || !dragEnd) return false;
+    const minR = Math.min(dragStart.r, dragEnd.r);
+    const maxR = Math.max(dragStart.r, dragEnd.r);
+    const minC = Math.min(dragStart.c, dragEnd.c);
+    const maxC = Math.max(dragStart.c, dragEnd.c);
+    return r >= minR && r <= maxR && c >= minC && c <= maxC;
+  };
+
+  const handleBorderClick = (side: "top" | "bottom" | "left" | "right", idx: number) => {
+    // Border only supports door / emergency outside the seatmap.
+    if (activeTool !== "door" && activeTool !== "emergency_exit" && activeTool !== "delete") return;
+
+    const setBorder =
+      side === "top"
+        ? setBorderTop
+        : side === "bottom"
+        ? setBorderBottom
+        : side === "left"
+        ? setBorderLeft
+        : setBorderRight;
+
+    setBorder((prev) => {
+      const next = [...prev];
+      const nextType: BorderCellType =
+        activeTool === "delete"
+          ? "empty"
+          : (activeTool as BorderCellType);
+
+      next[idx] = next[idx] === nextType ? "empty" : nextType;
+      return next;
+    });
+  };
+
+  const goToStep2 = () => {
+    if (!cinemaId || !screenNumber || !screenType) {
+      toast.error("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+    setStep(2);
+  };
+
+  const getBorderCellContent = (type: BorderCellType) => {
+    if (type === "door") return <DoorOpen className="h-3 w-3 text-green-600" />;
+    if (type === "emergency_exit") return <AlertTriangle className="h-3 w-3 text-orange-500" />;
+    return null;
+  };
+
+  const getBorderCellBgClass = (type: BorderCellType) => {
+    if (type === "door") return "bg-accent/50 border-dashed border-primary/50";
+    if (type === "emergency_exit") return "bg-orange-100/60 border-dashed border-primary/50";
+    return "bg-muted-shadcn/20 border-dashed border-border-shadcn/50";
+  };
+
+  const getSeatCellBgClass = (cell: GridCell) => {
+    if (cell.type === "seat" || cell.type === "seat_continuation") {
+      return SEAT_TYPE_COLORS[cell.seatTypeId] || "bg-blue-500";
+    }
+    if (cell.type === "walkway") return "bg-muted-shadcn";
+    if (cell.type === "emergency_exit") return "bg-orange-100";
+    if (cell.type === "door") return "bg-green-100";
+    if (cell.type === "empty") return "bg-muted-shadcn/50";
+    return "bg-muted-shadcn/50";
+  };
+
+  const getSeatCellDisplay = (cell: GridCell) => {
+    if (cell.type === "empty") return null;
+    if (cell.type === "walkway") return <Footprints className="h-3 w-3 text-muted-foreground-shadcn" />;
+    if (cell.type === "emergency_exit") return <AlertTriangle className="h-3 w-3 text-orange-500" />;
+    if (cell.type === "door") return <DoorOpen className="h-3 w-3 text-green-600" />;
+
+    if (cell.type === "seat_continuation") {
+      // show merged visuals in background; no number on continuation.
+      return null;
+    }
+
+    // seat origin: show compressed seat number
+    return (
+      <span className="text-[8px] font-medium text-white">
+        {cell.col || ""}
+      </span>
+    );
+  };
+
+  const buildSeatLayout = (): SeatLayout => {
+    // Expanded layout including outer border cells.
+    // - top row: borderTop
+    // - internal rows: borderLeft[r] + grid[r] + borderRight[r]
+    // - bottom row: borderBottom
+
+    const layoutRows: SeatLayout["rows"] = [];
+
+    const toSeatLayoutCell = (
+      type: CellType | BorderCellType,
+      seatTypeId: number,
+      seatCode: string
+    ): SeatLayoutSeat => {
+      // For seat_continuation in internal grid, we store it as "seat" with empty seatCode,
+      // so the seat map can render background but not count it.
+      const mappedType =
+        type === "seat_continuation" ? undefined : (type as SeatLayoutSeat["type"]);
+
+      return {
+        seatCode,
+        x: 0,
+        y: 0,
+        seatTypeId,
+        ...(mappedType ? { type: mappedType } : {}),
+      };
+    };
+
+    // Top border row (row label empty)
+    const topSeats: SeatLayoutSeat[] = borderTop.map((bt, idx) =>
+      toSeatLayoutCell(bt, 0, "")
+    );
+    layoutRows.push({ row: "", seats: topSeats });
+
+    // Internal rows
+    for (let r = 0; r < grid.length; r++) {
+      const internalRowCells: SeatLayoutSeat[] = [];
+
+      // left border
+      internalRowCells.push(
+        toSeatLayoutCell(borderLeft[r] ?? "empty", 0, "")
+      );
+
+      // grid cells
+      for (let c = 0; c < grid[r].length; c++) {
+        const cell = grid[r][c];
+        internalRowCells.push(
+          toSeatLayoutCell(cell.type, cell.seatTypeId, cell.seatCode)
+        );
+      }
+
+      // right border
+      internalRowCells.push(
+        toSeatLayoutCell(borderRight[r] ?? "empty", 0, "")
+      );
+
+      layoutRows.push({
+        row: grid[r][0]?.row || "",
+        seats: internalRowCells.map((s, i) => ({
+          ...s,
+          x: i * 40,
+          y: r * 40,
+        })),
+      });
+    }
+
+    // Bottom border row
+    const bottomSeats: SeatLayoutSeat[] = borderBottom.map((bt) =>
+      toSeatLayoutCell(bt, 0, "")
+    );
+    layoutRows.push({
+      row: "",
+      seats: bottomSeats.map((s, i) => ({ ...s, x: i * 40, y: grid.length * 40 })),
+    });
+
+    return { rows: layoutRows };
+  };
+
+  const handleConfirmCreate = () => {
+    const now = new Date()
+      .toLocaleString("sv-SE")
+      .slice(0, 16)
+      .replace("T", " ");
+
+    const screen: Screen = {
+      id: `scr-${Date.now()}`,
+      tenantId,
+      cinemaId,
+      screenNumber: parseInt(screenNumber),
+      screenType,
+      seatLayout: buildSeatLayout(),
+      seatCount: actualSeatCount,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    if (typeof window !== "undefined") localStorage.removeItem(LOCAL_STORAGE_KEY);
+    onCreated(screen);
+    setConfirmOpen(false);
+  };
+
+  const getSeatTypeToolList = () => (
+    <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1">
+      {seatTypes.map((st) => (
+        <button
+          key={st.id}
+          type="button"
+          className={cn(
+            "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-all border",
+            activeSeatTypeId === st.id && activeTool === "select"
+              ? "border-primary-shadcn bg-primary-shadcn/5 text-primary-shadcn shadow-inner"
+              : "border-transparent text-muted-foreground-shadcn hover:bg-muted-shadcn"
+          )}
+          onClick={() => {
+            setActiveSeatTypeId(st.id);
+            setActiveTool("select");
+          }}
+        >
+          <div className={cn("h-3.5 w-3.5 rounded shadow-sm", SEAT_TYPE_COLORS[st.id])} />
+          <span className="truncate">{st.name}</span>
+          <span className="ml-auto opacity-60 text-[10px]">
+            x{st.seatOccupied}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+
+  return (
+    <>
+      <LTTDialog open onOpenChange={onClose}>
+        <LTTDialogContent className="sm:max-w-6xl max-h-[92vh] flex flex-col p-0 overflow-hidden">
+          <LTTDialogHeader className="px-6 py-4 border-b border-border-shadcn">
+            <LTTDialogTitle>
+              {step === 1
+                ? "Bước 1: Thông tin phòng chiếu"
+                : "Bước 2: Thiết kế sơ đồ ghế"}
+            </LTTDialogTitle>
+          </LTTDialogHeader>
+
+          <div className="flex-1 overflow-y-auto p-6">
+            {/* Progress */}
+            <div className="flex items-center gap-2 mb-6">
+              <div
+                className={cn(
+                  "h-2 flex-1 rounded-full",
+                  step >= 1 ? "bg-primary-shadcn" : "bg-muted-shadcn"
+                )}
+              />
+              <div
+                className={cn(
+                  "h-2 flex-1 rounded-full",
+                  step >= 2 ? "bg-primary-shadcn" : "bg-muted-shadcn"
+                )}
+              />
+            </div>
+
+            {step === 1 && (
+              <div className="grid gap-6 sm:grid-cols-2 max-w-2xl mx-auto py-4">
+                <div className="space-y-2">
+                  <LTTLabel>Tenant ID</LTTLabel>
+                  <LTTInput
+                    value={tenantId}
+                    onChange={(e) => setTenantId(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <LTTLabel>Rạp *</LTTLabel>
+                  <LTTSelect value={cinemaId} onValueChange={setCinemaId}>
+                    <LTTSelectTrigger>
+                      <LTTSelectValue placeholder="Chọn rạp" />
+                    </LTTSelectTrigger>
+                    <LTTSelectContent>
+                      {mockAdminCinemas.map((c) => (
+                        <LTTSelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </LTTSelectItem>
+                      ))}
+                    </LTTSelectContent>
+                  </LTTSelect>
+                </div>
+                <div className="space-y-2">
+                  <LTTLabel>Số phòng *</LTTLabel>
+                  <LTTInput
+                    type="number"
+                    value={screenNumber}
+                    onChange={(e) => setScreenNumber(e.target.value)}
+                    placeholder="VD: 1, 2, 3..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <LTTLabel>Loại phòng *</LTTLabel>
+                  <LTTSelect value={screenType} onValueChange={setScreenType}>
+                    <LTTSelectTrigger>
+                      <LTTSelectValue placeholder="Chọn loại phòng" />
+                    </LTTSelectTrigger>
+                    <LTTSelectContent>
+                      {screenTypes.map((t) => (
+                        <LTTSelectItem key={t} value={t}>
+                          {t}
+                        </LTTSelectItem>
+                      ))}
+                    </LTTSelectContent>
+                  </LTTSelect>
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <LTTLabel>Số ghế dự kiến</LTTLabel>
+                  <LTTInput
+                    type="number"
+                    value={seatCount}
+                    onChange={(e) => setSeatCount(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground-shadcn">
+                    Số lượng ghế chính xác sẽ được xác định ở bước thiết kế.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="flex flex-col lg:flex-row gap-6">
+                {/* Main Screen Area */}
+                <div className="flex-1 space-y-6 min-w-0">
+                  <div className="space-y-4">
+                    <div className="mx-auto w-3/4 h-3 rounded-full bg-primary-shadcn shadow-lg shadow-primary-shadcn/20" />
+                    <p className="text-center text-[10px] font-bold tracking-[0.4em] text-muted-foreground-shadcn uppercase">
+                      Màn hình hiển thị
+                    </p>
+                  </div>
+
+                  {/* Grid with outer border */}
+                  <div
+                    ref={gridRef}
+                    className="flex flex-col items-center gap-0 select-none overflow-x-auto pb-2"
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                  >
+                    {/* Top border row */}
+                    <div className="flex items-center gap-0.5 mb-0.5">
+                      {borderTop.map((bt, i) => (
+                        <div
+                          key={`bt-${i}`}
+                          className={cn(
+                            "h-7 w-7 rounded-sm flex items-center justify-center cursor-pointer border transition-all",
+                            getBorderCellBgClass(bt)
+                          )}
+                          onClick={() => handleBorderClick("top", i)}
+                          title={bt === "empty" ? "" : bt}
+                        >
+                          {getBorderCellContent(bt)}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Internal rows */}
+                    {grid.map((row, rIdx) => {
+                      const isWalkwayRow = row.every((c) => c.type === "walkway");
+                      return (
+                        <div
+                          key={rIdx}
+                          className="flex items-center gap-0.5 mb-0.5"
+                        >
+                          {/* Left border */}
+                          <div
+                            className={cn(
+                              "h-7 w-7 rounded-sm flex items-center justify-center cursor-pointer border transition-all",
+                              getBorderCellBgClass(borderLeft[rIdx] ?? "empty")
+                            )}
+                            onClick={() => handleBorderClick("left", rIdx)}
+                          >
+                            {getBorderCellContent(borderLeft[rIdx] ?? "empty")}
+                          </div>
+
+                          {/* Row label */}
+                          <span className="w-6 text-[11px] font-bold text-muted-foreground-shadcn text-right">
+                            {isWalkwayRow ? "—" : row[0]?.row || ""}
+                          </span>
+
+                          {/* Cells */}
+                          <div className="flex items-center gap-0.5">
+                            {row.map((cell, cIdx) => {
+                              const cellIsInDrag = isInDragArea(rIdx, cIdx);
+                              const borderClass =
+                                cell.type === "empty"
+                                  ? "border-dashed border-border-shadcn/70"
+                                  : "border-transparent";
+
+                              const seatBg = getSeatCellBgClass(cell);
+
+                              // Continuation merging: keep the "merged rectangle" feel for horizontal seats
+                              let roundedClass = "rounded-sm";
+                              if (cell.type === "seat_continuation") {
+                                const st = getSeatType(cell.seatTypeId);
+                                const orientation = st?.orientation || "square";
+                                if (orientation === "horizontal") {
+                                  const nextCell = row[cIdx + 1];
+                                  const isLast =
+                                    !nextCell ||
+                                    nextCell.type !== "seat_continuation" ||
+                                    nextCell.originCol !== cell.originCol;
+                                  roundedClass = isLast
+                                    ? "rounded-r-sm"
+                                    : "rounded-none";
+                                } else if (st?.orientation === "vertical") {
+                                  roundedClass = "rounded-none";
+                                }
+                              }
+
+                              return (
+                                <div
+                                  key={`${rIdx}-${cIdx}`}
+                                  className={cn(
+                                    "h-7 w-7 flex items-center justify-center cursor-pointer transition-all border shadow-sm hover:scale-105 active:scale-95",
+                                    seatBg,
+                                    borderClass,
+                                    roundedClass,
+                                    cellIsInDrag && "ring-2 ring-primary-shadcn ring-offset-2"
+                                  )}
+                                  onClick={() => handleCellClick(rIdx, cIdx)}
+                                  onMouseDown={() => handleMouseDown(rIdx, cIdx)}
+                                  onMouseOver={() => handleMouseOver(rIdx, cIdx)}
+                                >
+                                  {getSeatCellDisplay(cell)}
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Right border */}
+                          <div
+                            className={cn(
+                              "h-7 w-7 rounded-sm flex items-center justify-center cursor-pointer border transition-all",
+                              getBorderCellBgClass(borderRight[rIdx] ?? "empty")
+                            )}
+                            onClick={() => handleBorderClick("right", rIdx)}
+                          >
+                            {getBorderCellContent(borderRight[rIdx] ?? "empty")}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Bottom border row */}
+                    <div className="flex items-center gap-0.5 mt-0.5">
+                      {borderBottom.map((bt, i) => (
+                        <div
+                          key={`bb-${i}`}
+                          className={cn(
+                            "h-7 w-7 rounded-sm flex items-center justify-center cursor-pointer border transition-all",
+                            getBorderCellBgClass(bt)
+                          )}
+                          onClick={() => handleBorderClick("bottom", i)}
+                        >
+                          {getBorderCellContent(bt)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Legend */}
+                  <div className="flex flex-wrap items-center justify-center gap-4 rounded-xl border border-border-shadcn bg-muted-shadcn/20 px-6 py-4 text-xs">
+                    <div className="flex items-center gap-1.5 font-bold mr-4">
+                      Tổng ghế:{" "}
+                      <span className="text-primary-shadcn text-sm">
+                        {actualSeatCount}
+                      </span>
+                    </div>
+
+                    {seatTypes.map((st) => (
+                      <div key={st.id} className="flex items-center gap-1.5">
+                        <div
+                          className={cn(
+                            "h-3.5 w-3.5 rounded-sm shadow-sm",
+                            SEAT_TYPE_COLORS[st.id]
+                          )}
+                        />
+                        <span className="text-muted-foreground-shadcn">
+                          {st.name}
+                        </span>
+                      </div>
+                    ))}
+
+                    <div className="h-4 w-px bg-border-shadcn mx-2" />
+
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-3.5 w-3.5 rounded-sm bg-muted-shadcn/50 border border-dashed border-border-shadcn" />
+                      <span className="text-muted-foreground-shadcn">Trống</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Footprints className="h-3.5 w-3.5 text-muted-foreground-shadcn" />
+                      <span className="text-muted-foreground-shadcn">Lối đi</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />
+                      <span className="text-muted-foreground-shadcn">Thoát hiểm</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <DoorOpen className="h-3.5 w-3.5 text-green-600" />
+                      <span className="text-muted-foreground-shadcn">Cửa</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Sidebar Tools */}
+                <div className="w-full lg:w-72 shrink-0 space-y-5 rounded-xl border border-border-shadcn bg-card p-5 shadow-sm">
+                  <div className="space-y-3">
+                    <LTTLabel className="text-xs font-bold uppercase tracking-wider text-muted-foreground-shadcn">
+                      Cài đặt lưới
+                    </LTTLabel>
+
+                    <LTTSelect value={layoutType} onValueChange={(v) => setLayoutType(v as LayoutType)}>
+                      <LTTSelectTrigger>
+                        <LTTSelectValue placeholder="Chọn kiểu bố cục" />
+                      </LTTSelectTrigger>
+                      <LTTSelectContent>
+                        <LTTSelectItem value="rectangle">Rectangle</LTTSelectItem>
+                        <LTTSelectItem value="square">Square</LTTSelectItem>
+                        <LTTSelectItem value="curve">Curve</LTTSelectItem>
+                      </LTTSelectContent>
+                    </LTTSelect>
+
+                    {layoutType === "square" ? (
+                      <div className="space-y-2">
+                        <LTTLabel className="text-[10px]">Kích thước (1 cấu hình)</LTTLabel>
+                        <LTTInput
+                          type="number"
+                          min={1}
+                          max={30}
+                          className="h-9 text-sm"
+                          value={gridSize}
+                          onChange={(e) => setGridSize(Number(e.target.value) || 1)}
+                        />
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <LTTLabel className="text-[10px]">Hàng (A-Z)</LTTLabel>
+                          <LTTInput
+                            type="number"
+                            min={1}
+                            max={26}
+                            className="h-9 text-sm"
+                            value={rows}
+                            onChange={(e) => setRows(Number(e.target.value) || 1)}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <LTTLabel className="text-[10px]">Cột</LTTLabel>
+                          <LTTInput
+                            type="number"
+                            min={1}
+                            max={30}
+                            className="h-9 text-sm"
+                            value={cols}
+                            onChange={(e) => setCols(Number(e.target.value) || 1)}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <LTTButton
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-9 text-xs font-medium"
+                      onClick={handleRegenerateGrid}
+                    >
+                      <RotateCw className="h-4 w-4" /> Thiết lập lại lưới
+                    </LTTButton>
+                  </div>
+
+                  <div className="border-t border-border-shadcn pt-5 space-y-3">
+                    <LTTLabel className="text-xs font-bold uppercase tracking-wider text-muted-foreground-shadcn">
+                      Công cụ vẽ
+                    </LTTLabel>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        className={cn(
+                          "flex flex-col items-center justify-center gap-2 rounded-lg p-2.5 text-[10px] font-bold transition-all border",
+                          activeTool === "select"
+                            ? "border-primary-shadcn bg-primary-shadcn/5 text-primary-shadcn"
+                            : "border-transparent text-muted-foreground-shadcn hover:bg-muted-shadcn"
+                        )}
+                        onClick={() => setActiveTool("select")}
+                      >
+                        <MousePointer2 className="h-5 w-5" />
+                        <span>GHẾ</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={cn(
+                          "flex flex-col items-center justify-center gap-2 rounded-lg p-2.5 text-[10px] font-bold transition-all border",
+                          activeTool === "walkway"
+                            ? "border-primary-shadcn bg-primary-shadcn/5 text-primary-shadcn"
+                            : "border-transparent text-muted-foreground-shadcn hover:bg-muted-shadcn"
+                        )}
+                        onClick={() => setActiveTool("walkway")}
+                      >
+                        <Footprints className="h-5 w-5" />
+                        <span>LỐI ĐI</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={cn(
+                          "flex flex-col items-center justify-center gap-2 rounded-lg p-2.5 text-[10px] font-bold transition-all border",
+                          activeTool === "emergency_exit"
+                            ? "border-primary-shadcn bg-primary-shadcn/5 text-primary-shadcn"
+                            : "border-transparent text-muted-foreground-shadcn hover:bg-muted-shadcn"
+                        )}
+                        onClick={() => setActiveTool("emergency_exit")}
+                      >
+                        <AlertTriangle className="h-5 w-5" />
+                        <span>PCCC</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={cn(
+                          "flex flex-col items-center justify-center gap-2 rounded-lg p-2.5 text-[10px] font-bold transition-all border",
+                          activeTool === "door"
+                            ? "border-primary-shadcn bg-primary-shadcn/5 text-primary-shadcn"
+                            : "border-transparent text-muted-foreground-shadcn hover:bg-muted-shadcn"
+                        )}
+                        onClick={() => setActiveTool("door")}
+                      >
+                        <DoorOpen className="h-5 w-5" />
+                        <span>CỬA</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={cn(
+                          "flex flex-col items-center justify-center gap-2 rounded-lg p-2.5 text-[10px] font-bold transition-all border col-span-2",
+                          activeTool === "delete"
+                            ? "border-destructive bg-destructive/5 text-destructive"
+                            : "border-transparent text-muted-foreground-shadcn hover:bg-muted-shadcn"
+                        )}
+                        onClick={() => setActiveTool("delete")}
+                      >
+                        <Trash2 className="h-5 w-5" />
+                        <span>XÓA Ô</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-border-shadcn pt-5 space-y-3">
+                    <LTTLabel className="text-xs font-bold uppercase tracking-wider text-muted-foreground-shadcn">
+                      Loại ghế áp dụng
+                    </LTTLabel>
+                    {getSeatTypeToolList()}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <LTTDialogFooter className="px-6 py-4 border-t border-border-shadcn bg-muted-shadcn/10 gap-3">
+            {step === 2 && (
+              <LTTButton
+                variant="outline"
+                onClick={() => setStep(1)}
+                className="gap-2 mr-auto"
+              >
+                <ArrowLeft className="h-4 w-4" /> Quay lại thông tin
+              </LTTButton>
+            )}
+
+            <LTTButton variant="ghost" onClick={onClose}>
+              Hủy bỏ
+            </LTTButton>
+
+            {step === 1 && (
+              <LTTButton onClick={goToStep2} className="gap-2 px-6">
+                Thiết kế sơ đồ <ArrowRight className="h-4 w-4" />
+              </LTTButton>
+            )}
+
+            {step === 2 && (
+              <LTTButton
+                onClick={() => setConfirmOpen(true)}
+                className="gap-2 px-8"
+              >
+                <Check className="h-4 w-4" /> Hoàn tất lưu sơ đồ
+              </LTTButton>
+            )}
+          </LTTDialogFooter>
+        </LTTDialogContent>
+      </LTTDialog>
+
+      <LTTDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <LTTDialogContent className="sm:max-w-sm">
+          <LTTDialogHeader>
+            <LTTDialogTitle>Xác nhận tạo phòng chiếu</LTTDialogTitle>
+          </LTTDialogHeader>
+          <div className="space-y-3 py-4 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground-shadcn">Rạp:</span>
+              <span className="font-bold">
+                {mockAdminCinemas.find((c) => c.id === cinemaId)?.name}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground-shadcn">Số phòng:</span>
+              <span className="font-bold">{screenNumber}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground-shadcn">Loại phòng:</span>
+              <span className="font-bold">{screenType}</span>
+            </div>
+            <div className="flex justify-between border-t border-border-shadcn pt-2 mt-2">
+              <span className="text-muted-foreground-shadcn font-bold">
+                Tổng số ghế:
+              </span>
+              <span className="font-bold text-primary-shadcn text-lg">
+                {actualSeatCount}
+              </span>
+            </div>
+          </div>
+          <LTTDialogFooter>
+            <LTTButton variant="outline" onClick={() => setConfirmOpen(false)}>
+              Hủy
+            </LTTButton>
+            <LTTButton onClick={handleConfirmCreate}>Xác nhận & Lưu</LTTButton>
+          </LTTDialogFooter>
+        </LTTDialogContent>
+      </LTTDialog>
+    </>
+  );
+}
+

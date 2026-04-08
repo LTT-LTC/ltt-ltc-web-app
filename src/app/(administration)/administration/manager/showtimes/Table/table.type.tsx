@@ -1,52 +1,78 @@
-﻿"use client";
+"use client";
 import { ColumnsType } from "antd/es/table";
+import { AdminShowtime } from "../_mock/data";
+import LTTButton from "@/src/@core/component/AntD/LTTButton";
 
-export interface ShowtimesDataType {
-  id: string;
-  [key: string]: any;
-}
-
-export const columns = (): ColumnsType<ShowtimesDataType> => [
-  {
-    title: "STT",
-    width: 20,
-    key: "id",
-    dataIndex: "id",
-  },
+export const columns = (
+  onEdit: (record: AdminShowtime) => void,
+  onDelete: (id: string) => void
+): ColumnsType<AdminShowtime> => [
   {
     title: "Phim",
-    width: 60,
-    key: "movieName",
-    dataIndex: "movieName",
+    key: "movieTitle",
+    dataIndex: "movieTitle",
+    width: "25%",
   },
   {
-    title: "Phong",
-    width: 30,
-    key: "roomName",
-    dataIndex: "roomName",
+    title: "Rạp",
+    key: "cinemaName",
+    dataIndex: "cinemaName",
+    width: "15%",
   },
   {
-    title: "Gio bat dau",
-    width: 30,
-    key: "startTime",
-    dataIndex: "startTime",
+    title: "Phòng",
+    key: "screenNumber",
+    dataIndex: "screenNumber",
+    width: "10%",
+    render: (val: number) => "Phòng " + val,
   },
   {
-    title: "Gio ket thuc",
-    width: 30,
-    key: "endTime",
-    dataIndex: "endTime",
+    title: "Ngày",
+    key: "date",
+    dataIndex: "date",
+    width: "10%",
   },
   {
-    title: "Don rap",
-    width: 30,
-    key: "cleaningTime",
-    dataIndex: "cleaningTime",
+    title: "Giờ chiếu",
+    key: "time",
+    width: "15%",
+    render: (_, record) => record.startTime + " - " + record.endTime,
   },
   {
-    title: "Lap day",
-    width: 30,
-    key: "occupancy",
-    dataIndex: "occupancy",
+    title: "Định dạng",
+    key: "format",
+    dataIndex: "format",
+    width: "10%",
+  },
+  {
+    title: "Giá",
+    key: "basePrice",
+    dataIndex: "basePrice",
+    width: "10%",
+    render: (val: number) => val.toLocaleString("vi-VN") + "đ",
+  },
+  {
+    title: "Trạng thái",
+    key: "status",
+    dataIndex: "status",
+    width: "10%",
+    render: (status: string) => {
+      let color = "text-blue-500";
+      let label = "Đã lên lịch";
+      if (status === "cancelled") { color = "text-red-500"; label = "Đã hủy"; }
+      else if (status === "completed") { color = "text-gray-500"; label = "Đã chiếu"; }
+      return <span className={color}>{label}</span>;
+    },
+  },
+  {
+    title: "Thao tác",
+    key: "action",
+    width: 100,
+    render: (_, record) => (
+      <div className="flex gap-2">
+        <LTTButton variant="outline" onClick={() => onEdit(record)}>Sửa</LTTButton>
+        <LTTButton variant="outline" danger onClick={() => onDelete(record.id)}>Xóa</LTTButton>
+      </div>
+    ),
   },
 ];

@@ -27,7 +27,7 @@ export default function RootLayout({
                 <title>LTC-Cinema</title>
                 <link rel="icon" type="image/png" href="/images/main/app-logo-transparent.png"></link>
             </head>
-            <body className={`dark:bg-gray-900`}>
+            <body className={`dark:bg-gray-900`} suppressHydrationWarning>
                 <Provider store={store}>
                     <StyleProvider hashPriority="low">
                         <ConfigProvider
