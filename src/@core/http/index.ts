@@ -51,7 +51,20 @@ async function refreshTokenAsync(url?: string) {
 const onRequestInterceptor = (config: InternalAxiosRequestConfig) => {
   const accessToken = getCookie(ACCESS_TOKEN_KEY);
   const selectedLanguage = localStorage.getItem(LANGUAGE_KEY) ?? "vi";
-  config.headers[TENANT_KEY] = localStorage.getItem(TENANT_KEY) ?? "";
+
+  let tenantId = localStorage.getItem(TENANT_KEY);
+  if (!tenantId && process.env.NEXT_PUBLIC_TENANTS) {
+    try {
+      const parsedTenants = JSON.parse(process.env.NEXT_PUBLIC_TENANTS);
+      if (Array.isArray(parsedTenants) && parsedTenants.length > 0) {
+        tenantId = parsedTenants[0].value;
+      }
+    } catch (e) {
+      console.warn("Failed to parse NEXT_PUBLIC_TENANTS", e);
+    }
+  }
+
+  config.headers[TENANT_KEY] = tenantId ?? "";
   config.headers["Accept-Language"] = selectedLanguage;
 
   if (accessToken) {
