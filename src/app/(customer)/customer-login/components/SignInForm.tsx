@@ -18,7 +18,7 @@ import { CustomerLoginInputDto } from "@/src/services/customer-service/auth/mode
 import { customerService } from "@/src/services/customer-service/customer.service";
 import { getCookie, setCookie } from "@/src/@core/utils/cookie";
 import LTTGoogleButton from "@/src/@core/component/AntD/LTTButton/LTTGoogleButton";
-import { showNotificationSuccess } from "@/src/@core/utils/message";
+import { showNotificationSuccess, showNotificationError } from "@/src/@core/utils/message";
 
 const FormDetail = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -52,26 +52,28 @@ const FormDetail = () => {
         },
         onError: (err: any) => {
             // Handle error from backend
-            const backendError = err?.error;
-            if (backendError) {
-                // If the error message is specific (e.g. Invalid password)
-                // We show it in the form
+            const backendError = err?.response?.data?.error || err?.error;
+            if (backendError && backendError.validationErrors && backendError.validationErrors.length > 0) {
+                const validationErrors = backendError.validationErrors;
+                const formErrors = validationErrors.map((errItem: any) => ({
+                    name: errItem.members && errItem.members.length > 0 ?
+                        (errItem.members[0].toLowerCase() === "userName" ? "identifier" : errItem.members[0])
+                        : "identifier",
+                    errors: [errItem.message]
+                }));
+                form.setFields(formErrors);
+            } else if (backendError && backendError.message) {
+                // Return generic/push notification error for backend error
+                showNotificationError(backendError.message);
                 form.setFields([
-                    {
-                        name: "identifier",
-                        errors: [backendError.message || "Tên đăng nhập hoặc mật khẩu không chính xác."],
-                    },
-                    {
-                        name: "password",
-                        errors: [], // Clear password error but highlight identifier
-                    }
+                    { name: "identifier", errors: [] },
+                    { name: "password", errors: [] }
                 ]);
             } else {
+                showNotificationError("Có lỗi xảy ra, vui lòng thử lại sau.");
                 form.setFields([
-                    {
-                        name: "identifier",
-                        errors: ["Có lỗi xảy ra, vui lòng thử lại sau."],
-                    }
+                    { name: "identifier", errors: [] },
+                    { name: "password", errors: [] }
                 ]);
             }
         }
@@ -163,6 +165,16 @@ const FormDetail = () => {
                     </div>
                 </div>
             </LTTForm>
+
+            <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                Chưa có tài khoản?{" "}
+                <Link
+                    href="/customer-register"
+                    className="font-medium text-brand-600 hover:text-brand-500 dark:text-brand-400 dark:hover:text-brand-300"
+                >
+                    Đăng ký ngay
+                </Link>
+            </div>
         </div>
     );
 };
