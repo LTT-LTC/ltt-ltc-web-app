@@ -28,7 +28,7 @@ const FormDetail = () => {
     useEffect(() => {
         const accessToken = getCookie(ACCESS_TOKEN_KEY);
         if (accessToken) {
-            window.location.href = "/my-ltc";
+            window.location.href = "/";
         }
     }, []);
 
@@ -46,8 +46,7 @@ const FormDetail = () => {
                 setCookie(REFRESH_TOKEN_KEY, res.refreshToken);
                 setIsRedirecting(true);
                 setTimeout(() => {
-                    const returnUrl = new URLSearchParams(window.location.search).get("returnUrl") || "/my-ltc";
-                    window.location.href = returnUrl;
+                    window.location.href = "/";
                 }, 1000);
             }
         },
@@ -146,7 +145,7 @@ const FormDetail = () => {
                     </LTTFormItem>
                     <div className="flex items-center justify-between mt-5">
                         <Link
-                            href="/reset-password"
+                            href="/customer-reset-password"
                             className="text-sm text-brand-600 hover:text-brand-600 focus:text-brand-600 dark:!text-brand-400"
                         >
                             Quên mật khẩu?

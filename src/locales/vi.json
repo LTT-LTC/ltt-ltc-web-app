@@ -1,0 +1,91 @@
+{
+  "http": {
+    "network_error": "Lỗi kết nối đến máy chủ, vui lòng thử lại sau.",
+    "unknown_error": "Lỗi không xác định, vui lòng liên hệ quản trị viên."
+  },
+  "admin": {
+    "menu": {
+      "dashboard": "Bảng Điều Khiển",
+      "tenant_management": "Quản Lý Đối Tác (Tenant)",
+      "service_packages": "Gói Dịch Vụ",
+      "cinema": "Rạp Chiếu",
+      "movies": "Phim",
+      "showtimes": "Lịch Chiếu",
+      "seat_map": "Sơ Đồ Ghế",
+      "staff": "Nhân Viên",
+      "fnb": "Đồ Ăn & Nước Uống",
+      "reports": "Báo Cáo",
+      "promotions": "Khuyến Mãi",
+      "crm": "Quản Lý Khách Hàng (CRM)",
+      "incidents": "Sự Cố",
+      "refunds": "Hoàn Tiền",
+      "settings": "Cài Đặt",
+      "executive_dashboard": "Bảng Điều Khiển Điều Hành",
+      "cinema_configuration": "Cấu Hình Rạp Chiếu",
+      "movies_and_showtimes": "Phim & Lịch Chiếu",
+      "showtime_scheduler": "Lập Lịch Chiếu",
+      "seat_map_editor": "Chỉnh Sửa Sơ Đồ Ghế",
+      "staff_and_rbac": "Nhân Sự & Quyền Truy Cập",
+      "fnb_and_concessions": "Đồ Ăn / Nhượng Quyền",
+      "revenue_reports": "Báo Cáo Doanh Thu",
+      "promotions_and_gift_cards": "Khuyến Mãi & Thẻ Quà Tặng",
+      "crm_and_incidents": "CRM & Sự Cố",
+      "refund_approval": "Duyệt Hoàn Tiền",
+      "my_dashboard": "Bảng Điều Khiển Của Tôi",
+      "ticket_sales": "Bán Vé",
+      "qr_checkin": "Quét Mã QR",
+      "my_transactions": "Giao Dịch Của Tôi",
+      "shift_report": "Báo Cáo Ca Bán",
+      "notification": "Thông báo"
+    }
+  },
+  "customer": {
+    "nav": {
+      "movies": "PHIM",
+      "now_showing": "Phim Đang Chiếu",
+      "coming_soon": "Phim Sắp Chiếu",
+      "theaters": "RẠP CHIẾU",
+      "all_cinemas": "Tất Cả Rạp",
+      "special_cinemas": "Rạp Đặc Biệt",
+      "cinemas_3d": "Rạp 3D",
+      "cultureplex": "TIỆN ÍCH",
+      "online_store": "Cửa Hàng Trực Tuyến",
+      "group_tickets": "Vé Đoàn",
+      "giftcodes_vouchers": "Mã Quà Tặng & Voucher",
+      "cinema_rules": "Nội Quy Rạp Chiếu",
+      "promotions": "KHUYẾN MÃI",
+      "search_movies": "Tìm kiếm phim...",
+      "book_now": "Đặt Ngay"
+    },
+    "footer": {
+      "about_us": "Về Chúng Tôi",
+      "use_giftcard": "Sử Dụng Thẻ Quà Tặng",
+      "career": "Cơ Hội Nghề Nghiệp",
+      "contact": "Liên Hệ LTT",
+      "for_partners": "Dành Cho Đối Tác",
+      "policy_legal": "Chính Sách & Pháp Lý",
+      "website_conditions": "Điều Kiện Sử Dụng Website",
+      "terms_of_use": "Điều Khoản Sử Dụng",
+      "payment_policy": "Chính Sách Thanh Toán",
+      "privacy_policy": "Chính Sách Bảo Mật",
+      "faq": "Câu Hỏi Thường Gặp",
+      "customer_service": "Dịch Vụ Khách Hàng",
+      "hotline": "Tổng Đài",
+      "working_hours": "Giờ làm việc",
+      "email_support": "Hỗ trợ qua email",
+      "social_media": "Kết Nối Với Chúng Tôi",
+      "copyright": "BẢN QUYỀN NĂM 2026 BỞI LTC."
+    },
+    "homepage": {
+      "movie_selection": "Phim Đang Chiếu",
+      "now_showing": "ĐANG CHIẾU",
+      "coming_soon": "SẮP CHIẾU",
+      "special_screening": "SUẤT ĐẶC BIỆT",
+      "view_details": "XEM CHI TIẾT"
+    }
+  },
+  "NewsAndOffers": "Tin Tức & Ưu Đãi",
+  "MyTicket": "Vé Của Tôi",
+  "MyLTC": "LTC Của Tôi",
+  "LoginRegister": "Đăng Nhập / Đăng Ký"
+}

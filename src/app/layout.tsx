@@ -9,6 +9,7 @@ import "@/public/css/globals.css";
 import { useMessageInit } from "../@core/utils/message";
 import { Provider } from "react-redux";
 import { store } from "../stores";
+import { LocalizationProvider } from "../@core/provider/LocalizationProvider";
 
 export default function RootLayout({
     children,
@@ -26,22 +27,24 @@ export default function RootLayout({
                 <title>LTC-Cinema</title>
                 <link rel="icon" type="image/png" href="/images/main/app-logo-transparent.png"></link>
             </head>
-            <body className={`dark:bg-gray-900`}>
+            <body className={`dark:bg-gray-900`} suppressHydrationWarning>
                 <Provider store={store}>
                     <StyleProvider hashPriority="low">
-                        <ConfigProvider 
+                        <ConfigProvider
                             locale={viVN}
                             theme={{
                                 token: {
-                                    fontFamily: '"Be Vietnam Pro", sans-serif',
+                                    fontFamily: 'var(--font-outfit, "Be Vietnam Pro", sans-serif)',
                                     colorPrimary: '#cc3434',
                                 },
                             }}
                         >
                             <ThemeProvider>
-                                <MessageInitializer>
-                                    <SidebarProvider>{children}</SidebarProvider>
-                                </MessageInitializer>
+                                <LocalizationProvider>
+                                    <MessageInitializer>
+                                        <SidebarProvider>{children}</SidebarProvider>
+                                    </MessageInitializer>
+                                </LocalizationProvider>
                             </ThemeProvider>
                         </ConfigProvider>
                     </StyleProvider>

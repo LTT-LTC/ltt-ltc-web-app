@@ -4,10 +4,12 @@ import Link from "next/link";
 import React, { useState } from "react";
 import { Dropdown } from "@/src/@core/component/LTTDropdown/Dropdown";
 import { DropdownItem } from "@/src/@core/component/LTTDropdown/DropdownItem";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 export default function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const [notifying, setNotifying] = useState(true);
+  const { t } = useLocalization();
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -28,9 +30,8 @@ export default function NotificationDropdown() {
         onClick={handleClick}
       >
         <span
-          className={`absolute right-0 top-0.5 z-10 h-2 w-2 rounded-full bg-orange-400 ${
-            !notifying ? "hidden" : "flex"
-          }`}
+          className={`absolute right-0 top-0.5 z-10 h-2 w-2 rounded-full bg-orange-400 ${!notifying ? "hidden" : "flex"
+            }`}
         >
           <span className="absolute inline-flex w-full h-full bg-orange-400 rounded-full opacity-75 animate-ping"></span>
         </span>
@@ -56,7 +57,7 @@ export default function NotificationDropdown() {
       >
         <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-100 dark:border-gray-700">
           <h5 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-            Notification
+            {t("admin.menu.notification") || "Notification"}
           </h5>
           <button
             onClick={toggleDropdown}

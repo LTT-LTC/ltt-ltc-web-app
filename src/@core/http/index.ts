@@ -8,6 +8,7 @@ import { getCookie, removeCookie, setCookie } from "../utils/cookie";
 import {
   ACCESS_TOKEN_KEY,
   AUTHORIZATION_KEY,
+  LANGUAGE_KEY,
   REFRESH_TOKEN_KEY,
   TENANT_KEY,
   TOKEN_TYPE_KEY,
@@ -17,6 +18,7 @@ import { administrationService } from "@/src/services/administration-service/adm
 import { customerService } from "@/src/services/customer-service/customer.service";
 import qs from "qs";
 import { showNotificationError } from "../utils/message";
+import i18n from "i18next";
 
 let isRefreshing = false;
 let refreshPromise: Promise<any> | null = null;
@@ -38,9 +40,9 @@ async function refreshTokenAsync(url?: string) {
       http.defaults.headers.common[AUTHORIZATION_KEY] = "";
       removeCookie(ACCESS_TOKEN_KEY);
       removeCookie(REFRESH_TOKEN_KEY);
-      
+
       const isCustomerRequest = url?.includes("/customer-service/");
-      window.location.href = isCustomerRequest ? `/customer-login` : `/signin`;
+      window.location.href = isCustomerRequest ? `/customer-login` : `/administration/login`;
     }
   }
 }
@@ -48,7 +50,9 @@ async function refreshTokenAsync(url?: string) {
 // Xử lý request trước khi gửi đi
 const onRequestInterceptor = (config: InternalAxiosRequestConfig) => {
   const accessToken = getCookie(ACCESS_TOKEN_KEY);
+  const selectedLanguage = localStorage.getItem(LANGUAGE_KEY) ?? "vi";
   config.headers[TENANT_KEY] = localStorage.getItem(TENANT_KEY) ?? "";
+  config.headers["Accept-Language"] = selectedLanguage;
 
   if (accessToken) {
     config.headers[AUTHORIZATION_KEY] = `${TOKEN_TYPE_KEY} ${accessToken}`;
@@ -65,7 +69,7 @@ const onRequestInterceptor = (config: InternalAxiosRequestConfig) => {
 // Xử lý response lỗi sau khi nhận được
 const onResponseInterceptor = async (error: AxiosError) => {
   if (error.code == "ERR_NETWORK") {
-    showNotificationError("Lỗi kết nối đến máy chủ, vui lòng thử lại sau.");
+    showNotificationError(i18n?.t("http.network_error") || "Lỗi kết nối đến máy chủ, vui lòng thử lại sau.");
     return Promise.reject({});
   }
 
@@ -94,9 +98,9 @@ const onResponseInterceptor = async (error: AxiosError) => {
   if (error.response && error.response.status === HttpStatusCode.BadRequest) {
     const isAuthRequest = error.config?.url?.includes("/auth");
     if (!isAuthRequest) {
-        showNotificationError(
-            `${_response?.error.message ?? "Lỗi không xác định, vui lòng liên hệ quản trị viên."}`,
-        );
+      showNotificationError(
+        `${_response?.error.message ?? (i18n?.t("http.unknown_error") || "Lỗi không xác định, vui lòng liên hệ quản trị viên.")}`,
+      );
     }
     return Promise.reject(error.response.data);
   }
@@ -127,7 +131,7 @@ const onResponseInterceptor = async (error: AxiosError) => {
 
   // Hiển thị thông báo lỗi cho các lỗi khác
   showNotificationError(
-    `${_response?.error.message ?? "Lỗi không xác định, vui lòng liên hệ quản trị viên."}`,
+    `${_response?.error.message ?? (i18n?.t("http.unknown_error") || "Lỗi không xác định, vui lòng liên hệ quản trị viên.")}`,
   );
   return Promise.reject(_response);
 };

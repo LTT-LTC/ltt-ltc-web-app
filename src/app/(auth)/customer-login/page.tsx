@@ -3,14 +3,13 @@ import dynamic from "next/dynamic";
 import { Divider } from "antd";
 import LTTAppLoader from "@/src/@core/component/LTTAppLoader";
 
-const SignInForm = dynamic(() => import("./index"), { loading: () => <LTTAppLoader />, ssr: false });
+const FormComponent = dynamic(() => import("./index"), { loading: () => <LTTAppLoader />, ssr: false });
 
-export default function CustomerSignIn() {
+export default function AuthPage() {
     return (
-        <div className="relative flex lg:flex-row w-full min-h-screen justify-center flex-col dark:bg-gray-900 sm:p-0">
-            <SignInForm />
+        <div className="relative flex lg:flex-row w-full min-h-screen justify-center flex-col sm:p-0 dark:bg-gray-900">
+            <FormComponent />
             <div className="hidden lg:flex w-full lg:w-1/2 justify-center items-center bg-gray-50 dark:bg-gray-800">
-                {/* Optional side content like an image, pattern or branding can go here */}
                 <div className="text-center p-8">
                     <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-4">Chào mừng đến với hệ thống</h2>
                     <p className="text-gray-600 dark:text-gray-400">Tham gia để trải nghiệm dịch vụ tốt nhất</p>

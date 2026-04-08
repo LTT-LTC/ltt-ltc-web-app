@@ -1,29 +1,22 @@
-﻿import LTTFilter, { FilterProps } from "@/src/@core/component/LTTFilter";
+"use client";
 
-const SeatmapFilter = () => {
-  const filterItems = [
-    {
-      key: "keyword",
-      title: "Tim kiem phong",
-      type: "keyword",
-      className: "w-[380px] py-3!",
-    },
-    {
-      key: "type",
-      title: "Loai phong",
-      type: "multiSelect",
-      className: "w-[230px]",
-      options: [],
-    },
-  ] as FilterProps[];
+import { LTTInputSearch } from "@/src/@core/component/AntD/LTTInput";
 
+interface SeatmapFilterProps {
+  onSearchChange: (search: string) => void;
+  search: string;
+}
+
+const SeatmapFilter = ({ onSearchChange, search }: SeatmapFilterProps) => {
   return (
-    <LTTFilter
-      filterItems={filterItems}
-      onChange={(allValues) => {
-        // Will dispatch filter action when store is connected
-      }}
-    />
+    <div className="w-[380px]">
+      <LTTInputSearch 
+        placeholder="Tìm kiếm loại ghế..."
+        allowClear
+        value={search}
+        onChange={(e) => onSearchChange(e.target.value)}
+      />
+    </div>
   );
 };
 

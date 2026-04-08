@@ -1,6 +1,10 @@
-﻿import LTTFilter, { FilterProps } from "@/src/@core/component/LTTFilter";
+import LTTFilter, { FilterProps } from "@/src/@core/component/LTTFilter";
 
-const ShowtimesFilter = () => {
+interface ShowtimesFilterProps {
+  onFilterChange?: (filters: any) => void;
+}
+
+const ShowtimesFilter = ({ onFilterChange }: ShowtimesFilterProps) => {
   const filterItems = [
     {
       key: "keyword",

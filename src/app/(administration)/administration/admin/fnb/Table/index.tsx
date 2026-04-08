@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import LTTTable from "@/src/@core/component/AntD/LTTTable";
 import { columns } from "./table.type";

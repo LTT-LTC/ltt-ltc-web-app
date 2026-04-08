@@ -29,5 +29,6 @@ export interface NavItemConfig {
   key: string;
   label: string;
   path: string;
+  icon?: any;
   permissionKey?: string;
 }

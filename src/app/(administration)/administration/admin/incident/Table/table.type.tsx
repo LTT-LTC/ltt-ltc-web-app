@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { ColumnsType } from "antd/es/table";
 
 export interface IncidentDataType {

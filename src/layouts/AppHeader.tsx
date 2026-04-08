@@ -5,6 +5,7 @@ import Link from "next/link";
 import React, { useState ,useEffect,useRef} from "react";
 import UserDropdown from "./components/header/UserDropdown";
 import NotificationDropdown from "./components/header/NotificationDropdown";
+import LTTLanguageSwitch from "../@core/component/LTTLanguageSwitch";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
@@ -163,7 +164,9 @@ const AppHeader: React.FC = () => {
             {/* <!-- Dark Mode Toggler --> */}
             {/* <ThemeToggleButton /> */}
             {/* <!-- Dark Mode Toggler --> */}
-
+            <div className="bg-gray-800 rounded-lg p-1">
+              <LTTLanguageSwitch />
+            </div>
            <NotificationDropdown /> 
             {/* <!-- Notification Menu Area --> */}
           </div>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import LTTTable from "@/src/@core/component/AntD/LTTTable";
 import { columns } from "./table.type";
@@ -33,10 +33,10 @@ const DashboardListPage = () => {
         </div>
         <LTTTabs
           defaultActiveKey="1"
-          onChange={() => {}}
+          onChange={() => { }}
           items={[
-    { key: "1", label: "Tong quan" },
-    { key: "2", label: "Chi tiet" },
+            { key: "1", label: "Tong quan" },
+            { key: "2", label: "Chi tiet" },
           ]}
         />
         <LTTTable

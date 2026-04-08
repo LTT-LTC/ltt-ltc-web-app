@@ -1,37 +1,27 @@
-﻿import LTTFilter, { FilterProps } from "@/src/@core/component/LTTFilter";
+"use client";
 
-const ReportsFilter = () => {
-  const filterItems = [
-    {
-      key: "keyword",
-      title: "Tim kiem bao cao",
-      type: "keyword",
-      className: "w-[380px] py-3!",
-    },
-    {
-      key: "period",
-      title: "Khoang thoi gian",
-      type: "multiSelect",
-      className: "w-[230px]",
-      options: [],
-    },
-    {
-      key: "type",
-      title: "Loai bao cao",
-      type: "multiSelect",
-      className: "w-[230px]",
-      options: [],
-    },
-  ] as FilterProps[];
+import { Select } from "antd";
+import { AdminCinema } from "../_mock/data";
 
+interface ReportFilterProps {
+  cinema: string;
+  onCinemaChange: (val: string) => void;
+  cinemas: AdminCinema[];
+}
+
+const ReportFilter = ({ cinema, onCinemaChange, cinemas }: ReportFilterProps) => {
   return (
-    <LTTFilter
-      filterItems={filterItems}
-      onChange={(allValues) => {
-        // Will dispatch filter action when store is connected
-      }}
+    <Select
+      value={cinema}
+      onChange={onCinemaChange}
+      style={{ width: 250 }}
+      options={[
+        { label: "Tất cả rạp", value: "all" },
+        ...cinemas.map((c) => ({ label: c.name, value: c.id })),
+      ]}
     />
   );
 };
 
-export default ReportsFilter;
+export default ReportFilter;
+
