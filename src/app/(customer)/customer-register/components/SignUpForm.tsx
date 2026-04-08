@@ -47,8 +47,8 @@ const SignUpForm = () => {
             if (backendError && backendError.validationErrors && backendError.validationErrors.length > 0) {
                 const validationErrors = backendError.validationErrors;
                 const formErrors = validationErrors.map((errItem: any) => ({
-                    name: errItem.members && errItem.members.length > 0 ? 
-                        (errItem.members[0].charAt(0).toLowerCase() + errItem.members[0].slice(1)) 
+                    name: errItem.members && errItem.members.length > 0 ?
+                        (errItem.members[0].charAt(0).toLowerCase() + errItem.members[0].slice(1))
                         : "emailAddress",
                     errors: [errItem.message]
                 }));

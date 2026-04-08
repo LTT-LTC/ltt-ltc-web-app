@@ -56,8 +56,8 @@ const FormDetail = () => {
             if (backendError && backendError.validationErrors && backendError.validationErrors.length > 0) {
                 const validationErrors = backendError.validationErrors;
                 const formErrors = validationErrors.map((errItem: any) => ({
-                    name: errItem.members && errItem.members.length > 0 ? 
-                        (errItem.members[0].toLowerCase() === "userName" ? "identifier" : errItem.members[0]) 
+                    name: errItem.members && errItem.members.length > 0 ?
+                        (errItem.members[0].toLowerCase() === "userName" ? "identifier" : errItem.members[0])
                         : "identifier",
                     errors: [errItem.message]
                 }));
