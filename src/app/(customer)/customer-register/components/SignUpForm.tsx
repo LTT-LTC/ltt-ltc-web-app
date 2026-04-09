@@ -7,23 +7,49 @@ import LTTEyeIcon from "@/src/@core/component/LTTIcon/iconoir/eye";
 import LTTEyeClosedIcon from "@/src/@core/component/LTTIcon/iconoir/eye-closed";
 import Link from "next/link";
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/src/@core/const";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Form } from "antd";
 import { rules } from "@/src/@core/utils/rules";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { CustomerLoginOutputDto } from "@/src/services/customer-service/auth/models/output.model";
 import { CustomerRegisterInputDto } from "@/src/services/customer-service/auth/models/input.model";
 import { customerService } from "@/src/services/customer-service/customer.service";
-import { setCookie } from "@/src/@core/utils/cookie";
+import { getCookie, setCookie } from "@/src/@core/utils/cookie";
 import { showNotificationSuccess, showNotificationError } from "@/src/@core/utils/message";
 import LTTSelect from "@/src/@core/component/AntD/LTTSelect";
 import LTTDatePicker from "@/src/@core/component/AntD/LTTDatePicker";
 import dayjs from "dayjs";
 
+interface RegisterValidationError {
+    members?: string[];
+    message?: string;
+}
+
+interface RegisterBackendError {
+    message?: string;
+    validationErrors?: RegisterValidationError[];
+}
+
+interface RegisterErrorShape {
+    response?: {
+        data?: {
+            error?: RegisterBackendError;
+        };
+    };
+    error?: RegisterBackendError;
+}
+
 const SignUpForm = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [form] = Form.useForm();
     const [isRedirecting, setIsRedirecting] = useState(false);
+
+    useEffect(() => {
+        const accessToken = getCookie(ACCESS_TOKEN_KEY);
+        if (accessToken) {
+            window.location.href = "/";
+        }
+    }, []);
 
     const { mutation, isLoading } = useLTTMutation<CustomerLoginOutputDto | null, CustomerRegisterInputDto>({
         mutationFn: (input) => {
@@ -41,16 +67,17 @@ const SignUpForm = () => {
                 }, 1000);
             }
         },
-        onError: (err: any) => {
+        onError: (err: unknown) => {
             // Handle error from backend
-            const backendError = err?.response?.data?.error || err?.error;
+            const error = err as RegisterErrorShape;
+            const backendError = error.response?.data?.error || error.error;
             if (backendError && backendError.validationErrors && backendError.validationErrors.length > 0) {
                 const validationErrors = backendError.validationErrors;
-                const formErrors = validationErrors.map((errItem: any) => ({
+                const formErrors = validationErrors.map((errItem: RegisterValidationError) => ({
                     name: errItem.members && errItem.members.length > 0 ?
                         (errItem.members[0].charAt(0).toLowerCase() + errItem.members[0].slice(1))
                         : "emailAddress",
-                    errors: [errItem.message]
+                    errors: [errItem.message || "Dữ liệu không hợp lệ"]
                 }));
                 form.setFields(formErrors);
             } else if (backendError && backendError.message) {
@@ -64,7 +91,7 @@ const SignUpForm = () => {
         }
     });
 
-    const onSubmit = (values: any) => {
+    const onSubmit = (values: CustomerRegisterInputDto) => {
         const payload: CustomerRegisterInputDto = {
             ...values,
             dateOfBirth: values.dateOfBirth ? dayjs(values.dateOfBirth).toISOString() : undefined,

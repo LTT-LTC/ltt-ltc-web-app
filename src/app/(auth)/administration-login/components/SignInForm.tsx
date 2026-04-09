@@ -9,7 +9,6 @@ import Link from "next/link";
 import {
     ACCESS_TOKEN_KEY,
     REFRESH_TOKEN_KEY,
-    TENANT_KEY,
 } from "@/src/@core/const";
 import { useEffect, useState } from "react";
 import { Form } from "antd";
@@ -18,28 +17,57 @@ import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { LoginOutputDto } from "@/src/services/administration-service/auth/models/output.model";
 import { LoginInputDto } from "@/src/services/administration-service/auth/models/input.model";
 import { administrationService } from "@/src/services/administration-service/administration.service";
-import { getCookie, setCookie } from "@/src/@core/utils/cookie";
-import LTTGoogleButton from "@/src/@core/component/AntD/LTTButton/LTTGoogleButton";
-import { showNotificationSuccess } from "@/src/@core/utils/message";
+import { getCookie, removeCookie, setCookie } from "@/src/@core/utils/cookie";
+import { showNotificationSuccess, showNotificationError } from "@/src/@core/utils/message";
+import { getAdminHomePathByRole, resolveAdminRoleFromToken } from "@/src/@core/utils/admin-auth";
+import {
+    getOrCreateTenantOnClient,
+    syncTenantCookieFromLocalStorage,
+} from "@/src/@core/utils/tenant";
+
+interface LoginValidationError {
+    members?: string[];
+    message?: string;
+}
+
+interface LoginBackendError {
+    message?: string;
+    validationErrors?: LoginValidationError[];
+}
+
+interface LoginErrorShape {
+    response?: {
+        data?: {
+            error?: LoginBackendError;
+        };
+    };
+    error?: LoginBackendError;
+}
 
 
 
 const FormDetail = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [form] = Form.useForm();
-    const [isLoading, setIsLoading] = useState(false);
+    const [isRedirecting, setIsRedirecting] = useState(false);
 
     useEffect(() => {
+        getOrCreateTenantOnClient();
+
         const accessToken = getCookie(ACCESS_TOKEN_KEY);
         if (accessToken) {
-            window.location.href = "/employee";
-        } else {
-            localStorage.setItem(TENANT_KEY, "LTC");
-        
+            const role = resolveAdminRoleFromToken(accessToken);
+            if (role) {
+                window.location.href = getAdminHomePathByRole(role);
+                return;
+            }
+
+            removeCookie(ACCESS_TOKEN_KEY);
+            removeCookie(REFRESH_TOKEN_KEY);
         }
     }, []);
 
-    const { mutation } = useLTTMutation<LoginOutputDto | null, LoginInputDto>({
+    const { mutation, isLoading } = useLTTMutation<LoginOutputDto | null, LoginInputDto>({
         mutationFn: (input) => {
             return administrationService.authService.loginAsync({
                 username: input.username,
@@ -48,19 +76,54 @@ const FormDetail = () => {
         },
         onSuccess: (res: LoginOutputDto | null) => {
             if (res) {
+                syncTenantCookieFromLocalStorage();
+
+                const role = resolveAdminRoleFromToken(res.accessToken);
+                if (!role) {
+                    removeCookie(ACCESS_TOKEN_KEY);
+                    removeCookie(REFRESH_TOKEN_KEY);
+                    showNotificationError("Tài khoản không có quyền truy cập trang quản trị.");
+                    return;
+                }
+
                 showNotificationSuccess("Đăng nhập thành công.");
                 setCookie(ACCESS_TOKEN_KEY, res.accessToken);
                 setCookie(REFRESH_TOKEN_KEY, res.refreshToken);
-                setIsLoading(true);
+                setIsRedirecting(true);
                 setTimeout(() => {
-                    window.location.href = "/employee";
-                    setIsLoading(false);
+                    window.location.href = getAdminHomePathByRole(role);
                 }, 1000);
             }
         },
+        onError: (err: unknown) => {
+            // Handle error from backend
+            const error = err as LoginErrorShape;
+            const backendError = error.response?.data?.error || error.error;
+            if (backendError && backendError.validationErrors && backendError.validationErrors.length > 0) {
+                const validationErrors = backendError.validationErrors;
+                const formErrors = validationErrors.map((errItem: LoginValidationError) => ({
+                    name: errItem.members && errItem.members.length > 0 ? errItem.members[0].toLowerCase() : "username",
+                    errors: [errItem.message || "Dữ liệu không hợp lệ"]
+                }));
+                form.setFields(formErrors);
+            } else if (backendError && backendError.message) {
+                // Return generic/push notification error for backend error
+                showNotificationError(backendError.message);
+                form.setFields([
+                    { name: "username", errors: [] },
+                    { name: "password", errors: [] }
+                ]);
+            } else {
+                showNotificationError("Có lỗi xảy ra, vui lòng thử lại sau.");
+                form.setFields([
+                    { name: "username", errors: [] },
+                    { name: "password", errors: [] }
+                ]);
+            }
+        }
     });
 
-    const onSubmit = (values: any) => {
+    const onSubmit = (values: LoginInputDto) => {
         const username = values.username;
         const password = values.password;
 
@@ -70,13 +133,13 @@ const FormDetail = () => {
         } as LoginInputDto);
     };
 
-    
+
 
     return (
         <div>
             <LTTForm form={form} onFinish={onSubmit}>
                 <div className="space-y-6">
-                    
+
 
                     <LTTFormItem
                         label="Tài khoản"
@@ -127,7 +190,7 @@ const FormDetail = () => {
                     </div>
                     <div className="mt-2">
                         <LTTButton
-                            loading={isLoading}
+                            loading={isLoading || isRedirecting}
                             htmlType="submit"
                             className="w-full"
                             size="sm"

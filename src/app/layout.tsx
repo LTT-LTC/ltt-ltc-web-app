@@ -9,7 +9,7 @@ import "@/public/css/globals.css";
 import { useMessageInit } from "../@core/utils/message";
 import { Provider } from "react-redux";
 import { store } from "../stores";
-import { LocalizationProvider } from "../@core/provider/LocalizationProvider";
+import { Index } from "../@core/provider/localization-provider";
 
 export default function RootLayout({
     children,
@@ -40,11 +40,11 @@ export default function RootLayout({
                             }}
                         >
                             <ThemeProvider>
-                                <LocalizationProvider>
+                                <Index>
                                     <MessageInitializer>
                                         <SidebarProvider>{children}</SidebarProvider>
                                     </MessageInitializer>
-                                </LocalizationProvider>
+                                </Index>
                             </ThemeProvider>
                         </ConfigProvider>
                     </StyleProvider>

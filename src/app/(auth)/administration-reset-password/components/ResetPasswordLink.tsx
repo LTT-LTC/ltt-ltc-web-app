@@ -34,17 +34,17 @@ export default function ResetPasswordLink({ form, onFinish, loading }: RequestLi
         <div className="animate-fade-in">
             <div className="mb-8">
                 <Link
-                    href="/signin"
+                    href="/administration-login"
                     className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                 >
                     <NavArrowLeftIcon />
                     Quay lại đăng nhập
                 </Link>
                 <h1 className="text-3xl font-bold text-gray-900 mb-3 tracking-tight">
-                    Nhập mã số sinh viên
+                    Nhập email
                 </h1>
                 <p className="text-gray-500 text-base leading-relaxed">
-                    Nhập mã số sinh viên của bạn. Chúng tôi sẽ gửi một link khôi phục mật khẩu tới email của bạn.
+                    Nhập email của bạn. Chúng tôi sẽ gửi một link khôi phục mật khẩu tới email của bạn.
                 </p>
             </div>
 
@@ -70,15 +70,15 @@ export default function ResetPasswordLink({ form, onFinish, loading }: RequestLi
                     name="studentId"
                     className="mb-8"
                     rules={[
-                        { required: true, message: "Vui lòng nhập mã số sinh viên" },
+                        { required: true, message: "Vui lòng nhập email" },
                         {
                             len: 8,
-                            message: "Sai mã số sinh viên hoặc mã số sinh viên không tồn tại trong hệ thống",
+                            message: "Sai email hoặc email không tồn tại trong hệ thống",
                         },
                     ]}
                 >
                     <LTTInput
-                        placeholder="Nhập mã số sinh viên"
+                        placeholder="Nhập email"
                         prefix={<MessageOutlined className="text-brand-500 text-lg mr-2" />}
                         size="large"
                         maxLength={8}

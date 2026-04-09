@@ -14,7 +14,7 @@ export default function ResetPasswordSuccess() {
                     Mật khẩu của bạn đã được cập nhật thành công.
                 </p>
             </div>
-            <Link href="/signin">
+            <Link href="/administration-login">
                 <LTTButton className="w-full py-6 rounded-xl text-base font-semibold">
                     Đăng nhập ngay
                 </LTTButton>

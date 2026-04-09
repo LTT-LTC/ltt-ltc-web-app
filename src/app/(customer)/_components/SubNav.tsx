@@ -32,7 +32,7 @@ const SubNav: React.FC = () => {
                     </div>
                     <span className="text-[10px] sm:text-xs font-bold uppercase tracking-tight text-slate-500 text-center">News & Offers</span>
                 </Link>
-                <Link href="#" className="flex flex-col items-center gap-2 group shrink-0 min-w-[80px]">
+                <Link href="/customer-register" className="flex flex-col items-center gap-2 group shrink-0 min-w-[80px]">
                     <div className="size-10 sm:size-12 rounded-full bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
                         <span className="material-symbols-outlined text-xl sm:text-2xl">person_add</span>
                     </div>

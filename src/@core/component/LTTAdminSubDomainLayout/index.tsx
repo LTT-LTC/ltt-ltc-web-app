@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import Image from "next/image";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -52,16 +51,8 @@ export default function LTTAdminSubDomainLayout({
 
   // User Logic
   const [isUserOpen, setIsUserOpen] = useState(false);
-  const [userInfo, setUserInfo] = useState<UserClaims | null>(null);
-
-  useEffect(() => {
-    const accessToken = getCookie(ACCESS_TOKEN_KEY);
-    if (accessToken) {
-      setUserInfo(getUserInfoFromToken(accessToken));
-    } else {
-      setUserInfo(null);
-    }
-  }, []);
+  const accessToken = getCookie(ACCESS_TOKEN_KEY);
+  const userInfo: UserClaims | null = accessToken ? getUserInfoFromToken(accessToken) : null;
 
   const { mutation: logOut, isLoading: isLoggingOut } = useLTTMutation<boolean, void>({
     mutationFn: () => {
@@ -97,16 +88,17 @@ export default function LTTAdminSubDomainLayout({
     localStorage.removeItem(TENANT_KEY);
     removeCookie(ACCESS_TOKEN_KEY);
     removeCookie(REFRESH_TOKEN_KEY);
+    removeCookie(TENANT_KEY);
 
     if (isAdmin) {
-      window.location.href = "/administration/login";
+      window.location.href = "/administration-login";
     } else {
       window.location.href = "/";
     }
   };
 
-  const fullName = userInfo?.fullName || userInfo?.userName || "Người dùng";
-  const email = userInfo?.email || "datta@gmail.com";
+  const fullName = userInfo?.fullName || userInfo?.userName || "User";
+  const email = userInfo?.email || "user@gmail.com";
   const abbreviation = fullName.substring(0, 3).toUpperCase();
 
   const filteredItems = navItems.filter(

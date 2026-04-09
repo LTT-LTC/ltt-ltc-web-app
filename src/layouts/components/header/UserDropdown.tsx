@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import LTTButton from "@/src/@core/component/AntD/LTTButton";
 import { Dropdown } from "@/src/@core/component/LTTDropdown/Dropdown";
 import { DropdownItem } from "@/src/@core/component/LTTDropdown/DropdownItem";
@@ -13,19 +13,9 @@ import { getUserInfoFromToken, UserClaims } from "@/src/@core/utils/jwt";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userInfo, setUserInfo] = useState<UserClaims | null>(null);
-
-  useEffect(() => {
-    const accessToken = getCookie(ACCESS_TOKEN_KEY);
-    if (accessToken) {
-      setIsLoggedIn(true);
-      setUserInfo(getUserInfoFromToken(accessToken));
-    } else {
-      setIsLoggedIn(false);
-      setUserInfo(null);
-    }
-  }, []);
+  const accessToken = getCookie(ACCESS_TOKEN_KEY);
+  const isLoggedIn = Boolean(accessToken);
+  const userInfo: UserClaims | null = accessToken ? getUserInfoFromToken(accessToken) : null;
 
   const { mutation, isLoading } = useLTTMutation<boolean, void>({
     mutationFn: () => {
@@ -44,7 +34,7 @@ export default function UserDropdown() {
         return customerService.authService.logOutAsync({});
       }
     },
-    onSuccess: (res) => {
+    onSuccess: () => {
       handleLocalLogout();
     },
     onError: () => {
@@ -66,9 +56,10 @@ export default function UserDropdown() {
     localStorage.removeItem(TENANT_KEY);
     removeCookie(ACCESS_TOKEN_KEY);
     removeCookie(REFRESH_TOKEN_KEY);
+    removeCookie(TENANT_KEY);
 
     if (isAdmin) {
-      window.location.href = "/administration/login";
+      window.location.href = "/administration-login";
     } else {
       window.location.href = "/";
     }
@@ -91,11 +82,11 @@ export default function UserDropdown() {
   };
 
   // Extract real info or use placeholders
-  const fullName = userInfo?.fullName || userInfo?.userName || "Người dùng";
-  const email = userInfo?.email || "datta@gmail.com";
+  const fullName = userInfo?.fullName || userInfo?.userName || "User";
+  const email = userInfo?.email || "user@gmail.com";
 
   if (!isLoggedIn) {
-    const isCustomer = typeof window !== 'undefined' && !window.location.pathname.includes("/(administration)");
+    const isCustomer = typeof window !== 'undefined' && !window.location.pathname.startsWith("/administration");
     if (isCustomer) {
       return (
         <Link href="/customer-login" className="no-underline">
