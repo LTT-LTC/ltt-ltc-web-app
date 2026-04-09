@@ -14,7 +14,7 @@ export default function AuthIndex() {
         <div className="flex flex-col flex-1 lg:w-1/2 w-full justify-center py-5 sm:py-10 bg-white dark:bg-transparent">
             <div className="w-full max-w-md mx-auto mb-5 px-4 sm:px-0">
                 <Link
-                    href="/"
+                    href="/homepage"
                     className="inline-flex items-center text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                 >
                     <NavArrowLeftIcon />
@@ -28,7 +28,7 @@ export default function AuthIndex() {
                             Khôi phục mật khẩu
                         </h1>
                         <p className="text-gray-500 dark:text-gray-400">
-                            Nhập thông tin của bạn để đặt lại mật khẩu.
+                            Nhập email của bạn để đặt lại mật khẩu.
                         </p>
                     </div>
                     <FormDetail form={form} onFinish={onFinish} />

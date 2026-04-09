@@ -24,7 +24,7 @@ export const useLocalization = (ns?: string) => {
     await i18n.changeLanguage(normalizedLanguage);
 
     // To ensure the ABP Backend localization dict is fully re-fetched for the new language
-    // since the LocalizationProvider fetches it on mount based on the current cookie
+    // since the Index fetches it on mount based on the current cookie
     window.location.reload();
   };
 

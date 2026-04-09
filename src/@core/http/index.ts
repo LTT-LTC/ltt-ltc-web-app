@@ -42,7 +42,7 @@ async function refreshTokenAsync(url?: string) {
       removeCookie(REFRESH_TOKEN_KEY);
 
       const isCustomerRequest = url?.includes("/customer-service/");
-      window.location.href = isCustomerRequest ? `/customer-login` : `/administration/login`;
+      window.location.href = isCustomerRequest ? `/customer-login` : `/administration-login`;
     }
   }
 }
@@ -64,7 +64,12 @@ const onRequestInterceptor = (config: InternalAxiosRequestConfig) => {
     }
   }
 
-  config.headers[TENANT_KEY] = tenantId ?? "";
+  const normalizedTenantId = tenantId?.trim();
+  if (normalizedTenantId) {
+    config.headers[TENANT_KEY] = normalizedTenantId;
+  } else {
+    delete config.headers[TENANT_KEY];
+  }
   config.headers["Accept-Language"] = selectedLanguage;
 
   if (accessToken) {
