@@ -1,6 +1,7 @@
-import http from "@/src/@core/http/http";
+import http from "@/src/@core/http";
 import { rootPath } from "../administration.service";
-import { ApiResult, PagedResultDto } from "@/src/@core/http/models/ApiResult";
+import { ApiResult } from "@/src/@core/http/models/ApiResult";
+import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 
 const path = "/administration/admin/screen";
 const cinemaPath = "/administration/admin/cinema";

@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { AdminRole } from "@/src/@core/type/permission.types";
-import { adminNavItems, managerNavItems } from "@/src/@core/http/routes/administration";
+import { adminNavItems, managerNavItems, staffNavItems, posNavItems } from "@/src/@core/http/routes/administration";
 import LTTAdminSubDomainLayout from "@/src/@core/component/LTTAdminSubDomainLayout";
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/src/@core/const";
 import { getCookie, removeCookie } from "@/src/@core/utils/cookie";
@@ -60,7 +60,10 @@ export default function AdministrationGroupLayout({
     return null;
   }
 
-  const navItems = role === AdminRole.ADMIN ? adminNavItems : managerNavItems;
+  let navItems = managerNavItems;
+  if (role === AdminRole.ADMIN) navItems = adminNavItems;
+  if (role === AdminRole.STAFF) navItems = staffNavItems;
+  if (role === AdminRole.POS) navItems = posNavItems;
 
   return (
     <LTTAdminSubDomainLayout role={role} navItems={navItems}>

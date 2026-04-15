@@ -113,7 +113,24 @@ export const managerNavItems: NavItemConfig[] = [
 ];
 
 /** Navigation items for Cinema Staff sub-domain (Currently unused, merged into Manager/Admin) */
-export const staffNavItems: NavItemConfig[] = [];
+export const staffNavItems: NavItemConfig[] = [
+  {
+    key: "dashboard",
+    label: "Staff Dashboard",
+    path: "/administration/staff/dashboard",
+    icon: LayoutDashboard,
+    permissionKey: "staff:dashboard",
+  }
+];
 
 /** Navigation items for POS Machine sub-domain (Currently unused, merged into Manager/Admin) */
-export const posNavItems: NavItemConfig[] = [];
+export const posNavItems: NavItemConfig[] = [
+  {
+    key: "dashboard",
+    label: "POS",
+    path: "/administration/pos/dashboard",
+    icon: LayoutDashboard,
+    permissionKey: "pos:dashboard",
+  }
+];
+
