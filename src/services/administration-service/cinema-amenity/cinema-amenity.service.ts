@@ -11,22 +11,22 @@ import { CinemaAmenityOutputDto } from "./models/output.model";
 export const cinemaAmenityService = {
     getListAll: async (cinemaId: string, params?: GetCinemaAmenityListInputDto) => {
         const { data } = await http.get<ApiResult<PagedResultDto<CinemaAmenityOutputDto>>>(`${rootPath}${cinemaPath}/${cinemaId}/amenity-all`, { params });
-        return data;
+        return data.data;
     },
     getById: async (cinemaId: string, amenityId: string) => {
         const { data } = await http.get<ApiResult<CinemaAmenityOutputDto>>(`${rootPath}${cinemaPath}/${cinemaId}/amenity/${amenityId}`);
-        return data;
+        return data.data;
     },
     create: async (cinemaId: string, body: CreateCinemaAmenityInputDto) => {
         const { data } = await http.post<ApiResult<CinemaAmenityOutputDto>>(`${rootPath}${cinemaPath}/${cinemaId}/amenity`, body);
-        return data;
+        return data.data;
     },
     update: async (cinemaId: string, amenityId: string, body: UpdateCinemaAmenityInputDto) => {
         const { data } = await http.put<ApiResult<CinemaAmenityOutputDto>>(`${rootPath}${cinemaPath}/${cinemaId}/amenity/${amenityId}`, body);
-        return data;
+        return data.data;
     },
     delete: async (cinemaId: string, amenityId: string) => {
         const { data } = await http.delete<ApiResult<void>>(`${rootPath}${cinemaPath}/${cinemaId}/amenity/${amenityId}`);
-        return data;
+        return data.data;
     }
 };

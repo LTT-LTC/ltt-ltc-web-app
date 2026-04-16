@@ -11,22 +11,22 @@ import { AmenityTypeOutputDto } from "./models/output.model";
 export const amenityTypeService = {
     getList: async (params?: GetAmenityTypeListInputDto) => {
         const { data } = await http.get<ApiResult<PagedResultDto<AmenityTypeOutputDto>>>(`${rootPath}${path}-all`, { params });
-        return data;
+        return data.data;
     },
     getById: async (id: string) => {
         const { data } = await http.get<ApiResult<AmenityTypeOutputDto>>(`${rootPath}${path}/${id}`);
-        return data;
+        return data.data;
     },
     create: async (body: CreateAmenityTypeInputDto) => {
         const { data } = await http.post<ApiResult<AmenityTypeOutputDto>>(`${rootPath}${path}`, body);
-        return data;
+        return data.data;
     },
     update: async (id: string, body: UpdateAmenityTypeInputDto) => {
         const { data } = await http.put<ApiResult<AmenityTypeOutputDto>>(`${rootPath}${path}/${id}`, body);
-        return data;
+        return data.data;
     },
     delete: async (id: string) => {
         const { data } = await http.delete<ApiResult<void>>(`${rootPath}${path}/${id}`);
-        return data;
+        return data.data;
     }
 };

@@ -20,3 +20,14 @@ export interface UpdateScreenInputDto {
     seatCount: number;
     status?: string;
 }
+
+export interface CreateSeatLayoutDto {
+    screenId: string;
+    name: string;
+    layout: any;
+}
+
+export interface UpdateSeatLayoutDto {
+    name?: string;
+    layout?: any;
+}

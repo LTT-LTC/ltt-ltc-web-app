@@ -42,8 +42,8 @@ export default function ScreensConfigPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState<ScreenOutputDto | null>(null);
   
-  // TODO: Get actual cinemaId from manager context
-  const cinemaId = "default-cinema-id";
+  const [cinemas, setCinemas] = useState<CinemaOutputDto[]>([]);
+  const [selectedCinemaId, setSelectedCinemaId] = useState<string>("");
 
   const [form, setForm] = useState({
     screenNumber: 1,
@@ -51,6 +51,18 @@ export default function ScreensConfigPage() {
     seatCount: 100,
     seatLayout: "Standard",
     status: "active",
+  });
+
+  const cinemaMutation = useLTTMutation<PagedResultDto<CinemaOutputDto> | undefined, any>({
+    mutationFn: (p) => cinemaService.getList(p),
+    onSuccess: (res) => {
+      if (res && res.items) {
+        setCinemas(res.items);
+        if (res.items.length > 0 && !selectedCinemaId) {
+          setSelectedCinemaId(res.items[0].id);
+        }
+      }
+    }
   });
 
   const listMutation = useLTTMutation<PagedResultDto<ScreenOutputDto> | undefined, { cinemaId: string; params: GetScreenListInputDto }>({
@@ -92,12 +104,17 @@ export default function ScreensConfigPage() {
   const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || removeMutation.isLoading;
 
   const fetchData = () => {
-    listMutation.mutation({ cinemaId, params: { page: 1, fetch: 100, keyword: search } });
+    if (!selectedCinemaId) return;
+    listMutation.mutation({ cinemaId: selectedCinemaId, params: { page: 1, fetch: 100, keyword: search } });
   };
 
   useEffect(() => {
+    cinemaMutation.mutation({ page: 1, fetch: 100 });
+  }, []);
+
+  useEffect(() => {
     fetchData();
-  }, [search]);
+  }, [selectedCinemaId, search]);
 
   const filtered = useMemo(() => {
     if (!search) return items;
@@ -149,7 +166,7 @@ export default function ScreensConfigPage() {
     if (editing) {
       updateMutation.mutation({ id: editing.id, body: form });
     } else {
-      createMutation.mutation({ cinemaId, body: form });
+      createMutation.mutation({ cinemaId: selectedCinemaId, body: form });
     }
   };
 
@@ -181,6 +198,22 @@ export default function ScreensConfigPage() {
             className="pl-9"
           />
         </div>
+
+        <LTTSelect
+          value={selectedCinemaId}
+          onValueChange={(v) => setSelectedCinemaId(v)}
+        >
+          <LTTSelectTrigger className="w-56">
+            <LTTSelectValue placeholder="Chọn rạp" />
+          </LTTSelectTrigger>
+          <LTTSelectContent>
+            {cinemas.map((c) => (
+              <LTTSelectItem key={c.id} value={c.id}>
+                {c.name}
+              </LTTSelectItem>
+            ))}
+          </LTTSelectContent>
+        </LTTSelect>
         {selected.size > 0 && (
           <LTTButton
             variant="destructive"

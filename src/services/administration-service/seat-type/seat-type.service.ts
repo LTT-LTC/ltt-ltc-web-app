@@ -11,22 +11,22 @@ import { SeatTypeOutputDto } from "./models/output.model";
 export const seatTypeService = {
     getList: async (params: GetSeatTypeListInputDto) => {
         const { data } = await http.get<ApiResult<PagedResultDto<SeatTypeOutputDto>>>(`${rootPath}${path}`, { params });
-        return data;
+        return data.data;
     },
     getById: async (id: string) => {
         const { data } = await http.get<ApiResult<SeatTypeOutputDto>>(`${rootPath}${path}/${id}`);
-        return data;
+        return data.data;
     },
     create: async (body: CreateSeatTypeInputDto) => {
         const { data } = await http.post<ApiResult<SeatTypeOutputDto>>(`${rootPath}${path}`, body);
-        return data;
+        return data.data;
     },
     update: async (id: string, body: UpdateSeatTypeInputDto) => {
         const { data } = await http.put<ApiResult<SeatTypeOutputDto>>(`${rootPath}${path}/${id}`, body);
-        return data;
+        return data.data;
     },
     delete: async (id: string) => {
         const { data } = await http.delete<ApiResult<void>>(`${rootPath}${path}/${id}`);
-        return data;
+        return data.data;
     }
 };

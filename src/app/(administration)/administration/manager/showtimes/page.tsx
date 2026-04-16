@@ -13,14 +13,18 @@ import {
 } from "lucide-react";
 
 import { toast } from "sonner";
-
+import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
+import { showtimeService } from "@/src/services/administration-service/showtime/showtime.service";
+import { movieService } from "@/src/services/administration-service/movie/movie.service";
+import { cinemaService } from "@/src/services/administration-service/cinema/cinema.service";
+import { screenService } from "@/src/services/administration-service/screen/screen.service";
+import { ShowtimeOutputDto, CreateShowtimeDto } from "@/src/services/administration-service/showtime/models/showtime.model";
+import { MovieOutputDto } from "@/src/services/administration-service/movie/models/output.model";
+import { CinemaOutputDto } from "@/src/services/administration-service/cinema/models/output.model";
+import { ScreenOutputDto } from "@/src/services/administration-service/screen/models/output.model";
+import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
+import { useEffect } from "react";
 import { cn } from "@/src/@core/utils/cn";
-import {
-  AdminShowtime,
-  mockAdminCinemas,
-  mockAdminMovies,
-  mockAdminShowtimes,
-} from "@/src/@core/const/mock/adminMockData";
 
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
@@ -102,43 +106,76 @@ const MOVIE_COLORS = [
 ];
 
 export default function ShowtimeSchedulerPage() {
-  const [items, setItems] = useState<AdminShowtime[]>(mockAdminShowtimes);
+  const [items, setItems] = useState<ShowtimeOutputDto[]>([]);
+  const [movies, setMovies] = useState<MovieOutputDto[]>([]);
+  const [cinemas, setCinemas] = useState<CinemaOutputDto[]>([]);
+  const [screens, setScreens] = useState<ScreenOutputDto[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [cinemaFilter, setCinemaFilter] = useState("all");
-
   const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
-
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [editing, setEditing] = useState<AdminShowtime | null>(null);
+  const [editing, setEditing] = useState<ShowtimeOutputDto | null>(null);
+  const [calendarWeek, setCalendarWeek] = useState(new Date());
 
   const [form, setForm] = useState({
     movieId: "",
     cinemaId: "",
-    screenNumber: "1",
+    screenId: "",
+    movieDistributionId: "",
     date: "",
     startTime: "",
     endTime: "",
-    format: "2D Phụ Đề Việt",
-    basePrice: "105000",
-    status: "scheduled" as AdminShowtime["status"],
   });
 
-  // Calendar state (week navigation)
-  const [calendarWeek, setCalendarWeek] = useState(new Date());
+  const listMutation = useLTTMutation<PagedResultDto<ShowtimeOutputDto> | undefined, any>({
+    mutationFn: (params) => showtimeService.getList(params),
+    onSuccess: (res) => { if (res && res.items) setItems(res.items); },
+    onError: (err) => toast.error(err.message || "Lỗi tải lịch chiếu")
+  });
 
-  const filtered = useMemo(() => {
-    let list = items;
-    if (dateFilter) list = list.filter((s) => s.date === dateFilter);
-    if (cinemaFilter !== "all") list = list.filter((s) => s.cinemaId === cinemaFilter);
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter((s) => s.movieTitle.toLowerCase().includes(q));
+  const movieMutation = useLTTMutation<PagedResultDto<MovieOutputDto> | undefined, any>({
+    mutationFn: (p) => movieService.getList(p),
+    onSuccess: (res) => { if (res && res.items) setMovies(res.items); }
+  });
+
+  const cinemaMutation = useLTTMutation<PagedResultDto<CinemaOutputDto> | undefined, any>({
+    mutationFn: (p) => cinemaService.getList(p),
+    onSuccess: (res) => { if (res && res.items) setCinemas(res.items); }
+  });
+
+  const screenMutation = useLTTMutation<PagedResultDto<ScreenOutputDto> | undefined, string>({
+    mutationFn: (cid) => screenService.getListAll(cid, { page: 1, fetch: 100 }),
+    onSuccess: (res) => { if (res && res.items) setScreens(res.items); }
+  });
+
+  const createMutation = useLTTMutation<ShowtimeOutputDto | undefined, CreateShowtimeDto>({
+    mutationFn: (body) => showtimeService.create(body),
+    onSuccess: () => { toast.success("Tạo thành công"); fetchData(); setDialogOpen(false); }
+  });
+
+  const fetchData = () => {
+    if (cinemaFilter !== "all") {
+      listMutation.mutation({ cinemaId: cinemaFilter, page: 1, fetch: 100 });
     }
-    return list;
-  }, [items, search, dateFilter, cinemaFilter]);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [cinemaFilter, search]);
+
+  useEffect(() => {
+    movieMutation.mutation({ page: 1, fetch: 100 });
+    cinemaMutation.mutation({ page: 1, fetch: 100 });
+  }, []);
+
+  useEffect(() => {
+    if (form.cinemaId) screenMutation.mutation(form.cinemaId);
+  }, [form.cinemaId]);
+
+  const filtered = items; // Backend handled filter ideally, or we can filter locally if needed.
 
   const weekDates = useMemo(
     () => getWeekDates(calendarWeek),
@@ -181,30 +218,26 @@ export default function ShowtimeSchedulerPage() {
     setEditing(null);
     setForm({
       movieId: "",
-      cinemaId: "",
-      screenNumber: "1",
+      cinemaId: cinemaFilter === "all" ? "" : cinemaFilter,
+      screenId: "",
+      movieDistributionId: "",
       date: prefillDate || "",
       startTime: prefillTime || "",
       endTime: "",
-      format: "2D Phụ Đề Việt",
-      basePrice: "105000",
-      status: "scheduled",
     });
     setDialogOpen(true);
   };
 
-  const openEdit = (s: AdminShowtime) => {
+  const openEdit = (s: ShowtimeOutputDto) => {
     setEditing(s);
     setForm({
       movieId: s.movieId,
-      cinemaId: s.cinemaId,
-      screenNumber: String(s.screenNumber),
-      date: s.date,
-      startTime: s.startTime,
-      endTime: s.endTime,
-      format: s.format,
-      basePrice: String(s.basePrice),
-      status: s.status,
+      cinemaId: cinemaFilter,
+      screenId: s.screenId,
+      movieDistributionId: "",
+      date: s.startTime.split("T")[0],
+      startTime: s.startTime.split("T")[1].substring(0, 5),
+      endTime: s.endTime.split("T")[1].substring(0, 5),
     });
     setDialogOpen(true);
   };
@@ -215,41 +248,16 @@ export default function ShowtimeSchedulerPage() {
       return;
     }
 
-    const movie = mockAdminMovies.find((m) => m.id === form.movieId);
-    const cinema = mockAdminCinemas.find((c) => c.id === form.cinemaId);
+    const start = `${form.date}T${form.startTime}:00Z`;
+    const end = `${form.date}T${form.endTime || "23:59"}:00Z`;
 
-    if (editing) {
-      setItems((p) =>
-        p.map((i) =>
-          i.id === editing.id
-            ? {
-                ...i,
-                ...form,
-                screenNumber: parseInt(form.screenNumber),
-                basePrice: parseInt(form.basePrice),
-                movieTitle: movie?.title || "",
-                cinemaName: cinema?.name || "",
-              }
-            : i
-        )
-      );
-      toast.success("Cập nhật thành công");
-    } else {
-      setItems((p) => [
-        ...p,
-        {
-          id: `st-${Date.now()}`,
-          ...form,
-          screenNumber: parseInt(form.screenNumber),
-          basePrice: parseInt(form.basePrice),
-          movieTitle: movie?.title || "",
-          cinemaName: cinema?.name || "",
-        },
-      ]);
-      toast.success("Tạo mới thành công");
-    }
-
-    setDialogOpen(false);
+    createMutation.mutation({
+      movieId: form.movieId,
+      screenId: form.screenId,
+      movieDistributionId: form.movieDistributionId || "00000000-0000-0000-0000-000000000000",
+      startTime: start,
+      endTime: end
+    });
   };
 
   const bulkDelete = () => {
@@ -326,11 +334,11 @@ export default function ShowtimeSchedulerPage() {
           onValueChange={(v) => setCinemaFilter(v)}
         >
           <LTTSelectTrigger className="w-56">
-            <LTTSelectValue placeholder="Tất cả rạp" />
+            <LTTSelectValue placeholder="Chọn rạp" />
           </LTTSelectTrigger>
           <LTTSelectContent>
             <LTTSelectItem value="all">Tất cả rạp</LTTSelectItem>
-            {mockAdminCinemas.map((c) => (
+            {cinemas.map((c) => (
               <LTTSelectItem key={c.id} value={c.id}>
                 {c.name}
               </LTTSelectItem>
@@ -392,13 +400,13 @@ export default function ShowtimeSchedulerPage() {
                       />
                     </td>
                     <td className="px-4 py-3 font-medium">{item.movieTitle}</td>
-                    <td className="px-4 py-3 text-xs">{item.cinemaName}</td>
+                    <td className="px-4 py-3 text-xs">—</td>
                     <td className="px-4 py-3 text-xs">
-                      Phòng {item.screenNumber}
+                      {item.screenName}
                     </td>
-                    <td className="px-4 py-3 text-xs">{item.date}</td>
+                    <td className="px-4 py-3 text-xs">{item.startTime?.split("T")[0]}</td>
                     <td className="px-4 py-3 text-xs font-semibold">
-                      {item.startTime} - {item.endTime}
+                      {item.startTime?.split("T")[1].substring(0, 5)} - {item.endTime?.split("T")[1].substring(0, 5)}
                     </td>
                     <td className="px-4 py-3 text-xs">{item.format}</td>
                     <td className="px-4 py-3 text-xs">
@@ -490,7 +498,7 @@ export default function ShowtimeSchedulerPage() {
           {/* Movie legend */}
           <div className="flex flex-wrap gap-2">
             {[...new Set(calendarItems.map((i) => i.movieId))].map((mid) => {
-              const movie = mockAdminMovies.find((m) => m.id === mid);
+              const movie = movies.find((m) => m.id === mid);
               return (
                 <span
                   key={mid}
@@ -652,7 +660,7 @@ export default function ShowtimeSchedulerPage() {
                   <LTTSelectValue placeholder="Chọn phim" />
                 </LTTSelectTrigger>
                 <LTTSelectContent>
-                  {mockAdminMovies.map((m) => (
+                  {movies.map((m) => (
                     <LTTSelectItem key={m.id} value={m.id}>
                       {m.title}
                     </LTTSelectItem>
@@ -673,7 +681,7 @@ export default function ShowtimeSchedulerPage() {
                   <LTTSelectValue placeholder="Chọn rạp" />
                 </LTTSelectTrigger>
                 <LTTSelectContent>
-                  {mockAdminCinemas.map((c) => (
+                  {cinemas.map((c) => (
                     <LTTSelectItem key={c.id} value={c.id}>
                       {c.name}
                     </LTTSelectItem>
@@ -683,14 +691,24 @@ export default function ShowtimeSchedulerPage() {
             </div>
 
             <div className="space-y-2">
-              <LTTLabel>Phòng chiếu (số)</LTTLabel>
-              <LTTInput
-                type="number"
-                value={form.screenNumber}
-                onChange={(e) =>
-                  setForm({ ...form, screenNumber: e.target.value })
+              <LTTLabel>Phòng chiếu *</LTTLabel>
+              <LTTSelect
+                value={form.screenId}
+                onValueChange={(v) =>
+                  setForm({ ...form, screenId: v })
                 }
-              />
+              >
+                <LTTSelectTrigger>
+                  <LTTSelectValue placeholder="Chọn phòng" />
+                </LTTSelectTrigger>
+                <LTTSelectContent>
+                  {screens.map((s) => (
+                    <LTTSelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </LTTSelectItem>
+                  ))}
+                </LTTSelectContent>
+              </LTTSelect>
             </div>
 
             <div className="space-y-2">

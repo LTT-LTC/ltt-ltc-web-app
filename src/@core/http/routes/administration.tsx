@@ -11,6 +11,7 @@ import {
   Gift,
   HeadphonesIcon,
   RotateCcw,
+  Ticket as BookingIcon,
 } from "lucide-react";
 
 /** Navigation items for System Admin sub-domain */
@@ -51,6 +52,20 @@ export const adminNavItems: NavItemConfig[] = [
     permissionKey: "admin:movies",
   },
   {
+    key: "movie-metadata",
+    label: "Movie Metadata",
+    path: "/administration/admin/movie-metadata",
+    icon: Grid3X3,
+    permissionKey: "admin:movies",
+  },
+  {
+    key: "customers",
+    label: "Customer Management",
+    path: "/administration/admin/customers",
+    icon: Users,
+    permissionKey: "admin:staff",
+  },
+  {
     key: "staff",
     label: "Staff & RBAC",
     path: "/administration/admin/staff",
@@ -58,11 +73,25 @@ export const adminNavItems: NavItemConfig[] = [
     permissionKey: "admin:staff",
   },
   {
+    key: "promotions",
+    label: "Promotion & Giftcard",
+    path: "/administration/admin/promotions",
+    icon: Gift,
+    permissionKey: "admin:promotions",
+  },
+  {
     key: "reports",
     label: "Revenue Report",
     path: "/administration/admin/reports",
     icon: BarChart3,
     permissionKey: "admin:reports",
+  },
+  {
+    key: "bookings",
+    label: "Booking Management",
+    path: "/administration/admin/bookings",
+    icon: BookingIcon,
+    permissionKey: "admin:bookings",
   },
 ];
 
@@ -125,6 +154,13 @@ export const managerNavItems: NavItemConfig[] = [
     permissionKey: "manager:promotions",
   },
   {
+    key: "pricing-rules",
+    label: "Pricing Rules",
+    path: "/administration/manager/pricing-rules",
+    icon: Building2,
+    permissionKey: "manager:screens",
+  },
+  {
     key: "crm",
     label: "CRM & Incident",
     path: "/administration/manager/crm",
@@ -137,6 +173,13 @@ export const managerNavItems: NavItemConfig[] = [
     path: "/administration/manager/refunds",
     icon: RotateCcw,
     permissionKey: "manager:refunds",
+  },
+  {
+    key: "bookings",
+    label: "Booking Management",
+    path: "/administration/manager/bookings",
+    icon: BookingIcon,
+    permissionKey: "manager:bookings",
   },
 ];
 

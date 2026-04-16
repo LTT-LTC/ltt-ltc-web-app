@@ -3,7 +3,7 @@ import {
     GetListNewsAndOffersInputDto,
     UpdateNewsAndOffersInputDto,
     CreateNewsAndOffersInputDto,
-} from "./models/input.model.js";
+} from "./models/input.model";
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
 import { rootPath } from "../administration.service";
 import {
@@ -44,9 +44,17 @@ const createNewsAndOffersAsync = async (body: CreateNewsAndOffersInputDto) => {
     return data.data;
 };
 
+const deleteNewsAndOffersAsync = async (id: string) => {
+    const { data } = await http.delete<ApiResult<boolean>>(
+        `${rootPath}${path}/${id}`,
+    );
+    return data.data;
+};
+
 export const newsAndOffersService = {
     getNewsAndOffersDetailAsync,
     updateNewsAndOffersAsync,
     getListAsync,
     createNewsAndOffersAsync,
+    deleteNewsAndOffersAsync,
 };

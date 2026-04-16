@@ -1,65 +1,50 @@
-import http from "@/src/@core/http";
-import {
-    GetListEmployeeInputDto,
-    UpdateEmployeeInputDto,
+import { administrationHttp } from "@/src/@core/http";
+import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
+import { 
+    GetListEmployeeInputDto, 
+    CreateEmployeeInputDto, 
+    UpdateEmployeeInputDto 
 } from "./models/input.model";
-import { ApiResult } from "@/src/@core/http/models/ApiResult";
-import { rootPath } from "../administration.service";
-import {
-    EmployeeOutputDto,
-    PagedResultEmployeeOutputDto
-} from "./models/output.model";
+import { EmployeeOutputDto } from "./models/output.model";
 
-const path = "/employee";
+class EmployeeService {
+    private readonly prefix = "/administration-service/api/employee";
 
-const getListAsync = async (params: GetListEmployeeInputDto) => {
-    const { data } = await http.get<ApiResult<PagedResultEmployeeOutputDto>>(
-        `${rootPath}${path}`,
-        { params },
-    );
+    async getList(params: GetListEmployeeInputDto): Promise<PagedResultDto<EmployeeOutputDto>> {
+        const response = await administrationHttp.get(this.prefix, { params });
+        return response.data;
+    }
 
-    return data.data;
-};
+    async getDetail(id: string): Promise<EmployeeOutputDto> {
+        const response = await administrationHttp.get(`${this.prefix}/${id}`);
+        return response.data;
+    }
 
-const getEmployeeDetailAsync = async (employeeId: string) => {
-    const { data } = await http.get<ApiResult<EmployeeOutputDto>>(
-        `${rootPath}${path}/${employeeId}`,
-    );
+    async create(body: CreateEmployeeInputDto): Promise<string> {
+        const formData = new FormData();
+        Object.entries(body).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+                if (key === "avatarFile" && value instanceof File) {
+                    formData.append("AvatarFile", value);
+                } else if (value instanceof Date) {
+                    formData.append(key, value.toISOString());
+                } else {
+                    formData.append(key, String(value));
+                }
+            }
+        });
 
-    return data.data;
-};
+        const response = await administrationHttp.post(this.prefix, formData, {
+            headers: { "Content-Type": "multipart/form-data" }
+        });
+        return response.data;
+    }
 
-const updateEmployeeAsync = async (employeeId: string, body: FormData) => {
-    const { data } = await http.put<ApiResult<boolean>>(
-        `${rootPath}${path}/${employeeId}`,
-        body,
-        {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-        },
-    );
-
-    return data.data;
-};
-
-const createEmployeeAsync = async (body: FormData) => {
-    const { data } = await http.post<ApiResult<string>>(
-        `${rootPath}${path}`,
-        body,
-        {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-        },
-    );
-
-    return data.data;
-};
-
-export const employeeService = {
-    getEmployeeDetailAsync,
-    updateEmployeeAsync,
-    getListAsync,
-    createEmployeeAsync,
+    // Note: Update not yet in controller but adding common pattern
+    async update(id: string, body: UpdateEmployeeInputDto): Promise<boolean> {
+        const response = await administrationHttp.put(`${this.prefix}/${id}`, body);
+        return response.data;
+    }
 }
+
+export const employeeService = new EmployeeService();

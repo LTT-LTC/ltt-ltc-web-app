@@ -1,32 +1,39 @@
 import http from "@/src/@core/http";
-import { rootPath } from "../administration.service";
-import { ApiResult } from "@/src/@core/http/models/ApiResult";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
-
-const path = "/administration/manager/screens";
-
-import { GetScreenListInputDto, CreateScreenInputDto, UpdateScreenInputDto } from "./models/input.model";
+import { 
+    GetScreenListInputDto, 
+    CreateScreenInputDto, 
+    UpdateScreenInputDto 
+} from "./models/input.model";
 import { ScreenOutputDto } from "./models/output.model";
+import { ApiResult } from "@/src/@core/http/models/ApiResult";
 
-export const screenService = {
-    getListAll: async (cinemaId: string, params: GetScreenListInputDto) => {
-        const { data } = await http.get<ApiResult<PagedResultDto<ScreenOutputDto>>>(`${rootPath}${path}/cinema/${cinemaId}/screen-all`, { params });
-        return data;
-    },
-    getById: async (id: string) => {
-        const { data } = await http.get<ApiResult<ScreenOutputDto>>(`${rootPath}${path}/${id}`);
-        return data;
-    },
-    create: async (cinemaId: string, body: CreateScreenInputDto) => {
-        const { data } = await http.post<ApiResult<ScreenOutputDto>>(`${rootPath}${path}/cinema/${cinemaId}`, body);
-        return data;
-    },
-    update: async (id: string, body: UpdateScreenInputDto) => {
-        const { data } = await http.put<ApiResult<ScreenOutputDto>>(`${rootPath}${path}/${id}`, body);
-        return data;
-    },
-    delete: async (id: string) => {
-        const { data } = await http.delete<ApiResult<void>>(`${rootPath}${path}/${id}`);
-        return data;
+class ScreenService {
+    private readonly prefix = "/ltc/administration-service/api/administration/manager/screens";
+
+    async getListAll(cinemaId: string, params: GetScreenListInputDto): Promise<PagedResultDto<ScreenOutputDto>> {
+        const response = await http.get<ApiResult<PagedResultDto<ScreenOutputDto>>>(`${this.prefix}/cinema/${cinemaId}/screen-all`, { params });
+        return response.data.data;
     }
-};
+
+    async getById(id: string): Promise<ScreenOutputDto> {
+        const response = await http.get<ApiResult<ScreenOutputDto>>(`${this.prefix}/${id}`);
+        return response.data.data;
+    }
+
+    async create(cinemaId: string, body: CreateScreenInputDto): Promise<ScreenOutputDto> {
+        const response = await http.post<ApiResult<ScreenOutputDto>>(`${this.prefix}/cinema/${cinemaId}`, body);
+        return response.data.data;
+    }
+
+    async update(id: string, body: UpdateScreenInputDto): Promise<ScreenOutputDto> {
+        const response = await http.put<ApiResult<ScreenOutputDto>>(`${this.prefix}/${id}`, body);
+        return response.data.data;
+    }
+
+    async delete(id: string): Promise<void> {
+        await http.delete<ApiResult<void>>(`${this.prefix}/${id}`);
+    }
+}
+
+export const screenService = new ScreenService();

@@ -2,10 +2,11 @@ import { PaginationWithSearchRequestDto } from "@/src/@core/http/models/Paginati
 
 export interface GetListEmployeeInputDto extends PaginationWithSearchRequestDto {
     isActive?: boolean;
+    cinemaId?: string;
 }
 
 export interface UpdateEmployeeInputDto {
-    avatarFileId?: string | null;
+    avatarFile?: File | null;
     name?: string;
     email?: string;
     otherEmail?: string;
@@ -19,7 +20,7 @@ export interface UpdateEmployeeInputDto {
 }
 
 export interface CreateEmployeeInputDto {
-    avatarFileId?: string | null;
+    avatarFile?: File | null;
     name: string;
     email: string;
     otherEmail?: string;

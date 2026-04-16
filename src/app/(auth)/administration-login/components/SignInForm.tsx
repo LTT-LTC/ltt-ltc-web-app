@@ -22,8 +22,12 @@ import { showNotificationSuccess, showNotificationError } from "@/src/@core/util
 import { getAdminHomePathByRole, resolveAdminRoleFromToken } from "@/src/@core/utils/admin-auth";
 import {
     getOrCreateTenantOnClient,
+    getTenantOptions,
+    setTenantOnClient,
     syncTenantCookieFromLocalStorage,
 } from "@/src/@core/utils/tenant";
+import LTTSelect from "@/src/@core/component/AntD/LTTSelect";
+import { TENANT_KEY } from "@/src/@core/const";
 
 interface LoginValidationError {
     members?: string[];
@@ -50,9 +54,12 @@ const FormDetail = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [form] = Form.useForm();
     const [isRedirecting, setIsRedirecting] = useState(false);
+    const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
 
     useEffect(() => {
-        getOrCreateTenantOnClient();
+        const tenant = getOrCreateTenantOnClient();
+        setSelectedTenant(tenant);
+        form.setFieldValue("tenant", tenant);
 
         const accessToken = getCookie(ACCESS_TOKEN_KEY);
         if (accessToken) {
@@ -139,6 +146,21 @@ const FormDetail = () => {
         <div>
             <LTTForm form={form} onFinish={onSubmit}>
                 <div className="space-y-6">
+                    <LTTFormItem
+                        label="Chi nhánh"
+                        name="tenant"
+                        rules={[rules.required]}
+                        className="mb-3"
+                    >
+                        <LTTSelect
+                            options={getTenantOptions()}
+                            onChange={(value) => {
+                                setTenantOnClient(value);
+                                setSelectedTenant(value);
+                            }}
+                            placeholder="Chọn chi nhánh"
+                        />
+                    </LTTFormItem>
 
 
                     <LTTFormItem
