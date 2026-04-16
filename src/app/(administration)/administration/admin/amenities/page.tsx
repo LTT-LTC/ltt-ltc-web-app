@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
@@ -23,94 +23,115 @@ import {
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 import { toast } from "sonner";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
+import { cinemaAmenityService } from "@/src/services/administration-service/cinema-amenity/cinema-amenity.service";
 import { cinemaService } from "@/src/services/administration-service/cinema/cinema.service";
+import { CinemaAmenityOutputDto } from "@/src/services/administration-service/cinema-amenity/models/output.model";
+import { GetCinemaAmenityListInputDto, CreateCinemaAmenityInputDto, UpdateCinemaAmenityInputDto } from "@/src/services/administration-service/cinema-amenity/models/input.model";
 import { CinemaOutputDto } from "@/src/services/administration-service/cinema/models/output.model";
-import { GetCinemaListInputDto, CreateCinemaInputDto, UpdateCinemaInputDto } from "@/src/services/administration-service/cinema/models/input.model";
+import { GetCinemaListInputDto } from "@/src/services/administration-service/cinema/models/input.model";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
-import { useEffect } from "react";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-100 text-green-700 border-green-200",
   maintenance: "bg-amber-100 text-amber-700 border-amber-200",
-  closed: "bg-red-100 text-red-700 border-red-200",
+  inactive: "bg-red-100 text-red-700 border-red-200",
 };
 
-export default function CinemaConfigPage() {
-  const [items, setItems] = useState<CinemaOutputDto[]>([]);
+export default function CinemaAmenitiesAdminPage() {
+
+  const [cinemas, setCinemas] = useState<CinemaOutputDto[]>([]);
+  const [selectedCinemaId, setSelectedCinemaId] = useState<string>("");
+
+  const [items, setItems] = useState<CinemaAmenityOutputDto[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [editing, setEditing] = useState<CinemaOutputDto | null>(null);
+  const [editing, setEditing] = useState<CinemaAmenityOutputDto | null>(null);
+
   const [form, setForm] = useState({
     name: "",
-    provinceRaw: "",
-    address: "",
-    hotline: "",
-    email: "",
-    status: "active" as any,
+    description: "",
+    amenityTypeId: "default-type-id",
+    status: "active",
   });
 
-  const listMutation = useLTTMutation<PagedResultDto<CinemaOutputDto> | undefined, GetCinemaListInputDto>({
+  const cinemasMutation = useLTTMutation<PagedResultDto<CinemaOutputDto> | undefined, GetCinemaListInputDto>({
     mutationFn: (input) => cinemaService.getList(input),
     onSuccess: (res) => {
-      if (res && res.items) setItems(res.items);
-    },
-    onError: (err) => toast.error(err.message || "Lỗi tải danh sách rạp")
+      if (res && res.items) {
+        setCinemas(res.items);
+        if (res.items.length > 0) {
+          setSelectedCinemaId(res.items[0].id);
+        }
+      }
+    }
   });
 
-  const createMutation = useLTTMutation<CinemaOutputDto | undefined, CreateCinemaInputDto>({
-    mutationFn: (input) => cinemaService.create(input),
+  const listMutation = useLTTMutation<PagedResultDto<CinemaAmenityOutputDto> | undefined, { cinemaId: string; params: GetCinemaAmenityListInputDto }>({
+    mutationFn: (input) => cinemaAmenityService.getListAll(input.cinemaId, input.params),
+    onSuccess: (res) => {
+      if (res && res.items) {
+        setItems(res.items);
+      } else {
+        setItems([]);
+      }
+    },
+    onError: (err) => toast.error(err.message || "Lỗi tải tiện ích")
+  });
+
+  const createMutation = useLTTMutation<CinemaAmenityOutputDto | undefined, { cinemaId: string; body: CreateCinemaAmenityInputDto }>({
+    mutationFn: (input) => cinemaAmenityService.create(input.cinemaId, input.body),
     onSuccess: () => {
-      toast.success("Tạo rạp thành công");
+      toast.success("Thêm tiện ích thành công");
       fetchData();
       setDialogOpen(false);
     },
     onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
   });
 
-  const updateMutation = useLTTMutation<CinemaOutputDto | undefined, { id: string, body: UpdateCinemaInputDto }>({
-    mutationFn: (input) => cinemaService.update(input.id, input.body),
+  const updateMutation = useLTTMutation<CinemaAmenityOutputDto | undefined, { cinemaId: string; id: string; body: UpdateCinemaAmenityInputDto }>({
+    mutationFn: (input) => cinemaAmenityService.update(input.cinemaId, input.id, input.body),
     onSuccess: () => {
-      toast.success("Cập nhật rạp thành công");
+      toast.success("Cập nhật tiện ích thành công");
       fetchData();
       setDialogOpen(false);
     },
     onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
   });
 
-  const removeMutation = useLTTMutation<boolean, string>({
-    mutationFn: async (id) => { await cinemaService.delete(id); return true; },
+  const removeMutation = useLTTMutation<boolean, { cinemaId: string; id: string }>({
+    mutationFn: async (input) => { await cinemaAmenityService.delete(input.cinemaId, input.id); return true; },
     onSuccess: () => {
-      toast.success("Xóa rạp thành công");
+      toast.success("Xóa tiện ích thành công");
     },
     onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
   });
 
-  const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || removeMutation.isLoading;
+  const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || removeMutation.isLoading || cinemasMutation.isLoading;
+
+  useEffect(() => {
+    cinemasMutation.mutation({ page: 1, fetch: 100 });
+  }, []);
 
   const fetchData = () => {
-    listMutation.mutation({ page: 1, fetch: 100, keyword: search });
+    if (!selectedCinemaId) return;
+    listMutation.mutation({ cinemaId: selectedCinemaId, params: { page: 1, fetch: 100, keyword: search } });
   };
 
   useEffect(() => {
     fetchData();
-  }, [search]);
+  }, [selectedCinemaId, search]);
 
   const filtered = useMemo(() => {
     if (!search) return items;
     const q = search.toLowerCase();
-    return items.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) || c.province.toLowerCase().includes(q)
-    );
+    return items.filter((c) => c.name.toLowerCase().includes(q));
   }, [items, search]);
 
   const allSel = filtered.length > 0 && filtered.every((i) => selected.has(i.id));
   const toggleAll = () =>
-    allSel
-      ? setSelected(new Set())
-      : setSelected(new Set(items.map((i) => i.id)));
+    allSel ? setSelected(new Set()) : setSelected(new Set(items.map((i) => i.id)));
   const toggle = (id: string) => {
     const n = new Set(selected);
     n.has(id) ? n.delete(id) : n.add(id);
@@ -118,25 +139,26 @@ export default function CinemaConfigPage() {
   };
 
   const openCreate = () => {
+    if (!selectedCinemaId) {
+        toast.error("Vui lòng chọn rạp trước");
+        return;
+    }
     setEditing(null);
     setForm({
       name: "",
-      provinceRaw: "",
-      address: "",
-      hotline: "",
-      email: "",
+      description: "",
+      amenityTypeId: "default-type-id",
       status: "active",
     });
     setDialogOpen(true);
   };
-  const openEdit = (item: CinemaOutputDto) => {
+
+  const openEdit = (item: CinemaAmenityOutputDto) => {
     setEditing(item);
     setForm({
       name: item.name,
-      provinceRaw: item.provinceRaw || "",
-      address: item.address || "",
-      hotline: item.hotline || "",
-      email: "",
+      description: item.description || "",
+      amenityTypeId: item.amenityTypeId || "default-type-id",
       status: item.status || "active",
     });
     setDialogOpen(true);
@@ -144,20 +166,20 @@ export default function CinemaConfigPage() {
 
   const save = async () => {
     if (!form.name.trim()) {
-      toast.error("Tên rạp không được để trống");
+      toast.error("Tên tiện ích không được để trống");
       return;
     }
     
     if (editing) {
-      updateMutation.mutation({ id: editing.id, body: form });
+      updateMutation.mutation({ cinemaId: selectedCinemaId, id: editing.id, body: form });
     } else {
-      createMutation.mutation(form);
+      createMutation.mutation({ cinemaId: selectedCinemaId, body: form });
     }
   };
 
   const bulkDelete = async () => {
     for (const id of Array.from(selected)) {
-        await removeMutation.mutation(id);
+        await removeMutation.mutation({ cinemaId: selectedCinemaId, id });
     }
     setSelected(new Set());
     setDeleteOpen(false);
@@ -167,17 +189,29 @@ export default function CinemaConfigPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl font-bold">Cấu hình rạp chiếu</h1>
-        <LTTButton onClick={openCreate} className="gap-2">
-          <Plus className="h-4 w-4" /> Thêm rạp
-        </LTTButton>
+        <h1 className="font-heading text-2xl font-bold">Cơ Sở Vật Chất / Tiện Ích Rạp</h1>
+        <div className="flex items-center gap-4">
+            <div className="w-64">
+              <LTTSelect value={selectedCinemaId} onValueChange={(v: any) => setSelectedCinemaId(v)}>
+                  <LTTSelectTrigger><LTTSelectValue placeholder="Chọn rạp" /></LTTSelectTrigger>
+                  <LTTSelectContent>
+                      {cinemas.map(c => (
+                          <LTTSelectItem key={c.id} value={c.id}>{c.name}</LTTSelectItem>
+                      ))}
+                  </LTTSelectContent>
+              </LTTSelect>
+            </div>
+            <LTTButton onClick={openCreate} className="gap-2" disabled={!selectedCinemaId}>
+            <Plus className="h-4 w-4" /> Thêm tiện ích
+            </LTTButton>
+        </div>
       </div>
 
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
           <LTTInput
-            placeholder="Tìm kiếm rạp..."
+            placeholder="Tìm kiếm tiện ích..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -202,25 +236,27 @@ export default function CinemaConfigPage() {
               <th className="w-10 px-3 py-3">
                 <LTTCheckbox checked={allSel} onCheckedChange={toggleAll} />
               </th>
-              <th className="px-4 py-3 text-left font-semibold">STT</th>
-              <th className="px-4 py-3 text-left font-semibold">Tên rạp</th>
-              <th className="px-4 py-3 text-left font-semibold">Tỉnh/TP</th>
-              <th className="px-4 py-3 text-left font-semibold">Địa chỉ</th>
-              <th className="px-4 py-3 text-left font-semibold">Phòng chiếu</th>
+              <th className="px-4 py-3 text-left font-semibold">Tên tiện ích</th>
+              <th className="px-4 py-3 text-left font-semibold">Mô tả</th>
               <th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
-              <th className="px-4 py-3 text-left font-semibold">Cập nhật</th>
               <th className="px-4 py-3 text-right font-semibold">Thao tác</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {!selectedCinemaId ? (
+                <tr>
+                <td colSpan={5} className="py-12 text-center text-muted-foreground-shadcn">
+                  Vui lòng chọn rạp để xem tiện ích.
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={9} className="py-12 text-center text-muted-foreground-shadcn">
-                  Không có dữ liệu rạp chiếu nào phù hợp.
+                <td colSpan={5} className="py-12 text-center text-muted-foreground-shadcn">
+                  Không có dữ liệu tiện ích nào.
                 </td>
               </tr>
             ) : (
-              filtered.map((item, idx) => (
+              filtered.map((item) => (
                 <tr
                   key={item.id}
                   className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors"
@@ -231,35 +267,18 @@ export default function CinemaConfigPage() {
                       onCheckedChange={() => toggle(item.id)}
                     />
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground-shadcn">{idx + 1}</td>
                   <td className="px-4 py-3 font-medium">{item.name}</td>
-                  <td className="px-4 py-3">{item.provinceRaw}</td>
-                  <td className="px-4 py-3 text-muted-foreground-shadcn max-w-xs truncate">
-                    {item.address}
-                  </td>
-                  <td className="px-4 py-3">0</td>
+                  <td className="px-4 py-3 text-muted-foreground-shadcn">{item.description}</td>
                   <td className="px-4 py-3">
                     <LTTBadge
                       className={`font-medium ${statusColors[item.status || "active"] || statusColors.active}`}
                     >
-                      {item.status === "active"
-                        ? "Hoạt động"
-                        : item.status === "maintenance"
-                        ? "Bảo trì"
-                        : item.status === "closed" ? "Đóng cửa" : item.status || "Hoạt động"}
+                      {item.status === "active" ? "Hoạt động" : item.status === "maintenance" ? "Bảo trì" : "Không hoạt động"}
                     </LTTBadge>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground-shadcn text-xs">
-                    {item.updatedAt}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
-                      <LTTButton
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => openEdit(item)}
-                      >
+                      <LTTButton variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
                         <Pencil className="h-4 w-4" />
                       </LTTButton>
                       <LTTButton
@@ -267,8 +286,8 @@ export default function CinemaConfigPage() {
                         size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={async () => {
-                          removeMutation.mutation(item.id);
-                          setTimeout(() => fetchData(), 500); // Small delay to let the removal finish, though a better approach would be moving fetchData to onSuccess callback handling multiple deletes if possible, but this works for single deletes
+                          removeMutation.mutation({ cinemaId: selectedCinemaId, id: item.id });
+                          setTimeout(() => fetchData(), 500);
                         }}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -285,67 +304,37 @@ export default function CinemaConfigPage() {
       <LTTDialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <LTTDialogContent className="sm:max-w-lg">
           <LTTDialogHeader>
-            <LTTDialogTitle>
-              {editing ? "Chỉnh sửa rạp" : "Thêm rạp mới"}
-            </LTTDialogTitle>
+            <LTTDialogTitle>{editing ? "Chỉnh sửa tiện ích" : "Thêm tiện ích mới"}</LTTDialogTitle>
           </LTTDialogHeader>
           <div className="grid gap-4 py-2 sm:grid-cols-2">
-            <div className="space-y-2 sm:col-span-2">
-              <LTTLabel>Tên rạp *</LTTLabel>
+            <div className="space-y-2">
+              <LTTLabel>Tên tiện ích *</LTTLabel>
               <LTTInput
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Tỉnh/Thành phố</LTTLabel>
-              <LTTInput
-                value={form.provinceRaw}
-                onChange={(e) => setForm({ ...form, provinceRaw: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
               <LTTLabel>Trạng thái</LTTLabel>
-              <LTTSelect
-                value={form.status}
-                onValueChange={(v: any) => setForm({ ...form, status: v })}
-              >
-                <LTTSelectTrigger>
-                  <LTTSelectValue />
-                </LTTSelectTrigger>
+              <LTTSelect value={form.status} onValueChange={(v: any) => setForm({ ...form, status: v })}>
+                <LTTSelectTrigger><LTTSelectValue /></LTTSelectTrigger>
                 <LTTSelectContent>
                   <LTTSelectItem value="active">Hoạt động</LTTSelectItem>
                   <LTTSelectItem value="maintenance">Bảo trì</LTTSelectItem>
-                  <LTTSelectItem value="closed">Đóng cửa</LTTSelectItem>
+                  <LTTSelectItem value="inactive">Không hoạt động</LTTSelectItem>
                 </LTTSelectContent>
               </LTTSelect>
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <LTTLabel>Địa chỉ</LTTLabel>
+              <LTTLabel>Mô tả</LTTLabel>
               <LTTInput
-                value={form.address}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <LTTLabel>Điện thoại</LTTLabel>
-              <LTTInput
-                value={form.hotline}
-                onChange={(e) => setForm({ ...form, hotline: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <LTTLabel>Email</LTTLabel>
-              <LTTInput
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
               />
             </div>
           </div>
           <LTTDialogFooter>
-            <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>
-              Hủy
-            </LTTButton>
+            <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>Hủy</LTTButton>
             <LTTButton onClick={save}>{editing ? "Lưu" : "Tạo mới"}</LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
@@ -358,17 +347,12 @@ export default function CinemaConfigPage() {
           </LTTDialogHeader>
           <div className="py-4">
             <p className="text-sm text-muted-foreground-shadcn">
-              Bạn có chắc chắn muốn xóa <strong>{selected.size}</strong> rạp đã
-              chọn? Hành động này không thể hoàn tác.
+              Bạn có chắc chắn muốn xóa <strong>{selected.size}</strong> tiện ích đã chọn? Hành động này không thể hoàn tác.
             </p>
           </div>
           <LTTDialogFooter>
-            <LTTButton variant="outline" onClick={() => setDeleteOpen(false)}>
-              Hủy
-            </LTTButton>
-            <LTTButton variant="destructive" onClick={bulkDelete}>
-              Xác nhận xóa
-            </LTTButton>
+            <LTTButton variant="outline" onClick={() => setDeleteOpen(false)}>Hủy</LTTButton>
+            <LTTButton variant="destructive" onClick={bulkDelete}>Xác nhận xóa</LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
       </LTTDialog>

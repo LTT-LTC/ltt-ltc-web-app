@@ -5,37 +5,8 @@ import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 
 const path = "/administration/admin/seat-type";
 
-export interface SeatTypeOutputDto {
-    id: string;
-    name: string;
-    description?: string;
-    numberOfSeat: number;
-    displayDirection?: string;
-    priceMultiplier: number;
-    updatedAt?: string;
-}
-
-export interface GetSeatTypeListInputDto {
-    page: number;
-    fetch: number;
-    keyword?: string;
-}
-
-export interface CreateSeatTypeInputDto {
-    name: string;
-    description?: string;
-    numberOfSeat: number;
-    displayDirection?: string;
-    priceMultiplier: number;
-}
-
-export interface UpdateSeatTypeInputDto {
-    name: string;
-    description?: string;
-    numberOfSeat: number;
-    displayDirection?: string;
-    priceMultiplier: number;
-}
+import { GetSeatTypeListInputDto, CreateSeatTypeInputDto, UpdateSeatTypeInputDto } from "./models/input.model";
+import { SeatTypeOutputDto } from "./models/output.model";
 
 export const seatTypeService = {
     getList: async (params: GetSeatTypeListInputDto) => {

@@ -4,40 +4,8 @@ import { ApiResult } from "@/src/@core/http/models/ApiResult";
 
 const path = "/administration/admin/cinema";
 
-export interface CinemaOutputDto {
-    id: string;
-    tenantId?: string;
-    name: string;
-    address: string;
-    provinceRaw: string;
-    description?: string;
-    managerId?: string;
-    hotline?: string;
-    status?: string;
-    createdAt?: string;
-    updatedAt?: string;
-}
-
-export interface GetCinemaListInputDto {
-    page: number;
-    fetch: number;
-    keyword?: string;
-    provinceRaw?: string;
-    managerId?: string;
-    status?: string;
-}
-
-export interface CreateCinemaInputDto {
-    name: string;
-    address: string;
-    provinceRaw: string;
-}
-
-export interface UpdateCinemaInputDto {
-    name: string;
-    address: string;
-    provinceRaw: string;
-}
+import { GetCinemaListInputDto, CreateCinemaInputDto, UpdateCinemaInputDto } from "./models/input.model";
+import { CinemaOutputDto } from "./models/output.model";
 
 export const cinemaService = {
     getList: async (params: GetCinemaListInputDto) => {

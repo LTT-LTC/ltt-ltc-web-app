@@ -3,45 +3,14 @@ import { rootPath } from "../administration.service";
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 
-const path = "/administration/admin/screen";
-const cinemaPath = "/administration/admin/cinema";
+const path = "/administration/manager/screens";
 
-export interface ScreenOutputDto {
-    id: string;
-    cinemaId: string;
-    screenNumber: number;
-    screenType?: string;
-    seatLayout?: string;
-    seatCount: number;
-    status?: string;
-}
-
-export interface GetScreenListInputDto {
-    page: number;
-    fetch: number;
-    keyword?: string;
-    status?: string;
-}
-
-export interface CreateScreenInputDto {
-    screenNumber: number;
-    screenType?: string;
-    seatLayout?: string;
-    seatCount: number;
-    status?: string;
-}
-
-export interface UpdateScreenInputDto {
-    screenNumber: number;
-    screenType?: string;
-    seatLayout?: string;
-    seatCount: number;
-    status?: string;
-}
+import { GetScreenListInputDto, CreateScreenInputDto, UpdateScreenInputDto } from "./models/input.model";
+import { ScreenOutputDto } from "./models/output.model";
 
 export const screenService = {
     getListAll: async (cinemaId: string, params: GetScreenListInputDto) => {
-        const { data } = await http.get<ApiResult<PagedResultDto<ScreenOutputDto>>>(`${rootPath}${cinemaPath}/${cinemaId}/screen-all`, { params });
+        const { data } = await http.get<ApiResult<PagedResultDto<ScreenOutputDto>>>(`${rootPath}${path}/cinema/${cinemaId}/screen-all`, { params });
         return data;
     },
     getById: async (id: string) => {
@@ -49,7 +18,7 @@ export const screenService = {
         return data;
     },
     create: async (cinemaId: string, body: CreateScreenInputDto) => {
-        const { data } = await http.post<ApiResult<ScreenOutputDto>>(`${rootPath}${cinemaPath}/${cinemaId}/screen`, body);
+        const { data } = await http.post<ApiResult<ScreenOutputDto>>(`${rootPath}${path}/cinema/${cinemaId}`, body);
         return data;
     },
     update: async (id: string, body: UpdateScreenInputDto) => {
