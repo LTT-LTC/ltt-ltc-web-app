@@ -41,7 +41,11 @@ const statusLabel: Record<string, string> = {
   suspended: "Tạm khóa",
 };
 
-export default function StaffPage({ cinemaId }: { cinemaId?: string }) {
+import { useSearchParams } from "next/navigation";
+
+export default function StaffPage() {
+  const searchParams = useSearchParams();
+  const cinemaId = searchParams.get("cinemaId") || undefined;
   const [items, setItems] = useState<EmployeeOutputDto[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");

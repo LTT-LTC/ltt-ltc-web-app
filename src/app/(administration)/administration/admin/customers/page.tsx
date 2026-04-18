@@ -5,12 +5,12 @@ import { Search, User, Lock, Unlock, Trash2, Mail, Phone } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
-import { 
-    LTTDialog, 
-    LTTDialogContent, 
-    LTTDialogHeader, 
-    LTTDialogTitle, 
-    LTTDialogFooter 
+import {
+    LTTDialog,
+    LTTDialogContent,
+    LTTDialogHeader,
+    LTTDialogTitle,
+    LTTDialogFooter
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
 import { toast } from "sonner";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
@@ -178,8 +178,8 @@ export default function CustomersPage() {
                     </div>
                     <LTTDialogFooter>
                         <LTTButton variant="outline" onClick={() => setConfirmOpen(false)}>Hủy</LTTButton>
-                        <LTTButton 
-                            variant={confirmType === "delete" ? "destructive" : "default"} 
+                        <LTTButton
+                            variant={confirmType === "delete" ? "destructive" : "default"}
                             onClick={confirmAction}
                             loading={lockMutation.isLoading || unlockMutation.isLoading || deleteMutation.isLoading}
                         >

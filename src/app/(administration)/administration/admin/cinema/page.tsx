@@ -102,7 +102,7 @@ export default function CinemaConfigPage() {
     const q = search.toLowerCase();
     return items.filter(
       (c) =>
-        c.name.toLowerCase().includes(q) || c.province.toLowerCase().includes(q)
+        c.name.toLowerCase().includes(q) || (c.provinceRaw && c.provinceRaw.toLowerCase().includes(q))
     );
   }, [items, search]);
 

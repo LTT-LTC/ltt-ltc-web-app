@@ -104,9 +104,9 @@ export default function DistributionTable() {
         setEditing(item);
         setForm({
             movieId: item.movieId,
-            licenseStartDate: item.licenseStartDate ? item.licenseStartDate.split('T')[0] : "",
-            licenseEndDate: item.licenseEndDate ? item.licenseEndDate.split('T')[0] : "",
-            isExclusive: item.isExclusive
+            startDate: item.startDate ? item.startDate.split('T')[0] : "",
+            endDate: item.endDate ? item.endDate.split('T')[0] : "",
+            status: item.status
         });
         setDialogOpen(true);
     };

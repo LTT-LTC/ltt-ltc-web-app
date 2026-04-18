@@ -2,6 +2,7 @@ import http from "@/src/@core/http";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
 import { PaymentOutputDto } from "./models/output.model";
+export type { PaymentOutputDto };
 
 class BookingService {
     private readonly prefix = "/payment-service/api";
