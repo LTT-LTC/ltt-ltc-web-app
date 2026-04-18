@@ -105,11 +105,11 @@ export default function FnBPage() {
   });
 
   const fetchData = () => {
-    listMutation.mutation({ 
-      page: 1, 
-      fetch: 100, 
+    listMutation.mutation({
+      page: 1,
+      fetch: 100,
       keyword: search,
-      categoryId: catFilter === "all" ? undefined : catFilter 
+      categoryId: catFilter === "all" ? undefined : catFilter
     });
   };
 
@@ -122,7 +122,7 @@ export default function FnBPage() {
 
   const filtered = useMemo(() => {
     let list = items;
-    if (catFilter !== "all") list = list.filter((i) => i.category === catFilter);
+    if (catFilter !== "all") list = list.filter((i) => i.categoryId === catFilter);
     if (search) {
       const q = search.toLowerCase();
       list = list.filter((i) => i.name.toLowerCase().includes(q));

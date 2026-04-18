@@ -27,6 +27,7 @@ import { screenService } from "@/src/services/administration-service/screen/scre
 import { ScreenOutputDto } from "@/src/services/administration-service/screen/models/output.model";
 import { GetScreenListInputDto, CreateScreenInputDto, UpdateScreenInputDto } from "@/src/services/administration-service/screen/models/input.model";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
+import { CinemaOutputDto, cinemaService } from "@/src/services/administration-service/cinema/cinema.service";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-100 text-green-700 border-green-200",
@@ -41,7 +42,7 @@ export default function ScreensConfigPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState<ScreenOutputDto | null>(null);
-  
+
   const [cinemas, setCinemas] = useState<CinemaOutputDto[]>([]);
   const [selectedCinemaId, setSelectedCinemaId] = useState<string>("");
 
@@ -162,7 +163,7 @@ export default function ScreensConfigPage() {
       toast.error("Số phòng chiếu không hợp lệ");
       return;
     }
-    
+
     if (editing) {
       updateMutation.mutation({ id: editing.id, body: form });
     } else {
@@ -172,7 +173,7 @@ export default function ScreensConfigPage() {
 
   const bulkDelete = async () => {
     for (const id of Array.from(selected)) {
-        await removeMutation.mutation(id);
+      await removeMutation.mutation(id);
     }
     setSelected(new Set());
     setDeleteOpen(false);

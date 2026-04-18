@@ -30,7 +30,7 @@ export interface MovieDistributionOutputDto {
     id: string;
     movieId: string;
     movieTitle: string;
-    startDate: string;
-    endDate: string;
-    status: string;
+    licenseStartDate?: string;
+    licenseEndDate?: string;
+    isExclusive: boolean;
 }

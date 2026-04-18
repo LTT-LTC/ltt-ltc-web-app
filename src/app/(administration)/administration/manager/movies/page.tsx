@@ -121,9 +121,9 @@ export default function MoviesPage() {
   const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || removeMutation.isLoading;
 
   const fetchData = () => {
-    listMutation.mutation({ 
-      page: 1, 
-      fetch: 100, 
+    listMutation.mutation({
+      page: 1,
+      fetch: 100,
       keyword: search,
       // Status filter mapping if needed
     });
@@ -142,7 +142,7 @@ export default function MoviesPage() {
       const q = search.toLowerCase();
       list = list.filter(
         (m) =>
-          m.title.toLowerCase().includes(q) || m.genre.toLowerCase().includes(q)
+          m.title.toLowerCase().includes(q) || (m.originalTitle && m.originalTitle.toLowerCase().includes(q))
       );
     }
     return list;
@@ -150,6 +150,25 @@ export default function MoviesPage() {
 
   const allSel =
     filtered.length > 0 && filtered.every((i) => selected.has(i.id));
+
+  const toggleAll = () => {
+    if (allSel) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(filtered.map((i) => i.id)));
+    }
+  };
+
+  const toggle = (id: string) => {
+    const newSelected = new Set(selected);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelected(newSelected);
+  };
+
   const openCreate = () => {
     setEditing(null);
     setForm({
@@ -191,7 +210,7 @@ export default function MoviesPage() {
       toast.error("Tên phim không được để trống");
       return;
     }
-    
+
     if (editing) {
       updateMutation.mutation({ id: editing.id, body: { ...form, id: editing.id } as UpdateMovieInputDto });
     } else {
@@ -201,10 +220,10 @@ export default function MoviesPage() {
 
   const bulkDelete = () => {
     movieService.bulkDeleteMovies(Array.from(selected)).then(() => {
-        toast.success(`Đã xóa ${selected.size} phim`);
-        setSelected(new Set());
-        setDeleteOpen(false);
-        fetchData();
+      toast.success(`Đã xóa ${selected.size} phim`);
+      setSelected(new Set());
+      setDeleteOpen(false);
+      fetchData();
     });
   };
 
@@ -296,8 +315,8 @@ export default function MoviesPage() {
                   <td className="px-4 py-3 font-medium flex items-center gap-2">
                     <Film className="h-4 w-4 text-primary-shadcn shrink-0" />
                     <div>
-                        <div className="font-bold">{item.title}</div>
-                        {item.originalTitle && <div className="text-[10px] text-muted-foreground-shadcn italic">{item.originalTitle}</div>}
+                      <div className="font-bold">{item.title}</div>
+                      {item.originalTitle && <div className="text-[10px] text-muted-foreground-shadcn italic">{item.originalTitle}</div>}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-xs">
@@ -312,8 +331,8 @@ export default function MoviesPage() {
                   </td>
                   <td className="px-4 py-3 text-xs">{item.releaseDate}</td>
                   <td className="px-4 py-3">
-                    <LTTBadge className={cn("font-medium", statusColor[item.status])}>
-                      {statusLabel[item.status]}
+                    <LTTBadge className={cn("font-medium", statusColor[item.status || "coming_soon"])}>
+                      {statusLabel[item.status || "coming_soon"]}
                     </LTTBadge>
                   </td>
                   <td className="px-4 py-3">
@@ -379,7 +398,7 @@ export default function MoviesPage() {
                 </LTTSelectTrigger>
                 <LTTSelectContent>
                   {studios.map(s => (
-                      <LTTSelectItem key={s.id} value={s.id}>{s.name}</LTTSelectItem>
+                    <LTTSelectItem key={s.id} value={s.id}>{s.name}</LTTSelectItem>
                   ))}
                 </LTTSelectContent>
               </LTTSelect>

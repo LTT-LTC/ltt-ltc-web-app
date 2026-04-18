@@ -4,21 +4,21 @@ import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, Calendar, ShieldCheck } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
-import { 
-    LTTDialog, 
-    LTTDialogContent, 
-    LTTDialogHeader, 
-    LTTDialogTitle, 
-    LTTDialogFooter 
+import {
+    LTTDialog,
+    LTTDialogContent,
+    LTTDialogHeader,
+    LTTDialogTitle,
+    LTTDialogFooter
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import LTTSwitch from "@/src/@core/component/AntD/LTTSwitch";
-import { 
-    LTTSelect, 
-    LTTSelectContent, 
-    LTTSelectItem, 
-    LTTSelectTrigger, 
-    LTTSelectValue 
+import {
+    LTTSelect,
+    LTTSelectContent,
+    LTTSelectItem,
+    LTTSelectTrigger,
+    LTTSelectValue
 } from "@/src/@core/component/LTTShadcnUI/LTTSelect";
 import { movieService } from "@/src/services/administration-service/movie/movie.service";
 import { MovieDistributionOutputDto, MovieOutputDto } from "@/src/services/administration-service/movie/models/output.model";
@@ -104,9 +104,9 @@ export default function DistributionTable() {
         setEditing(item);
         setForm({
             movieId: item.movieId,
-            startDate: item.startDate ? item.startDate.split('T')[0] : "",
-            endDate: item.endDate ? item.endDate.split('T')[0] : "",
-            status: item.status
+            licenseStartDate: item.licenseStartDate ? item.licenseStartDate.split('T')[0] : "",
+            licenseEndDate: item.licenseEndDate ? item.licenseEndDate.split('T')[0] : "",
+            isExclusive: item.isExclusive
         });
         setDialogOpen(true);
     };
@@ -179,9 +179,9 @@ export default function DistributionTable() {
                     <div className="py-4 space-y-4">
                         <div className="space-y-2">
                             <LTTLabel>Chọn phim *</LTTLabel>
-                            <LTTSelect 
-                                value={form.movieId} 
-                                onValueChange={(v) => setForm({...form, movieId: v})}
+                            <LTTSelect
+                                value={form.movieId}
+                                onValueChange={(v) => setForm({ ...form, movieId: v })}
                                 disabled={!!editing}
                             >
                                 <LTTSelectTrigger>
@@ -197,17 +197,17 @@ export default function DistributionTable() {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <LTTLabel>Ngày bắt đầu</LTTLabel>
-                                <LTTInput type="date" value={form.licenseStartDate} onChange={e => setForm({...form, licenseStartDate: e.target.value})} />
+                                <LTTInput type="date" value={form.licenseStartDate} onChange={e => setForm({ ...form, licenseStartDate: e.target.value })} />
                             </div>
                             <div className="space-y-2">
                                 <LTTLabel>Ngày kết thúc</LTTLabel>
-                                <LTTInput type="date" value={form.licenseEndDate} onChange={e => setForm({...form, licenseEndDate: e.target.value})} />
+                                <LTTInput type="date" value={form.licenseEndDate} onChange={e => setForm({ ...form, licenseEndDate: e.target.value })} />
                             </div>
                         </div>
                         <div className="flex items-center gap-2 pt-2">
-                            <LTTSwitch 
-                                checked={form.isExclusive} 
-                                onCheckedChange={(v) => setForm({...form, isExclusive: v})} 
+                            <LTTSwitch
+                                checked={form.isExclusive}
+                                onChange={(v) => setForm({ ...form, isExclusive: v })}
                             />
                             <LTTLabel>Phân phối độc quyền</LTTLabel>
                         </div>

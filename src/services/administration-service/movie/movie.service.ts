@@ -1,8 +1,8 @@
 import http from "@/src/@core/http";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
-import { 
-    GetMovieListDto, 
-    CreateMovieInputDto, 
+import {
+    GetMovieListInputDto as GetMovieListDto,
+    CreateMovieInputDto,
     UpdateMovieInputDto,
     CreateGenreInputDto,
     CreateActorInputDto,
@@ -10,8 +10,8 @@ import {
     CreateFormatInputDto,
     CreateRoleInputDto
 } from "./models/input.model";
-import { 
-    MovieOutputDto, 
+import {
+    MovieOutputDto,
     MovieDetailOutputDto,
     GenreOutputDto,
     ActorOutputDto,

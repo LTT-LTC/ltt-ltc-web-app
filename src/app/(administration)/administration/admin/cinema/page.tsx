@@ -147,7 +147,7 @@ export default function CinemaConfigPage() {
       toast.error("Tên rạp không được để trống");
       return;
     }
-    
+
     if (editing) {
       updateMutation.mutation({ id: editing.id, body: form });
     } else {
@@ -157,7 +157,7 @@ export default function CinemaConfigPage() {
 
   const bulkDelete = async () => {
     for (const id of Array.from(selected)) {
-        await removeMutation.mutation(id);
+      await removeMutation.mutation(id);
     }
     setSelected(new Set());
     setDeleteOpen(false);
@@ -245,8 +245,8 @@ export default function CinemaConfigPage() {
                       {item.status === "active"
                         ? "Hoạt động"
                         : item.status === "maintenance"
-                        ? "Bảo trì"
-                        : item.status === "closed" ? "Đóng cửa" : item.status || "Hoạt động"}
+                          ? "Bảo trì"
+                          : item.status === "closed" ? "Đóng cửa" : item.status || "Hoạt động"}
                     </LTTBadge>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground-shadcn text-xs">

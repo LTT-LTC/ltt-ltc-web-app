@@ -1,16 +1,16 @@
 import http from "@/src/@core/http";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
-import { 
-    GetListEmployeeInputDto, 
-    CreateEmployeeInputDto, 
-    UpdateEmployeeInputDto 
+import {
+    GetListEmployeeInputDto,
+    CreateEmployeeInputDto,
+    UpdateEmployeeInputDto
 } from "./models/input.model";
-import { EmployeeOutputDto } from "./models/output.model";
+import { PagedResultEmployeeOutputDto, EmployeeOutputDto } from "./models/output.model";
 
 class EmployeeService {
     private readonly prefix = "/administration-service/api/employee";
 
-    async getList(params: GetListEmployeeInputDto): Promise<PagedResultDto<EmployeeOutputDto>> {
+    async getList(params: GetListEmployeeInputDto): Promise<PagedResultEmployeeOutputDto> {
         const response = await http.get(this.prefix, { params });
         return response.data;
     }

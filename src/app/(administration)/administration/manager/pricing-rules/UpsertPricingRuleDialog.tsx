@@ -1,22 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { 
-    LTTDialog, 
-    LTTDialogContent, 
-    LTTDialogHeader, 
-    LTTDialogTitle, 
-    LTTDialogFooter 
+import {
+    LTTDialog,
+    LTTDialogContent,
+    LTTDialogHeader,
+    LTTDialogTitle,
+    LTTDialogFooter
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
-import { 
-    LTTSelect, 
-    LTTSelectContent, 
-    LTTSelectItem, 
-    LTTSelectTrigger, 
-    LTTSelectValue 
+import {
+    LTTSelect,
+    LTTSelectContent,
+    LTTSelectItem,
+    LTTSelectTrigger,
+    LTTSelectValue
 } from "@/src/@core/component/LTTShadcnUI/LTTSelect";
 import LTTSwitch from "@/src/@core/component/AntD/LTTSwitch";
 import { useForm } from "react-hook-form";
@@ -37,7 +37,7 @@ interface Props {
 
 export default function UpsertPricingRuleDialog({ open, onOpenChange, editingItem, onSuccess, cinemaId }: Props) {
     const [seatTypes, setSeatTypes] = useState<SeatTypeOutputDto[]>([]);
-    
+
     const { register, handleSubmit, reset, setValue, watch } = useForm<CreatePricingRuleInputDto>({
         defaultValues: {
             ruleType: "FIXED",
@@ -48,7 +48,7 @@ export default function UpsertPricingRuleDialog({ open, onOpenChange, editingIte
         }
     });
 
-    const seatTypesMutation = useLTTMutation<any, any>({
+    const seatTypesMutation = useLTTMutation<any, void>({
         mutationFn: () => seatTypeService.getList({ page: 1, fetch: 100 }),
         onSuccess: (res) => { if (res && res.items) setSeatTypes(res.items); }
     });
@@ -103,8 +103,8 @@ export default function UpsertPricingRuleDialog({ open, onOpenChange, editingIte
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-2">
                             <LTTLabel>Loại ghế áp dụng</LTTLabel>
-                            <LTTSelect 
-                                value={watch("seatTypeId") || "all"} 
+                            <LTTSelect
+                                value={watch("seatTypeId") || "all"}
                                 onValueChange={(v) => setValue("seatTypeId", v === "all" ? undefined : v)}
                             >
                                 <LTTSelectTrigger>
@@ -120,8 +120,8 @@ export default function UpsertPricingRuleDialog({ open, onOpenChange, editingIte
                         </div>
                         <div className="space-y-2">
                             <LTTLabel>Loại quy tắc</LTTLabel>
-                            <LTTSelect 
-                                value={watch("ruleType")} 
+                            <LTTSelect
+                                value={watch("ruleType")}
                                 onValueChange={(v) => setValue("ruleType", v)}
                             >
                                 <LTTSelectTrigger>
@@ -136,24 +136,24 @@ export default function UpsertPricingRuleDialog({ open, onOpenChange, editingIte
                         </div>
                         <div className="space-y-2">
                             <LTTLabel>Hệ số (Multiplier)</LTTLabel>
-                            <LTTInput 
-                                type="number" 
-                                step="0.1" 
-                                {...register("multiplier", { valueAsNumber: true })} 
+                            <LTTInput
+                                type="number"
+                                step="0.1"
+                                {...register("multiplier", { valueAsNumber: true })}
                             />
                         </div>
                         <div className="space-y-2">
                             <LTTLabel>Độ ưu tiên</LTTLabel>
-                            <LTTInput 
-                                type="number" 
-                                {...register("priority", { valueAsNumber: true })} 
+                            <LTTInput
+                                type="number"
+                                {...register("priority", { valueAsNumber: true })}
                             />
                         </div>
 
                         <div className="space-y-2">
                             <LTTLabel>Ngày trong tuần</LTTLabel>
-                            <LTTSelect 
-                                value={watch("dayOfWeek")?.toString() || "any"} 
+                            <LTTSelect
+                                value={watch("dayOfWeek")?.toString() || "any"}
                                 onValueChange={(v) => setValue("dayOfWeek", v === "any" ? undefined : parseInt(v))}
                             >
                                 <LTTSelectTrigger>
@@ -174,9 +174,9 @@ export default function UpsertPricingRuleDialog({ open, onOpenChange, editingIte
                         <div className="space-y-2">
                             <LTTLabel>Trạng thái</LTTLabel>
                             <div className="flex items-center gap-2 pt-2">
-                                <LTTSwitch 
-                                    checked={watch("isActive")} 
-                                    onCheckedChange={(v) => setValue("isActive", v)} 
+                                <LTTSwitch
+                                    checked={watch("isActive")}
+                                    onChange={(v) => setValue("isActive", v)}
                                 />
                                 <span className="text-sm">{watch("isActive") ? "Đang bật" : "Đang tắt"}</span>
                             </div>

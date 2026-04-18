@@ -1,5 +1,6 @@
 import http from "@/src/@core/http";
-
+import { SeatLayoutDto } from "./models/output.model";
+import { CreateSeatLayoutDto, UpdateSeatLayoutDto } from "./models/input.model";
 
 const prefix = "/administration/admin";
 

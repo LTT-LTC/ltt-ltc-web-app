@@ -18,7 +18,7 @@ import { CustomerLoginInputDto } from "@/src/services/customer-service/auth/mode
 import { customerService } from "@/src/services/customer-service/customer.service";
 import { showNotificationSuccess, showNotificationError } from "@/src/@core/utils/message";
 import { getOrCreateTenantOnClient } from "@/src/@core/utils/tenant";
-import { getCookie } from "@/src/@core/utils/cookie";
+import { getCookie, setCookie } from "@/src/@core/utils/cookie";
 
 const FormDetail = () => {
     const [showPassword, setShowPassword] = useState(false);

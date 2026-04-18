@@ -7,6 +7,8 @@ const path = "/administration/admin/cinema";
 import { GetCinemaListInputDto, CreateCinemaInputDto, UpdateCinemaInputDto } from "./models/input.model";
 import { CinemaOutputDto } from "./models/output.model";
 
+export type { CinemaOutputDto };
+
 export const cinemaService = {
     getList: async (params: GetCinemaListInputDto) => {
         const { data } = await http.get<ApiResult<any>>(`${rootPath}${path}`, { params });

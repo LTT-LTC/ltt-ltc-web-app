@@ -120,7 +120,7 @@ export default function ShowtimeSchedulerPage() {
   const [editing, setEditing] = useState<ShowtimeOutputDto | null>(null);
   const [calendarWeek, setCalendarWeek] = useState(new Date());
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<any>({
     movieId: "",
     cinemaId: "",
     screenId: "",
@@ -137,7 +137,7 @@ export default function ShowtimeSchedulerPage() {
   });
 
   const movieMutation = useLTTMutation<PagedResultDto<MovieOutputDto> | undefined, any>({
-    mutationFn: (p) => movieService.getList(p),
+    mutationFn: (p) => movieService.getMovieList(p),
     onSuccess: (res) => { if (res && res.items) setMovies(res.items); }
   });
 
@@ -196,10 +196,10 @@ export default function ShowtimeSchedulerPage() {
     if (cinemaFilter !== "all") list = list.filter((s) => s.cinemaId === cinemaFilter);
     if (search) {
       const q = search.toLowerCase();
-      list = list.filter((s) => s.movieTitle.toLowerCase().includes(q));
+      list = list.filter((s) => s.movieTitle?.toLowerCase().includes(q));
     }
     const weekKeys = weekDates.map(formatDateKey);
-    return list.filter((s) => weekKeys.includes(s.date));
+    return list.filter((s) => s.date && weekKeys.includes(s.date));
   }, [items, cinemaFilter, search, weekDates]);
 
   const allSel =
@@ -410,13 +410,13 @@ export default function ShowtimeSchedulerPage() {
                     </td>
                     <td className="px-4 py-3 text-xs">{item.format}</td>
                     <td className="px-4 py-3 text-xs">
-                      {formatPrice(item.basePrice)}
+                      {formatPrice(item.basePrice ?? 0)}
                     </td>
                     <td className="px-4 py-3">
                       <LTTBadge
-                        className={cn("font-medium", statusColor[item.status])}
+                        className={cn("font-medium", statusColor[item.status || "active"])}
                       >
-                        {statusLabel[item.status]}
+                        {statusLabel[item.status || "active"]}
                       </LTTBadge>
                     </td>
                     <td className="px-4 py-3">
@@ -502,10 +502,9 @@ export default function ShowtimeSchedulerPage() {
               return (
                 <span
                   key={mid}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
-                    movieColorMap[mid] ||
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${movieColorMap[mid] ||
                     "bg-muted-shadcn/20 text-muted-foreground-shadcn"
-                  }`}
+                    }`}
                 >
                   {movie?.title || mid}
                 </span>
@@ -528,17 +527,15 @@ export default function ShowtimeSchedulerPage() {
                     return (
                       <div
                         key={i}
-                        className={`px-2 py-2 text-center border-l border-border-shadcn ${
-                          isToday ? "bg-primary-shadcn/10" : ""
-                        }`}
+                        className={`px-2 py-2 text-center border-l border-border-shadcn ${isToday ? "bg-primary-shadcn/10" : ""
+                          }`}
                       >
                         <div className="text-xs text-muted-foreground-shadcn">
                           {DAYS_VI[(i + 1) % 7 === 0 ? 0 : (i + 1) % 7]}
                         </div>
                         <div
-                          className={`text-sm font-semibold ${
-                            isToday ? "text-primary-shadcn" : ""
-                          }`}
+                          className={`text-sm font-semibold ${isToday ? "text-primary-shadcn" : ""
+                            }`}
                         >
                           {d.getDate()}/{d.getMonth() + 1}
                         </div>
@@ -572,9 +569,8 @@ export default function ShowtimeSchedulerPage() {
                         return (
                           <div
                             key={di}
-                            className={`relative border-l border-border-shadcn min-h-[52px] cursor-pointer hover:bg-muted-shadcn/20 transition-colors ${
-                              isToday ? "bg-primary-shadcn/5" : ""
-                            }`}
+                            className={`relative border-l border-border-shadcn min-h-[52px] cursor-pointer hover:bg-muted-shadcn/20 transition-colors ${isToday ? "bg-primary-shadcn/5" : ""
+                              }`}
                             onClick={() =>
                               openCreate(
                                 dateKey,
@@ -595,14 +591,12 @@ export default function ShowtimeSchedulerPage() {
                               return (
                                 <div
                                   key={st.id}
-                                  className={`absolute left-0.5 right-0.5 rounded border px-1 py-0.5 overflow-hidden cursor-pointer z-10 ${
-                                    movieColorMap[st.movieId] ||
+                                  className={`absolute left-0.5 right-0.5 rounded border px-1 py-0.5 overflow-hidden cursor-pointer z-10 ${movieColorMap[st.movieId] ||
                                     "bg-muted-shadcn/20 text-muted-foreground-shadcn"
-                                  } ${
-                                    st.status === "cancelled"
+                                    } ${st.status === "cancelled"
                                       ? "opacity-40 line-through"
                                       : ""
-                                  }`}
+                                    }`}
                                   style={{
                                     top: `${topOffset}%`,
                                     height: `${Math.max(
@@ -615,13 +609,13 @@ export default function ShowtimeSchedulerPage() {
                                     e.stopPropagation();
                                     openEdit(st);
                                   }}
-                                  title={`${st.movieTitle}\n${st.startTime} - ${st.endTime}\nPhòng ${st.screenNumber} • ${st.cinemaName}`}
+                                  title={`${st.movieTitle}\n${st.startTime} - ${st.endTime}\nPhòng ${st.screenName} • ${st.cinemaName}`}
                                 >
                                   <div className="text-[10px] font-bold leading-tight truncate">
                                     {st.movieTitle}
                                   </div>
                                   <div className="text-[9px] opacity-90 leading-tight">
-                                    {st.startTime}-{st.endTime} • P{st.screenNumber}
+                                    {st.startTime}-{st.endTime} • P{st.screenName}
                                   </div>
                                 </div>
                               );
@@ -704,7 +698,7 @@ export default function ShowtimeSchedulerPage() {
                 <LTTSelectContent>
                   {screens.map((s) => (
                     <LTTSelectItem key={s.id} value={s.id}>
-                      {s.name}
+                      {s.screenNumber}
                     </LTTSelectItem>
                   ))}
                 </LTTSelectContent>

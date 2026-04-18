@@ -40,8 +40,8 @@ export default function NewsAndOffersTable({ search, onEdit }: Props) {
     const fetchData = () => {
         listMutation.mutation({
             keyword: search,
-            skipCount: 0,
-            maxResultCount: 100
+            page: 1,
+            fetch: 100
         });
     };
 

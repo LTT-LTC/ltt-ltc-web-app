@@ -27,6 +27,7 @@ import { employeeService } from "@/src/services/administration-service/employee/
 import { EmployeeOutputDto } from "@/src/services/administration-service/employee/models/output.model";
 import { GetListEmployeeInputDto, CreateEmployeeInputDto, UpdateEmployeeInputDto } from "@/src/services/administration-service/employee/models/input.model";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
+import { cinemaService } from "@/src/services/administration-service/cinema/cinema.service";
 import { useEffect } from "react";
 import { cn } from "@/src/@core/utils/cn";
 
@@ -109,12 +110,12 @@ export default function StaffPage() {
 
   const filtered = useMemo(() => {
     let list = items;
-    if (roleFilter !== "all") list = list.filter((s) => s.role === roleFilter);
+    if (roleFilter !== "all") list = list.filter((s) => (s.positionName || "Nhân viên") === roleFilter);
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(
         (s) =>
-          s.fullname.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)
+          s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)
       );
     }
     return list;
@@ -182,6 +183,8 @@ export default function StaffPage() {
     setSelected(new Set());
     setDeleteOpen(false);
   };
+
+  const staffRoles = Array.from(new Set(items.map(i => i.positionName || "Nhân viên")));
 
   return (
     <div className="space-y-4">
@@ -299,7 +302,7 @@ export default function StaffPage() {
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={() => {
                           setItems((p) => p.filter((i) => i.id !== item.id));
-                          toast.success("Đã xóa nhân viên " + item.fullname);
+                          toast.success("Đã xóa nhân viên " + item.name);
                         }}
                       >
                         <Trash2 className="h-4 w-4" />
