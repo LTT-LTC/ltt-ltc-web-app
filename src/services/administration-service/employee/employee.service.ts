@@ -1,4 +1,4 @@
-import { administrationHttp } from "@/src/@core/http";
+import http from "@/src/@core/http";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { 
     GetListEmployeeInputDto, 
@@ -11,12 +11,12 @@ class EmployeeService {
     private readonly prefix = "/administration-service/api/employee";
 
     async getList(params: GetListEmployeeInputDto): Promise<PagedResultDto<EmployeeOutputDto>> {
-        const response = await administrationHttp.get(this.prefix, { params });
+        const response = await http.get(this.prefix, { params });
         return response.data;
     }
 
     async getDetail(id: string): Promise<EmployeeOutputDto> {
-        const response = await administrationHttp.get(`${this.prefix}/${id}`);
+        const response = await http.get(`${this.prefix}/${id}`);
         return response.data;
     }
 
@@ -34,7 +34,7 @@ class EmployeeService {
             }
         });
 
-        const response = await administrationHttp.post(this.prefix, formData, {
+        const response = await http.post(this.prefix, formData, {
             headers: { "Content-Type": "multipart/form-data" }
         });
         return response.data;
@@ -42,7 +42,7 @@ class EmployeeService {
 
     // Note: Update not yet in controller but adding common pattern
     async update(id: string, body: UpdateEmployeeInputDto): Promise<boolean> {
-        const response = await administrationHttp.put(`${this.prefix}/${id}`, body);
+        const response = await http.put(`${this.prefix}/${id}`, body);
         return response.data;
     }
 }

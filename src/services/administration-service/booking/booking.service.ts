@@ -4,7 +4,7 @@ import { ApiResult } from "@/src/@core/http/models/ApiResult";
 import { PaymentOutputDto } from "./models/output.model";
 
 class BookingService {
-    private readonly prefix = "/ltc/payment-service/api/administration/admin";
+    private readonly prefix = "/payment-service/api";
 
     async getList(params: any): Promise<PagedResultDto<PaymentOutputDto>> {
         const response = await http.get<ApiResult<PagedResultDto<PaymentOutputDto>>>(`${this.prefix}/payment-all`, { params });

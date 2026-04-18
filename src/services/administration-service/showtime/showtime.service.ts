@@ -8,7 +8,7 @@ import {
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
 
 class ShowtimeService {
-    private readonly prefix = "/ltc/administration-service/api/administration/manager/showtimes";
+    private readonly prefix = "/administration-service/api/administration/manager/showtimes";
 
     async getList(params: GetShowtimeListInputDto): Promise<PagedResultDto<ShowtimeOutputDto>> {
         const response = await http.get<ApiResult<PagedResultDto<ShowtimeOutputDto>>>(this.prefix, { 

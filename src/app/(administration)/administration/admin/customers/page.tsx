@@ -2,16 +2,16 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Search, User, Lock, Unlock, Trash2, Mail, Phone } from "lucide-react";
-import { LTTButton } from "@/src/@core/component/LTTButton";
-import { LTTInput } from "@/src/@core/component/LTTInput";
-import { LTTBadge } from "@/src/@core/component/LTTBadge";
+import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
+import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
+import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 import { 
     LTTDialog, 
     LTTDialogContent, 
     LTTDialogHeader, 
     LTTDialogTitle, 
     LTTDialogFooter 
-} from "@/src/@core/component/LTTDialog";
+} from "@/src/@core/component/LTTShadcnUI/LTTDialog";
 import { toast } from "sonner";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { customerService } from "@/src/services/customer-service/customer.service";

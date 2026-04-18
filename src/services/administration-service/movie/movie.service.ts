@@ -23,7 +23,7 @@ import {
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
 
 class MovieService {
-    private readonly prefix = "/ltc/movie-service/api/admin";
+    private readonly prefix = "/movie-service/api";
 
     // Movie CRUD
     async getMovieList(params: any): Promise<PagedResultDto<MovieOutputDto>> {
@@ -61,17 +61,17 @@ class MovieService {
     }
 
     async createGenre(body: CreateGenreInputDto): Promise<GenreOutputDto> {
-        const response = await http.post<ApiResult<GenreOutputDto>>(`${this.prefix}/admin/genre`, body);
+        const response = await http.post<ApiResult<GenreOutputDto>>(`${this.prefix}/genre`, body);
         return response.data.data;
     }
 
     async updateGenre(id: string, body: any): Promise<GenreOutputDto> {
-        const response = await http.put<ApiResult<GenreOutputDto>>(`${this.prefix}/admin/genre/${id}`, body);
+        const response = await http.put<ApiResult<GenreOutputDto>>(`${this.prefix}/genre/${id}`, body);
         return response.data.data;
     }
 
     async deleteGenre(id: string): Promise<void> {
-        await http.delete<ApiResult<void>>(`${this.prefix}/admin/genre/${id}`);
+        await http.delete<ApiResult<void>>(`${this.prefix}/genre/${id}`);
     }
 
     // Metadata - Actors
@@ -81,17 +81,17 @@ class MovieService {
     }
 
     async createActor(body: CreateActorInputDto): Promise<ActorOutputDto> {
-        const response = await http.post<ApiResult<ActorOutputDto>>(`${this.prefix}/admin/actor`, body);
+        const response = await http.post<ApiResult<ActorOutputDto>>(`${this.prefix}/actor`, body);
         return response.data.data;
     }
 
     async updateActor(id: string, body: any): Promise<ActorOutputDto> {
-        const response = await http.put<ApiResult<ActorOutputDto>>(`${this.prefix}/admin/actor/${id}`, body);
+        const response = await http.put<ApiResult<ActorOutputDto>>(`${this.prefix}/actor/${id}`, body);
         return response.data.data;
     }
 
     async deleteActor(id: string): Promise<void> {
-        await http.delete<ApiResult<void>>(`${this.prefix}/admin/actor/${id}`);
+        await http.delete<ApiResult<void>>(`${this.prefix}/actor/${id}`);
     }
 
     // Metadata - Studios
@@ -101,17 +101,17 @@ class MovieService {
     }
 
     async createStudio(body: CreateStudioInputDto): Promise<StudioOutputDto> {
-        const response = await http.post<ApiResult<StudioOutputDto>>(`${this.prefix}/admin/studio`, body);
+        const response = await http.post<ApiResult<StudioOutputDto>>(`${this.prefix}/studio`, body);
         return response.data.data;
     }
 
     async updateStudio(id: string, body: any): Promise<StudioOutputDto> {
-        const response = await http.put<ApiResult<StudioOutputDto>>(`${this.prefix}/admin/studio/${id}`, body);
+        const response = await http.put<ApiResult<StudioOutputDto>>(`${this.prefix}/studio/${id}`, body);
         return response.data.data;
     }
 
     async deleteStudio(id: string): Promise<void> {
-        await http.delete<ApiResult<void>>(`${this.prefix}/admin/studio/${id}`);
+        await http.delete<ApiResult<void>>(`${this.prefix}/studio/${id}`);
     }
 
     // Metadata - Formats
@@ -121,57 +121,57 @@ class MovieService {
     }
 
     async createFormat(body: CreateFormatInputDto): Promise<FormatOutputDto> {
-        const response = await http.post<ApiResult<FormatOutputDto>>(`${this.prefix}/admin/format`, body);
+        const response = await http.post<ApiResult<FormatOutputDto>>(`${this.prefix}/format`, body);
         return response.data.data;
     }
 
     async updateFormat(id: string, body: any): Promise<FormatOutputDto> {
-        const response = await http.put<ApiResult<FormatOutputDto>>(`${this.prefix}/admin/format/${id}`, body);
+        const response = await http.put<ApiResult<FormatOutputDto>>(`${this.prefix}/format/${id}`, body);
         return response.data.data;
     }
 
     async deleteFormat(id: string): Promise<void> {
-        await http.delete<ApiResult<void>>(`${this.prefix}/admin/format/${id}`);
+        await http.delete<ApiResult<void>>(`${this.prefix}/format/${id}`);
     }
 
     // Metadata - Roles
     async getRoles(): Promise<PagedResultDto<RoleOutputDto>> {
-        const response = await http.get<ApiResult<PagedResultDto<RoleOutputDto>>>(`${this.prefix}/admin/role-all`);
+        const response = await http.get<ApiResult<PagedResultDto<RoleOutputDto>>>(`${this.prefix}/role-all`);
         return response.data.data;
     }
 
     async createRole(body: CreateRoleInputDto): Promise<RoleOutputDto> {
-        const response = await http.post<ApiResult<RoleOutputDto>>(`${this.prefix}/admin/role`, body);
+        const response = await http.post<ApiResult<RoleOutputDto>>(`${this.prefix}/role`, body);
         return response.data.data;
     }
 
     async updateRole(id: string, body: any): Promise<RoleOutputDto> {
-        const response = await http.put<ApiResult<RoleOutputDto>>(`${this.prefix}/admin/role/${id}`, body);
+        const response = await http.put<ApiResult<RoleOutputDto>>(`${this.prefix}/role/${id}`, body);
         return response.data.data;
     }
 
     async deleteRole(id: string): Promise<void> {
-        await http.delete<ApiResult<void>>(`${this.prefix}/admin/role/${id}`);
+        await http.delete<ApiResult<void>>(`${this.prefix}/role/${id}`);
     }
 
     // Metadata - Ratings
     async getRatings(): Promise<PagedResultDto<any>> {
-        const response = await http.get<ApiResult<PagedResultDto<any>>>(`${this.prefix}/admin/rating-all`);
+        const response = await http.get<ApiResult<PagedResultDto<any>>>(`${this.prefix}/rating-all`);
         return response.data.data;
     }
 
     async createRating(body: any): Promise<any> {
-        const response = await http.post<ApiResult<any>>(`${this.prefix}/admin/rating`, body);
+        const response = await http.post<ApiResult<any>>(`${this.prefix}/rating`, body);
         return response.data.data;
     }
 
     async updateRating(id: string, body: any): Promise<any> {
-        const response = await http.put<ApiResult<any>>(`${this.prefix}/admin/rating/${id}`, body);
+        const response = await http.put<ApiResult<any>>(`${this.prefix}/rating/${id}`, body);
         return response.data.data;
     }
 
     async deleteRating(id: string): Promise<void> {
-        await http.delete<ApiResult<void>>(`${this.prefix}/admin/rating/${id}`);
+        await http.delete<ApiResult<void>>(`${this.prefix}/rating/${id}`);
     }
 
     // Distributions

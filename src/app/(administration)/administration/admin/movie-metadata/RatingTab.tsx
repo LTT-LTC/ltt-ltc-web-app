@@ -2,21 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, ShieldCheck } from "lucide-react";
-import { LTTButton } from "@/src/@core/component/LTTButton";
-import { LTTInput } from "@/src/@core/component/LTTInput";
+import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
+import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { 
     LTTDialog, 
     LTTDialogContent, 
     LTTDialogHeader, 
     LTTDialogTitle, 
     LTTDialogFooter 
-} from "@/src/@core/component/LTTDialog";
-import { LTTLabel } from "@/src/@core/component/LTTLabel";
+} from "@/src/@core/component/LTTShadcnUI/LTTDialog";
+import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import { movieService } from "@/src/services/administration-service/movie/movie.service";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { toast } from "sonner";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
-import { LTTBadge } from "@/src/@core/component/LTTBadge";
+import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 
 export default function RatingTab() {
     const [items, setItems] = useState<any[]>([]);

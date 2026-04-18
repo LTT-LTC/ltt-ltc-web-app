@@ -60,7 +60,8 @@ export default function StaffPage({ cinemaId }: { cinemaId?: string }) {
     positionId: "",
     isActive: true,
   });
-
+  const listMutation = useLTTMutation<PagedResultDto<EmployeeOutputDto> | undefined, GetListEmployeeInputDto>({
+    mutationFn: (params) => employeeService.getList(params),
     onSuccess: (res) => { if (res && res.items) setItems(res.items); },
     onError: (err) => toast.error(err.message || "Lỗi tải danh sách nhân viên")
   });

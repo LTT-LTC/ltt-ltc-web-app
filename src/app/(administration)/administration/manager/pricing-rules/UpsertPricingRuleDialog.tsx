@@ -7,18 +7,18 @@ import {
     LTTDialogHeader, 
     LTTDialogTitle, 
     LTTDialogFooter 
-} from "@/src/@core/component/LTTDialog";
-import { LTTButton } from "@/src/@core/component/LTTButton";
-import { LTTInput } from "@/src/@core/component/LTTInput";
-import { LTTLabel } from "@/src/@core/component/LTTLabel";
+} from "@/src/@core/component/LTTShadcnUI/LTTDialog";
+import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
+import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
+import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import { 
     LTTSelect, 
     LTTSelectContent, 
     LTTSelectItem, 
     LTTSelectTrigger, 
     LTTSelectValue 
-} from "@/src/@core/component/LTTSelect";
-import { LTTSwitch } from "@/src/@core/component/LTTSwitch";
+} from "@/src/@core/component/LTTShadcnUI/LTTSelect";
+import LTTSwitch from "@/src/@core/component/AntD/LTTSwitch";
 import { useForm } from "react-hook-form";
 import { pricingRuleService } from "@/src/services/administration-service/pricing-rule/pricing-rule.service";
 import { seatTypeService } from "@/src/services/administration-service/seat-type/seat-type.service";

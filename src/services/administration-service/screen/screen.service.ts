@@ -9,7 +9,7 @@ import { ScreenOutputDto } from "./models/output.model";
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
 
 class ScreenService {
-    private readonly prefix = "/ltc/administration-service/api/administration/manager/screens";
+    private readonly prefix = "/administration-service/api/administration/manager/screens";
 
     async getListAll(cinemaId: string, params: GetScreenListInputDto): Promise<PagedResultDto<ScreenOutputDto>> {
         const response = await http.get<ApiResult<PagedResultDto<ScreenOutputDto>>>(`${this.prefix}/cinema/${cinemaId}/screen-all`, { params });

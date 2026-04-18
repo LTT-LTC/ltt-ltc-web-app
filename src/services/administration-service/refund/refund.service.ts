@@ -8,7 +8,7 @@ import {
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
 
 class RefundService {
-    private readonly prefix = "/ltc/payment-service/api/administration/admin";
+    private readonly prefix = "/payment-service/api";
 
     async getList(params: any): Promise<PagedResultDto<RefundOutputDto>> {
         const response = await http.get<ApiResult<PagedResultDto<RefundOutputDto>>>(`${this.prefix}/refund-all`, { params });

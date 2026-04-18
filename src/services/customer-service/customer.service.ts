@@ -11,19 +11,19 @@ export const customerService = {
     
     // Admin methods
     async getAdminList(params: any): Promise<PagedResultDto<any>> {
-        const response = await http.get<ApiResult<PagedResultDto<any>>>(`${rootCustomerPath}/customer/admin`, { params });
+        const response = await http.get<ApiResult<PagedResultDto<any>>>(`${rootCustomerPath}/customer`, { params });
         return response.data.data;
     },
 
     async deleteCustomer(id: string): Promise<void> {
-        await http.delete<ApiResult<void>>(`${rootCustomerPath}/customer/admin/${id}`);
+        await http.delete<ApiResult<void>>(`${rootCustomerPath}/customer/${id}`);
     },
 
     async lockCustomer(id: string): Promise<void> {
-        await http.post<ApiResult<void>>(`${rootCustomerPath}/customer/admin/${id}/lock`);
+        await http.post<ApiResult<void>>(`${rootCustomerPath}/customer/${id}/lock`);
     },
 
     async unlockCustomer(id: string): Promise<void> {
-        await http.post<ApiResult<void>>(`${rootCustomerPath}/customer/admin/${id}/unlock`);
+        await http.post<ApiResult<void>>(`${rootCustomerPath}/customer/${id}/unlock`);
     }
 };

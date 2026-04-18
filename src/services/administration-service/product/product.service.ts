@@ -15,7 +15,7 @@ import {
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
 
 class ProductService {
-    private readonly prefix = "/ltc/product-service/api/administration/admin";
+    private readonly prefix = "/product-service/api";
 
     // Product CRUD
     async getProductList(params: any): Promise<PagedResultDto<ProductOutputDto>> {

@@ -2,30 +2,30 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, Calendar, ShieldCheck } from "lucide-react";
-import { LTTButton } from "@/src/@core/component/LTTButton";
-import { LTTInput } from "@/src/@core/component/LTTInput";
+import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
+import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { 
     LTTDialog, 
     LTTDialogContent, 
     LTTDialogHeader, 
     LTTDialogTitle, 
     LTTDialogFooter 
-} from "@/src/@core/component/LTTDialog";
-import { LTTLabel } from "@/src/@core/component/LTTLabel";
-import { LTTSwitch } from "@/src/@core/component/LTTSwitch";
+} from "@/src/@core/component/LTTShadcnUI/LTTDialog";
+import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
+import LTTSwitch from "@/src/@core/component/AntD/LTTSwitch";
 import { 
     LTTSelect, 
     LTTSelectContent, 
     LTTSelectItem, 
     LTTSelectTrigger, 
     LTTSelectValue 
-} from "@/src/@core/component/LTTSelect";
+} from "@/src/@core/component/LTTShadcnUI/LTTSelect";
 import { movieService } from "@/src/services/administration-service/movie/movie.service";
 import { MovieDistributionOutputDto, MovieOutputDto } from "@/src/services/administration-service/movie/models/output.model";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { toast } from "sonner";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
-import { LTTBadge } from "@/src/@core/component/LTTBadge";
+import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 
 export default function DistributionTable() {
     const [items, setItems] = useState<MovieDistributionOutputDto[]>([]);

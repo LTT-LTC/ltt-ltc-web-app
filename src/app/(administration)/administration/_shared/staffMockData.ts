@@ -1,4 +1,4 @@
-import { mockAdminShowtimes, mockAdminMovies, mockAdminCinemas, mockScreens, mockFnBItems } from "./adminMockData";
+import { mockAdminShowtimes, mockAdminMovies, mockAdminCinemas, mockScreens, mockFnBItems, type SeatLayout, mockSeatTypes } from "./adminMockData";
 
 // ─── Staff Showtimes (today-focused) ───
 export interface StaffShowtime {
@@ -71,22 +71,113 @@ export function generateSeatAvailability(showtimeId: string): SeatAvailability[]
   const seed = showtimeId.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
 
   for (let r = 0; r < rows.length; r++) {
+    let logicalSeatId = 0;
     for (let c = 1; c <= cols; c++) {
       const hash = (seed + r * cols + c) % 10;
       // Some seats are "empty" (walkway etc.)
       if ((r === 0 && (c === 1 || c === 4 || c === 8)) || (r === 1 && c === 3)) continue;
+
+      const seatTypeId = r === 3 ? 3 : 1; // row 3 gets Sweetbox (id: 3)
+      
+      // Sweetbox occupies 2 horizontal spaces. We skip logging a ticket for the second space.
+      if (seatTypeId === 3 && c % 2 === 0) continue;
+
+      logicalSeatId++;
+
       seats.push({
-        code: `${rows[r]}${c}`,
+        code: `${rows[r]}${logicalSeatId}`,
         row: rows[r],
         col: c,
         status: hash < 5 ? "booked" : "available",
-        seatTypeId: r === 3 ? 2 : 1,
-        price: r === 3 ? basePrice * 1.5 : basePrice,
+        seatTypeId,
+        price: seatTypeId === 3 ? basePrice * 2.0 : basePrice,
       });
     }
   }
   return seats;
 }
+
+/**
+ * Converts a flat SeatAvailability list into the SeatLayout shape
+ * consumed by LTTSeatMapViewer.
+ * Booked/available status is carried via the returned array —
+ * callers should pass `bookedSeats` separately to the viewer.
+ */
+export function generateSeatLayout(seats: SeatAvailability[]): SeatLayout {
+  const rowMap: Record<string, SeatAvailability[]> = {};
+  let maxCol = 10; // Default fallback
+
+  for (const seat of seats) {
+    if (!rowMap[seat.row]) rowMap[seat.row] = [];
+    rowMap[seat.row].push(seat);
+    if (seat.col > maxCol) maxCol = seat.col;
+  }
+
+  const innerRows = Object.entries(rowMap)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([row, rowSeats]) => {
+      // Build exactly `maxCol` cells to keep alignment in flex
+      const paddedSeats: any[] = [];
+      
+      // Left exterior empty border cell
+      paddedSeats.push({ seatCode: "", x: 0, y: 0, seatTypeId: 0, type: "empty" as const });
+
+      for (let c = 1; c <= maxCol; c++) {
+        const s = rowSeats.find((x) => x.col === c);
+        if (s) {
+          paddedSeats.push({
+            seatCode: s.code,
+            x: s.col * 40,
+            y: 0,
+            seatTypeId: s.seatTypeId,
+            type: "seat" as const,
+          });
+
+          const st = mockSeatTypes.find((t) => t.id === s.seatTypeId);
+          const occupied = st?.seatOccupied || 1;
+
+          // Push continuations for multi-cell seats exactly like the DB does
+          for (let i = 1; i < occupied; i++) {
+            c++;
+            paddedSeats.push({
+              seatCode: "",
+              x: c * 40,
+              y: 0,
+              seatTypeId: s.seatTypeId,
+              // Continuation cells lack a "type" field natively
+            });
+          }
+        } else {
+          // Fill gap correctly
+          paddedSeats.push({
+            seatCode: "", x: c * 40, y: 0, seatTypeId: 0, type: "empty" as const
+          });
+        }
+      }
+
+      // Right exterior empty border cell
+      paddedSeats.push({ seatCode: "", x: 0, y: 0, seatTypeId: 0, type: "empty" as const });
+
+      return {
+        row,
+        seats: paddedSeats,
+      };
+    });
+
+  if (innerRows.length === 0) return { rows: [] };
+
+  const numCols = innerRows[0].seats.length;
+  
+  const createEmptyRow = () => ({
+    row: "",
+    seats: Array.from({ length: numCols }).map(() => ({
+      seatCode: "", x: 0, y: 0, seatTypeId: 0, type: "empty" as const
+    }))
+  });
+
+  return { rows: [createEmptyRow(), ...innerRows, createEmptyRow()] };
+}
+
 
 // ─── POS Products & Combos ───
 export interface POSProduct {

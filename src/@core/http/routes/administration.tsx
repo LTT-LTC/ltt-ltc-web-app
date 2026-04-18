@@ -12,6 +12,7 @@ import {
   HeadphonesIcon,
   RotateCcw,
   Ticket as BookingIcon,
+  History,
 } from "lucide-react";
 
 /** Navigation items for System Admin sub-domain */
@@ -190,6 +191,13 @@ export const staffNavItems: NavItemConfig[] = [
     label: "Staff Dashboard",
     path: "/administration/staff/dashboard",
     icon: LayoutDashboard,
+    permissionKey: "staff:dashboard",
+  },
+  {
+    key: "booking-history",
+    label: "Booking History",
+    path: "/administration/staff/booking-history",
+    icon: History,
     permissionKey: "staff:dashboard",
   }
 ];

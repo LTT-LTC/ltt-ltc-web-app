@@ -9,7 +9,7 @@ import { cinemaAmenityService } from "./cinema-amenity/cinema-amenity.service";
 import { amenityTypeService } from "./amenity-type/amenity-type.service";
 import { movieService } from "./movie/movie.service";
 
-export const rootPath: string = get.rootPath("/ltc/administration-service/api");
+export const rootPath: string = get.rootPath("/administration-service/api");
 
 export const administrationService = {
     authService: authService,
