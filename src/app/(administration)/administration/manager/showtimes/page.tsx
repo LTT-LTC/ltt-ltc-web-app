@@ -18,7 +18,8 @@ import { showtimeService } from "@/src/services/administration-service/showtime/
 import { movieService } from "@/src/services/administration-service/movie/movie.service";
 import { cinemaService } from "@/src/services/administration-service/cinema/cinema.service";
 import { screenService } from "@/src/services/administration-service/screen/screen.service";
-import { ShowtimeOutputDto, CreateShowtimeDto } from "@/src/services/administration-service/showtime/models/showtime.model";
+import { CreateShowtimeInputDto } from "@/src/services/administration-service/showtime/models/input.model";
+import { ShowtimeOutputDto } from "@/src/services/administration-service/showtime/models/output.model";
 import { MovieOutputDto } from "@/src/services/administration-service/movie/models/output.model";
 import { CinemaOutputDto } from "@/src/services/administration-service/cinema/models/output.model";
 import { ScreenOutputDto } from "@/src/services/administration-service/screen/models/output.model";
@@ -131,13 +132,13 @@ export default function ShowtimeSchedulerPage() {
   });
 
   const listMutation = useLTTMutation<PagedResultDto<ShowtimeOutputDto> | undefined, any>({
-    mutationFn: (params) => showtimeService.getList(params),
+    mutationFn: (params) => showtimeService.getShowtimeListAsync(params),
     onSuccess: (res) => { if (res && res.items) setItems(res.items); },
     onError: (err) => toast.error(err.message || "Lỗi tải lịch chiếu")
   });
 
   const movieMutation = useLTTMutation<PagedResultDto<MovieOutputDto> | undefined, any>({
-    mutationFn: (p) => movieService.getMovieList(p),
+    mutationFn: (p) => movieService.getMovieListAsync(p),
     onSuccess: (res) => { if (res && res.items) setMovies(res.items); }
   });
 
@@ -147,12 +148,12 @@ export default function ShowtimeSchedulerPage() {
   });
 
   const screenMutation = useLTTMutation<PagedResultDto<ScreenOutputDto> | undefined, string>({
-    mutationFn: (cid) => screenService.getListAll(cid, { page: 1, fetch: 100 }),
+    mutationFn: (cid) => screenService.getScreenListAsync(cid, { page: 1, fetch: 100 }),
     onSuccess: (res) => { if (res && res.items) setScreens(res.items); }
   });
 
-  const createMutation = useLTTMutation<ShowtimeOutputDto | undefined, CreateShowtimeDto>({
-    mutationFn: (body) => showtimeService.create(body),
+  const createMutation = useLTTMutation<ShowtimeOutputDto | undefined, CreateShowtimeInputDto>({
+    mutationFn: (body) => showtimeService.createShowtimeAsync(body),
     onSuccess: () => { toast.success("Tạo thành công"); fetchData(); setDialogOpen(false); }
   });
 

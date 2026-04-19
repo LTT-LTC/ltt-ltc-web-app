@@ -25,7 +25,7 @@ export default function BookingManagementPage() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const listMutation = useLTTMutation<PagedResultDto<PaymentOutputDto> | undefined, any>({
-    mutationFn: (params) => bookingService.getList(params),
+    mutationFn: (params) => bookingService.getBookingListAsync(params),
     onSuccess: (res) => { if (res && res.items) setItems(res.items); },
     onError: (err) => toast.error(err.message || "Lỗi tải lịch sử đặt vé")
   });

@@ -49,12 +49,12 @@ export default function UpsertAmenityDialog({ open, onOpenChange, editingItem, c
     const [products, setProducts] = useState<ProductOutputDto[]>([]);
 
     const typesMutation = useLTTMutation<PagedResultDto<AmenityTypeOutputDto> | null, any>({
-        mutationFn: () => amenityTypeService.getList(),
+        mutationFn: () => amenityTypeService.getAmenityTypeAsync(),
         onSuccess: (res) => { if (res && res.items) setTypes(res.items); }
     });
 
     const productsMutation = useLTTMutation<PagedResultDto<ProductOutputDto> | null, any>({
-        mutationFn: () => productService.getProductList({ page: 1, fetch: 100 }),
+        mutationFn: () => productService.getProductListAsync({ page: 1, fetch: 100 }),
         onSuccess: (res) => { if (res && res.items) setProducts(res.items); }
     });
 
@@ -86,7 +86,7 @@ export default function UpsertAmenityDialog({ open, onOpenChange, editingItem, c
     }, [editingItem, open]);
 
     const createMutation = useLTTMutation<CinemaAmenityOutputDto | null, { cinemaId: string, body: CreateCinemaAmenityInputDto }>({
-        mutationFn: (input) => cinemaAmenityService.create(input.cinemaId, input.body),
+        mutationFn: (input) => cinemaAmenityService.createCinemaAmenityAsync(input.cinemaId, input.body),
         onSuccess: () => {
             toast.success("Tạo mới thành công");
             onSuccess();
@@ -96,7 +96,7 @@ export default function UpsertAmenityDialog({ open, onOpenChange, editingItem, c
     });
 
     const updateMutation = useLTTMutation<CinemaAmenityOutputDto | null, { cinemaId: string, id: string, body: UpdateCinemaAmenityInputDto }>({
-        mutationFn: (input) => cinemaAmenityService.update(input.cinemaId, input.id, input.body),
+        mutationFn: (input) => cinemaAmenityService.updateCinemaAmenityAsync(input.cinemaId, input.id, input.body),
         onSuccess: () => {
             toast.success("Cập nhật thành công");
             onSuccess();

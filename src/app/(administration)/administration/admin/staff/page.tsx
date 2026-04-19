@@ -67,7 +67,7 @@ export default function StaffPage() {
     isActive: true,
   });
   const listMutation = useLTTMutation<PagedResultDto<EmployeeOutputDto> | undefined, GetListEmployeeInputDto>({
-    mutationFn: (params) => employeeService.getList(params),
+    mutationFn: (params) => employeeService.getEmployeeListAsync(params),
     onSuccess: (res) => { if (res && res.items) setItems(res.items); },
     onError: (err) => toast.error(err.message || "Lỗi tải danh sách nhân viên")
   });
@@ -79,7 +79,7 @@ export default function StaffPage() {
   });
 
   const createMutation = useLTTMutation<string | undefined, CreateEmployeeInputDto>({
-    mutationFn: (input) => employeeService.create(input),
+    mutationFn: (input) => employeeService.createEmployeeAsync(input),
     onSuccess: () => {
       toast.success("Thêm nhân viên thành công");
       fetchData();
@@ -89,7 +89,7 @@ export default function StaffPage() {
   });
 
   const updateMutation = useLTTMutation<boolean | undefined, { id: string; body: UpdateEmployeeInputDto }>({
-    mutationFn: (input) => employeeService.update(input.id, input.body),
+    mutationFn: (input) => employeeService.updateEmployeeAsync(input.id, input.body),
     onSuccess: () => {
       toast.success("Cập nhật thành công");
       fetchData();

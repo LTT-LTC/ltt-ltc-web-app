@@ -26,13 +26,13 @@ export default function FormatTab() {
     const didInitRef = useRef(false);
 
     const listMutation = useLTTMutation<PagedResultDto<FormatOutputDto> | undefined, void>({
-        mutationFn: () => movieService.getFormats(),
+        mutationFn: () => movieService.getFormatsAsync(),
         onSuccess: (res) => { if (res && res.items) setItems(res.items); },
         onError: (err) => toast.error(err.message || "Lỗi tải danh sách định dạng")
     });
 
     const createMutation = useLTTMutation<FormatOutputDto, { name: string }>({
-        mutationFn: (body) => movieService.createFormat(body),
+        mutationFn: (body) => movieService.createFormatAsync(body),
         onSuccess: () => {
             toast.success("Thêm thành công");
             setDialogOpen(false);
@@ -42,7 +42,7 @@ export default function FormatTab() {
     });
 
     const updateMutation = useLTTMutation<FormatOutputDto, { id: string, name: string }>({
-        mutationFn: (input) => movieService.updateFormat(input.id, { name: input.name }),
+        mutationFn: (input) => movieService.updateFormatAsync(input.id, { name: input.name }),
         onSuccess: () => {
             toast.success("Cập nhật thành công");
             setDialogOpen(false);
@@ -52,7 +52,7 @@ export default function FormatTab() {
     });
 
     const deleteMutation = useLTTMutation<void, string>({
-        mutationFn: (id) => movieService.deleteFormat(id),
+        mutationFn: (id) => movieService.deleteFormatAsync(id),
         onSuccess: () => {
             toast.success("Đã xóa");
             listMutation.mutation();

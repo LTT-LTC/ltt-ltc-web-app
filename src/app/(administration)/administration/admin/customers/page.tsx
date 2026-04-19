@@ -30,13 +30,13 @@ export default function CustomersPage() {
     };
 
     const listMutation = useLTTMutation<PagedResultDto<any>, any>({
-        mutationFn: (params) => customerService.getAdminList(params),
+        mutationFn: (params) => customerService.getCustomerAsync(params),
         onSuccess: (res) => { if (res && res.items) setItems(res.items); },
         onError: (err) => toast.error(err.message || "Lỗi tải danh sách khách hàng")
     });
 
     const lockMutation = useLTTMutation<void, string>({
-        mutationFn: (id) => customerService.lockCustomer(id),
+        mutationFn: (id) => customerService.lockCustomerAsync(id),
         onSuccess: () => {
             toast.success("Đã khóa tài khoản khách hàng");
             setConfirmOpen(false);
@@ -45,7 +45,7 @@ export default function CustomersPage() {
     });
 
     const unlockMutation = useLTTMutation<void, string>({
-        mutationFn: (id) => customerService.unlockCustomer(id),
+        mutationFn: (id) => customerService.unlockCustomerAsync(id),
         onSuccess: () => {
             toast.success("Đã mở khóa tài khoản khách hàng");
             setConfirmOpen(false);
@@ -54,7 +54,7 @@ export default function CustomersPage() {
     });
 
     const deleteMutation = useLTTMutation<void, string>({
-        mutationFn: (id) => customerService.deleteCustomer(id),
+        mutationFn: (id) => customerService.deleteCustomerAsync(id),
         onSuccess: () => {
             toast.success("Đã xóa tài khoản khách hàng");
             setConfirmOpen(false);

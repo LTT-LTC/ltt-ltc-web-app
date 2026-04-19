@@ -25,7 +25,7 @@ export default function PromotionsListPage() {
   const [activeTab, setActiveTab] = useState("promotions");
 
   const listMutation = useLTTMutation<PagedResultDto<GiftCodeOutputDto> | undefined, any>({
-    mutationFn: (params) => giftCodeService.getList(params),
+    mutationFn: (params) => giftCodeService.getGiftCodeListAsync(params),
     onSuccess: (res) => { if (res && res.items) setItems(res.items); },
     onError: (err) => toast.error(err.message || "Lỗi tải danh sách")
   });

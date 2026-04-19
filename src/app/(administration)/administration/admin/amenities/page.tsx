@@ -70,7 +70,7 @@ export default function CinemaAmenitiesAdminPage() {
   });
 
   const listMutation = useLTTMutation<PagedResultDto<CinemaAmenityOutputDto> | undefined, { cinemaId: string; params: GetCinemaAmenityListInputDto }>({
-    mutationFn: (input) => cinemaAmenityService.getListAll(input.cinemaId, input.params),
+    mutationFn: (input) => cinemaAmenityService.getCinemaAmenityListAsync(input.cinemaId, input.params),
     onSuccess: (res) => {
       if (res && res.items) {
         setItems(res.items);
@@ -82,7 +82,7 @@ export default function CinemaAmenitiesAdminPage() {
   });
 
   const createMutation = useLTTMutation<CinemaAmenityOutputDto | undefined, { cinemaId: string; body: CreateCinemaAmenityInputDto }>({
-    mutationFn: (input) => cinemaAmenityService.create(input.cinemaId, input.body),
+    mutationFn: (input) => cinemaAmenityService.createCinemaAmenityAsync(input.cinemaId, input.body),
     onSuccess: () => {
       toast.success("Thêm tiện ích thành công");
       fetchData();
@@ -92,7 +92,7 @@ export default function CinemaAmenitiesAdminPage() {
   });
 
   const updateMutation = useLTTMutation<CinemaAmenityOutputDto | undefined, { cinemaId: string; id: string; body: UpdateCinemaAmenityInputDto }>({
-    mutationFn: (input) => cinemaAmenityService.update(input.cinemaId, input.id, input.body),
+    mutationFn: (input) => cinemaAmenityService.updateCinemaAmenityAsync(input.cinemaId, input.id, input.body),
     onSuccess: () => {
       toast.success("Cập nhật tiện ích thành công");
       fetchData();
@@ -102,7 +102,7 @@ export default function CinemaAmenitiesAdminPage() {
   });
 
   const removeMutation = useLTTMutation<boolean, { cinemaId: string; id: string }>({
-    mutationFn: async (input) => { await cinemaAmenityService.delete(input.cinemaId, input.id); return true; },
+    mutationFn: async (input) => { await cinemaAmenityService.deleteCinemaAmenityAsync(input.cinemaId, input.id); return true; },
     onSuccess: () => {
       toast.success("Xóa tiện ích thành công");
     },
@@ -188,7 +188,7 @@ export default function CinemaAmenitiesAdminPage() {
 
     const ids = Array.from(selected);
     const results = await Promise.allSettled(
-      ids.map((id) => cinemaAmenityService.delete(selectedCinemaId, id))
+      ids.map((id) => cinemaAmenityService.deleteCinemaAmenityAsync(selectedCinemaId, id))
     );
     const failed = results.filter((r) => r.status === "rejected").length;
 

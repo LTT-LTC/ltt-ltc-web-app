@@ -26,13 +26,13 @@ export default function GenreTab() {
     const didInitRef = useRef(false);
 
     const listMutation = useLTTMutation<PagedResultDto<GenreOutputDto> | undefined, void>({
-        mutationFn: () => movieService.getGenres(),
+        mutationFn: () => movieService.getGenresAsync(),
         onSuccess: (res) => { if (res && res.items) setItems(res.items); },
         onError: (err) => toast.error(err.message || "Lỗi tải danh sách thể loại")
     });
 
     const createMutation = useLTTMutation<GenreOutputDto, { name: string }>({
-        mutationFn: (body) => movieService.createGenre(body),
+        mutationFn: (body) => movieService.createGenreAsync(body),
         onSuccess: () => {
             toast.success("Thêm thành công");
             setDialogOpen(false);
@@ -42,7 +42,7 @@ export default function GenreTab() {
     });
 
     const updateMutation = useLTTMutation<GenreOutputDto, { id: string, name: string }>({
-        mutationFn: (input) => movieService.updateGenre(input.id, { name: input.name }),
+        mutationFn: (input) => movieService.updateGenreAsync(input.id, { name: input.name }),
         onSuccess: () => {
             toast.success("Cập nhật thành công");
             setDialogOpen(false);
@@ -52,7 +52,7 @@ export default function GenreTab() {
     });
 
     const deleteMutation = useLTTMutation<void, string>({
-        mutationFn: (id) => movieService.deleteGenre(id),
+        mutationFn: (id) => movieService.deleteGenreAsync(id),
         onSuccess: () => {
             toast.success("Đã xóa");
             listMutation.mutation();

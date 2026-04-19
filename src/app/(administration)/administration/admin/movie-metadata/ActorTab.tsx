@@ -26,13 +26,13 @@ export default function ActorTab() {
     const didInitRef = useRef(false);
 
     const listMutation = useLTTMutation<PagedResultDto<ActorOutputDto> | undefined, void>({
-        mutationFn: () => movieService.getActors(),
+        mutationFn: () => movieService.getActorsAsync(),
         onSuccess: (res) => { if (res && res.items) setItems(res.items); },
         onError: (err) => toast.error(err.message || "Lỗi tải danh sách diễn viên")
     });
 
     const createMutation = useLTTMutation<ActorOutputDto, any>({
-        mutationFn: (body) => movieService.createActor(body),
+        mutationFn: (body) => movieService.createActorAsync(body),
         onSuccess: () => {
             toast.success("Thêm thành công");
             setDialogOpen(false);
@@ -42,7 +42,7 @@ export default function ActorTab() {
     });
 
     const updateMutation = useLTTMutation<ActorOutputDto, { id: string, body: any }>({
-        mutationFn: (input) => movieService.updateActor(input.id, input.body),
+        mutationFn: (input) => movieService.updateActorAsync(input.id, input.body),
         onSuccess: () => {
             toast.success("Cập nhật thành công");
             setDialogOpen(false);
@@ -52,7 +52,7 @@ export default function ActorTab() {
     });
 
     const deleteMutation = useLTTMutation<void, string>({
-        mutationFn: (id) => movieService.deleteActor(id),
+        mutationFn: (id) => movieService.deleteActorAsync(id),
         onSuccess: () => {
             toast.success("Đã xóa");
             listMutation.mutation();

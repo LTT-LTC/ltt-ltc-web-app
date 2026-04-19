@@ -4,195 +4,159 @@ import {
     GetMovieListInputDto as GetMovieListDto,
     CreateMovieInputDto,
     UpdateMovieInputDto,
-    CreateGenreInputDto,
-    CreateActorInputDto,
-    CreateStudioInputDto,
-    CreateFormatInputDto,
-    CreateRoleInputDto
+    GetDistributionListInputDto,
+    CreateDistributionInputDto,
+    UpdateDistributionInputDto,
 } from "./models/input.model";
 import {
     MovieOutputDto,
     MovieDetailOutputDto,
-    GenreOutputDto,
-    ActorOutputDto,
-    StudioOutputDto,
-    FormatOutputDto,
-    RoleOutputDto,
-    MovieDistributionOutputDto
+    MovieDistributionOutputDto,
 } from "./models/output.model";
-import { ApiResult } from "@/src/@core/http/models/ApiResult";
+import { actorService } from "./actor/actor.service";
+import { formatService } from "./format/format.service";
+import { genreService } from "./genre/genre.service";
+import { roleService } from "./role/role.service";
+import { studioService } from "./studio/studio.service";
 
-class MovieService {
-    private readonly prefix = "/movie-service/api";
+const rootPath = "/movie-service";
+const moviePath = "/movie";
+const ratingPath = "/rating";
+const distributionPath = "/movie-distribution";
 
-    // Movie CRUD
-    async getMovieList(params: any): Promise<PagedResultDto<MovieOutputDto>> {
-        const response = await http.get<ApiResult<PagedResultDto<MovieOutputDto>>>(`${this.prefix}/movie-all`, { params });
-        return response.data.data;
-    }
+const getMovieListAsync = async (params: GetMovieListDto): Promise<PagedResultDto<MovieOutputDto>> => {
+    const response = await http.get<PagedResultDto<MovieOutputDto>>(`${rootPath}${moviePath}`, { params });
+    return response.data;
+};
 
-    async getMovieDetail(id: string): Promise<MovieDetailOutputDto> {
-        const response = await http.get<ApiResult<MovieDetailOutputDto>>(`${this.prefix}/movie/${id}`);
-        return response.data.data;
-    }
+const getMovieDetailAsync = async (id: string): Promise<MovieDetailOutputDto> => {
+    const response = await http.get<MovieDetailOutputDto>(`${rootPath}${moviePath}/${id}`);
+    return response.data;
+};
 
-    async createMovie(body: CreateMovieInputDto): Promise<MovieOutputDto> {
-        const response = await http.post<ApiResult<MovieOutputDto>>(`${this.prefix}/movie`, body);
-        return response.data.data;
-    }
+const createMovieAsync = async (body: CreateMovieInputDto): Promise<MovieOutputDto> => {
+    const response = await http.post<MovieOutputDto>(`${rootPath}${moviePath}`, body);
+    return response.data;
+};
 
-    async updateMovie(id: string, body: UpdateMovieInputDto): Promise<MovieOutputDto> {
-        const response = await http.put<ApiResult<MovieOutputDto>>(`${this.prefix}/movie/${id}`, body);
-        return response.data.data;
-    }
+const updateMovieAsync = async (id: string, body: UpdateMovieInputDto): Promise<MovieOutputDto> => {
+    const response = await http.put<MovieOutputDto>(`${rootPath}${moviePath}/${id}`, body);
+    return response.data;
+};
 
-    async deleteMovie(id: string): Promise<void> {
-        await http.delete<ApiResult<void>>(`${this.prefix}/movie/${id}`);
-    }
+const deleteMovieAsync = async (id: string): Promise<void> => {
+    await http.delete<void>(`${rootPath}${moviePath}/${id}`);
+};
 
-    async bulkDeleteMovies(ids: string[]): Promise<void> {
-        await http.delete<ApiResult<void>>(`${this.prefix}/movie`, { data: ids });
-    }
+const bulkDeleteMoviesAsync = async (ids: string[]): Promise<void> => {
+    await http.delete<void>(`${rootPath}${moviePath}`, { data: ids });
+};
 
-    // Metadata - Genres
-    async getGenres(): Promise<PagedResultDto<GenreOutputDto>> {
-        const response = await http.get<ApiResult<PagedResultDto<GenreOutputDto>>>(`${this.prefix}/genre-all`);
-        return response.data.data;
-    }
+const getRatingsAsync = async (): Promise<PagedResultDto<any>> => {
+    const response = await http.get<PagedResultDto<any>>(`${rootPath}${ratingPath}-all`);
+    return response.data;
+};
 
-    async createGenre(body: CreateGenreInputDto): Promise<GenreOutputDto> {
-        const response = await http.post<ApiResult<GenreOutputDto>>(`${this.prefix}/genre`, body);
-        return response.data.data;
-    }
+const createRatingAsync = async (body: any): Promise<any> => {
+    const response = await http.post<any>(`${rootPath}${ratingPath}`, body);
+    return response.data;
+};
 
-    async updateGenre(id: string, body: any): Promise<GenreOutputDto> {
-        const response = await http.put<ApiResult<GenreOutputDto>>(`${this.prefix}/genre/${id}`, body);
-        return response.data.data;
-    }
+const updateRatingAsync = async (id: string, body: any): Promise<any> => {
+    const response = await http.put<any>(`${rootPath}${ratingPath}/${id}`, body);
+    return response.data;
+};
 
-    async deleteGenre(id: string): Promise<void> {
-        await http.delete<ApiResult<void>>(`${this.prefix}/genre/${id}`);
-    }
+const deleteRatingAsync = async (id: string): Promise<void> => {
+    await http.delete<void>(`${rootPath}${ratingPath}/${id}`);
+};
 
-    // Metadata - Actors
-    async getActors(): Promise<PagedResultDto<ActorOutputDto>> {
-        const response = await http.get<ApiResult<PagedResultDto<ActorOutputDto>>>(`${this.prefix}/actor-all`);
-        return response.data.data;
-    }
+const getDistributionsAsync = async (
+    params: GetDistributionListInputDto = { skipCount: 0, maxResultCount: 100 },
+): Promise<PagedResultDto<MovieDistributionOutputDto>> => {
+    const response = await http.get<PagedResultDto<MovieDistributionOutputDto>>(`${rootPath}${distributionPath}-all`, { params });
+    return response.data;
+};
 
-    async createActor(body: CreateActorInputDto): Promise<ActorOutputDto> {
-        const response = await http.post<ApiResult<ActorOutputDto>>(`${this.prefix}/actor`, body);
-        return response.data.data;
-    }
+const createDistributionAsync = async (body: CreateDistributionInputDto): Promise<MovieDistributionOutputDto> => {
+    const response = await http.post<MovieDistributionOutputDto>(`${rootPath}${distributionPath}`, body);
+    return response.data;
+};
 
-    async updateActor(id: string, body: any): Promise<ActorOutputDto> {
-        const response = await http.put<ApiResult<ActorOutputDto>>(`${this.prefix}/actor/${id}`, body);
-        return response.data.data;
-    }
+const updateDistributionAsync = async (id: string, body: UpdateDistributionInputDto): Promise<MovieDistributionOutputDto> => {
+    const response = await http.put<MovieDistributionOutputDto>(`${rootPath}${distributionPath}/${id}`, body);
+    return response.data;
+};
 
-    async deleteActor(id: string): Promise<void> {
-        await http.delete<ApiResult<void>>(`${this.prefix}/actor/${id}`);
-    }
+const deleteDistributionAsync = async (id: string): Promise<void> => {
+    await http.delete<void>(`${rootPath}${distributionPath}/${id}`);
+};
 
-    // Metadata - Studios
-    async getStudios(): Promise<PagedResultDto<StudioOutputDto>> {
-        const response = await http.get<ApiResult<PagedResultDto<StudioOutputDto>>>(`${this.prefix}/studio-all`);
-        return response.data.data;
-    }
+const bulkDeleteMovies = bulkDeleteMoviesAsync;
 
-    async createStudio(body: CreateStudioInputDto): Promise<StudioOutputDto> {
-        const response = await http.post<ApiResult<StudioOutputDto>>(`${this.prefix}/studio`, body);
-        return response.data.data;
-    }
+export const movieService = {
+    getMovieAsync: getMovieListAsync,
+    getMovieByIdAsync: getMovieDetailAsync,
+    getMovieListAsync,
+    getMovieDetailAsync,
+    createMovieAsync,
+    updateMovieAsync,
+    deleteMovieAsync,
+    bulkDeleteMoviesAsync,
 
-    async updateStudio(id: string, body: any): Promise<StudioOutputDto> {
-        const response = await http.put<ApiResult<StudioOutputDto>>(`${this.prefix}/studio/${id}`, body);
-        return response.data.data;
-    }
+    // Backward-compatible names used across existing pages/components
+    getMovieList: getMovieListAsync,
+    getMovieDetail: getMovieDetailAsync,
+    createMovie: createMovieAsync,
+    updateMovie: updateMovieAsync,
+    deleteMovie: deleteMovieAsync,
+    bulkDeleteMovies,
 
-    async deleteStudio(id: string): Promise<void> {
-        await http.delete<ApiResult<void>>(`${this.prefix}/studio/${id}`);
-    }
+    ...genreService,
+    getGenres: genreService.getGenresAsync,
+    createGenre: genreService.createGenreAsync,
+    updateGenre: genreService.updateGenreAsync,
+    deleteGenre: genreService.deleteGenreAsync,
 
-    // Metadata - Formats
-    async getFormats(): Promise<PagedResultDto<FormatOutputDto>> {
-        const response = await http.get<ApiResult<PagedResultDto<FormatOutputDto>>>(`${this.prefix}/format-all`);
-        return response.data.data;
-    }
+    ...actorService,
+    getActors: actorService.getActorsAsync,
+    createActor: actorService.createActorAsync,
+    updateActor: actorService.updateActorAsync,
+    deleteActor: actorService.deleteActorAsync,
 
-    async createFormat(body: CreateFormatInputDto): Promise<FormatOutputDto> {
-        const response = await http.post<ApiResult<FormatOutputDto>>(`${this.prefix}/format`, body);
-        return response.data.data;
-    }
+    ...studioService,
+    getStudios: studioService.getStudiosAsync,
+    createStudio: studioService.createStudioAsync,
+    updateStudio: studioService.updateStudioAsync,
+    deleteStudio: studioService.deleteStudioAsync,
 
-    async updateFormat(id: string, body: any): Promise<FormatOutputDto> {
-        const response = await http.put<ApiResult<FormatOutputDto>>(`${this.prefix}/format/${id}`, body);
-        return response.data.data;
-    }
+    ...formatService,
+    getFormats: formatService.getFormatsAsync,
+    createFormat: formatService.createFormatAsync,
+    updateFormat: formatService.updateFormatAsync,
+    deleteFormat: formatService.deleteFormatAsync,
 
-    async deleteFormat(id: string): Promise<void> {
-        await http.delete<ApiResult<void>>(`${this.prefix}/format/${id}`);
-    }
+    ...roleService,
+    getRoles: roleService.getRolesAsync,
+    createRole: roleService.createRoleAsync,
+    updateRole: roleService.updateRoleAsync,
+    deleteRole: roleService.deleteRoleAsync,
 
-    // Metadata - Roles
-    async getRoles(): Promise<PagedResultDto<RoleOutputDto>> {
-        const response = await http.get<ApiResult<PagedResultDto<RoleOutputDto>>>(`${this.prefix}/role-all`);
-        return response.data.data;
-    }
+    getRatingsAsync,
+    createRatingAsync,
+    updateRatingAsync,
+    deleteRatingAsync,
+    getRatings: getRatingsAsync,
+    createRating: createRatingAsync,
+    updateRating: updateRatingAsync,
+    deleteRating: deleteRatingAsync,
 
-    async createRole(body: CreateRoleInputDto): Promise<RoleOutputDto> {
-        const response = await http.post<ApiResult<RoleOutputDto>>(`${this.prefix}/role`, body);
-        return response.data.data;
-    }
-
-    async updateRole(id: string, body: any): Promise<RoleOutputDto> {
-        const response = await http.put<ApiResult<RoleOutputDto>>(`${this.prefix}/role/${id}`, body);
-        return response.data.data;
-    }
-
-    async deleteRole(id: string): Promise<void> {
-        await http.delete<ApiResult<void>>(`${this.prefix}/role/${id}`);
-    }
-
-    // Metadata - Ratings
-    async getRatings(): Promise<PagedResultDto<any>> {
-        const response = await http.get<ApiResult<PagedResultDto<any>>>(`${this.prefix}/rating-all`);
-        return response.data.data;
-    }
-
-    async createRating(body: any): Promise<any> {
-        const response = await http.post<ApiResult<any>>(`${this.prefix}/rating`, body);
-        return response.data.data;
-    }
-
-    async updateRating(id: string, body: any): Promise<any> {
-        const response = await http.put<ApiResult<any>>(`${this.prefix}/rating/${id}`, body);
-        return response.data.data;
-    }
-
-    async deleteRating(id: string): Promise<void> {
-        await http.delete<ApiResult<void>>(`${this.prefix}/rating/${id}`);
-    }
-
-    // Distributions
-    async getDistributions(): Promise<PagedResultDto<MovieDistributionOutputDto>> {
-        const response = await http.get<ApiResult<PagedResultDto<MovieDistributionOutputDto>>>(`${this.prefix}/movie-distribution-all`);
-        return response.data.data;
-    }
-
-    async createDistribution(body: any): Promise<MovieDistributionOutputDto> {
-        const response = await http.post<ApiResult<MovieDistributionOutputDto>>(`${this.prefix}/movie-distribution`, body);
-        return response.data.data;
-    }
-
-    async updateDistribution(id: string, body: any): Promise<MovieDistributionOutputDto> {
-        const response = await http.put<ApiResult<MovieDistributionOutputDto>>(`${this.prefix}/movie-distribution/${id}`, body);
-        return response.data.data;
-    }
-
-    async deleteDistribution(id: string): Promise<void> {
-        await http.delete<ApiResult<void>>(`${this.prefix}/movie-distribution/${id}`);
-    }
-}
-
-export const movieService = new MovieService();
+    getDistributionsAsync,
+    createDistributionAsync,
+    updateDistributionAsync,
+    deleteDistributionAsync,
+    getDistributions: getDistributionsAsync,
+    createDistribution: createDistributionAsync,
+    updateDistribution: updateDistributionAsync,
+    deleteDistribution: deleteDistributionAsync,
+};

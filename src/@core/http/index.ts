@@ -23,6 +23,18 @@ import i18n from "i18next";
 
 let isRefreshing = false;
 let refreshPromise: Promise<any> | null = null;
+let isRedirectingToLogin = false;
+
+type RetryableRequestConfig = InternalAxiosRequestConfig & {
+  _retry?: boolean;
+  _skipAuthRefresh?: boolean;
+};
+
+const isRefreshLoginRequest = (url?: string) =>
+  url?.includes("/auth/refresh-login") ?? false;
+
+const isAuthRequest = (url?: string) =>
+  url?.includes("/auth") ?? false;
 
 function isObjectLike(value: unknown): value is Record<string, any> {
   return typeof value === "object" && value !== null;
@@ -83,7 +95,10 @@ async function refreshTokenAsync(url?: string) {
     http.defaults.headers.common[AUTHORIZATION_KEY] = "";
     removeCookie(ACCESS_TOKEN_KEY);
     removeCookie(REFRESH_TOKEN_KEY);
-    window.location.href = isCustomerRequest ? `/customer-login` : `/administration-login`;
+    if (!isRedirectingToLogin) {
+      isRedirectingToLogin = true;
+      window.location.href = isCustomerRequest ? `/customer-login` : `/administration-login`;
+    }
     throw error;
   }
 }
@@ -134,10 +149,18 @@ const onResponseInterceptor = async (error: AxiosError) => {
 
   // 401 => Unauthorized, token hết hạn hoặc không hợp lệ => refresh token
   if (error.response && error.response.status === HttpStatusCode.Unauthorized) {
+    const requestConfig = error.config as RetryableRequestConfig | undefined;
+    const requestUrl = requestConfig?.url;
+
+    if (!requestConfig || requestConfig._retry || requestConfig._skipAuthRefresh || isAuthRequest(requestUrl)) {
+      return Promise.reject(error.response?.data ?? error);
+    }
+
     if (!isRefreshing) {
       isRefreshing = true;
-      refreshPromise = refreshTokenAsync(error.config?.url);
+      refreshPromise = refreshTokenAsync(requestUrl);
     }
+
     if (refreshPromise) {
       let newToken: any;
       try {
@@ -156,7 +179,9 @@ const onResponseInterceptor = async (error: AxiosError) => {
       setCookie(ACCESS_TOKEN_KEY, newToken.accessToken);
       setCookie(REFRESH_TOKEN_KEY, newToken.refreshToken);
 
-      return http(error.config as InternalAxiosRequestConfig);
+      requestConfig._retry = true;
+      requestConfig.headers[AUTHORIZATION_KEY] = `${TOKEN_TYPE_KEY} ${newToken.accessToken}`;
+      return http(requestConfig);
     }
   }
 

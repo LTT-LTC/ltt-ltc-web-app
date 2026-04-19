@@ -68,7 +68,7 @@ export default function ScreensConfigPage() {
   });
 
   const listMutation = useLTTMutation<PagedResultDto<ScreenOutputDto> | undefined, { cinemaId: string; params: GetScreenListInputDto }>({
-    mutationFn: (input) => screenService.getListAll(input.cinemaId, input.params),
+    mutationFn: (input) => screenService.getScreenListAsync(input.cinemaId, input.params),
     onSuccess: (res) => {
       if (res && res.items) setItems(res.items);
     },
@@ -76,7 +76,7 @@ export default function ScreensConfigPage() {
   });
 
   const createMutation = useLTTMutation<ScreenOutputDto | undefined, { cinemaId: string; body: CreateScreenInputDto }>({
-    mutationFn: (input) => screenService.create(input.cinemaId, input.body),
+    mutationFn: (input) => screenService.createScreenAsync(input.cinemaId, input.body),
     onSuccess: () => {
       toast.success("Thêm phòng chiếu thành công");
       fetchData();
@@ -85,8 +85,8 @@ export default function ScreensConfigPage() {
     onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
   });
 
-  const updateMutation = useLTTMutation<ScreenOutputDto | undefined, { id: string; body: UpdateScreenInputDto }>({
-    mutationFn: (input) => screenService.update(input.id, input.body),
+  const updateMutation = useLTTMutation<ScreenOutputDto | undefined, { cinemaId: string; id: string; body: UpdateScreenInputDto }>({
+    mutationFn: (input) => screenService.updateScreenAsync(input.cinemaId, input.id, input.body),
     onSuccess: () => {
       toast.success("Cập nhật phòng chiếu thành công");
       fetchData();
@@ -96,7 +96,11 @@ export default function ScreensConfigPage() {
   });
 
   const removeMutation = useLTTMutation<boolean, string>({
-    mutationFn: async (id) => { await screenService.delete(id); return true; },
+    mutationFn: async (id) => {
+      if (!selectedCinemaId) return true;
+      await screenService.deleteScreenAsync(selectedCinemaId, id);
+      return true;
+    },
     onSuccess: () => {
       toast.success("Xóa phòng chiếu thành công");
     },
@@ -169,7 +173,7 @@ export default function ScreensConfigPage() {
     }
 
     if (editing) {
-      updateMutation.mutation({ id: editing.id, body: form });
+      updateMutation.mutation({ cinemaId: selectedCinemaId, id: editing.id, body: form });
     } else {
       createMutation.mutation({ cinemaId: selectedCinemaId, body: form });
     }
@@ -181,7 +185,9 @@ export default function ScreensConfigPage() {
       return;
     }
 
-    const results = await Promise.allSettled(ids.map((id) => screenService.delete(id)));
+    const results = await Promise.allSettled(
+      ids.map((id) => screenService.deleteScreenAsync(selectedCinemaId, id))
+    );
     const failed = results.filter((r) => r.status === "rejected").length;
 
     if (failed === 0) {

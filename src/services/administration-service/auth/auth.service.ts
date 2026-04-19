@@ -25,7 +25,7 @@ const logOutAsync = async (body: LogoutInputDto) => {
     return data;
 }
 
-const requestPasswordRecovery = async (body: RequestPasswordRecoveryInputDto) => {
+const requestPasswordRecoveryAsync = async (body: RequestPasswordRecoveryInputDto) => {
     const payload = {
         ...body,
         tenantName: body.tenantName || localStorage.getItem(TENANT_KEY) || "",
@@ -34,7 +34,7 @@ const requestPasswordRecovery = async (body: RequestPasswordRecoveryInputDto) =>
     return data;
 }
 
-const resetPassword = async (body: ResetPasswordInputDto) => {
+const resetPasswordAsync = async (body: ResetPasswordInputDto) => {
     const { data } = await http.post<boolean>(`${rootPath}${path}/reset-password`, body);
     return data;
 }
@@ -43,6 +43,6 @@ export const authService = {
     loginAsync,
     refreshTokenAsync,
     logOutAsync,
-    requestPasswordRecovery,
-    resetPassword,
+    requestPasswordRecoveryAsync,
+    resetPasswordAsync,
 }

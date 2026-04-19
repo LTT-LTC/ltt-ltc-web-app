@@ -26,13 +26,13 @@ export default function RatingTab() {
     const didInitRef = useRef(false);
 
     const listMutation = useLTTMutation<PagedResultDto<any> | undefined, void>({
-        mutationFn: () => movieService.getRatings(),
+        mutationFn: () => movieService.getRatingsAsync(),
         onSuccess: (res) => { if (res && res.items) setItems(res.items); },
         onError: (err) => toast.error(err.message || "Lỗi tải danh sách phân loại tuổi")
     });
 
     const createMutation = useLTTMutation<any, any>({
-        mutationFn: (body) => movieService.createRating(body),
+        mutationFn: (body) => movieService.createRatingAsync(body),
         onSuccess: () => {
             toast.success("Thêm thành công");
             setDialogOpen(false);
@@ -42,7 +42,7 @@ export default function RatingTab() {
     });
 
     const updateMutation = useLTTMutation<any, { id: string, body: any }>({
-        mutationFn: (input) => movieService.updateRating(input.id, input.body),
+        mutationFn: (input) => movieService.updateRatingAsync(input.id, input.body),
         onSuccess: () => {
             toast.success("Cập nhật thành công");
             setDialogOpen(false);
@@ -52,7 +52,7 @@ export default function RatingTab() {
     });
 
     const deleteMutation = useLTTMutation<void, string>({
-        mutationFn: (id) => movieService.deleteRating(id),
+        mutationFn: (id) => movieService.deleteRatingAsync(id),
         onSuccess: () => {
             toast.success("Đã xóa");
             listMutation.mutation();

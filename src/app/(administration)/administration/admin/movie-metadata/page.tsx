@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { 
-    LTTTabs, 
-    LTTTabsContent, 
-    LTTTabsList, 
-    LTTTabsTrigger 
+import {
+    LTTTabs,
+    LTTTabsContent,
+    LTTTabsList,
+    LTTTabsTrigger
 } from "@/src/@core/component/LTTShadcnUI/LTTTabs";
 import GenreTab from "./GenreTab";
 import ActorTab from "./ActorTab";

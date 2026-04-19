@@ -51,3 +51,23 @@ export interface UpdateFormatInputDto { name: string; }
 
 export interface CreateRoleInputDto { name: string; }
 export interface UpdateRoleInputDto { name: string; }
+
+export interface GetDistributionListInputDto {
+    skipCount?: number;
+    maxResultCount?: number;
+    sorting?: string;
+    filter?: string;
+}
+
+export interface CreateDistributionInputDto {
+    movieId: string;
+    licenseStartDate?: string | null;
+    licenseEndDate?: string | null;
+    isExclusive: boolean;
+}
+
+export interface UpdateDistributionInputDto {
+    licenseStartDate?: string | null;
+    licenseEndDate?: string | null;
+    isExclusive: boolean;
+}

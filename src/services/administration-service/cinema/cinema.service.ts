@@ -33,11 +33,13 @@ const deleteCinemaAsync = async (id: string) => {
 }
 
 export const cinemaService = {
-    getCinemaListAsync,
+    getCinemaAsync: getCinemaListAsync,
     getCinemaByIdAsync,
     createCinemaAsync,
     updateCinemaAsync,
     deleteCinemaAsync,
+
+    getCinemaListAsync,
 
     getList: getCinemaListAsync,
     getById: getCinemaByIdAsync,

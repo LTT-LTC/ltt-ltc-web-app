@@ -52,19 +52,19 @@ export default function RefundApprovalPage() {
   const [rejectReason, setRejectReason] = useState("");
 
   const listMutation = useLTTMutation<PagedResultDto<RefundOutputDto> | undefined, any>({
-    mutationFn: (params) => refundService.getList(params),
+    mutationFn: (params) => refundService.getRefundListAsync(params),
     onSuccess: (res) => { if (res && res.items) setItems(res.items); },
     onError: (err) => toast.error(err.message || "Lỗi tải danh sách hoàn tiền")
   });
 
   const approveMutation = useLTTMutation<void, string>({
-    mutationFn: (id) => refundService.approve(id),
+    mutationFn: (id) => refundService.approveRefundAsync(id),
     onSuccess: () => { toast.success("Đã duyệt hoàn tiền"); fetchData(); },
     onError: (err) => toast.error(err.message || "Lỗi")
   });
 
   const rejectMutation = useLTTMutation<void, { id: string; reason: string }>({
-    mutationFn: (data) => refundService.reject(data.id, data.reason),
+    mutationFn: (data) => refundService.rejectRefundAsync(data.id, data.reason),
     onSuccess: () => {
       toast.success("Đã từ chối hoàn tiền");
       setRejectOpen(false);

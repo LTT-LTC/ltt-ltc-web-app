@@ -26,6 +26,10 @@ import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { toast } from "sonner";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
+import {
+    CreateDistributionInputDto,
+    UpdateDistributionInputDto,
+} from "@/src/services/administration-service/movie/models/input.model";
 
 export default function DistributionTable() {
     const [items, setItems] = useState<MovieDistributionOutputDto[]>([]);
@@ -40,19 +44,26 @@ export default function DistributionTable() {
     });
     const didInitRef = useRef(false);
 
+    const normalizeDistributionPayload = () => ({
+        movieId: form.movieId,
+        licenseStartDate: form.licenseStartDate || null,
+        licenseEndDate: form.licenseEndDate || null,
+        isExclusive: form.isExclusive,
+    });
+
     const listMutation = useLTTMutation<PagedResultDto<MovieDistributionOutputDto> | undefined, void>({
-        mutationFn: () => movieService.getDistributions(),
+        mutationFn: () => movieService.getDistributionsAsync({ skipCount: 0, maxResultCount: 200 }),
         onSuccess: (res) => { if (res && res.items) setItems(res.items); },
         onError: (err) => toast.error(err.message || "Lỗi tải danh sách phân phối")
     });
 
     const moviesMutation = useLTTMutation<PagedResultDto<MovieOutputDto> | undefined, void>({
-        mutationFn: () => movieService.getMovieList({ page: 1, fetch: 100 }),
+        mutationFn: () => movieService.getMovieListAsync({ page: 1, fetch: 100 }),
         onSuccess: (res) => { if (res && res.items) setMovies(res.items); }
     });
 
-    const createMutation = useLTTMutation<MovieDistributionOutputDto, any>({
-        mutationFn: (body) => movieService.createDistribution(body),
+    const createMutation = useLTTMutation<MovieDistributionOutputDto, CreateDistributionInputDto>({
+        mutationFn: (body) => movieService.createDistributionAsync(body),
         onSuccess: () => {
             toast.success("Đã thêm bản ghi phân phối");
             setDialogOpen(false);
@@ -61,8 +72,8 @@ export default function DistributionTable() {
         onError: (err) => toast.error(err.message || "Lỗi khi thêm")
     });
 
-    const updateMutation = useLTTMutation<MovieDistributionOutputDto, { id: string, body: any }>({
-        mutationFn: (input) => movieService.updateDistribution(input.id, input.body),
+    const updateMutation = useLTTMutation<MovieDistributionOutputDto, { id: string, body: UpdateDistributionInputDto }>({
+        mutationFn: (input) => movieService.updateDistributionAsync(input.id, input.body),
         onSuccess: () => {
             toast.success("Cập nhật thành công");
             setDialogOpen(false);
@@ -72,7 +83,7 @@ export default function DistributionTable() {
     });
 
     const deleteMutation = useLTTMutation<void, string>({
-        mutationFn: (id) => movieService.deleteDistribution(id),
+        mutationFn: (id) => movieService.deleteDistributionAsync(id),
         onSuccess: () => {
             toast.success("Đã xóa");
             listMutation.mutation();
@@ -91,11 +102,13 @@ export default function DistributionTable() {
 
     const handleSave = () => {
         if (!form.movieId) return toast.error("Vui lòng chọn phim");
+        const payload = normalizeDistributionPayload();
+
         if (editing) {
-            const { movieId, ...body } = form; // Don't update movieId
+            const { movieId, ...body } = payload; // Don't update movieId
             updateMutation.mutation({ id: editing.id, body });
         } else {
-            createMutation.mutation(form);
+            createMutation.mutation(payload);
         }
     };
 

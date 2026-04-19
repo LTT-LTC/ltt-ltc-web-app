@@ -7,7 +7,6 @@ export interface RefundOutputDto {
     status: "pending" | "approved" | "rejected";
     processedAt?: string;
     processedBy?: string;
-    // Additional fields mapped from PaymentRequest or similar
     movieTitle?: string;
     cinemaName?: string;
     showDate?: string;
