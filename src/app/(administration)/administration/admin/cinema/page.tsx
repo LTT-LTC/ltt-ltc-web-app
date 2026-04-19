@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Plus, Pencil, Trash2, Search, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
@@ -27,11 +27,18 @@ import { cinemaService } from "@/src/services/administration-service/cinema/cine
 import { CinemaOutputDto } from "@/src/services/administration-service/cinema/models/output.model";
 import { GetCinemaListInputDto, CreateCinemaInputDto, UpdateCinemaInputDto } from "@/src/services/administration-service/cinema/models/input.model";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
+import { Select } from "antd";
+import vnCityDistricts from "@/src/@core/const/location/vn-city-districts.json";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-100 text-green-700 border-green-200",
   maintenance: "bg-amber-100 text-amber-700 border-amber-200",
   closed: "bg-red-100 text-red-700 border-red-200",
+};
+
+type CityDistrictData = {
+  city: string;
+  wards: string[];
 };
 
 export default function CinemaConfigPage() {
@@ -52,6 +59,44 @@ export default function CinemaConfigPage() {
   const [page, setPage] = useState(1);
   const [fetch, setFetch] = useState(10);
   const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  const cityDistrictOptions = vnCityDistricts as CityDistrictData[];
+  const cityOptions = useMemo(
+    () => cityDistrictOptions.map((item) => ({ label: item.city, value: item.city })),
+    [cityDistrictOptions],
+  );
+
+  const resolveCityValue = (city?: string) => {
+    if (!city) {
+      return "";
+    }
+
+    const exactMatch = cityDistrictOptions.find((item) => item.city === city);
+    if (exactMatch) {
+      return exactMatch.city;
+    }
+
+    const suffixMatch = cityDistrictOptions.find((item) => item.city.endsWith(city));
+    if (suffixMatch) {
+      return suffixMatch.city;
+    }
+
+    return city;
+  };
+
+  const districtOptions = useMemo(() => {
+    const selectedCity = cityDistrictOptions.find((item) => item.city === form.city);
+    const mapped = (selectedCity?.wards ?? []).map((ward) => ({
+      label: ward,
+      value: ward,
+    }));
+
+    if (form.ward && !mapped.some((option) => option.value === form.ward)) {
+      mapped.unshift({ label: form.ward, value: form.ward });
+    }
+
+    return mapped;
+  }, [cityDistrictOptions, form.city, form.ward]);
 
   const listMutation = useLTTMutation<PagedResultDto<CinemaOutputDto> | undefined, GetCinemaListInputDto>({
     mutationFn: (input) => cinemaService.getCinemaListAsync(input),
@@ -135,7 +180,7 @@ export default function CinemaConfigPage() {
     setEditing(item);
     setForm({
       name: item.name,
-      city: item.city || "",
+      city: resolveCityValue(item.city),
       ward: item.ward || "",
       address: item.address || "",
       serviceNumber: item.serviceNumber || "",
@@ -326,16 +371,41 @@ export default function CinemaConfigPage() {
             </div>
             <div className="space-y-2">
               <LTTLabel>Thành phố</LTTLabel>
-              <LTTInput
+              <Select
                 value={form.city}
-                onChange={(e) => setForm({ ...form, city: e.target.value })}
+                options={cityOptions}
+                allowClear
+                showSearch
+                getPopupContainer={(trigger) => trigger.parentElement as HTMLElement}
+                placeholder="Chọn hoặc tìm thành phố"
+                className="w-full"
+                optionFilterProp="label"
+                onChange={(value) => setForm({
+                  ...form,
+                  city: String(value || ""),
+                  ward: "",
+                })}
+                filterOption={(inputValue, option) =>
+                  String(option?.label ?? "").toLowerCase().includes(inputValue.toLowerCase())
+                }
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Quận/Huyện</LTTLabel>
-              <LTTInput
+              <LTTLabel>Xã/Phường</LTTLabel>
+              <Select
                 value={form.ward}
-                onChange={(e) => setForm({ ...form, ward: e.target.value })}
+                options={districtOptions}
+                allowClear
+                showSearch
+                disabled={!form.city}
+                getPopupContainer={(trigger) => trigger.parentElement as HTMLElement}
+                placeholder={form.city ? "Chọn hoặc tìm xã/phường" : "Vui lòng chọn thành phố trước"}
+                className="w-full"
+                optionFilterProp="label"
+                onChange={(value) => setForm({ ...form, ward: String(value || "") })}
+                filterOption={(inputValue, option) =>
+                  String(option?.label ?? "").toLowerCase().includes(inputValue.toLowerCase())
+                }
               />
             </div>
             <div className="space-y-2">

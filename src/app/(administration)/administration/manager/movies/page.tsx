@@ -73,7 +73,7 @@ export default function MoviesPage() {
   });
 
   const listMutation = useLTTMutation<PagedResultDto<MovieOutputDto> | undefined, GetMovieListInputDto>({
-    mutationFn: (input) => movieService.getMovieList(input),
+    mutationFn: (input) => movieService.getMovieListAsync(input),
     onSuccess: (res) => {
       if (res && res.items) setItems(res.items);
     },
@@ -81,17 +81,17 @@ export default function MoviesPage() {
   });
 
   const genresMutation = useLTTMutation<PagedResultDto<GenreOutputDto> | undefined, void>({
-    mutationFn: () => movieService.getGenres(),
+    mutationFn: () => movieService.getGenresAsync(),
     onSuccess: (res) => { if (res && res.items) setGenres(res.items); }
   });
 
   const studiosMutation = useLTTMutation<PagedResultDto<StudioOutputDto> | undefined, void>({
-    mutationFn: () => movieService.getStudios(),
+    mutationFn: () => movieService.getStudiosAsync(),
     onSuccess: (res) => { if (res && res.items) setStudios(res.items); }
   });
 
   const createMutation = useLTTMutation<MovieOutputDto | undefined, CreateMovieInputDto>({
-    mutationFn: (input) => movieService.createMovie(input),
+    mutationFn: (input) => movieService.createMovieAsync(input),
     onSuccess: () => {
       toast.success("Thêm phim thành công");
       fetchData();
@@ -101,7 +101,7 @@ export default function MoviesPage() {
   });
 
   const updateMutation = useLTTMutation<MovieOutputDto | undefined, { id: string; body: UpdateMovieInputDto }>({
-    mutationFn: (input) => movieService.updateMovie(input.id, input.body),
+    mutationFn: (input) => movieService.updateMovieAsync(input.id, input.body),
     onSuccess: () => {
       toast.success("Cập nhật phim thành công");
       fetchData();
@@ -111,7 +111,7 @@ export default function MoviesPage() {
   });
 
   const removeMutation = useLTTMutation<void, string>({
-    mutationFn: (id) => movieService.deleteMovie(id),
+    mutationFn: (id) => movieService.deleteMovieAsync(id),
     onSuccess: () => {
       toast.success("Xóa phim thành công");
       fetchData();
@@ -221,7 +221,7 @@ export default function MoviesPage() {
   };
 
   const bulkDelete = () => {
-    movieService.bulkDeleteMovies(Array.from(selected)).then(() => {
+    movieService.bulkDeleteMoviesAsync(Array.from(selected)).then(() => {
       toast.success(`Đã xóa ${selected.size} phim`);
       setSelected(new Set());
       setDeleteOpen(false);

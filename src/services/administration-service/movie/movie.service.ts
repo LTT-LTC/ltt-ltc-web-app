@@ -4,6 +4,9 @@ import {
     GetMovieListInputDto as GetMovieListDto,
     CreateMovieInputDto,
     UpdateMovieInputDto,
+    GetDistributionListInputDto,
+    CreateDistributionInputDto,
+    UpdateDistributionInputDto,
 } from "./models/input.model";
 import {
     MovieOutputDto,
@@ -68,17 +71,19 @@ const deleteRatingAsync = async (id: string): Promise<void> => {
     await http.delete<void>(`${rootPath}${ratingPath}/${id}`);
 };
 
-const getDistributionsAsync = async (): Promise<PagedResultDto<MovieDistributionOutputDto>> => {
-    const response = await http.get<PagedResultDto<MovieDistributionOutputDto>>(`${rootPath}${distributionPath}-all`);
+const getDistributionsAsync = async (
+    params: GetDistributionListInputDto = { skipCount: 0, maxResultCount: 100 },
+): Promise<PagedResultDto<MovieDistributionOutputDto>> => {
+    const response = await http.get<PagedResultDto<MovieDistributionOutputDto>>(`${rootPath}${distributionPath}-all`, { params });
     return response.data;
 };
 
-const createDistributionAsync = async (body: any): Promise<MovieDistributionOutputDto> => {
+const createDistributionAsync = async (body: CreateDistributionInputDto): Promise<MovieDistributionOutputDto> => {
     const response = await http.post<MovieDistributionOutputDto>(`${rootPath}${distributionPath}`, body);
     return response.data;
 };
 
-const updateDistributionAsync = async (id: string, body: any): Promise<MovieDistributionOutputDto> => {
+const updateDistributionAsync = async (id: string, body: UpdateDistributionInputDto): Promise<MovieDistributionOutputDto> => {
     const response = await http.put<MovieDistributionOutputDto>(`${rootPath}${distributionPath}/${id}`, body);
     return response.data;
 };

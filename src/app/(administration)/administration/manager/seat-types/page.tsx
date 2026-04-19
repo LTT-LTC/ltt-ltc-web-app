@@ -2,7 +2,7 @@
 
 
 import { useState, useMemo } from "react";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
@@ -14,6 +14,13 @@ import {
   LTTDialogFooter,
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
+import {
+  LTTSelect,
+  LTTSelectContent,
+  LTTSelectItem,
+  LTTSelectTrigger,
+  LTTSelectValue,
+} from "@/src/@core/component/LTTShadcnUI/LTTSelect";
 import { toast } from "sonner";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import useDebouncedListQuery from "@/src/@core/hooks/useDebouncedListQuery";
@@ -39,7 +46,7 @@ export default function SeatTypesManagerPage() {
   });
 
   const listMutation = useLTTMutation<PagedResultDto<SeatTypeOutputDto> | undefined, GetSeatTypeListInputDto>({
-    mutationFn: (input) => seatTypeService.getList(input),
+    mutationFn: (input) => seatTypeService.getSeatTypeListAsync(input),
     onSuccess: (res) => {
       if (res && res.items) setItems(res.items);
     },
@@ -47,7 +54,7 @@ export default function SeatTypesManagerPage() {
   });
 
   const createMutation = useLTTMutation<SeatTypeOutputDto | undefined, CreateSeatTypeInputDto>({
-    mutationFn: (input) => seatTypeService.create(input),
+    mutationFn: (input) => seatTypeService.createSeatTypeAsync(input),
     onSuccess: () => {
       toast.success("Thêm loại ghế thành công");
       fetchData();
@@ -57,7 +64,7 @@ export default function SeatTypesManagerPage() {
   });
 
   const updateMutation = useLTTMutation<SeatTypeOutputDto | undefined, { id: string; body: UpdateSeatTypeInputDto }>({
-    mutationFn: (input) => seatTypeService.update(input.id, input.body),
+    mutationFn: (input) => seatTypeService.updateSeatTypeAsync(input.id, input.body),
     onSuccess: () => {
       toast.success("Cập nhật loại ghế thành công");
       fetchData();
@@ -67,7 +74,7 @@ export default function SeatTypesManagerPage() {
   });
 
   const removeMutation = useLTTMutation<boolean, string>({
-    mutationFn: async (id) => { await seatTypeService.delete(id); return true; },
+    mutationFn: async (id) => { await seatTypeService.deleteSeatTypeAsync(id); return true; },
     onSuccess: () => {
       toast.success("Xóa loại ghế thành công");
     },
@@ -128,6 +135,21 @@ export default function SeatTypesManagerPage() {
       return;
     }
 
+    if (form.priceMultiplier < 0.5) {
+      toast.error("Hệ số giá phải lớn hơn hoặc bằng 0.5");
+      return;
+    }
+
+    if (form.numberOfSeat < 1) {
+      toast.error("Số chỗ ngồi phải lớn hơn hoặc bằng 1");
+      return;
+    }
+
+    if (!["HORIZONTAL", "VERTICAL"].includes(form.displayDirection)) {
+      toast.error("Hướng xếp ghế chỉ cho phép Horizontal hoặc Vertical");
+      return;
+    }
+
     if (editing) {
       updateMutation.mutation({ id: editing.id, body: form });
     } else {
@@ -141,7 +163,7 @@ export default function SeatTypesManagerPage() {
       return;
     }
 
-    const results = await Promise.allSettled(ids.map((id) => seatTypeService.delete(id)));
+    const results = await Promise.allSettled(ids.map((id) => seatTypeService.deleteSeatTypeAsync(id)));
     const failed = results.filter((r) => r.status === "rejected").length;
 
     if (failed === 0) {
@@ -174,6 +196,14 @@ export default function SeatTypesManagerPage() {
             className="pl-9"
           />
         </div>
+        <LTTButton
+          variant="outline"
+          className="gap-2"
+          onClick={() => fetchData()}
+          loading={listMutation.isLoading}
+        >
+          <RefreshCw className="h-4 w-4" /> Làm mới
+        </LTTButton>
         {selected.size > 0 && (
           <LTTButton
             variant="destructive"
@@ -266,24 +296,34 @@ export default function SeatTypesManagerPage() {
               <LTTInput
                 type="number"
                 step="0.1"
+                min="0.5"
                 value={form.priceMultiplier}
-                onChange={(e) => setForm({ ...form, priceMultiplier: parseFloat(e.target.value) || 1.0 })}
+                onChange={(e) => setForm({ ...form, priceMultiplier: parseFloat(e.target.value) || 0.5 })}
               />
             </div>
             <div className="space-y-2">
               <LTTLabel>Số chỗ ngồi *</LTTLabel>
               <LTTInput
                 type="number"
+                min="1"
                 value={form.numberOfSeat}
                 onChange={(e) => setForm({ ...form, numberOfSeat: parseInt(e.target.value) || 1 })}
               />
             </div>
             <div className="space-y-2">
               <LTTLabel>Hướng xếp ghế *</LTTLabel>
-              <LTTInput
+              <LTTSelect
                 value={form.displayDirection}
-                onChange={(e) => setForm({ ...form, displayDirection: e.target.value })}
-              />
+                onValueChange={(v: "HORIZONTAL" | "VERTICAL") => setForm({ ...form, displayDirection: v })}
+              >
+                <LTTSelectTrigger>
+                  <LTTSelectValue />
+                </LTTSelectTrigger>
+                <LTTSelectContent>
+                  <LTTSelectItem value="HORIZONTAL">Horizontal</LTTSelectItem>
+                  <LTTSelectItem value="VERTICAL">Vertical</LTTSelectItem>
+                </LTTSelectContent>
+              </LTTSelect>
             </div>
             <div className="space-y-2 sm:col-span-2">
               <LTTLabel>Mô tả</LTTLabel>

@@ -26,13 +26,13 @@ export default function RoleTab() {
     const didInitRef = useRef(false);
 
     const listMutation = useLTTMutation<PagedResultDto<RoleOutputDto> | undefined, void>({
-        mutationFn: () => movieService.getRoles(),
+        mutationFn: () => movieService.getRolesAsync(),
         onSuccess: (res) => { if (res && res.items) setItems(res.items); },
         onError: (err) => toast.error(err.message || "Lỗi tải danh sách vai trò")
     });
 
     const createMutation = useLTTMutation<RoleOutputDto, { name: string }>({
-        mutationFn: (body) => movieService.createRole(body),
+        mutationFn: (body) => movieService.createRoleAsync(body),
         onSuccess: () => {
             toast.success("Thêm thành công");
             setDialogOpen(false);
@@ -42,7 +42,7 @@ export default function RoleTab() {
     });
 
     const updateMutation = useLTTMutation<RoleOutputDto, { id: string, name: string }>({
-        mutationFn: (input) => movieService.updateRole(input.id, { name: input.name }),
+        mutationFn: (input) => movieService.updateRoleAsync(input.id, { name: input.name }),
         onSuccess: () => {
             toast.success("Cập nhật thành công");
             setDialogOpen(false);
@@ -52,7 +52,7 @@ export default function RoleTab() {
     });
 
     const deleteMutation = useLTTMutation<void, string>({
-        mutationFn: (id) => movieService.deleteRole(id),
+        mutationFn: (id) => movieService.deleteRoleAsync(id),
         onSuccess: () => {
             toast.success("Đã xóa");
             listMutation.mutation();

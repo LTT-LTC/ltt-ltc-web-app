@@ -26,13 +26,13 @@ export default function StudioTab() {
     const didInitRef = useRef(false);
 
     const listMutation = useLTTMutation<PagedResultDto<StudioOutputDto> | undefined, void>({
-        mutationFn: () => movieService.getStudios(),
+        mutationFn: () => movieService.getStudiosAsync(),
         onSuccess: (res) => { if (res && res.items) setItems(res.items); },
         onError: (err) => toast.error(err.message || "Lỗi tải danh sách hãng phim")
     });
 
     const createMutation = useLTTMutation<StudioOutputDto, any>({
-        mutationFn: (body) => movieService.createStudio(body),
+        mutationFn: (body) => movieService.createStudioAsync(body),
         onSuccess: () => {
             toast.success("Thêm thành công");
             setDialogOpen(false);
@@ -42,7 +42,7 @@ export default function StudioTab() {
     });
 
     const updateMutation = useLTTMutation<StudioOutputDto, { id: string, body: any }>({
-        mutationFn: (input) => movieService.updateStudio(input.id, input.body),
+        mutationFn: (input) => movieService.updateStudioAsync(input.id, input.body),
         onSuccess: () => {
             toast.success("Cập nhật thành công");
             setDialogOpen(false);
@@ -52,7 +52,7 @@ export default function StudioTab() {
     });
 
     const deleteMutation = useLTTMutation<void, string>({
-        mutationFn: (id) => movieService.deleteStudio(id),
+        mutationFn: (id) => movieService.deleteStudioAsync(id),
         onSuccess: () => {
             toast.success("Đã xóa");
             listMutation.mutation();
