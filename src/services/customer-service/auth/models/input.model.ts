@@ -4,6 +4,7 @@ export interface CustomerLoginInputDto {
 }
 
 export interface CustomerRefreshLoginInputDto {
+    accessToken: string;
     refreshToken: string;
 }
 
