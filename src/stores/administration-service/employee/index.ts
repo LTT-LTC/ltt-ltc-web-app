@@ -8,7 +8,7 @@ const getEmployeeList = createAsyncThunk(
     `/${serviceName}/employee/getEmployeeList`,
     async (params: GetListEmployeeInputDto) => {
         const data =
-            await administrationService.employeeService.getListAsync(params);
+            await administrationService.employeeService.getList(params);
         return { data, input: params };
     },
 );

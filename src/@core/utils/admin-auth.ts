@@ -76,6 +76,8 @@ export const resolveAdminRoleFromToken = (token?: string | null): AdminRole | nu
     }
 
     const userInfo = getUserInfoFromToken(token);
+    console.log('--- ADMIN AUTH ---');
+    console.log('Token userInfo:', JSON.stringify(userInfo));
     if (!userInfo) {
         return null;
     }
@@ -90,8 +92,9 @@ export const getAdminHomePathByRole = (role: AdminRole): string => {
         case AdminRole.MANAGER:
             return "/administration/manager/dashboard";
         case AdminRole.STAFF:
+            return "/administration/staff/dashboard";
         case AdminRole.POS:
-            return "/administration/manager/dashboard";
+            return "/administration/pos/dashboard";
         default:
             return "/administration-login";
     }
@@ -113,6 +116,19 @@ export const isAdminPathAllowedForRole = (pathname: string, role: AdminRole): bo
 
     if (pathname.startsWith("/administration/manager")) {
         return role === AdminRole.ADMIN || role === AdminRole.MANAGER;
+    }
+
+    if (pathname.startsWith("/administration/staff")) {
+        return role === AdminRole.ADMIN || role === AdminRole.MANAGER || role === AdminRole.STAFF;
+    }
+
+    if (pathname.startsWith("/administration/pos")) {
+        return (
+            role === AdminRole.ADMIN ||
+            role === AdminRole.MANAGER ||
+            role === AdminRole.STAFF ||
+            role === AdminRole.POS
+        );
     }
 
     if (pathname.startsWith("/employee")) {

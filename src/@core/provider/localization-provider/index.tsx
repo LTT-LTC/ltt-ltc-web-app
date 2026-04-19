@@ -3,7 +3,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-import axios from "axios";
 import { LANGUAGE_KEY } from "../../const";
 import enLocales from "../../../locales/en.json";
 import viLocales from "../../../locales/vi.json";
@@ -28,63 +27,25 @@ export const Index: React.FC<{ children: React.ReactNode }> = ({
       const cultureCookie = `c=${lang}|uic=${lang}`;
       document.cookie = `.AspNetCore.Culture=${cultureCookie}; path=/; max-age=31536000`;
 
-      try {
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/abp/application-configuration`,
-          {
-            headers: {
-              "Accept-Language": lang,
-            },
-          }
-        );
-
-        const resources = response.data.localization.resources;
-        const i18nResources: any = {};
-
-        // Merge all resources from ABP into i18next format
-        Object.keys(resources).forEach((resourceName) => {
-          const texts = resources[resourceName].texts;
-          if (!i18nResources[lang]) {
-            i18nResources[lang] = { translation: { ...(lang === "vi" ? viLocales : enLocales) } };
-          }
-
-          Object.keys(texts).forEach((key) => {
-            // We use the key as is, or you can namespace it by resourceName if needed
-            // For simplicity and since we usually want global keys:
-            i18nResources[lang].translation[key] = texts[key];
-          });
-        });
-
-        await i18n
-          .use(initReactI18next)
-          .init({
-            resources: i18nResources,
-            lng: lang,
-            fallbackLng: "vi",
-            interpolation: {
-              escapeValue: false,
-            },
-            react: {
-              useSuspense: false,
-            },
-          });
-
-        setCurrentLanguage(lang);
-        setIsLoaded(true);
-      } catch (error) {
-        console.error("Failed to load localization:", error);
-        // Fallback init if API fails
-        await i18n.use(initReactI18next).init({
+      await i18n
+        .use(initReactI18next)
+        .init({
           resources: {
-            vi: { translation: { "Language": "Ngôn ngữ", ...viLocales } },
-            en: { translation: { "Language": "Language", ...enLocales } },
+            vi: { translation: { "Language": "Tiếng Việt", ...viLocales } },
+            en: { translation: { "Language": "English", ...enLocales } },
           },
           lng: lang,
           fallbackLng: "vi",
+          interpolation: {
+            escapeValue: false,
+          },
+          react: {
+            useSuspense: false,
+          },
         });
-        setCurrentLanguage(lang);
-        setIsLoaded(true);
-      }
+
+      setCurrentLanguage(lang);
+      setIsLoaded(true);
     };
 
     initI18n();

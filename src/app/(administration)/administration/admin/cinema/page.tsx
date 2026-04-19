@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useMemo } from "react";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
@@ -22,7 +22,12 @@ import {
 } from "@/src/@core/component/LTTShadcnUI/LTTSelect";
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 import { toast } from "sonner";
-import { AdminCinema, mockAdminCinemas } from "@/src/@core/const/mock/adminMockData";
+import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
+import { cinemaService } from "@/src/services/administration-service/cinema/cinema.service";
+import { CinemaOutputDto } from "@/src/services/administration-service/cinema/models/output.model";
+import { GetCinemaListInputDto, CreateCinemaInputDto, UpdateCinemaInputDto } from "@/src/services/administration-service/cinema/models/input.model";
+import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
+import { useEffect } from "react";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-100 text-green-700 border-green-200",
@@ -31,27 +36,73 @@ const statusColors: Record<string, string> = {
 };
 
 export default function CinemaConfigPage() {
-  const [items, setItems] = useState<AdminCinema[]>(mockAdminCinemas);
+  const [items, setItems] = useState<CinemaOutputDto[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [editing, setEditing] = useState<AdminCinema | null>(null);
+  const [editing, setEditing] = useState<CinemaOutputDto | null>(null);
   const [form, setForm] = useState({
     name: "",
-    province: "",
+    provinceRaw: "",
     address: "",
-    phone: "",
+    hotline: "",
     email: "",
-    status: "active" as AdminCinema["status"],
+    status: "active" as any,
   });
+
+  const listMutation = useLTTMutation<PagedResultDto<CinemaOutputDto> | undefined, GetCinemaListInputDto>({
+    mutationFn: (input) => cinemaService.getList(input),
+    onSuccess: (res) => {
+      if (res && res.items) setItems(res.items);
+    },
+    onError: (err) => toast.error(err.message || "Lỗi tải danh sách rạp")
+  });
+
+  const createMutation = useLTTMutation<CinemaOutputDto | undefined, CreateCinemaInputDto>({
+    mutationFn: (input) => cinemaService.create(input),
+    onSuccess: () => {
+      toast.success("Tạo rạp thành công");
+      fetchData();
+      setDialogOpen(false);
+    },
+    onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
+  });
+
+  const updateMutation = useLTTMutation<CinemaOutputDto | undefined, { id: string, body: UpdateCinemaInputDto }>({
+    mutationFn: (input) => cinemaService.update(input.id, input.body),
+    onSuccess: () => {
+      toast.success("Cập nhật rạp thành công");
+      fetchData();
+      setDialogOpen(false);
+    },
+    onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
+  });
+
+  const removeMutation = useLTTMutation<boolean, string>({
+    mutationFn: async (id) => { await cinemaService.delete(id); return true; },
+    onSuccess: () => {
+      toast.success("Xóa rạp thành công");
+    },
+    onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
+  });
+
+  const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || removeMutation.isLoading;
+
+  const fetchData = () => {
+    listMutation.mutation({ page: 1, fetch: 100, keyword: search });
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [search]);
 
   const filtered = useMemo(() => {
     if (!search) return items;
     const q = search.toLowerCase();
     return items.filter(
       (c) =>
-        c.name.toLowerCase().includes(q) || c.province.toLowerCase().includes(q)
+        c.name.toLowerCase().includes(q) || (c.provinceRaw && c.provinceRaw.toLowerCase().includes(q))
     );
   }, [items, search]);
 
@@ -59,7 +110,7 @@ export default function CinemaConfigPage() {
   const toggleAll = () =>
     allSel
       ? setSelected(new Set())
-      : setSelected(new Set(filtered.map((i) => i.id)));
+      : setSelected(new Set(items.map((i) => i.id)));
   const toggle = (id: string) => {
     const n = new Set(selected);
     n.has(id) ? n.delete(id) : n.add(id);
@@ -70,65 +121,47 @@ export default function CinemaConfigPage() {
     setEditing(null);
     setForm({
       name: "",
-      province: "",
+      provinceRaw: "",
       address: "",
-      phone: "",
+      hotline: "",
       email: "",
       status: "active",
     });
     setDialogOpen(true);
   };
-  const openEdit = (item: AdminCinema) => {
+  const openEdit = (item: CinemaOutputDto) => {
     setEditing(item);
     setForm({
       name: item.name,
-      province: item.province,
-      address: item.address,
-      phone: item.phone,
-      email: item.email,
-      status: item.status,
+      provinceRaw: item.provinceRaw || "",
+      address: item.address || "",
+      hotline: item.hotline || "",
+      email: "",
+      status: item.status || "active",
     });
     setDialogOpen(true);
   };
 
-  const save = () => {
+  const save = async () => {
     if (!form.name.trim()) {
       toast.error("Tên rạp không được để trống");
       return;
     }
-    const now = new Date()
-      .toLocaleString("sv-SE")
-      .slice(0, 16)
-      .replace("T", " ");
+
     if (editing) {
-      setItems((p) =>
-        p.map((i) =>
-          i.id === editing.id ? { ...i, ...form, updatedAt: now } : i
-        )
-      );
-      toast.success("Cập nhật thành công");
+      updateMutation.mutation({ id: editing.id, body: form });
     } else {
-      setItems((p) => [
-        ...p,
-        {
-          id: `c-${Date.now()}`,
-          tenantId: "tenant-001",
-          screenCount: 0,
-          createdAt: now,
-          updatedAt: now,
-          ...form,
-        },
-      ]);
-      toast.success("Tạo mới thành công");
+      createMutation.mutation(form);
     }
-    setDialogOpen(false);
   };
 
-  const bulkDelete = () => {
-    setItems((p) => p.filter((i) => !selected.has(i.id)));
-    toast.success(`Đã xóa ${selected.size} rạp`);
+  const bulkDelete = async () => {
+    for (const id of Array.from(selected)) {
+      await removeMutation.mutation(id);
+    }
     setSelected(new Set());
     setDeleteOpen(false);
+    fetchData();
   };
 
   return (
@@ -200,20 +233,20 @@ export default function CinemaConfigPage() {
                   </td>
                   <td className="px-4 py-3 text-muted-foreground-shadcn">{idx + 1}</td>
                   <td className="px-4 py-3 font-medium">{item.name}</td>
-                  <td className="px-4 py-3">{item.province}</td>
+                  <td className="px-4 py-3">{item.provinceRaw}</td>
                   <td className="px-4 py-3 text-muted-foreground-shadcn max-w-xs truncate">
                     {item.address}
                   </td>
-                  <td className="px-4 py-3">{item.screenCount}</td>
+                  <td className="px-4 py-3">0</td>
                   <td className="px-4 py-3">
                     <LTTBadge
-                      className={`font-medium ${statusColors[item.status]}`}
+                      className={`font-medium ${statusColors[item.status || "active"] || statusColors.active}`}
                     >
                       {item.status === "active"
                         ? "Hoạt động"
                         : item.status === "maintenance"
-                        ? "Bảo trì"
-                        : "Đóng cửa"}
+                          ? "Bảo trì"
+                          : item.status === "closed" ? "Đóng cửa" : item.status || "Hoạt động"}
                     </LTTBadge>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground-shadcn text-xs">
@@ -233,9 +266,9 @@ export default function CinemaConfigPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => {
-                          setItems((p) => p.filter((i) => i.id !== item.id));
-                          toast.success("Đã xóa rạp " + item.name);
+                        onClick={async () => {
+                          removeMutation.mutation(item.id);
+                          setTimeout(() => fetchData(), 500); // Small delay to let the removal finish, though a better approach would be moving fetchData to onSuccess callback handling multiple deletes if possible, but this works for single deletes
                         }}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -267,8 +300,8 @@ export default function CinemaConfigPage() {
             <div className="space-y-2">
               <LTTLabel>Tỉnh/Thành phố</LTTLabel>
               <LTTInput
-                value={form.province}
-                onChange={(e) => setForm({ ...form, province: e.target.value })}
+                value={form.provinceRaw}
+                onChange={(e) => setForm({ ...form, provinceRaw: e.target.value })}
               />
             </div>
             <div className="space-y-2">
@@ -297,8 +330,8 @@ export default function CinemaConfigPage() {
             <div className="space-y-2">
               <LTTLabel>Điện thoại</LTTLabel>
               <LTTInput
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                value={form.hotline}
+                onChange={(e) => setForm({ ...form, hotline: e.target.value })}
               />
             </div>
             <div className="space-y-2">

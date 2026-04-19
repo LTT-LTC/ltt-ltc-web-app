@@ -16,9 +16,9 @@ import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { CustomerLoginOutputDto } from "@/src/services/customer-service/auth/models/output.model";
 import { CustomerLoginInputDto } from "@/src/services/customer-service/auth/models/input.model";
 import { customerService } from "@/src/services/customer-service/customer.service";
-import { getCookie, setCookie } from "@/src/@core/utils/cookie";
-import LTTGoogleButton from "@/src/@core/component/AntD/LTTButton/LTTGoogleButton";
 import { showNotificationSuccess, showNotificationError } from "@/src/@core/utils/message";
+import { getOrCreateTenantOnClient } from "@/src/@core/utils/tenant";
+import { getCookie, setCookie } from "@/src/@core/utils/cookie";
 
 const FormDetail = () => {
     const [showPassword, setShowPassword] = useState(false);
@@ -26,6 +26,7 @@ const FormDetail = () => {
     const [isRedirecting, setIsRedirecting] = useState(false);
 
     useEffect(() => {
+        getOrCreateTenantOnClient();
         const accessToken = getCookie(ACCESS_TOKEN_KEY);
         if (accessToken) {
             window.location.href = "/";
@@ -91,7 +92,7 @@ const FormDetail = () => {
 
     return (
         <div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-1 sm:gap-5">
+            {/* <div className="grid grid-cols-1 gap-3 sm:grid-cols-1 sm:gap-5">
                 <LTTGoogleButton />
             </div>
             <div className="relative py-3 sm:py-5">
@@ -103,7 +104,7 @@ const FormDetail = () => {
                         Hoặc
                     </span>
                 </div>
-            </div>
+            </div> */}
             <LTTForm form={form} onFinish={onSubmit}>
                 <div className="space-y-6">
                     <LTTFormItem

@@ -28,7 +28,12 @@ import {
 } from "@/src/@core/component/LTTShadcnUI/LTTTabs";
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 import { toast } from "sonner";
-import { AdminMovie, mockAdminMovies } from "@/src/@core/const/mock/adminMockData";
+import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
+import { movieService } from "@/src/services/administration-service/movie/movie.service";
+import { MovieOutputDto, GenreOutputDto, StudioOutputDto } from "@/src/services/administration-service/movie/models/output.model";
+import { GetMovieListInputDto, CreateMovieInputDto, UpdateMovieInputDto } from "@/src/services/administration-service/movie/models/input.model";
+import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
+import { useEffect } from "react";
 import { cn } from "@/src/@core/utils/cn";
 
 const statusLabel: Record<string, string> = {
@@ -43,24 +48,92 @@ const statusColor: Record<string, string> = {
 };
 
 export default function MoviesPage() {
-  const [items, setItems] = useState<AdminMovie[]>(mockAdminMovies);
+  const [items, setItems] = useState<MovieOutputDto[]>([]);
+  const [genres, setGenres] = useState<GenreOutputDto[]>([]);
+  const [studios, setStudios] = useState<StudioOutputDto[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [editing, setEditing] = useState<AdminMovie | null>(null);
+  const [editing, setEditing] = useState<MovieOutputDto | null>(null);
   const [form, setForm] = useState({
     title: "",
-    genre: "",
-    duration: "120",
-    ageRating: "P",
-    director: "",
-    cast: "",
+    originalTitle: "",
+    durationMins: 120,
+    ageRatingId: "",
+    studioId: "",
+    status: "coming_soon",
+    description: "",
+    posterUrl: "",
+    trailerUrl: "",
     releaseDate: "",
-    endDate: "",
-    status: "coming_soon" as AdminMovie["status"],
+    premiereDate: "",
   });
+
+  const listMutation = useLTTMutation<PagedResultDto<MovieOutputDto> | undefined, GetMovieListInputDto>({
+    mutationFn: (input) => movieService.getMovieList(input),
+    onSuccess: (res) => {
+      if (res && res.items) setItems(res.items);
+    },
+    onError: (err) => toast.error(err.message || "Lỗi tải danh sách phim")
+  });
+
+  const genresMutation = useLTTMutation<PagedResultDto<GenreOutputDto> | undefined, void>({
+    mutationFn: () => movieService.getGenres(),
+    onSuccess: (res) => { if (res && res.items) setGenres(res.items); }
+  });
+
+  const studiosMutation = useLTTMutation<PagedResultDto<StudioOutputDto> | undefined, void>({
+    mutationFn: () => movieService.getStudios(),
+    onSuccess: (res) => { if (res && res.items) setStudios(res.items); }
+  });
+
+  const createMutation = useLTTMutation<MovieOutputDto | undefined, CreateMovieInputDto>({
+    mutationFn: (input) => movieService.createMovie(input),
+    onSuccess: () => {
+      toast.success("Thêm phim thành công");
+      fetchData();
+      setDialogOpen(false);
+    },
+    onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
+  });
+
+  const updateMutation = useLTTMutation<MovieOutputDto | undefined, { id: string; body: UpdateMovieInputDto }>({
+    mutationFn: (input) => movieService.updateMovie(input.id, input.body),
+    onSuccess: () => {
+      toast.success("Cập nhật phim thành công");
+      fetchData();
+      setDialogOpen(false);
+    },
+    onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
+  });
+
+  const removeMutation = useLTTMutation<void, string>({
+    mutationFn: (id) => movieService.deleteMovie(id),
+    onSuccess: () => {
+      toast.success("Xóa phim thành công");
+      fetchData();
+    },
+    onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
+  });
+
+  const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || removeMutation.isLoading;
+
+  const fetchData = () => {
+    listMutation.mutation({
+      page: 1,
+      fetch: 100,
+      keyword: search,
+      // Status filter mapping if needed
+    });
+  };
+
+  useEffect(() => {
+    fetchData();
+    genresMutation.mutation();
+    studiosMutation.mutation();
+  }, [search, tab]);
 
   const filtered = useMemo(() => {
     let list = items;
@@ -69,7 +142,7 @@ export default function MoviesPage() {
       const q = search.toLowerCase();
       list = list.filter(
         (m) =>
-          m.title.toLowerCase().includes(q) || m.genre.toLowerCase().includes(q)
+          m.title.toLowerCase().includes(q) || (m.originalTitle && m.originalTitle.toLowerCase().includes(q))
       );
     }
     return list;
@@ -77,43 +150,57 @@ export default function MoviesPage() {
 
   const allSel =
     filtered.length > 0 && filtered.every((i) => selected.has(i.id));
-  const toggleAll = () =>
-    allSel
-      ? setSelected(new Set())
-      : setSelected(new Set(filtered.map((i) => i.id)));
+
+  const toggleAll = () => {
+    if (allSel) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(filtered.map((i) => i.id)));
+    }
+  };
+
   const toggle = (id: string) => {
-    const n = new Set(selected);
-    n.has(id) ? n.delete(id) : n.add(id);
-    setSelected(n);
+    const newSelected = new Set(selected);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelected(newSelected);
   };
 
   const openCreate = () => {
     setEditing(null);
     setForm({
       title: "",
-      genre: "",
-      duration: "120",
-      ageRating: "P",
-      director: "",
-      cast: "",
-      releaseDate: "",
-      endDate: "",
+      originalTitle: "",
+      durationMins: 120,
+      ageRatingId: "",
+      studioId: (studios.length > 0 ? studios[0].id : ""),
       status: "coming_soon",
+      description: "",
+      posterUrl: "",
+      trailerUrl: "",
+      releaseDate: "",
+      premiereDate: "",
     });
     setDialogOpen(true);
   };
-  const openEdit = (m: AdminMovie) => {
+
+  const openEdit = (m: MovieOutputDto) => {
     setEditing(m);
     setForm({
       title: m.title,
-      genre: m.genre,
-      duration: String(m.duration),
-      ageRating: m.ageRating,
-      director: m.director,
-      cast: m.cast,
-      releaseDate: m.releaseDate,
-      endDate: m.endDate,
-      status: m.status,
+      originalTitle: m.originalTitle || "",
+      durationMins: m.durationMins || 120,
+      ageRatingId: m.ratingId || "",
+      studioId: m.studioId || "",
+      status: m.status || "coming_soon",
+      description: m.description || "",
+      posterUrl: m.posterUrl || "",
+      trailerUrl: m.trailerUrl || "",
+      releaseDate: m.releaseDate ? m.releaseDate.split("T")[0] : "",
+      premiereDate: m.premiereDate ? m.premiereDate.split("T")[0] : "",
     });
     setDialogOpen(true);
   };
@@ -123,38 +210,21 @@ export default function MoviesPage() {
       toast.error("Tên phim không được để trống");
       return;
     }
-    const now = new Date().toISOString().slice(0, 10);
+
     if (editing) {
-      setItems((p) =>
-        p.map((i) =>
-          i.id === editing.id
-            ? { ...i, ...form, duration: parseInt(form.duration) || 120 }
-            : i
-        )
-      );
-      toast.success("Cập nhật thành công");
+      updateMutation.mutation({ id: editing.id, body: { ...form, id: editing.id } as UpdateMovieInputDto });
     } else {
-      setItems((p) => [
-        ...p,
-        {
-          id: `m-${Date.now()}`,
-          ...form,
-          duration: parseInt(form.duration) || 120,
-          posterUrl: "",
-          trailerUrl: "",
-          createdAt: now,
-        },
-      ]);
-      toast.success("Tạo mới thành công");
+      createMutation.mutation(form as CreateMovieInputDto);
     }
-    setDialogOpen(false);
   };
 
   const bulkDelete = () => {
-    setItems((p) => p.filter((i) => !selected.has(i.id)));
-    toast.success(`Đã xóa ${selected.size} phim`);
-    setSelected(new Set());
-    setDeleteOpen(false);
+    movieService.bulkDeleteMovies(Array.from(selected)).then(() => {
+      toast.success(`Đã xóa ${selected.size} phim`);
+      setSelected(new Set());
+      setDeleteOpen(false);
+      fetchData();
+    });
   };
 
   return (
@@ -244,19 +314,25 @@ export default function MoviesPage() {
                   <td className="px-4 py-3 text-muted-foreground-shadcn">{idx + 1}</td>
                   <td className="px-4 py-3 font-medium flex items-center gap-2">
                     <Film className="h-4 w-4 text-primary-shadcn shrink-0" />
-                    {item.title}
+                    <div>
+                      <div className="font-bold">{item.title}</div>
+                      {item.originalTitle && <div className="text-[10px] text-muted-foreground-shadcn italic">{item.originalTitle}</div>}
+                    </div>
                   </td>
-                  <td className="px-4 py-3 text-xs">{item.genre}</td>
-                  <td className="px-4 py-3 text-xs">{item.duration} phút</td>
+                  <td className="px-4 py-3 text-xs">
+                    {/* Simplified genre display - in a real app would map genreId */}
+                    Phim
+                  </td>
+                  <td className="px-4 py-3 text-xs">{item.durationMins} phút</td>
                   <td className="px-4 py-3">
                     <LTTBadge className="bg-accent-shadcn text-accent-shadcn-foreground border-red-200">
-                      {item.ageRating}
+                      {item.ratingId || "P"}
                     </LTTBadge>
                   </td>
                   <td className="px-4 py-3 text-xs">{item.releaseDate}</td>
                   <td className="px-4 py-3">
-                    <LTTBadge className={cn("font-medium", statusColor[item.status])}>
-                      {statusLabel[item.status]}
+                    <LTTBadge className={cn("font-medium", statusColor[item.status || "coming_soon"])}>
+                      {statusLabel[item.status || "coming_soon"]}
                     </LTTBadge>
                   </td>
                   <td className="px-4 py-3">
@@ -297,7 +373,7 @@ export default function MoviesPage() {
             </LTTDialogTitle>
           </LTTDialogHeader>
           <div className="grid gap-4 py-2 sm:grid-cols-2">
-            <div className="space-y-2 sm:col-span-2">
+            <div className="space-y-2">
               <LTTLabel>Tên phim *</LTTLabel>
               <LTTInput
                 value={form.title}
@@ -305,25 +381,41 @@ export default function MoviesPage() {
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Thể loại</LTTLabel>
+              <LTTLabel>Tên gốc (Tiếng Anh/Gốc)</LTTLabel>
               <LTTInput
-                value={form.genre}
-                onChange={(e) => setForm({ ...form, genre: e.target.value })}
+                value={form.originalTitle}
+                onChange={(e) => setForm({ ...form, originalTitle: e.target.value })}
               />
+            </div>
+            <div className="space-y-2">
+              <LTTLabel>Hãng sản xuất (Studio) *</LTTLabel>
+              <LTTSelect
+                value={form.studioId}
+                onValueChange={(v) => setForm({ ...form, studioId: v })}
+              >
+                <LTTSelectTrigger>
+                  <LTTSelectValue placeholder="Chọn Studio" />
+                </LTTSelectTrigger>
+                <LTTSelectContent>
+                  {studios.map(s => (
+                    <LTTSelectItem key={s.id} value={s.id}>{s.name}</LTTSelectItem>
+                  ))}
+                </LTTSelectContent>
+              </LTTSelect>
             </div>
             <div className="space-y-2">
               <LTTLabel>Thời lượng (phút)</LTTLabel>
               <LTTInput
                 type="number"
-                value={form.duration}
-                onChange={(e) => setForm({ ...form, duration: e.target.value })}
+                value={form.durationMins}
+                onChange={(e) => setForm({ ...form, durationMins: parseInt(e.target.value) || 0 })}
               />
             </div>
             <div className="space-y-2">
               <LTTLabel>Phân loại tuổi</LTTLabel>
               <LTTSelect
-                value={form.ageRating}
-                onValueChange={(v) => setForm({ ...form, ageRating: v })}
+                value={form.ageRatingId}
+                onValueChange={(v) => setForm({ ...form, ageRatingId: v })}
               >
                 <LTTSelectTrigger>
                   <LTTSelectValue />
@@ -353,18 +445,25 @@ export default function MoviesPage() {
                 </LTTSelectContent>
               </LTTSelect>
             </div>
-            <div className="space-y-2">
-              <LTTLabel>Đạo diễn</LTTLabel>
+            <div className="space-y-2 sm:col-span-2">
+              <LTTLabel>Mô tả phim</LTTLabel>
               <LTTInput
-                value={form.director}
-                onChange={(e) => setForm({ ...form, director: e.target.value })}
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Diễn viên</LTTLabel>
+              <LTTLabel>Poster URL</LTTLabel>
               <LTTInput
-                value={form.cast}
-                onChange={(e) => setForm({ ...form, cast: e.target.value })}
+                value={form.posterUrl}
+                onChange={(e) => setForm({ ...form, posterUrl: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <LTTLabel>Trailer URL (Youtube/Vimeo)</LTTLabel>
+              <LTTInput
+                value={form.trailerUrl}
+                onChange={(e) => setForm({ ...form, trailerUrl: e.target.value })}
               />
             </div>
             <div className="space-y-2">
@@ -378,11 +477,11 @@ export default function MoviesPage() {
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Ngày kết thúc</LTTLabel>
+              <LTTLabel>Ngày công chiếu (Premiere)</LTTLabel>
               <LTTInput
                 type="date"
-                value={form.endDate}
-                onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+                value={form.premiereDate}
+                onChange={(e) => setForm({ ...form, premiereDate: e.target.value })}
               />
             </div>
           </div>

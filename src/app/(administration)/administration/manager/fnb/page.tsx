@@ -29,11 +29,12 @@ import {
 } from "@/src/@core/component/LTTShadcnUI/LTTTabs";
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 import { toast } from "sonner";
-import {
-  FnBItem,
-  mockFnBItems,
-  fnbCategories,
-} from "@/src/@core/const/mock/adminMockData";
+import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
+import { productService } from "@/src/services/administration-service/product/product.service";
+import { ProductOutputDto, CategoryOutputDto } from "@/src/services/administration-service/product/models/output.model";
+import { GetProductListInputDto, CreateProductInputDto, UpdateProductInputDto } from "@/src/services/administration-service/product/models/input.model";
+import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
+import { useEffect } from "react";
 import { cn } from "@/src/@core/utils/cn";
 
 const catLabel: Record<string, string> = {
@@ -57,25 +58,71 @@ const statusLabel: Record<string, string> = {
 const formatVND = (n: number) => n.toLocaleString("vi-VN") + "đ";
 
 export default function FnBPage() {
-  const [items, setItems] = useState<FnBItem[]>(mockFnBItems);
+  const [items, setItems] = useState<ProductOutputDto[]>([]);
+  const [categories, setCategories] = useState<CategoryOutputDto[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [editing, setEditing] = useState<FnBItem | null>(null);
+  const [editing, setEditing] = useState<ProductOutputDto | null>(null);
   const [form, setForm] = useState({
     name: "",
-    category: "popcorn" as FnBItem["category"],
-    price: "0",
-    cost: "0",
+    categoryId: "",
+    price: 0,
     description: "",
-    status: "available" as FnBItem["status"],
   });
+
+  const listMutation = useLTTMutation<PagedResultDto<ProductOutputDto> | undefined, GetProductListInputDto>({
+    mutationFn: (input) => productService.getProductList(input),
+    onSuccess: (res) => { if (res && res.items) setItems(res.items); },
+    onError: (err) => toast.error(err.message || "Lỗi tải danh sách sản phẩm")
+  });
+
+  const catMutation = useLTTMutation<PagedResultDto<CategoryOutputDto> | undefined, void>({
+    mutationFn: () => productService.getCategoryList(),
+    onSuccess: (res) => { if (res && res.items) setCategories(res.items); }
+  });
+
+  const createMutation = useLTTMutation<ProductOutputDto | undefined, CreateProductInputDto>({
+    mutationFn: (input) => productService.createProduct(input),
+    onSuccess: () => {
+      toast.success("Thêm thành công");
+      fetchData();
+      setDialogOpen(false);
+    },
+    onError: (err) => toast.error(err.message || "Lỗi")
+  });
+
+  const updateMutation = useLTTMutation<ProductOutputDto | undefined, { id: string; body: UpdateProductInputDto }>({
+    mutationFn: (input) => productService.updateProduct(input.id, input.body),
+    onSuccess: () => {
+      toast.success("Cập nhật thành công");
+      fetchData();
+      setDialogOpen(false);
+    },
+    onError: (err) => toast.error(err.message || "Lỗi")
+  });
+
+  const fetchData = () => {
+    listMutation.mutation({
+      page: 1,
+      fetch: 100,
+      keyword: search,
+      categoryId: catFilter === "all" ? undefined : catFilter
+    });
+  };
+
+  useEffect(() => {
+    fetchData();
+    catMutation.mutation();
+  }, [search, catFilter]);
+
+  const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading;
 
   const filtered = useMemo(() => {
     let list = items;
-    if (catFilter !== "all") list = list.filter((i) => i.category === catFilter);
+    if (catFilter !== "all") list = list.filter((i) => i.categoryId === catFilter);
     if (search) {
       const q = search.toLowerCase();
       list = list.filter((i) => i.name.toLowerCase().includes(q));
@@ -99,23 +146,20 @@ export default function FnBPage() {
     setEditing(null);
     setForm({
       name: "",
-      category: "popcorn",
-      price: "0",
-      cost: "0",
+      categoryId: categories.length > 0 ? categories[0].id : "",
+      price: 0,
       description: "",
-      status: "available",
     });
     setDialogOpen(true);
   };
-  const openEdit = (item: FnBItem) => {
+
+  const openEdit = (item: ProductOutputDto) => {
     setEditing(item);
     setForm({
       name: item.name,
-      category: item.category,
-      price: String(item.price),
-      cost: String(item.cost),
-      description: item.description,
-      status: item.status,
+      categoryId: item.categoryId,
+      price: item.price,
+      description: item.description || "",
     });
     setDialogOpen(true);
   };
@@ -125,38 +169,11 @@ export default function FnBPage() {
       toast.error("Tên sản phẩm không được để trống");
       return;
     }
-    const now = new Date().toISOString().slice(0, 10);
     if (editing) {
-      setItems((p) =>
-        p.map((i) =>
-          i.id === editing.id
-            ? {
-                ...i,
-                ...form,
-                price: parseInt(form.price) || 0,
-                cost: parseInt(form.cost) || 0,
-                updatedAt: now,
-              }
-            : i
-        )
-      );
-      toast.success("Cập nhật thành công");
+      updateMutation.mutation({ id: editing.id, body: form as UpdateProductInputDto });
     } else {
-      setItems((p) => [
-        ...p,
-        {
-          id: `f-${Date.now()}`,
-          ...form,
-          price: parseInt(form.price) || 0,
-          cost: parseInt(form.cost) || 0,
-          imageUrl: "",
-          createdAt: now,
-          updatedAt: now,
-        },
-      ]);
-      toast.success("Tạo mới thành công");
+      createMutation.mutation(form as CreateProductInputDto);
     }
-    setDialogOpen(false);
   };
 
   const bulkDelete = () => {
@@ -180,9 +197,9 @@ export default function FnBPage() {
           <LTTTabsTrigger value="all">
             Tất cả ({items.length})
           </LTTTabsTrigger>
-          {fnbCategories.map((c) => (
-            <LTTTabsTrigger key={c} value={c}>
-              {catLabel[c]} ({items.filter((i) => i.category === c).length})
+          {categories.map((c) => (
+            <LTTTabsTrigger key={c.id} value={c.id}>
+              {c.name}
             </LTTTabsTrigger>
           ))}
         </LTTTabsList>
@@ -221,9 +238,7 @@ export default function FnBPage() {
               <th className="px-4 py-3 text-left font-semibold">Sản phẩm</th>
               <th className="px-4 py-3 text-left font-semibold">Danh mục</th>
               <th className="px-4 py-3 text-right font-semibold">Giá bán</th>
-              <th className="px-4 py-3 text-right font-semibold">Giá vốn</th>
-              <th className="px-4 py-3 text-right font-semibold">Lợi nhuận</th>
-              <th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
+              <th className="px-4 py-3 text-left font-semibold">Mô tả</th>
               <th className="px-4 py-3 text-right font-semibold">Thao tác</th>
             </tr>
           </thead>
@@ -253,20 +268,12 @@ export default function FnBPage() {
                   </td>
                   <td className="px-4 py-3">
                     <LTTBadge className="bg-accent-shadcn text-accent-shadcn-foreground border-red-200">
-                      {catLabel[item.category]}
+                      {item.categoryName || "Sản phẩm"}
                     </LTTBadge>
                   </td>
                   <td className="px-4 py-3 text-right font-semibold">{formatVND(item.price)}</td>
-                  <td className="px-4 py-3 text-right text-muted-foreground-shadcn">
-                    {formatVND(item.cost)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-green-600 font-bold">
-                    {formatVND(item.price - item.cost)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <LTTBadge className={cn("font-medium", statusColor[item.status])}>
-                      {statusLabel[item.status]}
-                    </LTTBadge>
+                  <td className="px-4 py-3 text-xs text-muted-foreground-shadcn max-w-[200px] truncate">
+                    {item.description || "—"}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
@@ -314,53 +321,29 @@ export default function FnBPage() {
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Danh mục</LTTLabel>
+              <LTTLabel>Danh mục *</LTTLabel>
               <LTTSelect
-                value={form.category}
-                onValueChange={(v: any) => setForm({ ...form, category: v })}
+                value={form.categoryId}
+                onValueChange={(v: any) => setForm({ ...form, categoryId: v })}
               >
                 <LTTSelectTrigger>
-                  <LTTSelectValue />
+                  <LTTSelectValue placeholder="Chọn danh mục" />
                 </LTTSelectTrigger>
                 <LTTSelectContent>
-                  {fnbCategories.map((c) => (
-                    <LTTSelectItem key={c} value={c}>
-                      {catLabel[c]}
+                  {categories.map((c) => (
+                    <LTTSelectItem key={c.id} value={c.id}>
+                      {c.name}
                     </LTTSelectItem>
                   ))}
                 </LTTSelectContent>
               </LTTSelect>
             </div>
             <div className="space-y-2">
-              <LTTLabel>Trạng thái</LTTLabel>
-              <LTTSelect
-                value={form.status}
-                onValueChange={(v: any) => setForm({ ...form, status: v })}
-              >
-                <LTTSelectTrigger>
-                  <LTTSelectValue />
-                </LTTSelectTrigger>
-                <LTTSelectContent>
-                  <LTTSelectItem value="available">Có sẵn</LTTSelectItem>
-                  <LTTSelectItem value="out_of_stock">Hết hàng</LTTSelectItem>
-                  <LTTSelectItem value="discontinued">Ngưng bán</LTTSelectItem>
-                </LTTSelectContent>
-              </LTTSelect>
-            </div>
-            <div className="space-y-2">
-              <LTTLabel>Giá bán (VNĐ)</LTTLabel>
+              <LTTLabel>Giá bán (VNĐ) *</LTTLabel>
               <LTTInput
                 type="number"
                 value={form.price}
-                onChange={(e) => setForm({ ...form, price: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <LTTLabel>Giá vốn (VNĐ)</LTTLabel>
-              <LTTInput
-                type="number"
-                value={form.cost}
-                onChange={(e) => setForm({ ...form, cost: e.target.value })}
+                onChange={(e) => setForm({ ...form, price: parseInt(e.target.value) || 0 })}
               />
             </div>
             <div className="space-y-2 sm:col-span-2">

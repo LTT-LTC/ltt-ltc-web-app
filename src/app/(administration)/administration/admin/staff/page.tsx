@@ -22,12 +22,13 @@ import {
 } from "@/src/@core/component/LTTShadcnUI/LTTSelect";
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 import { toast } from "sonner";
-import {
-  StaffMember,
-  mockStaff,
-  staffRoles,
-  mockAdminCinemas,
-} from "@/src/@core/const/mock/adminMockData";
+import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
+import { employeeService } from "@/src/services/administration-service/employee/employee.service";
+import { EmployeeOutputDto } from "@/src/services/administration-service/employee/models/output.model";
+import { GetListEmployeeInputDto, CreateEmployeeInputDto, UpdateEmployeeInputDto } from "@/src/services/administration-service/employee/models/input.model";
+import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
+import { cinemaService } from "@/src/services/administration-service/cinema/cinema.service";
+import { useEffect } from "react";
 import { cn } from "@/src/@core/utils/cn";
 
 const statusColor: Record<string, string> = {
@@ -41,31 +42,80 @@ const statusLabel: Record<string, string> = {
   suspended: "Tạm khóa",
 };
 
+import { useSearchParams } from "next/navigation";
+
 export default function StaffPage() {
-  const [items, setItems] = useState<StaffMember[]>(mockStaff);
+  const searchParams = useSearchParams();
+  const cinemaId = searchParams.get("cinemaId") || undefined;
+  const [items, setItems] = useState<EmployeeOutputDto[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [editing, setEditing] = useState<StaffMember | null>(null);
+  const [editing, setEditing] = useState<EmployeeOutputDto | null>(null);
   const [form, setForm] = useState({
-    fullname: "",
+    name: "",
     email: "",
-    phone: "",
-    role: "Box Office",
-    cinemaId: "all",
-    status: "active" as StaffMember["status"],
+    phoneNumber: "",
+    code: "",
+    joinedDate: "",
+    dateOfBirth: "",
+    organizationUnitId: "",
+    positionId: "",
+    isActive: true,
   });
+  const listMutation = useLTTMutation<PagedResultDto<EmployeeOutputDto> | undefined, GetListEmployeeInputDto>({
+    mutationFn: (params) => employeeService.getList(params),
+    onSuccess: (res) => { if (res && res.items) setItems(res.items); },
+    onError: (err) => toast.error(err.message || "Lỗi tải danh sách nhân viên")
+  });
+
+  const [cinemas, setCinemas] = useState<any[]>([]);
+  const cinemasMutation = useLTTMutation<any | undefined, any>({
+    mutationFn: (params) => cinemaService.getList(params),
+    onSuccess: (res) => { if (res && res.items) setCinemas(res.items); }
+  });
+
+  const createMutation = useLTTMutation<string | undefined, CreateEmployeeInputDto>({
+    mutationFn: (input) => employeeService.create(input),
+    onSuccess: () => {
+      toast.success("Thêm nhân viên thành công");
+      fetchData();
+      setDialogOpen(false);
+    },
+    onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
+  });
+
+  const updateMutation = useLTTMutation<boolean | undefined, { id: string; body: UpdateEmployeeInputDto }>({
+    mutationFn: (input) => employeeService.update(input.id, input.body),
+    onSuccess: () => {
+      toast.success("Cập nhật thành công");
+      fetchData();
+      setDialogOpen(false);
+    },
+    onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
+  });
+
+  const fetchData = () => {
+    listMutation.mutation({ page: 1, fetch: 100, keyword: search, cinemaId });
+  };
+
+  useEffect(() => {
+    fetchData();
+    cinemasMutation.mutation({ page: 1, fetch: 100 });
+  }, [search]);
+
+  const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading;
 
   const filtered = useMemo(() => {
     let list = items;
-    if (roleFilter !== "all") list = list.filter((s) => s.role === roleFilter);
+    if (roleFilter !== "all") list = list.filter((s) => (s.positionName || "Nhân viên") === roleFilter);
     if (search) {
       const q = search.toLowerCase();
       list = list.filter(
         (s) =>
-          s.fullname.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)
+          s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)
       );
     }
     return list;
@@ -86,58 +136,45 @@ export default function StaffPage() {
   const openCreate = () => {
     setEditing(null);
     setForm({
-      fullname: "",
+      name: "",
       email: "",
-      phone: "",
-      role: "Box Office",
-      cinemaId: "all",
-      status: "active",
+      phoneNumber: "",
+      code: `EMP-${Date.now()}`,
+      joinedDate: new Date().toISOString().split("T")[0],
+      dateOfBirth: "",
+      organizationUnitId: "",
+      positionId: "",
+      isActive: true,
     });
     setDialogOpen(true);
   };
-  const openEdit = (s: StaffMember) => {
+
+  const openEdit = (s: EmployeeOutputDto) => {
     setEditing(s);
     setForm({
-      fullname: s.fullname,
+      name: s.name,
       email: s.email,
-      phone: s.phone,
-      role: s.role,
-      cinemaId: s.cinemaId,
-      status: s.status,
+      phoneNumber: s.phoneNumber,
+      code: s.code,
+      joinedDate: s.joinedDate ? s.joinedDate.split("T")[0] : "",
+      dateOfBirth: s.dateOfBirth ? s.dateOfBirth.split("T")[0] : "",
+      organizationUnitId: s.organizationUnitId || "",
+      positionId: s.positionId || "",
+      isActive: s.isActive ?? true,
     });
     setDialogOpen(true);
   };
 
   const save = () => {
-    if (!form.fullname.trim()) {
+    if (!form.name.trim()) {
       toast.error("Họ tên không được để trống");
       return;
     }
-    const cinema =
-      form.cinemaId === "all"
-        ? { name: "Tất cả" }
-        : mockAdminCinemas.find((c) => c.id === form.cinemaId);
     if (editing) {
-      setItems((p) =>
-        p.map((i) =>
-          i.id === editing.id ? { ...i, ...form, cinemaName: cinema?.name || "" } : i
-        )
-      );
-      toast.success("Cập nhật thành công");
+      updateMutation.mutation({ id: editing.id, body: form as UpdateEmployeeInputDto });
     } else {
-      setItems((p) => [
-        ...p,
-        {
-          id: `s-${Date.now()}`,
-          ...form,
-          cinemaName: cinema?.name || "",
-          joinedAt: new Date().toISOString().slice(0, 10),
-          lastLogin: "",
-        },
-      ]);
-      toast.success("Tạo mới thành công");
+      createMutation.mutation(form as CreateEmployeeInputDto);
     }
-    setDialogOpen(false);
   };
 
   const bulkDelete = () => {
@@ -146,6 +183,8 @@ export default function StaffPage() {
     setSelected(new Set());
     setDeleteOpen(false);
   };
+
+  const staffRoles = Array.from(new Set(items.map(i => i.positionName || "Nhân viên")));
 
   return (
     <div className="space-y-4">
@@ -227,25 +266,25 @@ export default function StaffPage() {
                       onCheckedChange={() => toggle(item.id)}
                     />
                   </td>
-                  <td className="px-4 py-3 font-medium">{item.fullname}</td>
+                  <td className="px-4 py-3 font-medium">{item.name}</td>
                   <td className="px-4 py-3 text-xs">{item.email}</td>
-                  <td className="px-4 py-3 text-xs">{item.phone}</td>
+                  <td className="px-4 py-3 text-xs">{item.phoneNumber}</td>
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center gap-1 rounded-full bg-accent-shadcn px-2.5 py-0.5 text-xs font-medium text-accent-shadcn-foreground border border-red-200">
                       <Shield className="h-3 w-3" />
-                      {item.role}
+                      {item.positionName || "Nhân viên"}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-xs">{item.cinemaName}</td>
+                  <td className="px-4 py-3 text-xs">{item.organizationUnitName || "—"}</td>
                   <td className="px-4 py-3">
                     <LTTBadge
-                      className={cn("font-medium", statusColor[item.status])}
+                      className={cn("font-medium", item.isActive ? statusColor.active : statusColor.inactive)}
                     >
-                      {statusLabel[item.status]}
+                      {item.isActive ? statusLabel.active : statusLabel.inactive}
                     </LTTBadge>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground-shadcn text-xs">
-                    {item.lastLogin || "—"}
+                    —
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
@@ -263,7 +302,7 @@ export default function StaffPage() {
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={() => {
                           setItems((p) => p.filter((i) => i.id !== item.id));
-                          toast.success("Đã xóa nhân viên " + item.fullname);
+                          toast.success("Đã xóa nhân viên " + item.name);
                         }}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -288,12 +327,12 @@ export default function StaffPage() {
             <div className="space-y-2 sm:col-span-2">
               <LTTLabel>Họ tên *</LTTLabel>
               <LTTInput
-                value={form.fullname}
-                onChange={(e) => setForm({ ...form, fullname: e.target.value })}
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Email</LTTLabel>
+              <LTTLabel>Email *</LTTLabel>
               <LTTInput
                 type="email"
                 value={form.email}
@@ -301,42 +340,30 @@ export default function StaffPage() {
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>SĐT</LTTLabel>
+              <LTTLabel>SĐT *</LTTLabel>
               <LTTInput
-                value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                value={form.phoneNumber}
+                onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Vai trò</LTTLabel>
-              <LTTSelect
-                value={form.role}
-                onValueChange={(v) => setForm({ ...form, role: v })}
-              >
-                <LTTSelectTrigger>
-                  <LTTSelectValue />
-                </LTTSelectTrigger>
-                <LTTSelectContent>
-                  {staffRoles.map((r) => (
-                    <LTTSelectItem key={r} value={r}>
-                      {r}
-                    </LTTSelectItem>
-                  ))}
-                </LTTSelectContent>
-              </LTTSelect>
+              <LTTLabel>Mã nhân viên</LTTLabel>
+              <LTTInput
+                value={form.code}
+                onChange={(e) => setForm({ ...form, code: e.target.value })}
+              />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Rạp</LTTLabel>
+              <LTTLabel>Rạp (Phòng ban)</LTTLabel>
               <LTTSelect
-                value={form.cinemaId}
-                onValueChange={(v) => setForm({ ...form, cinemaId: v })}
+                value={form.organizationUnitId}
+                onValueChange={(v) => setForm({ ...form, organizationUnitId: v })}
               >
                 <LTTSelectTrigger>
-                  <LTTSelectValue />
+                  <LTTSelectValue placeholder="Chọn rạp" />
                 </LTTSelectTrigger>
                 <LTTSelectContent>
-                  <LTTSelectItem value="all">Tất cả</LTTSelectItem>
-                  {mockAdminCinemas.map((c) => (
+                  {cinemas.map((c) => (
                     <LTTSelectItem key={c.id} value={c.id}>
                       {c.name}
                     </LTTSelectItem>
@@ -344,19 +371,26 @@ export default function StaffPage() {
                 </LTTSelectContent>
               </LTTSelect>
             </div>
-            <div className="space-y-2 sm:col-span-2">
+            <div className="space-y-2">
+              <LTTLabel>Ngày gia nhập</LTTLabel>
+              <LTTInput
+                type="date"
+                value={form.joinedDate}
+                onChange={(e) => setForm({ ...form, joinedDate: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
               <LTTLabel>Trạng thái</LTTLabel>
               <LTTSelect
-                value={form.status}
-                onValueChange={(v: any) => setForm({ ...form, status: v })}
+                value={form.isActive ? "active" : "inactive"}
+                onValueChange={(v: any) => setForm({ ...form, isActive: v === "active" })}
               >
                 <LTTSelectTrigger>
                   <LTTSelectValue />
                 </LTTSelectTrigger>
                 <LTTSelectContent>
                   <LTTSelectItem value="active">Hoạt động</LTTSelectItem>
-                  <LTTSelectItem value="inactive">Ngưng</LTTSelectItem>
-                  <LTTSelectItem value="suspended">Tạm khóa</LTTSelectItem>
+                  <LTTSelectItem value="inactive">Tạm ngưng</LTTSelectItem>
                 </LTTSelectContent>
               </LTTSelect>
             </div>
