@@ -23,6 +23,7 @@ import {
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 import { toast } from "sonner";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
+import useDebouncedListQuery from "@/src/@core/hooks/useDebouncedListQuery";
 import { screenService } from "@/src/services/administration-service/screen/screen.service";
 import { ScreenOutputDto } from "@/src/services/administration-service/screen/models/output.model";
 import { GetScreenListInputDto, CreateScreenInputDto, UpdateScreenInputDto } from "@/src/services/administration-service/screen/models/input.model";
@@ -55,7 +56,7 @@ export default function ScreensConfigPage() {
   });
 
   const cinemaMutation = useLTTMutation<PagedResultDto<CinemaOutputDto> | undefined, any>({
-    mutationFn: (p) => cinemaService.getList(p),
+    mutationFn: (p) => cinemaService.getCinemaListAsync(p),
     onSuccess: (res) => {
       if (res && res.items) {
         setCinemas(res.items);
@@ -104,18 +105,21 @@ export default function ScreensConfigPage() {
 
   const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || removeMutation.isLoading;
 
-  const fetchData = () => {
+  const fetchData = (keyword?: string) => {
     if (!selectedCinemaId) return;
-    listMutation.mutation({ cinemaId: selectedCinemaId, params: { page: 1, fetch: 100, keyword: search } });
+    const effectiveKeyword = keyword ?? debouncedSearch;
+    listMutation.mutation({ cinemaId: selectedCinemaId, params: { page: 1, fetch: 100, keyword: effectiveKeyword } });
   };
 
   useEffect(() => {
     cinemaMutation.mutation({ page: 1, fetch: 100 });
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [selectedCinemaId, search]);
+  const debouncedSearch = useDebouncedListQuery(
+    search,
+    (keyword) => fetchData(keyword),
+    [selectedCinemaId]
+  );
 
   const filtered = useMemo(() => {
     if (!search) return items;
@@ -172,12 +176,23 @@ export default function ScreensConfigPage() {
   };
 
   const bulkDelete = async () => {
-    for (const id of Array.from(selected)) {
-      await removeMutation.mutation(id);
+    const ids = Array.from(selected);
+    if (ids.length === 0) {
+      return;
     }
+
+    const results = await Promise.allSettled(ids.map((id) => screenService.delete(id)));
+    const failed = results.filter((r) => r.status === "rejected").length;
+
+    if (failed === 0) {
+      toast.success(`Xóa ${ids.length} phòng chiếu thành công`);
+    } else {
+      toast.error(`Xóa thành công ${ids.length - failed}/${ids.length} phòng chiếu`);
+    }
+
     setSelected(new Set());
     setDeleteOpen(false);
-    fetchData();
+    fetchData(debouncedSearch);
   };
 
   return (
@@ -243,7 +258,13 @@ export default function ScreensConfigPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={7} className="py-12 text-center text-muted-foreground-shadcn">
+                  Đang tải dữ liệu phòng chiếu...
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={7} className="py-12 text-center text-muted-foreground-shadcn">
                   Không có dữ liệu phòng chiếu nào.
@@ -282,8 +303,8 @@ export default function ScreensConfigPage() {
                         size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={async () => {
-                          removeMutation.mutation(item.id);
-                          setTimeout(() => fetchData(), 500);
+                          await removeMutation.mutation(item.id);
+                          fetchData();
                         }}
                       >
                         <Trash2 className="h-4 w-4" />

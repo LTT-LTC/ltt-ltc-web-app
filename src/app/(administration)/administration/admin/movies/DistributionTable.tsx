@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, Calendar, ShieldCheck } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Plus, Pencil, Trash2, Calendar, ShieldCheck, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import {
@@ -38,6 +38,7 @@ export default function DistributionTable() {
         licenseEndDate: "",
         isExclusive: false
     });
+    const didInitRef = useRef(false);
 
     const listMutation = useLTTMutation<PagedResultDto<MovieDistributionOutputDto> | undefined, void>({
         mutationFn: () => movieService.getDistributions(),
@@ -80,6 +81,10 @@ export default function DistributionTable() {
     });
 
     useEffect(() => {
+        if (didInitRef.current) {
+            return;
+        }
+        didInitRef.current = true;
         listMutation.mutation();
         moviesMutation.mutation();
     }, []);
@@ -111,9 +116,16 @@ export default function DistributionTable() {
         setDialogOpen(true);
     };
 
+    const fetchData = () => {
+        listMutation.mutation();
+    };
+
     return (
         <div className="space-y-4">
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+                <LTTButton variant="outline" className="gap-2" onClick={fetchData} loading={listMutation.isLoading}>
+                    <RefreshCw className="h-4 w-4" /> Làm mới
+                </LTTButton>
                 <LTTButton className="gap-2" onClick={openCreate}>
                     <Plus className="h-4 w-4" /> Thêm giấy phép phân phối
                 </LTTButton>

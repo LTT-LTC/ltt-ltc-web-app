@@ -53,6 +53,7 @@ export default function MoviesPage() {
   const [studios, setStudios] = useState<StudioOutputDto[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -124,29 +125,30 @@ export default function MoviesPage() {
     listMutation.mutation({
       page: 1,
       fetch: 100,
-      keyword: search,
+      keyword: debouncedSearch,
       // Status filter mapping if needed
     });
   };
 
   useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
     fetchData();
+  }, [debouncedSearch]);
+
+  useEffect(() => {
     genresMutation.mutation();
     studiosMutation.mutation();
-  }, [search, tab]);
+  }, []);
 
   const filtered = useMemo(() => {
     let list = items;
     if (tab !== "all") list = list.filter((m) => m.status === tab);
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (m) =>
-          m.title.toLowerCase().includes(q) || (m.originalTitle && m.originalTitle.toLowerCase().includes(q))
-      );
-    }
     return list;
-  }, [items, search, tab]);
+  }, [items, tab]);
 
   const allSel =
     filtered.length > 0 && filtered.every((i) => selected.has(i.id));

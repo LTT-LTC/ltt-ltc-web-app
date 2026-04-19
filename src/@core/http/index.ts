@@ -1,6 +1,7 @@
 import axios, {
   AxiosError,
   AxiosInstance,
+  AxiosResponse,
   HttpStatusCode,
   InternalAxiosRequestConfig,
 } from "axios";
@@ -22,6 +23,49 @@ import i18n from "i18next";
 
 let isRefreshing = false;
 let refreshPromise: Promise<any> | null = null;
+
+function isObjectLike(value: unknown): value is Record<string, any> {
+  return typeof value === "object" && value !== null;
+}
+
+function isApiEnvelope(value: unknown): value is { data: any } {
+  if (!isObjectLike(value)) {
+    return false;
+  }
+
+  const hasDataField = Object.prototype.hasOwnProperty.call(value, "data");
+  const hasMetaField =
+    Object.prototype.hasOwnProperty.call(value, "statusCode") ||
+    Object.prototype.hasOwnProperty.call(value, "status") ||
+    Object.prototype.hasOwnProperty.call(value, "error") ||
+    Object.prototype.hasOwnProperty.call(value, "systemName");
+
+  return hasDataField && hasMetaField;
+}
+
+function normalizeResponseData<T>(response: AxiosResponse<T>) {
+  const payload = response.data as unknown;
+
+  if (isApiEnvelope(payload)) {
+    response.data = payload.data as T;
+    return response;
+  }
+
+  if (isObjectLike(payload) && !Object.prototype.hasOwnProperty.call(payload, "data")) {
+    try {
+      Object.defineProperty(payload, "data", {
+        value: payload,
+        writable: false,
+        enumerable: false,
+        configurable: true,
+      });
+    } catch {
+      // Ignore defineProperty failures for sealed/frozen payloads.
+    }
+  }
+
+  return response;
+}
 
 // Xử lý refresh token
 async function refreshTokenAsync(url?: string) {
@@ -143,7 +187,9 @@ const onResponseInterceptor = async (error: AxiosError) => {
     error.response &&
     error.response.status === HttpStatusCode.InternalServerError
   ) {
-    window.location.href = `/500`;
+    showNotificationError(
+      `${_response?.error?.message ?? (i18n?.t("http.unknown_error") || "Lỗi không xác định, vui lòng liên hệ quản trị viên.")}`,
+    );
     return Promise.reject(error.response.data);
   }
 
@@ -168,7 +214,7 @@ const handleInterceptor = (http: AxiosInstance) => {
   http.interceptors.request.use(onRequestInterceptor, (error) =>
     Promise.reject(error),
   );
-  http.interceptors.response.use((response) => response, onResponseInterceptor);
+  http.interceptors.response.use((response) => normalizeResponseData(response), onResponseInterceptor);
 };
 
 handleInterceptor(http);

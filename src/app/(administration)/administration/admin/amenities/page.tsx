@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
@@ -23,6 +23,7 @@ import {
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 import { toast } from "sonner";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
+import useDebouncedListQuery from "@/src/@core/hooks/useDebouncedListQuery";
 import { cinemaAmenityService } from "@/src/services/administration-service/cinema-amenity/cinema-amenity.service";
 import { cinemaService } from "@/src/services/administration-service/cinema/cinema.service";
 import { CinemaAmenityOutputDto } from "@/src/services/administration-service/cinema-amenity/models/output.model";
@@ -57,7 +58,7 @@ export default function CinemaAmenitiesAdminPage() {
   });
 
   const cinemasMutation = useLTTMutation<PagedResultDto<CinemaOutputDto> | undefined, GetCinemaListInputDto>({
-    mutationFn: (input) => cinemaService.getList(input),
+    mutationFn: (input) => cinemaService.getCinemaListAsync(input),
     onSuccess: (res) => {
       if (res && res.items) {
         setCinemas(res.items);
@@ -114,14 +115,17 @@ export default function CinemaAmenitiesAdminPage() {
     cinemasMutation.mutation({ page: 1, fetch: 100 });
   }, []);
 
-  const fetchData = () => {
+  const fetchData = (keyword?: string) => {
     if (!selectedCinemaId) return;
-    listMutation.mutation({ cinemaId: selectedCinemaId, params: { page: 1, fetch: 100, keyword: search } });
+    const effectiveKeyword = keyword ?? debouncedSearch;
+    listMutation.mutation({ cinemaId: selectedCinemaId, params: { page: 1, fetch: 100, keyword: effectiveKeyword } });
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [selectedCinemaId, search]);
+  const debouncedSearch = useDebouncedListQuery(
+    search,
+    (keyword) => fetchData(keyword),
+    [selectedCinemaId]
+  );
 
   const filtered = useMemo(() => {
     if (!search) return items;
@@ -178,12 +182,25 @@ export default function CinemaAmenitiesAdminPage() {
   };
 
   const bulkDelete = async () => {
-    for (const id of Array.from(selected)) {
-        await removeMutation.mutation({ cinemaId: selectedCinemaId, id });
+    if (!selectedCinemaId || selected.size === 0) {
+      return;
     }
+
+    const ids = Array.from(selected);
+    const results = await Promise.allSettled(
+      ids.map((id) => cinemaAmenityService.delete(selectedCinemaId, id))
+    );
+    const failed = results.filter((r) => r.status === "rejected").length;
+
+    if (failed === 0) {
+      toast.success(`Xóa ${ids.length} tiện ích thành công`);
+    } else {
+      toast.error(`Xóa thành công ${ids.length - failed}/${ids.length} tiện ích`);
+    }
+
     setSelected(new Set());
     setDeleteOpen(false);
-    fetchData();
+    fetchData(debouncedSearch);
   };
 
   return (
@@ -217,6 +234,15 @@ export default function CinemaAmenitiesAdminPage() {
             className="pl-9"
           />
         </div>
+        <LTTButton
+          variant="outline"
+          className="gap-2"
+          onClick={() => fetchData(debouncedSearch)}
+          loading={listMutation.isLoading}
+          disabled={!selectedCinemaId}
+        >
+          <RefreshCw className="h-4 w-4" /> Làm mới
+        </LTTButton>
         {selected.size > 0 && (
           <LTTButton
             variant="destructive"
@@ -243,7 +269,13 @@ export default function CinemaAmenitiesAdminPage() {
             </tr>
           </thead>
           <tbody>
-            {!selectedCinemaId ? (
+            {loading ? (
+                <tr>
+                <td colSpan={5} className="py-12 text-center text-muted-foreground-shadcn">
+                  Đang tải dữ liệu tiện ích...
+                </td>
+              </tr>
+            ) : !selectedCinemaId ? (
                 <tr>
                 <td colSpan={5} className="py-12 text-center text-muted-foreground-shadcn">
                   Vui lòng chọn rạp để xem tiện ích.
@@ -286,8 +318,8 @@ export default function CinemaAmenitiesAdminPage() {
                         size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={async () => {
-                          removeMutation.mutation({ cinemaId: selectedCinemaId, id: item.id });
-                          setTimeout(() => fetchData(), 500);
+                          await removeMutation.mutation({ cinemaId: selectedCinemaId, id: item.id });
+                          fetchData();
                         }}
                       >
                         <Trash2 className="h-4 w-4" />

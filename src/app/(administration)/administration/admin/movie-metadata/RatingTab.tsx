@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, ShieldCheck } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Plus, Pencil, Trash2, ShieldCheck, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
-import { 
-    LTTDialog, 
-    LTTDialogContent, 
-    LTTDialogHeader, 
-    LTTDialogTitle, 
-    LTTDialogFooter 
+import {
+    LTTDialog,
+    LTTDialogContent,
+    LTTDialogHeader,
+    LTTDialogTitle,
+    LTTDialogFooter
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import { movieService } from "@/src/services/administration-service/movie/movie.service";
@@ -23,6 +23,7 @@ export default function RatingTab() {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editing, setEditing] = useState<any | null>(null);
     const [form, setForm] = useState({ code: "", name: "", description: "" });
+    const didInitRef = useRef(false);
 
     const listMutation = useLTTMutation<PagedResultDto<any> | undefined, void>({
         mutationFn: () => movieService.getRatings(),
@@ -60,8 +61,14 @@ export default function RatingTab() {
     });
 
     useEffect(() => {
+        if (didInitRef.current) {
+            return;
+        }
+        didInitRef.current = true;
         listMutation.mutation();
     }, []);
+
+    const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || deleteMutation.isLoading;
 
     const handleSave = () => {
         if (!form.code.trim() || !form.name.trim()) return toast.error("Vui lòng nhập mã và tên");
@@ -86,7 +93,10 @@ export default function RatingTab() {
 
     return (
         <div className="space-y-4">
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+                <LTTButton variant="outline" className="gap-2" onClick={() => listMutation.mutation()} loading={listMutation.isLoading}>
+                    <RefreshCw className="h-4 w-4" /> Làm mới
+                </LTTButton>
                 <LTTButton className="gap-2" onClick={openCreate}>
                     <Plus className="h-4 w-4" /> Thêm phân loại
                 </LTTButton>
@@ -103,7 +113,13 @@ export default function RatingTab() {
                         </tr>
                     </thead>
                     <tbody>
-                        {items.length === 0 ? (
+                        {loading ? (
+                            <tr>
+                                <td colSpan={4} className="py-12 text-center text-muted-foreground-shadcn">
+                                    Đang tải dữ liệu phân loại tuổi...
+                                </td>
+                            </tr>
+                        ) : items.length === 0 ? (
                             <tr>
                                 <td colSpan={4} className="py-12 text-center text-muted-foreground-shadcn">
                                     Không có dữ liệu phân loại.
@@ -146,20 +162,20 @@ export default function RatingTab() {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <LTTLabel htmlFor="code">Mã (VD: T18) *</LTTLabel>
-                                <LTTInput id="code" value={form.code} onChange={e => setForm({...form, code: e.target.value})} />
+                                <LTTInput id="code" value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} />
                             </div>
                             <div className="space-y-2">
                                 <LTTLabel htmlFor="name">Tên hiển thị *</LTTLabel>
-                                <LTTInput id="name" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
+                                <LTTInput id="name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
                             </div>
                         </div>
                         <div className="space-y-2">
                             <LTTLabel htmlFor="desc">Mô tả (Dành cho khán giả từ...)</LTTLabel>
-                            <textarea 
+                            <textarea
                                 id="desc"
                                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                value={form.description} 
-                                onChange={e => setForm({...form, description: e.target.value})} 
+                                value={form.description}
+                                onChange={e => setForm({ ...form, description: e.target.value })}
                             />
                         </div>
                     </div>

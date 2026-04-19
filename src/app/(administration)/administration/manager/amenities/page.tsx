@@ -20,6 +20,7 @@ const TEMP_CINEMA_ID = "00000000-0000-0000-0000-000000000000"; // Placeholder
 export default function CinemaAmenitiesPage() {
     const [items, setItems] = useState<CinemaAmenityOutputDto[]>([]);
     const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<CinemaAmenityOutputDto | null>(null);
 
@@ -40,16 +41,23 @@ export default function CinemaAmenitiesPage() {
         onError: (err) => toast.error(err.message || "Lỗi khi xóa")
     });
 
+    const loading = listMutation.isLoading || deleteMutation.isLoading;
+
     const fetchData = () => {
-        listMutation.mutation({ 
-            cinemaId: TEMP_CINEMA_ID, 
-            params: { page: 1, fetch: 100, keyword: search } 
+        listMutation.mutation({
+            cinemaId: TEMP_CINEMA_ID,
+            params: { page: 1, fetch: 100, keyword: debouncedSearch }
         });
     };
 
     useEffect(() => {
-        fetchData();
+        const timer = setTimeout(() => setDebouncedSearch(search), 300);
+        return () => clearTimeout(timer);
     }, [search]);
+
+    useEffect(() => {
+        fetchData();
+    }, [debouncedSearch]);
 
     const handleEdit = (item: CinemaAmenityOutputDto) => {
         setEditingItem(item);
@@ -94,7 +102,13 @@ export default function CinemaAmenitiesPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {items.length === 0 ? (
+                        {loading ? (
+                            <tr>
+                                <td colSpan={5} className="py-12 text-center text-muted-foreground-shadcn">
+                                    Đang tải dữ liệu tiện ích...
+                                </td>
+                            </tr>
+                        ) : items.length === 0 ? (
                             <tr>
                                 <td colSpan={5} className="py-12 text-center text-muted-foreground-shadcn">
                                     Chưa có tiện ích nào được tạo.
@@ -133,7 +147,7 @@ export default function CinemaAmenitiesPage() {
                 </table>
             </div>
 
-            <UpsertAmenityDialog 
+            <UpsertAmenityDialog
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
                 editingItem={editingItem}

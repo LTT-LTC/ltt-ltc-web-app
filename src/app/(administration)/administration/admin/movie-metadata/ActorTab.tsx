@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, User } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Plus, Pencil, Trash2, User, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
-import { 
-    LTTDialog, 
-    LTTDialogContent, 
-    LTTDialogHeader, 
-    LTTDialogTitle, 
-    LTTDialogFooter 
+import {
+    LTTDialog,
+    LTTDialogContent,
+    LTTDialogHeader,
+    LTTDialogTitle,
+    LTTDialogFooter
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import { movieService } from "@/src/services/administration-service/movie/movie.service";
@@ -23,6 +23,7 @@ export default function ActorTab() {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editing, setEditing] = useState<ActorOutputDto | null>(null);
     const [form, setForm] = useState({ name: "", biography: "" });
+    const didInitRef = useRef(false);
 
     const listMutation = useLTTMutation<PagedResultDto<ActorOutputDto> | undefined, void>({
         mutationFn: () => movieService.getActors(),
@@ -60,8 +61,14 @@ export default function ActorTab() {
     });
 
     useEffect(() => {
+        if (didInitRef.current) {
+            return;
+        }
+        didInitRef.current = true;
         listMutation.mutation();
     }, []);
+
+    const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || deleteMutation.isLoading;
 
     const handleSave = () => {
         if (!form.name.trim()) return toast.error("Vui lòng nhập tên");
@@ -86,7 +93,10 @@ export default function ActorTab() {
 
     return (
         <div className="space-y-4">
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+                <LTTButton variant="outline" className="gap-2" onClick={() => listMutation.mutation()} loading={listMutation.isLoading}>
+                    <RefreshCw className="h-4 w-4" /> Làm mới
+                </LTTButton>
                 <LTTButton className="gap-2" onClick={openCreate}>
                     <Plus className="h-4 w-4" /> Thêm diễn viên
                 </LTTButton>
@@ -101,7 +111,13 @@ export default function ActorTab() {
                         </tr>
                     </thead>
                     <tbody>
-                        {items.length === 0 ? (
+                        {loading ? (
+                            <tr>
+                                <td colSpan={2} className="py-12 text-center text-muted-foreground-shadcn">
+                                    Đang tải dữ liệu diễn viên...
+                                </td>
+                            </tr>
+                        ) : items.length === 0 ? (
                             <tr>
                                 <td colSpan={2} className="py-12 text-center text-muted-foreground-shadcn">
                                     Không có dữ liệu diễn viên.
@@ -139,15 +155,15 @@ export default function ActorTab() {
                     <div className="py-4 space-y-4">
                         <div className="space-y-2">
                             <LTTLabel htmlFor="name">Họ tên *</LTTLabel>
-                            <LTTInput id="name" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
+                            <LTTInput id="name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
                         </div>
                         <div className="space-y-2">
                             <LTTLabel htmlFor="bio">Tiểu sử</LTTLabel>
-                            <textarea 
+                            <textarea
                                 id="bio"
                                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                value={form.biography} 
-                                onChange={e => setForm({...form, biography: e.target.value})} 
+                                value={form.biography}
+                                onChange={e => setForm({ ...form, biography: e.target.value })}
                             />
                         </div>
                     </div>

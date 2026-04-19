@@ -1,26 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Gift, Tag, Search, Trash2 } from "lucide-react";
+import { Plus, Gift, Tag, Search, Trash2, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
-import { 
-  LTTTabs, 
-  LTTTabsContent, 
-  LTTTabsList, 
-  LTTTabsTrigger 
+import {
+  LTTTabs,
+  LTTTabsContent,
+  LTTTabsList,
+  LTTTabsTrigger
 } from "@/src/@core/component/LTTShadcnUI/LTTTabs";
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 import { toast } from "sonner";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { giftCodeService } from "@/src/services/administration-service/gift-code/gift-code.service";
-import { GiftCodeOutputDto } from "@/src/services/administration-service/masterdata/models/commercial.model";
+import { GiftCodeOutputDto } from "@/src/services/administration-service/gift-code/models/output.model";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { cn } from "@/src/@core/utils/cn";
 
 export default function PromotionsListPage() {
   const [items, setItems] = useState<GiftCodeOutputDto[]>([]);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [activeTab, setActiveTab] = useState("promotions");
 
   const listMutation = useLTTMutation<PagedResultDto<GiftCodeOutputDto> | undefined, any>({
@@ -30,19 +31,24 @@ export default function PromotionsListPage() {
   });
 
   const fetchData = () => {
-    listMutation.mutation({ page: 1, fetch: 100, keyword: search });
+    listMutation.mutation({ page: 1, fetch: 100, keyword: debouncedSearch });
   };
 
   useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
     fetchData();
-  }, [search, activeTab]);
+  }, [debouncedSearch]);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="font-heading text-2xl font-bold">Khuyến mãi & Gift Card</h1>
         <div className="flex gap-2">
-           <LTTButton variant="outline" className="gap-2">
+          <LTTButton variant="outline" className="gap-2">
             <Tag className="h-4 w-4" /> Tạo mã giảm giá
           </LTTButton>
           <LTTButton className="gap-2">
@@ -67,6 +73,14 @@ export default function PromotionsListPage() {
               className="pl-9"
             />
           </div>
+          <LTTButton
+            variant="outline"
+            className="gap-2"
+            onClick={fetchData}
+            loading={listMutation.isLoading}
+          >
+            <RefreshCw className="h-4 w-4" /> Làm mới
+          </LTTButton>
         </div>
 
         <div className="mt-4 rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
@@ -105,7 +119,7 @@ export default function PromotionsListPage() {
                       </LTTBadge>
                     </td>
                     <td className="px-4 py-3 text-right">
-                       <LTTButton variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                      <LTTButton variant="ghost" size="icon" className="h-8 w-8 text-destructive">
                         <Trash2 className="h-4 w-4" />
                       </LTTButton>
                     </td>

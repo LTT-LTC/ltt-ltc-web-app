@@ -3,7 +3,7 @@ import { rootPath } from "../administration.service";
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 
-const path = "/administration/admin/amenity-type";
+const path = "/amenity-type";
 
 import { GetAmenityTypeListInputDto, CreateAmenityTypeInputDto, UpdateAmenityTypeInputDto } from "./models/input.model";
 import { AmenityTypeOutputDto } from "./models/output.model";

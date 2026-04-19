@@ -1,7 +1,7 @@
 "use client";
 
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
@@ -16,6 +16,7 @@ import {
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import { toast } from "sonner";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
+import useDebouncedListQuery from "@/src/@core/hooks/useDebouncedListQuery";
 import { seatTypeService } from "@/src/services/administration-service/seat-type/seat-type.service";
 import { SeatTypeOutputDto } from "@/src/services/administration-service/seat-type/models/output.model";
 import { GetSeatTypeListInputDto, CreateSeatTypeInputDto, UpdateSeatTypeInputDto } from "@/src/services/administration-service/seat-type/models/input.model";
@@ -75,13 +76,12 @@ export default function SeatTypesManagerPage() {
 
   const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || removeMutation.isLoading;
 
-  const fetchData = () => {
-    listMutation.mutation({ page: 1, fetch: 100, keyword: search });
+  const fetchData = (keyword?: string) => {
+    const effectiveKeyword = keyword ?? debouncedSearch;
+    listMutation.mutation({ page: 1, fetch: 100, keyword: effectiveKeyword });
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [search]);
+  const debouncedSearch = useDebouncedListQuery(search, (keyword) => fetchData(keyword));
 
   const filtered = useMemo(() => {
     if (!search) return items;
@@ -127,7 +127,7 @@ export default function SeatTypesManagerPage() {
       toast.error("Tên loại ghế không được để trống");
       return;
     }
-    
+
     if (editing) {
       updateMutation.mutation({ id: editing.id, body: form });
     } else {
@@ -136,12 +136,23 @@ export default function SeatTypesManagerPage() {
   };
 
   const bulkDelete = async () => {
-    for (const id of Array.from(selected)) {
-        await removeMutation.mutation(id);
+    const ids = Array.from(selected);
+    if (ids.length === 0) {
+      return;
     }
+
+    const results = await Promise.allSettled(ids.map((id) => seatTypeService.delete(id)));
+    const failed = results.filter((r) => r.status === "rejected").length;
+
+    if (failed === 0) {
+      toast.success(`Xóa ${ids.length} loại ghế thành công`);
+    } else {
+      toast.error(`Xóa thành công ${ids.length - failed}/${ids.length} loại ghế`);
+    }
+
     setSelected(new Set());
     setDeleteOpen(false);
-    fetchData();
+    fetchData(debouncedSearch);
   };
 
   return (
@@ -222,8 +233,8 @@ export default function SeatTypesManagerPage() {
                         size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={async () => {
-                          removeMutation.mutation(item.id);
-                          setTimeout(() => fetchData(), 500);
+                          await removeMutation.mutation(item.id);
+                          fetchData();
                         }}
                       >
                         <Trash2 className="h-4 w-4" />
