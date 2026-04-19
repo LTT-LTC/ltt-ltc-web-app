@@ -39,13 +39,13 @@ export default function PricingRulesPage() {
     const [editing, setEditing] = useState<PricingRuleOutputDto | null>(null);
 
     const listMutation = useLTTMutation<PagedResultDto<PricingRuleOutputDto>, void>({
-        mutationFn: () => pricingRuleService.getList(TEMP_CINEMA_ID),
+        mutationFn: () => pricingRuleService.getPricingRuleListAsync(TEMP_CINEMA_ID),
         onSuccess: (res) => { if (res && res.items) setItems(res.items); },
         onError: (err) => toast.error(err.message || "Lỗi tải danh sách quy tắc giá")
     });
 
     const deleteMutation = useLTTMutation<void, string>({
-        mutationFn: (id) => pricingRuleService.delete(TEMP_CINEMA_ID, id),
+        mutationFn: (id) => pricingRuleService.deletePricingRuleAsync(TEMP_CINEMA_ID, id),
         onSuccess: () => {
             toast.success("Đã xóa quy tắc giá");
             listMutation.mutation();

@@ -22,7 +22,7 @@ export default function NewsAndOffersTable({ search, onEdit }: Props) {
     const [debouncedSearch, setDebouncedSearch] = useState("");
 
     const listMutation = useLTTMutation<PagedResultNewsAndOffersOutputDto | null, GetListNewsAndOffersInputDto>({
-        mutationFn: (input) => newsAndOffersService.getListAsync(input),
+        mutationFn: (input) => newsAndOffersService.getNewsAndOffersListAsync(input),
         onSuccess: (res) => {
             if (res && res.items) setItems(res.items);
         },

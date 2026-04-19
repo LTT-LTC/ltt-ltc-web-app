@@ -75,18 +75,18 @@ export default function FnBPage() {
   });
 
   const listMutation = useLTTMutation<PagedResultDto<ProductOutputDto> | undefined, GetProductListInputDto>({
-    mutationFn: (input) => productService.getProductList(input),
+    mutationFn: (input) => productService.getProductListAsync(input),
     onSuccess: (res) => { if (res && res.items) setItems(res.items); },
     onError: (err) => toast.error(err.message || "Lỗi tải danh sách sản phẩm")
   });
 
   const catMutation = useLTTMutation<PagedResultDto<CategoryOutputDto> | undefined, void>({
-    mutationFn: () => productService.getCategoryList(),
+    mutationFn: () => productService.getCategoryListAsync(),
     onSuccess: (res) => { if (res && res.items) setCategories(res.items); }
   });
 
   const createMutation = useLTTMutation<ProductOutputDto | undefined, CreateProductInputDto>({
-    mutationFn: (input) => productService.createProduct(input),
+    mutationFn: (input) => productService.createProductAsync(input),
     onSuccess: () => {
       toast.success("Thêm thành công");
       fetchData();
@@ -96,7 +96,7 @@ export default function FnBPage() {
   });
 
   const updateMutation = useLTTMutation<ProductOutputDto | undefined, { id: string; body: UpdateProductInputDto }>({
-    mutationFn: (input) => productService.updateProduct(input.id, input.body),
+    mutationFn: (input) => productService.updateProductAsync(input.id, input.body),
     onSuccess: () => {
       toast.success("Cập nhật thành công");
       fetchData();

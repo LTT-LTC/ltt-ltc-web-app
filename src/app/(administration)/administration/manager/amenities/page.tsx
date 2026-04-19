@@ -25,7 +25,7 @@ export default function CinemaAmenitiesPage() {
     const [editingItem, setEditingItem] = useState<CinemaAmenityOutputDto | null>(null);
 
     const listMutation = useLTTMutation<PagedResultDto<CinemaAmenityOutputDto> | null, { cinemaId: string, params?: any }>({
-        mutationFn: (input) => cinemaAmenityService.getListAll(input.cinemaId, input.params),
+        mutationFn: (input) => cinemaAmenityService.getCinemaAmenityListAsync(input.cinemaId, input.params),
         onSuccess: (res) => {
             if (res && res.items) setItems(res.items);
         },
@@ -33,7 +33,7 @@ export default function CinemaAmenitiesPage() {
     });
 
     const deleteMutation = useLTTMutation<any, { cinemaId: string, id: string }>({
-        mutationFn: (input) => cinemaAmenityService.delete(input.cinemaId, input.id),
+        mutationFn: (input) => cinemaAmenityService.deleteCinemaAmenityAsync(input.cinemaId, input.id),
         onSuccess: () => {
             toast.success("Đã xóa tiện ích");
             fetchData();

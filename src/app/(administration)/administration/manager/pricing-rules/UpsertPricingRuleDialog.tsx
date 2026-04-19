@@ -49,12 +49,12 @@ export default function UpsertPricingRuleDialog({ open, onOpenChange, editingIte
     });
 
     const seatTypesMutation = useLTTMutation<any, void>({
-        mutationFn: () => seatTypeService.getList({ page: 1, fetch: 100 }),
+        mutationFn: () => seatTypeService.getSeatTypeListAsync({ page: 1, fetch: 100 }),
         onSuccess: (res) => { if (res && res.items) setSeatTypes(res.items); }
     });
 
     const upsertMutation = useLTTMutation<any, CreatePricingRuleInputDto>({
-        mutationFn: (body) => pricingRuleService.create(cinemaId, body),
+        mutationFn: (body) => pricingRuleService.createPricingRuleAsync(cinemaId, body),
         onSuccess: () => {
             toast.success(editingItem ? "Cập nhật thành công" : "Tạo mới thành công");
             onSuccess();
