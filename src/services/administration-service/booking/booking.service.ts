@@ -4,18 +4,19 @@ import { ApiResult } from "@/src/@core/http/models/ApiResult";
 import { PaymentOutputDto } from "./models/output.model";
 export type { PaymentOutputDto };
 
-class BookingService {
-    private readonly prefix = "/payment-service/api";
+const prefix = "/payment-service";
 
-    async getList(params: any): Promise<PagedResultDto<PaymentOutputDto>> {
-        const response = await http.get<ApiResult<PagedResultDto<PaymentOutputDto>>>(`${this.prefix}/payment-all`, { params });
-        return response.data.data;
-    }
+const getBookingListAsync = async (params: any): Promise<PagedResultDto<PaymentOutputDto>> => {
+    const response = await http.get<ApiResult<PagedResultDto<PaymentOutputDto>>>(`${prefix}/payment-all`, { params });
+    return response.data.data;
+};
 
-    async getById(id: string): Promise<PaymentOutputDto> {
-        const response = await http.get<ApiResult<PaymentOutputDto>>(`${this.prefix}/payment/${id}`);
-        return response.data.data;
-    }
-}
+const getBookingByIdAsync = async (id: string): Promise<PaymentOutputDto> => {
+    const response = await http.get<ApiResult<PaymentOutputDto>>(`${prefix}/payment/${id}`);
+    return response.data.data;
+};
 
-export const bookingService = new BookingService();
+export const bookingService = {
+    getBookingListAsync,
+    getBookingByIdAsync,
+};

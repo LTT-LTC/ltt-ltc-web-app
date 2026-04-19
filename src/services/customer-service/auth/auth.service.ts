@@ -39,11 +39,16 @@ const resetPassword = async (body: CustomerResetPasswordInputDto) => {
     return data;
 }
 
+const requestPasswordRecoveryAsync = requestPasswordRecovery;
+const resetPasswordAsync = resetPassword;
+
 export const customerAuthService = {
     loginAsync,
     registerAsync,
     refreshTokenAsync,
     logOutAsync,
+    requestPasswordRecoveryAsync,
+    resetPasswordAsync,
     requestPasswordRecovery,
     resetPassword,
 }

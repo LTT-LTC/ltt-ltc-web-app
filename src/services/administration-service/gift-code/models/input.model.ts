@@ -16,3 +16,16 @@ export interface CreateGiftCodeInputDto {
     endDate?: string;
     status?: string;
 }
+
+export interface UpdateGiftCodeInputDto {
+    ccode: string;
+    description?: string;
+    discountType?: string;
+    discountValue: number;
+    minOrderAmount?: number;
+    usageLimit?: number;
+    perUserLimit?: number;
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+}

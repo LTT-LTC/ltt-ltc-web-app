@@ -1,68 +1,110 @@
 import http from "@/src/@core/http";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
-import { 
-    GetProductListInputDto, 
-    CreateProductInputDto, 
+import {
+    GetProductListInputDto,
+    CreateProductInputDto,
     UpdateProductInputDto,
     CreateCategoryInputDto,
     CreateComboInputDto
 } from "./models/input.model";
-import { 
-    ProductOutputDto, 
-    CategoryOutputDto, 
-    ComboOutputDto 
+import {
+    ProductOutputDto,
+    CategoryOutputDto,
+    ComboOutputDto
 } from "./models/output.model";
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
 
-class ProductService {
-    private readonly prefix = "/product-service/api";
+const rootpath = "/product-service";
+const productPath = "/product";
+const comboPath = "/combo";
+const categoryPath = "/category";
 
-    // Product CRUD
-    async getProductList(params: any): Promise<PagedResultDto<ProductOutputDto>> {
-        const response = await http.get<ApiResult<PagedResultDto<ProductOutputDto>>>(`${this.prefix}/product-all`, { params });
-        return response.data.data;
-    }
+const getProductListAsync = async (params: GetProductListInputDto): Promise<PagedResultDto<ProductOutputDto>> => {
+    const response = await http.get<ApiResult<PagedResultDto<ProductOutputDto>>>(`${rootpath}${productPath}`, { params });
+    return response.data.data;
+};
 
-    async getProductDetail(id: string): Promise<ProductOutputDto> {
-        const response = await http.get<ApiResult<ProductOutputDto>>(`${this.prefix}/product/${id}`);
-        return response.data.data;
-    }
+const getProductByIdAsync = async (id: string): Promise<ProductOutputDto> => {
+    const response = await http.get<ApiResult<ProductOutputDto>>(`${rootpath}${productPath}/${id}`);
+    return response.data.data;
+};
 
-    async createProduct(body: CreateProductInputDto): Promise<ProductOutputDto> {
-        const response = await http.post<ApiResult<ProductOutputDto>>(`${this.prefix}/product`, body);
-        return response.data.data;
-    }
+const createProductAsync = async (body: CreateProductInputDto): Promise<ProductOutputDto> => {
+    const response = await http.post<ApiResult<ProductOutputDto>>(`${rootpath}${productPath}`, body);
+    return response.data.data;
+};
 
-    async updateProduct(id: string, body: UpdateProductInputDto): Promise<ProductOutputDto> {
-        const response = await http.put<ApiResult<ProductOutputDto>>(`${this.prefix}/product/${id}`, body);
-        return response.data.data;
-    }
+const updateProductAsync = async (id: string, body: UpdateProductInputDto): Promise<ProductOutputDto> => {
+    const response = await http.put<ApiResult<ProductOutputDto>>(`${rootpath}${productPath}/${id}`, body);
+    return response.data.data;
+};
 
-    async deleteProduct(id: string): Promise<void> {
-        await http.delete<ApiResult<void>>(`${this.prefix}/product/${id}`);
-    }
+const deleteProductAsync = async (id: string): Promise<void> => {
+    await http.delete<ApiResult<void>>(`${rootpath}${productPath}/${id}`);
+};
 
-    // Category CRUD
-    async getCategoryList(): Promise<PagedResultDto<CategoryOutputDto>> {
-        const response = await http.get<ApiResult<PagedResultDto<CategoryOutputDto>>>(`${this.prefix}/category-all`);
-        return response.data.data;
-    }
+const getCategoryListAsync = async (): Promise<PagedResultDto<CategoryOutputDto>> => {
+    const response = await http.get<ApiResult<PagedResultDto<CategoryOutputDto>>>(`${rootpath}${categoryPath}-all`);
+    return response.data.data;
+};
 
-    async createCategory(body: CreateCategoryInputDto): Promise<CategoryOutputDto> {
-        const response = await http.post<ApiResult<CategoryOutputDto>>(`${this.prefix}/category`, body);
-        return response.data.data;
-    }
-
-    // Combo CRUD
-    async getComboList(): Promise<PagedResultDto<ComboOutputDto>> {
-        const response = await http.get<ApiResult<PagedResultDto<ComboOutputDto>>>(`${this.prefix}/combo-all`);
-        return response.data.data;
-    }
-
-    async createCombo(body: CreateComboInputDto): Promise<ComboOutputDto> {
-        const response = await http.post<ApiResult<ComboOutputDto>>(`${this.prefix}/combo`, body);
-        return response.data.data;
-    }
+const getCategoryByIdAsync = async (id: string): Promise<CategoryOutputDto> => {
+    const response = await http.get<ApiResult<CategoryOutputDto>>(`${rootpath}${categoryPath}/${id}`);
+    return response.data.data;
 }
 
-export const productService = new ProductService();
+const createCategoryAsync = async (body: CreateCategoryInputDto): Promise<CategoryOutputDto> => {
+    const response = await http.post<ApiResult<CategoryOutputDto>>(`${rootpath}${categoryPath}`, body);
+    return response.data.data;
+};
+
+const updateCategoryAsync = async (id: string, body: CreateCategoryInputDto): Promise<CategoryOutputDto> => {
+    const response = await http.put<ApiResult<CategoryOutputDto>>(`${rootpath}${categoryPath}/${id}`, body);
+    return response.data.data;
+};
+
+const deleteCategoryAsync = async (id: string): Promise<void> => {
+    await http.delete<ApiResult<void>>(`${rootpath}${categoryPath}/${id}`);
+}
+
+const getComboListAsync = async (): Promise<PagedResultDto<ComboOutputDto>> => {
+    const response = await http.get<ApiResult<PagedResultDto<ComboOutputDto>>>(`${rootpath}${comboPath}-all`);
+    return response.data.data;
+};
+
+const getComboByIdAsync = async (id: string): Promise<ComboOutputDto> => {
+    const response = await http.get<ApiResult<ComboOutputDto>>(`${rootpath}${comboPath}/${id}`);
+    return response.data.data;
+};
+
+const updateComboAsync = async (id: string, body: CreateComboInputDto): Promise<ComboOutputDto> => {
+    const response = await http.put<ApiResult<ComboOutputDto>>(`${rootpath}${comboPath}/${id}`, body);
+    return response.data.data;
+}
+
+const createComboAsync = async (body: CreateComboInputDto): Promise<ComboOutputDto> => {
+    const response = await http.post<ApiResult<ComboOutputDto>>(`${rootpath}${comboPath}`, body);
+    return response.data.data;
+};
+
+const deleteComboAsync = async (id: string): Promise<void> => {
+    await http.delete<ApiResult<void>>(`${rootpath}${comboPath}/${id}`);
+}
+
+export const productService = {
+    getProductListAsync,
+    getProductByIdAsync,
+    createProductAsync,
+    updateProductAsync,
+    deleteProductAsync,
+    getCategoryListAsync,
+    getCategoryByIdAsync,
+    createCategoryAsync,
+    updateCategoryAsync,
+    deleteCategoryAsync,
+    getComboListAsync,
+    getComboByIdAsync,
+    createComboAsync,
+    updateComboAsync,
+    deleteComboAsync
+};

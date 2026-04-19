@@ -13,12 +13,3 @@ export interface RefundOutputDto {
     showTime?: string;
     ticketCount?: number;
 }
-
-export interface ApproveRefundInputDto {
-    id: string;
-}
-
-export interface RejectRefundInputDto {
-    id: string;
-    reason: string;
-}

@@ -13,7 +13,7 @@ import {
 
 const path = "/news-and-offers";
 
-const getListAsync = async (params: GetListNewsAndOffersInputDto) => {
+const getNewsAndOffersListAsync = async (params: GetListNewsAndOffersInputDto) => {
     const { data } = await http.get<ApiResult<PagedResultNewsAndOffersOutputDto>>(
         `${rootPath}${path}`,
         { params },
@@ -21,7 +21,7 @@ const getListAsync = async (params: GetListNewsAndOffersInputDto) => {
     return data.data;
 };
 
-const getNewsAndOffersDetailAsync = async (id: string) => {
+const getNewsAndOffersByIdAsync = async (id: string) => {
     const { data } = await http.get<ApiResult<NewsAndOffersOutputDto>>(
         `${rootPath}${path}/${id}`,
     );
@@ -52,9 +52,9 @@ const deleteNewsAndOffersAsync = async (id: string) => {
 };
 
 export const newsAndOffersService = {
-    getNewsAndOffersDetailAsync,
-    updateNewsAndOffersAsync,
-    getListAsync,
+    getNewsAndOffersListAsync,
+    getNewsAndOffersByIdAsync,
     createNewsAndOffersAsync,
-    deleteNewsAndOffersAsync,
+    updateNewsAndOffersAsync,
+    deleteNewsAndOffersAsync
 };

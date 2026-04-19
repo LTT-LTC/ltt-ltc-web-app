@@ -1,38 +1,40 @@
 import http from "@/src/@core/http";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
-import { 
-    RefundOutputDto, 
-    ApproveRefundInputDto, 
-    RejectRefundInputDto 
-} from "../masterdata/models/refund.model";
+import {
+    RefundOutputDto
+} from "./models/output.model";
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
 
-class RefundService {
-    private readonly prefix = "/payment-service/api";
+const paymentpath = "/payment-service";
+const path = "/refunds";
 
-    async getList(params: any): Promise<PagedResultDto<RefundOutputDto>> {
-        const response = await http.get<ApiResult<PagedResultDto<RefundOutputDto>>>(`${this.prefix}/refund-all`, { params });
-        return response.data.data;
-    }
+const getRefundListAsync = async (params: any): Promise<PagedResultDto<RefundOutputDto>> => {
+    const response = await http.get<ApiResult<PagedResultDto<RefundOutputDto>>>(`${paymentpath}${path}`, { params });
+    return response.data.data;
+};
 
-    async getById(id: string): Promise<RefundOutputDto> {
-        const response = await http.get<ApiResult<RefundOutputDto>>(`${this.prefix}/refund/${id}`);
-        return response.data.data;
-    }
+const getRefundByIdAsync = async (id: string): Promise<RefundOutputDto> => {
+    const response = await http.get<ApiResult<RefundOutputDto>>(`${paymentpath}${path}/${id}`);
+    return response.data.data;
+};
 
-    async create(body: any): Promise<RefundOutputDto> {
-        const response = await http.post<ApiResult<RefundOutputDto>>(`${this.prefix}/refund`, body);
-        return response.data.data;
-    }
+const createRefundAsync = async (body: any): Promise<RefundOutputDto> => {
+    const response = await http.post<ApiResult<RefundOutputDto>>(`${paymentpath}${path}`, body);
+    return response.data.data;
+};
 
-    // These endpoints might be in a different controller or have different names
-    async approve(id: string): Promise<void> {
-        await http.put<ApiResult<void>>(`${this.prefix}/refund/${id}/approve`);
-    }
+const approveRefundAsync = async (id: string): Promise<void> => {
+    await http.put<ApiResult<void>>(`${paymentpath}${path}/${id}/approve`);
+};
 
-    async reject(id: string, reason: string): Promise<void> {
-        await http.put<ApiResult<void>>(`${this.prefix}/refund/${id}/reject`, { reason });
-    }
-}
+const rejectRefundAsync = async (id: string, reason: string): Promise<void> => {
+    await http.put<ApiResult<void>>(`${paymentpath}${path}/${id}/reject`, { reason });
+};
 
-export const refundService = new RefundService();
+export const refundService = {
+    getRefundListAsync,
+    getRefundByIdAsync,
+    createRefundAsync,
+    approveRefundAsync,
+    rejectRefundAsync,
+};
