@@ -69,25 +69,22 @@ function normalizeResponseData<T>(response: AxiosResponse<T>) {
 
 // Xử lý refresh token
 async function refreshTokenAsync(url?: string) {
+  const isCustomerRequest = url?.includes("/customer-service/");
   const requestLogin: RefreshLoginInputDto = {
     refreshToken: getCookie(REFRESH_TOKEN_KEY) ?? "",
     accessToken: getCookie(ACCESS_TOKEN_KEY) ?? "",
   };
   try {
-    const isCustomerRequest = url?.includes("/customer-service/");
     const response = isCustomerRequest
       ? await customerService.authService.refreshTokenAsync(requestLogin)
       : await administrationService.authService.refreshTokenAsync(requestLogin);
     return response;
   } catch (error: any) {
-    if (error.statusCode === HttpStatusCode.Unauthorized || error.status === HttpStatusCode.Unauthorized) {
-      http.defaults.headers.common[AUTHORIZATION_KEY] = "";
-      removeCookie(ACCESS_TOKEN_KEY);
-      removeCookie(REFRESH_TOKEN_KEY);
-
-      const isCustomerRequest = url?.includes("/customer-service/");
-      window.location.href = isCustomerRequest ? `/customer-login` : `/administration-login`;
-    }
+    http.defaults.headers.common[AUTHORIZATION_KEY] = "";
+    removeCookie(ACCESS_TOKEN_KEY);
+    removeCookie(REFRESH_TOKEN_KEY);
+    window.location.href = isCustomerRequest ? `/customer-login` : `/administration-login`;
+    throw error;
   }
 }
 
@@ -142,9 +139,17 @@ const onResponseInterceptor = async (error: AxiosError) => {
       refreshPromise = refreshTokenAsync(error.config?.url);
     }
     if (refreshPromise) {
-      const newToken = await refreshPromise;
-      refreshPromise = null;
-      isRefreshing = false;
+      let newToken: any;
+      try {
+        newToken = await refreshPromise;
+      } finally {
+        refreshPromise = null;
+        isRefreshing = false;
+      }
+
+      if (!newToken?.accessToken || !newToken?.refreshToken) {
+        return Promise.reject(error.response?.data ?? error);
+      }
 
       http.defaults.headers.common[AUTHORIZATION_KEY] =
         `${TOKEN_TYPE_KEY} ${newToken.accessToken}`;
