@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Pencil, Trash2, Search, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
@@ -27,7 +27,6 @@ import { cinemaService } from "@/src/services/administration-service/cinema/cine
 import { CinemaOutputDto } from "@/src/services/administration-service/cinema/models/output.model";
 import { GetCinemaListInputDto, CreateCinemaInputDto, UpdateCinemaInputDto } from "@/src/services/administration-service/cinema/models/input.model";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
-import { useEffect } from "react";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-100 text-green-700 border-green-200",
@@ -44,15 +43,18 @@ export default function CinemaConfigPage() {
   const [editing, setEditing] = useState<CinemaOutputDto | null>(null);
   const [form, setForm] = useState({
     name: "",
-    provinceRaw: "",
+    city: "",
+    ward: "",
     address: "",
-    hotline: "",
-    email: "",
+    serviceNumber: "",
     status: "active" as any,
   });
+  const [page, setPage] = useState(1);
+  const [fetch, setFetch] = useState(10);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const listMutation = useLTTMutation<PagedResultDto<CinemaOutputDto> | undefined, GetCinemaListInputDto>({
-    mutationFn: (input) => cinemaService.getList(input),
+    mutationFn: (input) => cinemaService.getCinemaListAsync(input),
     onSuccess: (res) => {
       if (res && res.items) setItems(res.items);
     },
@@ -60,7 +62,7 @@ export default function CinemaConfigPage() {
   });
 
   const createMutation = useLTTMutation<CinemaOutputDto | undefined, CreateCinemaInputDto>({
-    mutationFn: (input) => cinemaService.create(input),
+    mutationFn: (input) => cinemaService.createCinemaAsync(input),
     onSuccess: () => {
       toast.success("Tạo rạp thành công");
       fetchData();
@@ -70,7 +72,7 @@ export default function CinemaConfigPage() {
   });
 
   const updateMutation = useLTTMutation<CinemaOutputDto | undefined, { id: string, body: UpdateCinemaInputDto }>({
-    mutationFn: (input) => cinemaService.update(input.id, input.body),
+    mutationFn: (input) => cinemaService.updateCinemaAsync(input.id, input.body),
     onSuccess: () => {
       toast.success("Cập nhật rạp thành công");
       fetchData();
@@ -80,7 +82,7 @@ export default function CinemaConfigPage() {
   });
 
   const removeMutation = useLTTMutation<boolean, string>({
-    mutationFn: async (id) => { await cinemaService.delete(id); return true; },
+    mutationFn: async (id) => { await cinemaService.deleteCinemaAsync(id); return true; },
     onSuccess: () => {
       toast.success("Xóa rạp thành công");
     },
@@ -90,23 +92,23 @@ export default function CinemaConfigPage() {
   const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || removeMutation.isLoading;
 
   const fetchData = () => {
-    listMutation.mutation({ page: 1, fetch: 100, keyword: search });
+    listMutation.mutation({ page, fetch, keyword: debouncedSearch });
   };
 
   useEffect(() => {
-    fetchData();
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+
+    return () => clearTimeout(timer);
   }, [search]);
 
-  const filtered = useMemo(() => {
-    if (!search) return items;
-    const q = search.toLowerCase();
-    return items.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) || (c.provinceRaw && c.provinceRaw.toLowerCase().includes(q))
-    );
-  }, [items, search]);
+  useEffect(() => {
+    fetchData();
+  }, [page, fetch, debouncedSearch]);
 
-  const allSel = filtered.length > 0 && filtered.every((i) => selected.has(i.id));
+  const allSel = items.length > 0 && items.every((i) => selected.has(i.id));
   const toggleAll = () =>
     allSel
       ? setSelected(new Set())
@@ -121,10 +123,10 @@ export default function CinemaConfigPage() {
     setEditing(null);
     setForm({
       name: "",
-      provinceRaw: "",
+      city: "",
+      ward: "",
       address: "",
-      hotline: "",
-      email: "",
+      serviceNumber: "",
       status: "active",
     });
     setDialogOpen(true);
@@ -133,10 +135,10 @@ export default function CinemaConfigPage() {
     setEditing(item);
     setForm({
       name: item.name,
-      provinceRaw: item.provinceRaw || "",
+      city: item.city || "",
+      ward: item.ward || "",
       address: item.address || "",
-      hotline: item.hotline || "",
-      email: "",
+      serviceNumber: item.serviceNumber || "",
       status: item.status || "active",
     });
     setDialogOpen(true);
@@ -156,9 +158,20 @@ export default function CinemaConfigPage() {
   };
 
   const bulkDelete = async () => {
-    for (const id of Array.from(selected)) {
-      await removeMutation.mutation(id);
+    const ids = Array.from(selected);
+    if (ids.length === 0) {
+      return;
     }
+
+    const results = await Promise.allSettled(ids.map((id) => cinemaService.deleteCinemaAsync(id)));
+    const failed = results.filter((r) => r.status === "rejected").length;
+
+    if (failed === 0) {
+      toast.success(`Xóa ${ids.length} rạp thành công`);
+    } else {
+      toast.error(`Xóa thành công ${ids.length - failed}/${ids.length} rạp`);
+    }
+
     setSelected(new Set());
     setDeleteOpen(false);
     fetchData();
@@ -183,6 +196,14 @@ export default function CinemaConfigPage() {
             className="pl-9"
           />
         </div>
+        <LTTButton
+          variant="outline"
+          className="gap-2"
+          onClick={fetchData}
+          loading={listMutation.isLoading}
+        >
+          <RefreshCw className="h-4 w-4" /> Làm mới
+        </LTTButton>
         {selected.size > 0 && (
           <LTTButton
             variant="destructive"
@@ -204,7 +225,7 @@ export default function CinemaConfigPage() {
               </th>
               <th className="px-4 py-3 text-left font-semibold">STT</th>
               <th className="px-4 py-3 text-left font-semibold">Tên rạp</th>
-              <th className="px-4 py-3 text-left font-semibold">Tỉnh/TP</th>
+              <th className="px-4 py-3 text-left font-semibold">Thành phố</th>
               <th className="px-4 py-3 text-left font-semibold">Địa chỉ</th>
               <th className="px-4 py-3 text-left font-semibold">Phòng chiếu</th>
               <th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
@@ -213,14 +234,20 @@ export default function CinemaConfigPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={9} className="py-12 text-center text-muted-foreground-shadcn">
+                  Đang tải dữ liệu rạp...
+                </td>
+              </tr>
+            ) : items.length === 0 ? (
               <tr>
                 <td colSpan={9} className="py-12 text-center text-muted-foreground-shadcn">
                   Không có dữ liệu rạp chiếu nào phù hợp.
                 </td>
               </tr>
             ) : (
-              filtered.map((item, idx) => (
+              items.map((item, idx) => (
                 <tr
                   key={item.id}
                   className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors"
@@ -233,7 +260,7 @@ export default function CinemaConfigPage() {
                   </td>
                   <td className="px-4 py-3 text-muted-foreground-shadcn">{idx + 1}</td>
                   <td className="px-4 py-3 font-medium">{item.name}</td>
-                  <td className="px-4 py-3">{item.provinceRaw}</td>
+                  <td className="px-4 py-3">{item.city || "-"}</td>
                   <td className="px-4 py-3 text-muted-foreground-shadcn max-w-xs truncate">
                     {item.address}
                   </td>
@@ -267,8 +294,8 @@ export default function CinemaConfigPage() {
                         size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={async () => {
-                          removeMutation.mutation(item.id);
-                          setTimeout(() => fetchData(), 500); // Small delay to let the removal finish, though a better approach would be moving fetchData to onSuccess callback handling multiple deletes if possible, but this works for single deletes
+                          await removeMutation.mutation(item.id);
+                          fetchData();
                         }}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -298,10 +325,17 @@ export default function CinemaConfigPage() {
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Tỉnh/Thành phố</LTTLabel>
+              <LTTLabel>Thành phố</LTTLabel>
               <LTTInput
-                value={form.provinceRaw}
-                onChange={(e) => setForm({ ...form, provinceRaw: e.target.value })}
+                value={form.city}
+                onChange={(e) => setForm({ ...form, city: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <LTTLabel>Quận/Huyện</LTTLabel>
+              <LTTInput
+                value={form.ward}
+                onChange={(e) => setForm({ ...form, ward: e.target.value })}
               />
             </div>
             <div className="space-y-2">
@@ -330,15 +364,8 @@ export default function CinemaConfigPage() {
             <div className="space-y-2">
               <LTTLabel>Điện thoại</LTTLabel>
               <LTTInput
-                value={form.hotline}
-                onChange={(e) => setForm({ ...form, hotline: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <LTTLabel>Email</LTTLabel>
-              <LTTInput
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                value={form.serviceNumber}
+                onChange={(e) => setForm({ ...form, serviceNumber: e.target.value })}
               />
             </div>
           </div>
@@ -350,6 +377,35 @@ export default function CinemaConfigPage() {
           </LTTDialogFooter>
         </LTTDialogContent>
       </LTTDialog>
+
+      <div className="flex items-center justify-between rounded-lg border border-border-shadcn bg-card px-4 py-3">
+        <div className="text-sm text-muted-foreground-shadcn">
+          Tổng: {listMutation.data?.totalCount ?? items.length} rạp
+        </div>
+        <div className="flex items-center gap-2">
+          <LTTSelect value={String(fetch)} onValueChange={(v) => setFetch(Number(v))}>
+            <LTTSelectTrigger className="w-24">
+              <LTTSelectValue />
+            </LTTSelectTrigger>
+            <LTTSelectContent>
+              <LTTSelectItem value="10">10</LTTSelectItem>
+              <LTTSelectItem value="20">20</LTTSelectItem>
+              <LTTSelectItem value="50">50</LTTSelectItem>
+            </LTTSelectContent>
+          </LTTSelect>
+          <LTTButton variant="outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+            Trước
+          </LTTButton>
+          <span className="text-sm">Trang {page}</span>
+          <LTTButton
+            variant="outline"
+            onClick={() => setPage((p) => p + 1)}
+            disabled={page * fetch >= (listMutation.data?.totalCount ?? 0)}
+          >
+            Sau
+          </LTTButton>
+        </div>
+      </div>
 
       <LTTDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <LTTDialogContent className="sm:max-w-sm">

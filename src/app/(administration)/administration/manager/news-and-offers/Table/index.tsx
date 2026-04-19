@@ -19,6 +19,7 @@ interface Props {
 
 export default function NewsAndOffersTable({ search, onEdit }: Props) {
     const [items, setItems] = useState<NewsAndOffersOutputDto[]>([]);
+    const [debouncedSearch, setDebouncedSearch] = useState("");
 
     const listMutation = useLTTMutation<PagedResultNewsAndOffersOutputDto | null, GetListNewsAndOffersInputDto>({
         mutationFn: (input) => newsAndOffersService.getListAsync(input),
@@ -39,15 +40,20 @@ export default function NewsAndOffersTable({ search, onEdit }: Props) {
 
     const fetchData = () => {
         listMutation.mutation({
-            keyword: search,
+            keyword: debouncedSearch,
             page: 1,
             fetch: 100
         });
     };
 
     useEffect(() => {
-        fetchData();
+        const timer = setTimeout(() => setDebouncedSearch(search), 300);
+        return () => clearTimeout(timer);
     }, [search]);
+
+    useEffect(() => {
+        fetchData();
+    }, [debouncedSearch]);
 
     return (
         <LTTTable

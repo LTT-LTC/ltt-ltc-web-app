@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Pencil, Trash2, Search, Shield } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Shield, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
@@ -54,6 +54,7 @@ export default function StaffPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState<EmployeeOutputDto | null>(null);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -73,7 +74,7 @@ export default function StaffPage() {
 
   const [cinemas, setCinemas] = useState<any[]>([]);
   const cinemasMutation = useLTTMutation<any | undefined, any>({
-    mutationFn: (params) => cinemaService.getList(params),
+    mutationFn: (params) => cinemaService.getCinemaListAsync(params),
     onSuccess: (res) => { if (res && res.items) setCinemas(res.items); }
   });
 
@@ -98,13 +99,21 @@ export default function StaffPage() {
   });
 
   const fetchData = () => {
-    listMutation.mutation({ page: 1, fetch: 100, keyword: search, cinemaId });
+    listMutation.mutation({ page: 1, fetch: 100, keyword: debouncedSearch, cinemaId });
   };
 
   useEffect(() => {
-    fetchData();
-    cinemasMutation.mutation({ page: 1, fetch: 100 });
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
   }, [search]);
+
+  useEffect(() => {
+    fetchData();
+  }, [debouncedSearch, cinemaId]);
+
+  useEffect(() => {
+    cinemasMutation.mutation({ page: 1, fetch: 100 });
+  }, []);
 
   const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading;
 
@@ -218,6 +227,14 @@ export default function StaffPage() {
             ))}
           </LTTSelectContent>
         </LTTSelect>
+        <LTTButton
+          variant="outline"
+          className="gap-2"
+          onClick={fetchData}
+          loading={listMutation.isLoading}
+        >
+          <RefreshCw className="h-4 w-4" /> Làm mới
+        </LTTButton>
         {selected.size > 0 && (
           <LTTButton
             variant="destructive"
@@ -248,7 +265,13 @@ export default function StaffPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={9} className="py-12 text-center text-muted-foreground-shadcn">
+                  Đang tải dữ liệu nhân viên...
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={9} className="py-12 text-center text-muted-foreground-shadcn">
                   Không tìm thấy nhân viên nào phù hợp.

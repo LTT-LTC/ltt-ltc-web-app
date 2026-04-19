@@ -142,7 +142,7 @@ export default function ShowtimeSchedulerPage() {
   });
 
   const cinemaMutation = useLTTMutation<PagedResultDto<CinemaOutputDto> | undefined, any>({
-    mutationFn: (p) => cinemaService.getList(p),
+    mutationFn: (p) => cinemaService.getCinemaListAsync(p),
     onSuccess: (res) => { if (res && res.items) setCinemas(res.items); }
   });
 
@@ -156,6 +156,8 @@ export default function ShowtimeSchedulerPage() {
     onSuccess: () => { toast.success("Tạo thành công"); fetchData(); setDialogOpen(false); }
   });
 
+  const loading = listMutation.isLoading || createMutation.isLoading || movieMutation.isLoading || cinemaMutation.isLoading || screenMutation.isLoading;
+
   const fetchData = () => {
     if (cinemaFilter !== "all") {
       listMutation.mutation({ cinemaId: cinemaFilter, page: 1, fetch: 100 });
@@ -164,7 +166,7 @@ export default function ShowtimeSchedulerPage() {
 
   useEffect(() => {
     fetchData();
-  }, [cinemaFilter, search]);
+  }, [cinemaFilter]);
 
   useEffect(() => {
     movieMutation.mutation({ page: 1, fetch: 100 });
@@ -378,7 +380,16 @@ export default function ShowtimeSchedulerPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td
+                    colSpan={10}
+                    className="py-12 text-center text-muted-foreground-shadcn"
+                  >
+                    Đang tải dữ liệu lịch chiếu...
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
                 <tr>
                   <td
                     colSpan={10}

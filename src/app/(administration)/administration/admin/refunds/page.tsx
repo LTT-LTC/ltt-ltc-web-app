@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, CheckCircle2, XCircle, Eye, Clock } from "lucide-react";
+import { Search, CheckCircle2, XCircle, Eye, Clock, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import {
@@ -44,6 +44,7 @@ const formatVND = (n: number) => n.toLocaleString("vi-VN") + "đ";
 export default function RefundApprovalPage() {
   const [items, setItems] = useState<RefundOutputDto[]>([]);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [viewItem, setViewItem] = useState<RefundOutputDto | null>(null);
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -64,27 +65,32 @@ export default function RefundApprovalPage() {
 
   const rejectMutation = useLTTMutation<void, { id: string; reason: string }>({
     mutationFn: (data) => refundService.reject(data.id, data.reason),
-    onSuccess: () => { 
-        toast.success("Đã từ chối hoàn tiền"); 
-        setRejectOpen(false); 
-        setRejectReason("");
-        fetchData(); 
+    onSuccess: () => {
+      toast.success("Đã từ chối hoàn tiền");
+      setRejectOpen(false);
+      setRejectReason("");
+      fetchData();
     },
     onError: (err) => toast.error(err.message || "Lỗi")
   });
 
   const fetchData = () => {
-    listMutation.mutation({ 
-        page: 1, 
-        fetch: 100, 
-        keyword: search,
-        status: statusFilter === "all" ? undefined : statusFilter
+    listMutation.mutation({
+      page: 1,
+      fetch: 100,
+      keyword: debouncedSearch,
+      status: statusFilter === "all" ? undefined : statusFilter
     });
   };
 
   useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
     fetchData();
-  }, [search, statusFilter]);
+  }, [debouncedSearch, statusFilter]);
 
   const filtered = items;
 
@@ -95,8 +101,8 @@ export default function RefundApprovalPage() {
 
   const handleReject = () => {
     if (!rejectReason.trim()) {
-        toast.error("Vui lòng nhập lý do");
-        return;
+      toast.error("Vui lòng nhập lý do");
+      return;
     }
     rejectMutation.mutation({ id: rejectId, reason: rejectReason });
     if (viewItem?.id === rejectId) setViewItem(null);
@@ -145,6 +151,14 @@ export default function RefundApprovalPage() {
             ))}
           </LTTSelectContent>
         </LTTSelect>
+        <LTTButton
+          variant="outline"
+          className="gap-2"
+          onClick={fetchData}
+          loading={listMutation.isLoading}
+        >
+          <RefreshCw className="h-4 w-4" /> Làm mới
+        </LTTButton>
       </div>
 
       <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">

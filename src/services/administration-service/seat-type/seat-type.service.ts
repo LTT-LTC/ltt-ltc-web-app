@@ -3,7 +3,7 @@ import { rootPath } from "../administration.service";
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 
-const path = "/administration/admin/seat-type";
+const path = "/seat-type";
 
 import { GetSeatTypeListInputDto, CreateSeatTypeInputDto, UpdateSeatTypeInputDto } from "./models/input.model";
 import { SeatTypeOutputDto } from "./models/output.model";

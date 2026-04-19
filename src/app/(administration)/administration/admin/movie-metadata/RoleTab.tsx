@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, Briefcase } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Plus, Pencil, Trash2, Briefcase, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
-import { 
-    LTTDialog, 
-    LTTDialogContent, 
-    LTTDialogHeader, 
-    LTTDialogTitle, 
-    LTTDialogFooter 
+import {
+    LTTDialog,
+    LTTDialogContent,
+    LTTDialogHeader,
+    LTTDialogTitle,
+    LTTDialogFooter
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import { movieService } from "@/src/services/administration-service/movie/movie.service";
@@ -23,6 +23,7 @@ export default function RoleTab() {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editing, setEditing] = useState<RoleOutputDto | null>(null);
     const [name, setName] = useState("");
+    const didInitRef = useRef(false);
 
     const listMutation = useLTTMutation<PagedResultDto<RoleOutputDto> | undefined, void>({
         mutationFn: () => movieService.getRoles(),
@@ -60,8 +61,14 @@ export default function RoleTab() {
     });
 
     useEffect(() => {
+        if (didInitRef.current) {
+            return;
+        }
+        didInitRef.current = true;
         listMutation.mutation();
     }, []);
+
+    const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || deleteMutation.isLoading;
 
     const handleSave = () => {
         if (!name.trim()) return toast.error("Vui lòng nhập tên");
@@ -86,7 +93,10 @@ export default function RoleTab() {
 
     return (
         <div className="space-y-4">
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+                <LTTButton variant="outline" className="gap-2" onClick={() => listMutation.mutation()} loading={listMutation.isLoading}>
+                    <RefreshCw className="h-4 w-4" /> Làm mới
+                </LTTButton>
                 <LTTButton className="gap-2" onClick={openCreate}>
                     <Plus className="h-4 w-4" /> Thêm vai trò
                 </LTTButton>
@@ -101,7 +111,13 @@ export default function RoleTab() {
                         </tr>
                     </thead>
                     <tbody>
-                        {items.length === 0 ? (
+                        {loading ? (
+                            <tr>
+                                <td colSpan={2} className="py-12 text-center text-muted-foreground-shadcn">
+                                    Đang tải dữ liệu vai trò...
+                                </td>
+                            </tr>
+                        ) : items.length === 0 ? (
                             <tr>
                                 <td colSpan={2} className="py-12 text-center text-muted-foreground-shadcn">
                                     Không có dữ liệu vai trò.

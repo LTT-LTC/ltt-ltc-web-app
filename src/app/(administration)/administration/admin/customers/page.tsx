@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Search, User, Lock, Unlock, Trash2, Mail, Phone } from "lucide-react";
+import { useState } from "react";
+import { Search, User, Lock, Unlock, Trash2, Mail, Phone, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
@@ -14,6 +14,7 @@ import {
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
 import { toast } from "sonner";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
+import useDebouncedListQuery from "@/src/@core/hooks/useDebouncedListQuery";
 import { customerService } from "@/src/services/customer-service/customer.service";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 
@@ -23,6 +24,10 @@ export default function CustomersPage() {
     const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [confirmType, setConfirmType] = useState<"lock" | "unlock" | "delete">("lock");
+
+    const fetchData = (keyword: string) => {
+        listMutation.mutation({ skipCount: 0, maxResultCount: 100, filter: keyword.trim() });
+    };
 
     const listMutation = useLTTMutation<PagedResultDto<any>, any>({
         mutationFn: (params) => customerService.getAdminList(params),
@@ -35,7 +40,7 @@ export default function CustomersPage() {
         onSuccess: () => {
             toast.success("Đã khóa tài khoản khách hàng");
             setConfirmOpen(false);
-            listMutation.mutation({ skipCount: 0, maxResultCount: 100, filter: search });
+            fetchData(debouncedSearch);
         }
     });
 
@@ -44,7 +49,7 @@ export default function CustomersPage() {
         onSuccess: () => {
             toast.success("Đã mở khóa tài khoản khách hàng");
             setConfirmOpen(false);
-            listMutation.mutation({ skipCount: 0, maxResultCount: 100, filter: search });
+            fetchData(debouncedSearch);
         }
     });
 
@@ -53,13 +58,16 @@ export default function CustomersPage() {
         onSuccess: () => {
             toast.success("Đã xóa tài khoản khách hàng");
             setConfirmOpen(false);
-            listMutation.mutation({ skipCount: 0, maxResultCount: 100, filter: search });
+            fetchData(debouncedSearch);
         }
     });
 
-    useEffect(() => {
-        listMutation.mutation({ skipCount: 0, maxResultCount: 100, filter: search });
-    }, [search]);
+    const debouncedSearch = useDebouncedListQuery(
+        search,
+        (keyword) => {
+            fetchData(keyword);
+        }
+    );
 
     const handleAction = (customer: any, type: "lock" | "unlock" | "delete") => {
         setSelectedCustomer(customer);
@@ -93,6 +101,14 @@ export default function CustomersPage() {
                         className="pl-9"
                     />
                 </div>
+                <LTTButton
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => fetchData(debouncedSearch)}
+                    loading={listMutation.isLoading}
+                >
+                    <RefreshCw className="h-4 w-4" /> Làm mới
+                </LTTButton>
             </div>
 
             <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">

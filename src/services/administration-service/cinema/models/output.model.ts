@@ -2,11 +2,11 @@ export interface CinemaOutputDto {
     id: string;
     tenantId?: string;
     name: string;
-    address: string;
-    provinceRaw: string;
-    description?: string;
-    managerId?: string;
-    hotline?: string;
+    city?: string;
+    ward?: string;
+    address?: string;
+    managerUserId?: string;
+    serviceNumber?: string;
     status?: string;
     createdAt?: string;
     updatedAt?: string;

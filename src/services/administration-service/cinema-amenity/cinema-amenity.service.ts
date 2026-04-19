@@ -3,7 +3,7 @@ import { rootPath } from "../administration.service";
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 
-const cinemaPath = "/administration/admin/cinema";
+const cinemaPath = "/cinema";
 
 import { GetCinemaAmenityListInputDto, CreateCinemaAmenityInputDto, UpdateCinemaAmenityInputDto } from "./models/input.model";
 import { CinemaAmenityOutputDto } from "./models/output.model";

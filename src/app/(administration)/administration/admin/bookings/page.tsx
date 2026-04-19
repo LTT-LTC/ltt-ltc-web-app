@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, Eye, Filter } from "lucide-react";
+import { Search, Eye, Filter, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import {
@@ -21,6 +21,7 @@ import { cn } from "@/src/@core/utils/cn";
 export default function BookingManagementPage() {
   const [items, setItems] = useState<PaymentOutputDto[]>([]);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
   const listMutation = useLTTMutation<PagedResultDto<PaymentOutputDto> | undefined, any>({
@@ -30,17 +31,22 @@ export default function BookingManagementPage() {
   });
 
   const fetchData = () => {
-    listMutation.mutation({ 
-        page: 1, 
-        fetch: 100, 
-        keyword: search,
-        status: statusFilter === "all" ? undefined : statusFilter
+    listMutation.mutation({
+      page: 1,
+      fetch: 100,
+      keyword: debouncedSearch,
+      status: statusFilter === "all" ? undefined : statusFilter
     });
   };
 
   useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
     fetchData();
-  }, [search, statusFilter]);
+  }, [debouncedSearch, statusFilter]);
 
   const formatVND = (n: number) => n.toLocaleString("vi-VN") + "đ";
 
@@ -71,6 +77,14 @@ export default function BookingManagementPage() {
             <LTTSelectItem value="failed">Thất bại</LTTSelectItem>
           </LTTSelectContent>
         </LTTSelect>
+        <LTTButton
+          variant="outline"
+          className="gap-2"
+          onClick={fetchData}
+          loading={listMutation.isLoading}
+        >
+          <RefreshCw className="h-4 w-4" /> Làm mới
+        </LTTButton>
       </div>
 
       <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
@@ -87,7 +101,13 @@ export default function BookingManagementPage() {
             </tr>
           </thead>
           <tbody>
-            {items.length === 0 ? (
+            {listMutation.isLoading ? (
+              <tr>
+                <td colSpan={7} className="py-12 text-center text-muted-foreground-shadcn">
+                  Đang tải lịch sử đặt vé...
+                </td>
+              </tr>
+            ) : items.length === 0 ? (
               <tr>
                 <td colSpan={7} className="py-12 text-center text-muted-foreground-shadcn">
                   Không tìm thấy lịch sử giao dịch.
@@ -109,8 +129,8 @@ export default function BookingManagementPage() {
                       className={cn(
                         "font-medium",
                         item.status === "success" ? "bg-green-100 text-green-700 border-green-200" :
-                        item.status === "pending" ? "bg-amber-100 text-amber-700 border-amber-200" :
-                        "bg-red-100 text-red-700 border-red-200"
+                          item.status === "pending" ? "bg-amber-100 text-amber-700 border-amber-200" :
+                            "bg-red-100 text-red-700 border-red-200"
                       )}
                     >
                       {item.status}

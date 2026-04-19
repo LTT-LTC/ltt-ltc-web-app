@@ -1,23 +1,24 @@
 import http from "@/src/@core/http";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
-import { 
-    CreatePricingRuleInputDto, 
-    PricingRuleOutputDto 
+import { ApiResult } from "@/src/@core/http/models/ApiResult";
+import {
+    CreatePricingRuleInputDto,
+    PricingRuleOutputDto
 } from "../masterdata/models/commercial.model";
 
 class PricingRuleService {
     private readonly prefix = "/administration-service/api/administration/manager/cinema";
 
     async getList(cinemaId: string, skip: number = 0, count: number = 10): Promise<PagedResultDto<PricingRuleOutputDto>> {
-        const response = await http.get(`${this.prefix}/${cinemaId}/pricing-rule-all`, { 
-            params: { skipCount: skip, maxResultCount: count } 
+        const response = await http.get<ApiResult<PagedResultDto<PricingRuleOutputDto>>>(`${this.prefix}/${cinemaId}/pricing-rule-all`, {
+            params: { skipCount: skip, maxResultCount: count }
         });
-        return response.data;
+        return response.data.data;
     }
 
     async create(cinemaId: string, body: CreatePricingRuleInputDto): Promise<PricingRuleOutputDto> {
-        const response = await http.post(`${this.prefix}/${cinemaId}/pricing-rule`, body);
-        return response.data;
+        const response = await http.post<ApiResult<PricingRuleOutputDto>>(`${this.prefix}/${cinemaId}/pricing-rule`, body);
+        return response.data.data;
     }
 
     async delete(cinemaId: string, id: string): Promise<void> {

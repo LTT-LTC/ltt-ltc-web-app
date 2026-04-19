@@ -11,9 +11,9 @@ const SeatmapFilter = () => {
 
   const fetchCinemas = async () => {
     try {
-      const res = await cinemaService.getList({ page: 1, fetch: 100 });
-      if (res.data?.items) {
-        setCinemas(res.data.items);
+      const res = await cinemaService.getCinemaListAsync({ page: 1, fetch: 100 });
+      if (res.items) {
+        setCinemas(res.items);
       }
     } catch (error) {
       console.error("Failed to load cinemas", error);

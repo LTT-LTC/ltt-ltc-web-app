@@ -65,7 +65,9 @@ export default function UpsertPricingRuleDialog({ open, onOpenChange, editingIte
 
     useEffect(() => {
         if (open) {
-            seatTypesMutation.mutation();
+            if (seatTypes.length === 0) {
+                seatTypesMutation.mutation();
+            }
             if (editingItem) {
                 reset({
                     seatTypeId: editingItem.seatTypeId || undefined,
@@ -87,7 +89,7 @@ export default function UpsertPricingRuleDialog({ open, onOpenChange, editingIte
                 });
             }
         }
-    }, [open, editingItem]);
+    }, [open, editingItem, reset, seatTypes.length]);
 
     const onSubmit = (data: CreatePricingRuleInputDto) => {
         upsertMutation.mutation(data);

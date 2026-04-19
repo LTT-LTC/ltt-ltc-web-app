@@ -4,7 +4,7 @@ import http from "@/src/@core/http";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
 
-export const rootCustomerPath: string = get.rootPath("/customer-service/api");
+export const rootCustomerPath: string = get.rootPath("/customer-service");
 
 export const customerService = {
     authService: customerAuthService,

@@ -11,7 +11,7 @@ import {
     PagedResultNewsAndOffersOutputDto
 } from "./models/output.model";
 
-const path = "/administration/admin/news-and-offers";
+const path = "/news-and-offers";
 
 const getListAsync = async (params: GetListNewsAndOffersInputDto) => {
     const { data } = await http.get<ApiResult<PagedResultNewsAndOffersOutputDto>>(

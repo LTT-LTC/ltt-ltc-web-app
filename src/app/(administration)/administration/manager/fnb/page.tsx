@@ -62,6 +62,7 @@ export default function FnBPage() {
   const [categories, setCategories] = useState<CategoryOutputDto[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [catFilter, setCatFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -108,27 +109,27 @@ export default function FnBPage() {
     listMutation.mutation({
       page: 1,
       fetch: 100,
-      keyword: search,
+      keyword: debouncedSearch,
       categoryId: catFilter === "all" ? undefined : catFilter
     });
   };
 
   useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
     fetchData();
+  }, [debouncedSearch, catFilter]);
+
+  useEffect(() => {
     catMutation.mutation();
-  }, [search, catFilter]);
+  }, []);
 
   const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading;
 
-  const filtered = useMemo(() => {
-    let list = items;
-    if (catFilter !== "all") list = list.filter((i) => i.categoryId === catFilter);
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter((i) => i.name.toLowerCase().includes(q));
-    }
-    return list;
-  }, [items, search, catFilter]);
+  const filtered = useMemo(() => items, [items]);
 
   const allSel =
     filtered.length > 0 && filtered.every((i) => selected.has(i.id));
