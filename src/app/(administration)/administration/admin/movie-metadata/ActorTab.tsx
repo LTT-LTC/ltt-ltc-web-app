@@ -13,7 +13,8 @@ import {
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import { movieService } from "@/src/services/administration-service/movie/movie.service";
-import { ActorOutputDto } from "@/src/services/administration-service/movie/models/output.model";
+import { ActorOutputDto } from "@/src/services/administration-service/movie/actor/models/output.model";
+import { CreateActorInputDto, UpdateActorInputDto } from "@/src/services/administration-service/movie/actor/models/input.model";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { toast } from "sonner";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
@@ -22,16 +23,16 @@ export default function ActorTab() {
     const [items, setItems] = useState<ActorOutputDto[]>([]);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editing, setEditing] = useState<ActorOutputDto | null>(null);
-    const [form, setForm] = useState({ name: "", biography: "" });
+    const [form, setForm] = useState<CreateActorInputDto>({ name: "" });
     const didInitRef = useRef(false);
 
     const listMutation = useLTTMutation<PagedResultDto<ActorOutputDto> | undefined, void>({
-        mutationFn: () => movieService.getActorsAsync(),
+        mutationFn: () => movieService.getActorsAsync({ page: 1, fetch: 1000 }),
         onSuccess: (res) => { if (res && res.items) setItems(res.items); },
         onError: (err) => toast.error(err.message || "Lỗi tải danh sách diễn viên")
     });
 
-    const createMutation = useLTTMutation<ActorOutputDto, any>({
+    const createMutation = useLTTMutation<ActorOutputDto, CreateActorInputDto>({
         mutationFn: (body) => movieService.createActorAsync(body),
         onSuccess: () => {
             toast.success("Thêm thành công");
@@ -41,7 +42,7 @@ export default function ActorTab() {
         onError: (err) => toast.error(err.message || "Lỗi khi thêm")
     });
 
-    const updateMutation = useLTTMutation<ActorOutputDto, { id: string, body: any }>({
+    const updateMutation = useLTTMutation<ActorOutputDto, { id: string, body: UpdateActorInputDto }>({
         mutationFn: (input) => movieService.updateActorAsync(input.id, input.body),
         onSuccess: () => {
             toast.success("Cập nhật thành công");
@@ -81,13 +82,13 @@ export default function ActorTab() {
 
     const openCreate = () => {
         setEditing(null);
-        setForm({ name: "", biography: "" });
+        setForm({ name: "" });
         setDialogOpen(true);
     };
 
     const openEdit = (item: ActorOutputDto) => {
         setEditing(item);
-        setForm({ name: item.name, biography: "" });
+        setForm({ name: item.name });
         setDialogOpen(true);
     };
 
@@ -156,15 +157,6 @@ export default function ActorTab() {
                         <div className="space-y-2">
                             <LTTLabel htmlFor="name">Họ tên *</LTTLabel>
                             <LTTInput id="name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-                        </div>
-                        <div className="space-y-2">
-                            <LTTLabel htmlFor="bio">Tiểu sử</LTTLabel>
-                            <textarea
-                                id="bio"
-                                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                                value={form.biography}
-                                onChange={e => setForm({ ...form, biography: e.target.value })}
-                            />
                         </div>
                     </div>
                     <LTTDialogFooter>

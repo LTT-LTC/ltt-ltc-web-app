@@ -13,7 +13,8 @@ import {
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import { movieService } from "@/src/services/administration-service/movie/movie.service";
-import { StudioOutputDto } from "@/src/services/administration-service/movie/models/output.model";
+import { StudioOutputDto } from "@/src/services/administration-service/movie/studio/models/output.model";
+import { CreateStudioInputDto, UpdateStudioInputDto } from "@/src/services/administration-service/movie/studio/models/input.model";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { toast } from "sonner";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
@@ -22,16 +23,16 @@ export default function StudioTab() {
     const [items, setItems] = useState<StudioOutputDto[]>([]);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editing, setEditing] = useState<StudioOutputDto | null>(null);
-    const [form, setForm] = useState({ name: "", address: "" });
+    const [form, setForm] = useState<CreateStudioInputDto>({ name: "" });
     const didInitRef = useRef(false);
 
     const listMutation = useLTTMutation<PagedResultDto<StudioOutputDto> | undefined, void>({
-        mutationFn: () => movieService.getStudiosAsync(),
+        mutationFn: () => movieService.getStudiosAsync({ page: 1, fetch: 1000 }),
         onSuccess: (res) => { if (res && res.items) setItems(res.items); },
         onError: (err) => toast.error(err.message || "Lỗi tải danh sách hãng phim")
     });
 
-    const createMutation = useLTTMutation<StudioOutputDto, any>({
+    const createMutation = useLTTMutation<StudioOutputDto, CreateStudioInputDto>({
         mutationFn: (body) => movieService.createStudioAsync(body),
         onSuccess: () => {
             toast.success("Thêm thành công");
@@ -41,7 +42,7 @@ export default function StudioTab() {
         onError: (err) => toast.error(err.message || "Lỗi khi thêm")
     });
 
-    const updateMutation = useLTTMutation<StudioOutputDto, { id: string, body: any }>({
+    const updateMutation = useLTTMutation<StudioOutputDto, { id: string, body: UpdateStudioInputDto }>({
         mutationFn: (input) => movieService.updateStudioAsync(input.id, input.body),
         onSuccess: () => {
             toast.success("Cập nhật thành công");
@@ -81,13 +82,13 @@ export default function StudioTab() {
 
     const openCreate = () => {
         setEditing(null);
-        setForm({ name: "", address: "" });
+        setForm({ name: "" });
         setDialogOpen(true);
     };
 
     const openEdit = (item: StudioOutputDto) => {
         setEditing(item);
-        setForm({ name: item.name, address: "" });
+        setForm({ name: item.name });
         setDialogOpen(true);
     };
 
@@ -156,10 +157,6 @@ export default function StudioTab() {
                         <div className="space-y-2">
                             <LTTLabel htmlFor="name">Tên hãng phim *</LTTLabel>
                             <LTTInput id="name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-                        </div>
-                        <div className="space-y-2">
-                            <LTTLabel htmlFor="address">Địa chỉ</LTTLabel>
-                            <LTTInput id="address" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
                         </div>
                     </div>
                     <LTTDialogFooter>

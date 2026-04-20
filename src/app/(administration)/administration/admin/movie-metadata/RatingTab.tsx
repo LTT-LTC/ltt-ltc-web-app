@@ -17,21 +17,23 @@ import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { toast } from "sonner";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
+import { CreateRatingInputDto, UpdateRatingInputDto } from "@/src/services/administration-service/movie/models/input.model";
+import { RatingOutputDto } from "@/src/services/administration-service/movie/models/output.model";
 
 export default function RatingTab() {
-    const [items, setItems] = useState<any[]>([]);
+    const [items, setItems] = useState<RatingOutputDto[]>([]);
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [editing, setEditing] = useState<any | null>(null);
-    const [form, setForm] = useState({ code: "", name: "", description: "" });
+    const [editing, setEditing] = useState<RatingOutputDto | null>(null);
+    const [form, setForm] = useState<CreateRatingInputDto>({ code: "", name: "", description: "" });
     const didInitRef = useRef(false);
 
-    const listMutation = useLTTMutation<PagedResultDto<any> | undefined, void>({
+    const listMutation = useLTTMutation<PagedResultDto<RatingOutputDto> | undefined, void>({
         mutationFn: () => movieService.getRatingsAsync(),
         onSuccess: (res) => { if (res && res.items) setItems(res.items); },
         onError: (err) => toast.error(err.message || "Lỗi tải danh sách phân loại tuổi")
     });
 
-    const createMutation = useLTTMutation<any, any>({
+    const createMutation = useLTTMutation<RatingOutputDto, CreateRatingInputDto>({
         mutationFn: (body) => movieService.createRatingAsync(body),
         onSuccess: () => {
             toast.success("Thêm thành công");
@@ -41,7 +43,7 @@ export default function RatingTab() {
         onError: (err) => toast.error(err.message || "Lỗi khi thêm")
     });
 
-    const updateMutation = useLTTMutation<any, { id: string, body: any }>({
+    const updateMutation = useLTTMutation<RatingOutputDto, { id: string, body: UpdateRatingInputDto }>({
         mutationFn: (input) => movieService.updateRatingAsync(input.id, input.body),
         onSuccess: () => {
             toast.success("Cập nhật thành công");
@@ -73,9 +75,9 @@ export default function RatingTab() {
     const handleSave = () => {
         if (!form.code.trim() || !form.name.trim()) return toast.error("Vui lòng nhập mã và tên");
         if (editing) {
-            updateMutation.mutation({ id: editing.id, body: form });
+            updateMutation.mutation({ id: editing.id, body: { code: form.code, name: form.name, description: form.description } });
         } else {
-            createMutation.mutation(form);
+            createMutation.mutation({ code: form.code, name: form.name, description: form.description });
         }
     };
 
@@ -85,7 +87,7 @@ export default function RatingTab() {
         setDialogOpen(true);
     };
 
-    const openEdit = (item: any) => {
+    const openEdit = (item: RatingOutputDto) => {
         setEditing(item);
         setForm({ code: item.code, name: item.name, description: item.description || "" });
         setDialogOpen(true);

@@ -7,6 +7,11 @@ export interface GetMovieListInputDto {
     fetch: number;
 }
 
+export interface CreateMovieCastInputDto {
+    actorName: string;
+    roleName: string;
+}
+
 export interface CreateMovieInputDto {
     id?: string;
     title: string;
@@ -18,7 +23,13 @@ export interface CreateMovieInputDto {
     description?: string;
     posterUrl?: string;
     trailerUrl?: string;
-    studioId: string;
+    studioId?: string;
+    studioName?: string;
+    ratingId?: string;
+    genreListId?: string[];
+    cast?: CreateMovieCastInputDto[];
+    actorRoles?: CreateMovieCastInputDto[];
+    ratingNumber?: number;
 }
 
 export interface UpdateMovieInputDto {
@@ -33,24 +44,32 @@ export interface UpdateMovieInputDto {
     posterUrl?: string;
     trailerUrl?: string;
     studioId?: string;
+    studioName?: string;
+    genreListId?: string[];
+    actorRoles?: CreateMovieCastInputDto[];
+    ratingNumber?: number;
     ratingId?: string;
 }
 
-// Metadata Inputs
-export interface CreateGenreInputDto { name: string; }
-export interface UpdateGenreInputDto { name: string; }
+export interface GetRatingListInputDto {
+    page?: number;
+    fetch?: number;
+    orderBy?: string;
+    isSortDesc?: boolean;
+    keyword?: string;
+}
 
-export interface CreateActorInputDto { name: string; biography?: string; birthDate?: string; }
-export interface UpdateActorInputDto { name: string; biography?: string; birthDate?: string; }
+export interface CreateRatingInputDto {
+    code: string;
+    name: string;
+    description?: string;
+}
 
-export interface CreateStudioInputDto { name: string; address?: string; }
-export interface UpdateStudioInputDto { name: string; address?: string; }
-
-export interface CreateFormatInputDto { name: string; }
-export interface UpdateFormatInputDto { name: string; }
-
-export interface CreateRoleInputDto { name: string; }
-export interface UpdateRoleInputDto { name: string; }
+export interface UpdateRatingInputDto {
+    code: string;
+    name: string;
+    description?: string;
+}
 
 export interface GetDistributionListInputDto {
     skipCount?: number;
@@ -70,4 +89,17 @@ export interface UpdateDistributionInputDto {
     licenseStartDate?: string | null;
     licenseEndDate?: string | null;
     isExclusive: boolean;
+}
+
+export interface CreateDistributionRequestParams {
+    MovieId: string;
+    LicenseStartDate?: string | null;
+    LicenseEndDate?: string | null;
+    IsExclusive: boolean;
+}
+
+export interface UpdateDistributionRequestParams {
+    LicenseStartDate?: string | null;
+    LicenseEndDate?: string | null;
+    IsExclusive: boolean;
 }

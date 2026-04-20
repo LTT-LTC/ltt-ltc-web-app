@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Plus, Pencil, Trash2, Calendar, ShieldCheck, RefreshCw } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar, ShieldCheck, RefreshCw, Inbox } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import {
@@ -36,6 +36,10 @@ export default function DistributionTable() {
     const [movies, setMovies] = useState<MovieOutputDto[]>([]);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editing, setEditing] = useState<MovieDistributionOutputDto | null>(null);
+    const [page, setPage] = useState(1);
+    const [fetch, setFetch] = useState(10);
+    const [totalCount, setTotalCount] = useState(0);
+    const [error, setError] = useState<string | null>(null);
     const [form, setForm] = useState({
         movieId: "",
         licenseStartDate: "",
@@ -43,6 +47,7 @@ export default function DistributionTable() {
         isExclusive: false
     });
     const didInitRef = useRef(false);
+    const [moviesLoaded, setMoviesLoaded] = useState(false);
 
     const normalizeDistributionPayload = () => ({
         movieId: form.movieId,
@@ -52,14 +57,33 @@ export default function DistributionTable() {
     });
 
     const listMutation = useLTTMutation<PagedResultDto<MovieDistributionOutputDto> | undefined, void>({
-        mutationFn: () => movieService.getDistributionsAsync({ skipCount: 0, maxResultCount: 200 }),
-        onSuccess: (res) => { if (res && res.items) setItems(res.items); },
-        onError: (err) => toast.error(err.message || "Lỗi tải danh sách phân phối")
+        mutationFn: () => movieService.getDistributionsAsync({
+            skipCount: (page - 1) * fetch,
+            maxResultCount: fetch,
+        }),
+        onSuccess: (res) => {
+            if (res && res.items) {
+                setItems(res.items);
+                setTotalCount(res.totalCount ?? res.items.length);
+                setError(null);
+            }
+        },
+        onError: (err) => {
+            const errorMsg = typeof err?.message === "string" && err.message.trim() ? err.message : "Lỗi tải danh sách phân phối";
+            setError(errorMsg);
+            toast.error(errorMsg);
+        }
     });
 
     const moviesMutation = useLTTMutation<PagedResultDto<MovieOutputDto> | undefined, void>({
-        mutationFn: () => movieService.getMovieListAsync({ page: 1, fetch: 100 }),
-        onSuccess: (res) => { if (res && res.items) setMovies(res.items); }
+        mutationFn: () => movieService.getMovieListAsync({ page: 1, fetch: 1000 }),
+        onSuccess: (res) => {
+            if (res && res.items) {
+                setMovies(res.items);
+                setMoviesLoaded(true);
+            }
+        },
+        onError: (err) => toast.error(err.message || "Lỗi tải danh sách phim")
     });
 
     const createMutation = useLTTMutation<MovieDistributionOutputDto, CreateDistributionInputDto>({
@@ -96,9 +120,14 @@ export default function DistributionTable() {
             return;
         }
         didInitRef.current = true;
-        listMutation.mutation();
         moviesMutation.mutation();
     }, []);
+
+    useEffect(() => {
+        if (didInitRef.current) {
+            listMutation.mutation();
+        }
+    }, [page, fetch]);
 
     const handleSave = () => {
         if (!form.movieId) return toast.error("Vui lòng chọn phim");
@@ -113,6 +142,9 @@ export default function DistributionTable() {
     };
 
     const openCreate = () => {
+        if (!moviesLoaded && !moviesMutation.isLoading) {
+            moviesMutation.mutation();
+        }
         setEditing(null);
         setForm({ movieId: "", licenseStartDate: "", licenseEndDate: "", isExclusive: false });
         setDialogOpen(true);
@@ -132,6 +164,16 @@ export default function DistributionTable() {
     const fetchData = () => {
         listMutation.mutation();
     };
+
+    useEffect(() => {
+        if (!dialogOpen || !!editing || form.movieId || movies.length === 0) {
+            return;
+        }
+
+        setForm((prev) => ({ ...prev, movieId: movies[0].id }));
+    }, [dialogOpen, editing, form.movieId, movies]);
+
+    const totalPages = Math.max(1, Math.ceil((totalCount || items.length) / fetch));
 
     return (
         <div className="space-y-4">
@@ -156,7 +198,23 @@ export default function DistributionTable() {
                         </tr>
                     </thead>
                     <tbody>
-                        {items.length === 0 ? (
+                        {error ? (
+                            <tr>
+                                <td colSpan={5} className="py-12 text-center">
+                                    <div className="space-y-2">
+                                        <p className="text-sm text-destructive font-medium">{error}</p>
+                                        <LTTButton
+                                            size="sm"
+                                            onClick={fetchData}
+                                            loading={listMutation.isLoading}
+                                            className="mx-auto"
+                                        >
+                                            Thử lại
+                                        </LTTButton>
+                                    </div>
+                                </td>
+                            </tr>
+                        ) : items.length === 0 ? (
                             <tr>
                                 <td colSpan={5} className="py-12 text-center text-muted-foreground-shadcn">
                                     {listMutation.isLoading ? "Đang tải dữ liệu..." : "Chưa có bản ghi phân phối nào."}
@@ -196,6 +254,42 @@ export default function DistributionTable() {
                 </table>
             </div>
 
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-border-shadcn bg-card px-4 py-3">
+                <div className="text-sm text-muted-foreground-shadcn">
+                    Tổng: {totalCount || items.length} bản ghi
+                </div>
+                <div className="flex items-center gap-2">
+                    <LTTSelect value={String(fetch)} onValueChange={(value) => {
+                        setPage(1);
+                        setFetch(Number(value));
+                    }}>
+                        <LTTSelectTrigger className="w-24">
+                            <LTTSelectValue />
+                        </LTTSelectTrigger>
+                        <LTTSelectContent>
+                            <LTTSelectItem value="10">10</LTTSelectItem>
+                            <LTTSelectItem value="20">20</LTTSelectItem>
+                            <LTTSelectItem value="50">50</LTTSelectItem>
+                        </LTTSelectContent>
+                    </LTTSelect>
+                    <LTTButton
+                        variant="outline"
+                        onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
+                        disabled={page === 1 || listMutation.isLoading}
+                    >
+                        Trước
+                    </LTTButton>
+                    <span className="text-sm">Trang {page} / {totalPages}</span>
+                    <LTTButton
+                        variant="outline"
+                        onClick={() => setPage((currentPage) => currentPage + 1)}
+                        disabled={page >= totalPages || listMutation.isLoading}
+                    >
+                        Sau
+                    </LTTButton>
+                </div>
+            </div>
+
             <LTTDialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <LTTDialogContent className="sm:max-w-md">
                     <LTTDialogHeader>
@@ -203,7 +297,20 @@ export default function DistributionTable() {
                     </LTTDialogHeader>
                     <div className="py-4 space-y-4">
                         <div className="space-y-2">
-                            <LTTLabel>Chọn phim *</LTTLabel>
+                            <div className="flex items-center justify-between gap-2">
+                                <LTTLabel>Chọn phim *</LTTLabel>
+                                <LTTButton
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 gap-1"
+                                    onClick={() => moviesMutation.mutation()}
+                                    loading={moviesMutation.isLoading}
+                                    disabled={!!editing}
+                                >
+                                    <RefreshCw className="h-3.5 w-3.5" /> Tải danh sách phim
+                                </LTTButton>
+                            </div>
                             <LTTSelect
                                 value={form.movieId}
                                 onValueChange={(v) => setForm({ ...form, movieId: v })}
@@ -213,9 +320,18 @@ export default function DistributionTable() {
                                     <LTTSelectValue placeholder="Chọn phim từ danh sách" />
                                 </LTTSelectTrigger>
                                 <LTTSelectContent>
-                                    {movies.map(m => (
-                                        <LTTSelectItem key={m.id} value={m.id}>{m.title}</LTTSelectItem>
-                                    ))}
+                                    {moviesMutation.isLoading ? (
+                                        <div className="px-3 py-2 text-xs text-muted-foreground-shadcn">Đang tải danh sách phim...</div>
+                                    ) : movies.length === 0 ? (
+                                        <div className="px-3 py-6 flex flex-col items-center justify-center text-center text-muted-foreground-shadcn gap-2">
+                                            <Inbox className="h-5 w-5" />
+                                            <span className="text-xs">Trống phim</span>
+                                        </div>
+                                    ) : (
+                                        movies.map((m) => (
+                                            <LTTSelectItem key={m.id} value={m.id}>{m.title}</LTTSelectItem>
+                                        ))
+                                    )}
                                 </LTTSelectContent>
                             </LTTSelect>
                         </div>

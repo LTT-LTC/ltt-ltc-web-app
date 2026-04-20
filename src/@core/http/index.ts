@@ -223,6 +223,17 @@ const onResponseInterceptor = async (error: AxiosError) => {
     return Promise.reject(error.response.data);
   }
 
+  // 503 => Service Unavailable, dịch vụ tạm thời không khả dụng
+  if (
+    error.response &&
+    error.response.status === 503
+  ) {
+    showNotificationError(
+      "Dịch vụ tạm thời không khả dụng. Vui lòng thử lại sau.",
+    );
+    return Promise.reject(error.response.data);
+  }
+
   // Hiển thị thông báo lỗi cho các lỗi khác
   showNotificationError(
     `${_response?.error.message ?? (i18n?.t("http.unknown_error") || "Lỗi không xác định, vui lòng liên hệ quản trị viên.")}`,

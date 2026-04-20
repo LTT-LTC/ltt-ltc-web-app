@@ -13,7 +13,7 @@ import {
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import { movieService } from "@/src/services/administration-service/movie/movie.service";
-import { FormatOutputDto } from "@/src/services/administration-service/movie/models/output.model";
+import { FormatOutputDto } from "@/src/services/administration-service/movie/format/models/output.model";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { toast } from "sonner";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
@@ -26,7 +26,7 @@ export default function FormatTab() {
     const didInitRef = useRef(false);
 
     const listMutation = useLTTMutation<PagedResultDto<FormatOutputDto> | undefined, void>({
-        mutationFn: () => movieService.getFormatsAsync(),
+        mutationFn: () => movieService.getFormatsAsync({ page: 1, fetch: 1000 }),
         onSuccess: (res) => { if (res && res.items) setItems(res.items); },
         onError: (err) => toast.error(err.message || "Lỗi tải danh sách định dạng")
     });
