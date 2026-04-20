@@ -265,7 +265,7 @@ export default function MoviesPage() {
   useEffect(() => {
     skipNextFetchRef.current = page !== 1;
     setPage(1);
-  }, [debouncedSearch, tab]);
+  }, [debouncedSearch]);
 
   useEffect(() => {
     if (skipNextFetchRef.current && page !== 1) {
@@ -275,7 +275,7 @@ export default function MoviesPage() {
       skipNextFetchRef.current = false;
     }
     fetchData();
-  }, [page, fetch, debouncedSearch, tab]);
+  }, [page, fetch, debouncedSearch]);
 
   const ensureGenresLoaded = () => {
     if (!genresLoaded && !genresMutation.isLoading) {

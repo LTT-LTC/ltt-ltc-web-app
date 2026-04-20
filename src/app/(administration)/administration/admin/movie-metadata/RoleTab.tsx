@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, Briefcase, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
@@ -18,16 +18,39 @@ import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { toast } from "sonner";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 
+let roleItemsCache: RoleOutputDto[] | null = null;
+let roleItemsRequest: Promise<RoleOutputDto[]> | null = null;
+
+const loadRoleItems = async () => {
+    if (roleItemsCache !== null) {
+        return roleItemsCache;
+    }
+
+    if (!roleItemsRequest) {
+        roleItemsRequest = movieService.getRolesAsync({ page: 1, fetch: 1000 }).then((res) => {
+            roleItemsCache = res?.items ?? [];
+            return roleItemsCache;
+        }).finally(() => {
+            roleItemsRequest = null;
+        });
+    }
+
+    return roleItemsRequest;
+};
+
 export default function RoleTab() {
     const [items, setItems] = useState<RoleOutputDto[]>([]);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editing, setEditing] = useState<RoleOutputDto | null>(null);
     const [name, setName] = useState("");
-    const didInitRef = useRef(false);
 
     const listMutation = useLTTMutation<PagedResultDto<RoleOutputDto> | undefined, void>({
         mutationFn: () => movieService.getRolesAsync({ page: 1, fetch: 1000 }),
-        onSuccess: (res) => { if (res && res.items) setItems(res.items); },
+        onSuccess: (res) => {
+            const nextItems = res?.items ?? [];
+            roleItemsCache = nextItems;
+            setItems(nextItems);
+        },
         onError: (err) => toast.error(err.message || "Lỗi tải danh sách vai trò")
     });
 
@@ -61,11 +84,17 @@ export default function RoleTab() {
     });
 
     useEffect(() => {
-        if (didInitRef.current) {
-            return;
-        }
-        didInitRef.current = true;
-        listMutation.mutation();
+        let active = true;
+
+        void loadRoleItems().then((nextItems) => {
+            if (active) {
+                setItems(nextItems);
+            }
+        });
+
+        return () => {
+            active = false;
+        };
     }, []);
 
     const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || deleteMutation.isLoading;

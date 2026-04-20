@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, Building, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
@@ -19,16 +19,39 @@ import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { toast } from "sonner";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 
+let studioItemsCache: StudioOutputDto[] | null = null;
+let studioItemsRequest: Promise<StudioOutputDto[]> | null = null;
+
+const loadStudioItems = async () => {
+    if (studioItemsCache !== null) {
+        return studioItemsCache;
+    }
+
+    if (!studioItemsRequest) {
+        studioItemsRequest = movieService.getStudiosAsync({ page: 1, fetch: 1000 }).then((res) => {
+            studioItemsCache = res?.items ?? [];
+            return studioItemsCache;
+        }).finally(() => {
+            studioItemsRequest = null;
+        });
+    }
+
+    return studioItemsRequest;
+};
+
 export default function StudioTab() {
     const [items, setItems] = useState<StudioOutputDto[]>([]);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editing, setEditing] = useState<StudioOutputDto | null>(null);
     const [form, setForm] = useState<CreateStudioInputDto>({ name: "" });
-    const didInitRef = useRef(false);
 
     const listMutation = useLTTMutation<PagedResultDto<StudioOutputDto> | undefined, void>({
         mutationFn: () => movieService.getStudiosAsync({ page: 1, fetch: 1000 }),
-        onSuccess: (res) => { if (res && res.items) setItems(res.items); },
+        onSuccess: (res) => {
+            const nextItems = res?.items ?? [];
+            studioItemsCache = nextItems;
+            setItems(nextItems);
+        },
         onError: (err) => toast.error(err.message || "Lỗi tải danh sách hãng phim")
     });
 
@@ -62,11 +85,17 @@ export default function StudioTab() {
     });
 
     useEffect(() => {
-        if (didInitRef.current) {
-            return;
-        }
-        didInitRef.current = true;
-        listMutation.mutation();
+        let active = true;
+
+        void loadStudioItems().then((nextItems) => {
+            if (active) {
+                setItems(nextItems);
+            }
+        });
+
+        return () => {
+            active = false;
+        };
     }, []);
 
     const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || deleteMutation.isLoading;

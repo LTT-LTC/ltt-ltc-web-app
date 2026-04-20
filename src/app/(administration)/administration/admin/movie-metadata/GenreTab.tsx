@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, Tag, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
@@ -18,16 +18,39 @@ import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { toast } from "sonner";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 
+let genreItemsCache: GenreOutputDto[] | null = null;
+let genreItemsRequest: Promise<GenreOutputDto[]> | null = null;
+
+const loadGenreItems = async () => {
+    if (genreItemsCache !== null) {
+        return genreItemsCache;
+    }
+
+    if (!genreItemsRequest) {
+        genreItemsRequest = movieService.getGenresAsync({ page: 1, fetch: 1000 }).then((res) => {
+            genreItemsCache = res?.items ?? [];
+            return genreItemsCache;
+        }).finally(() => {
+            genreItemsRequest = null;
+        });
+    }
+
+    return genreItemsRequest;
+};
+
 export default function GenreTab() {
     const [items, setItems] = useState<GenreOutputDto[]>([]);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editing, setEditing] = useState<GenreOutputDto | null>(null);
     const [name, setName] = useState("");
-    const didInitRef = useRef(false);
 
     const listMutation = useLTTMutation<PagedResultDto<GenreOutputDto> | undefined, void>({
         mutationFn: () => movieService.getGenresAsync({ page: 1, fetch: 1000 }),
-        onSuccess: (res) => { if (res && res.items) setItems(res.items); },
+        onSuccess: (res) => {
+            const nextItems = res?.items ?? [];
+            genreItemsCache = nextItems;
+            setItems(nextItems);
+        },
         onError: (err) => toast.error(err.message || "Lỗi tải danh sách thể loại")
     });
 
@@ -61,11 +84,17 @@ export default function GenreTab() {
     });
 
     useEffect(() => {
-        if (didInitRef.current) {
-            return;
-        }
-        didInitRef.current = true;
-        listMutation.mutation();
+        let active = true;
+
+        void loadGenreItems().then((nextItems) => {
+            if (active) {
+                setItems(nextItems);
+            }
+        });
+
+        return () => {
+            active = false;
+        };
     }, []);
 
     const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || deleteMutation.isLoading;
