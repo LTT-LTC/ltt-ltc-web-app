@@ -13,7 +13,7 @@ import {
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import { movieService } from "@/src/services/administration-service/movie/movie.service";
-import { RoleOutputDto } from "@/src/services/administration-service/movie/models/output.model";
+import { RoleOutputDto } from "@/src/services/administration-service/movie/role/models/output.model";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { toast } from "sonner";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
@@ -26,7 +26,7 @@ export default function RoleTab() {
     const didInitRef = useRef(false);
 
     const listMutation = useLTTMutation<PagedResultDto<RoleOutputDto> | undefined, void>({
-        mutationFn: () => movieService.getRolesAsync(),
+        mutationFn: () => movieService.getRolesAsync({ page: 1, fetch: 1000 }),
         onSuccess: (res) => { if (res && res.items) setItems(res.items); },
         onError: (err) => toast.error(err.message || "Lỗi tải danh sách vai trò")
     });

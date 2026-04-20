@@ -1,23 +1,25 @@
 import http from "@/src/@core/http";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
-import { StudioOutputDto } from "../models/output.model";
-import { CreateStudioInputDto } from "../models/input.model";
+import { StudioOutputDto } from "./models/output.model";
+import { CreateStudioInputDto, GetStudioListInputDto, UpdateStudioInputDto } from "./models/input.model";
 
 const rootPath = "/movie-service";
 const studioPath = "/studio";
 
-const getStudiosAsync = async (): Promise<PagedResultDto<StudioOutputDto>> => {
-	const response = await http.get<PagedResultDto<StudioOutputDto>>(`${rootPath}${studioPath}-all`);
+const getStudiosAsync = async (
+	params: GetStudioListInputDto = { page: 1, fetch: 1000 },
+): Promise<PagedResultDto<StudioOutputDto>> => {
+	const response = await http.get<PagedResultDto<StudioOutputDto>>(`${rootPath}${studioPath}-all`, { params });
 	return response.data;
 };
 
 const createStudioAsync = async (body: CreateStudioInputDto): Promise<StudioOutputDto> => {
-	const response = await http.post<StudioOutputDto>(`${rootPath}${studioPath}`, body);
+	const response = await http.post<StudioOutputDto>(`${rootPath}${studioPath}`, {}, { params: { Name: body.name } });
 	return response.data;
 };
 
-const updateStudioAsync = async (id: string, body: any): Promise<StudioOutputDto> => {
-	const response = await http.put<StudioOutputDto>(`${rootPath}${studioPath}/${id}`, body);
+const updateStudioAsync = async (id: string, body: UpdateStudioInputDto): Promise<StudioOutputDto> => {
+	const response = await http.put<StudioOutputDto>(`${rootPath}${studioPath}/${id}`, {}, { params: { Name: body.name } });
 	return response.data;
 };
 

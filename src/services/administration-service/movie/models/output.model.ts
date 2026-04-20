@@ -2,7 +2,10 @@ export interface MovieOutputDto {
     id: string;
     movieId: string;
     studioId?: string;
+    studioName?: string;
     ratingId?: string;
+    ratingCode?: string;
+    ratingName?: string;
     title: string;
     originalTitle?: string;
     durationMins?: number;
@@ -14,17 +17,22 @@ export interface MovieOutputDto {
     trailerUrl?: string;
     createdAt?: string;
     updatedAt?: string;
+    studio?: { id: string; name: string };
+    genreNames?: string[];
+    genres?: { id: string; name: string }[];
+    actorRoles?: { actorName: string; roleName: string }[];
+    cast?: {
+        actor?: { id: string; name: string };
+        role?: { id: string; name: string } | null;
+        characterName?: string | null;
+        actorName?: string | null;
+        roleName?: string | null;
+    }[];
 }
 
 export interface MovieDetailOutputDto extends MovieOutputDto {
 }
-
-// Metadata Outputs
-export interface GenreOutputDto { id: string; name: string; }
-export interface ActorOutputDto { id: string; name: string; biography?: string; birthDate?: string; }
-export interface StudioOutputDto { id: string; name: string; address?: string; }
-export interface FormatOutputDto { id: string; name: string; }
-export interface RoleOutputDto { id: string; name: string; }
+export interface RatingOutputDto { id: string; code: string; name: string; description?: string; }
 
 export interface MovieDistributionOutputDto {
     id: string;

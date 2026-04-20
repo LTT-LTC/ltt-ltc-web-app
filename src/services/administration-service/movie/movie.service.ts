@@ -4,13 +4,19 @@ import {
     GetMovieListInputDto as GetMovieListDto,
     CreateMovieInputDto,
     UpdateMovieInputDto,
+    GetRatingListInputDto,
+    CreateRatingInputDto,
+    UpdateRatingInputDto,
     GetDistributionListInputDto,
     CreateDistributionInputDto,
     UpdateDistributionInputDto,
+    CreateDistributionRequestParams,
+    UpdateDistributionRequestParams,
 } from "./models/input.model";
 import {
     MovieOutputDto,
     MovieDetailOutputDto,
+    RatingOutputDto,
     MovieDistributionOutputDto,
 } from "./models/output.model";
 import { actorService } from "./actor/actor.service";
@@ -25,7 +31,7 @@ const ratingPath = "/rating";
 const distributionPath = "/movie-distribution";
 
 const getMovieListAsync = async (params: GetMovieListDto): Promise<PagedResultDto<MovieOutputDto>> => {
-    const response = await http.get<PagedResultDto<MovieOutputDto>>(`${rootPath}${moviePath}`, { params });
+    const response = await http.get<PagedResultDto<MovieOutputDto>>(`${rootPath}${moviePath}-all`, { params });
     return response.data;
 };
 
@@ -52,18 +58,32 @@ const bulkDeleteMoviesAsync = async (ids: string[]): Promise<void> => {
     await http.delete<void>(`${rootPath}${moviePath}`, { data: ids });
 };
 
-const getRatingsAsync = async (): Promise<PagedResultDto<any>> => {
-    const response = await http.get<PagedResultDto<any>>(`${rootPath}${ratingPath}-all`);
+const getRatingsAsync = async (
+    params: GetRatingListInputDto = { page: 1, fetch: 1000 },
+): Promise<PagedResultDto<RatingOutputDto>> => {
+    const response = await http.get<PagedResultDto<RatingOutputDto>>(`${rootPath}${ratingPath}-all`, { params });
     return response.data;
 };
 
-const createRatingAsync = async (body: any): Promise<any> => {
-    const response = await http.post<any>(`${rootPath}${ratingPath}`, body);
+const createRatingAsync = async (body: CreateRatingInputDto): Promise<RatingOutputDto> => {
+    const response = await http.post<RatingOutputDto>(`${rootPath}${ratingPath}`, {}, {
+        params: {
+            Code: body.code,
+            Name: body.name,
+            Description: body.description,
+        },
+    });
     return response.data;
 };
 
-const updateRatingAsync = async (id: string, body: any): Promise<any> => {
-    const response = await http.put<any>(`${rootPath}${ratingPath}/${id}`, body);
+const updateRatingAsync = async (id: string, body: UpdateRatingInputDto): Promise<RatingOutputDto> => {
+    const response = await http.put<RatingOutputDto>(`${rootPath}${ratingPath}/${id}`, {}, {
+        params: {
+            Code: body.code,
+            Name: body.name,
+            Description: body.description,
+        },
+    });
     return response.data;
 };
 
@@ -78,13 +98,32 @@ const getDistributionsAsync = async (
     return response.data;
 };
 
+const toCreateDistributionParams = (body: CreateDistributionInputDto): CreateDistributionRequestParams => ({
+    MovieId: body.movieId,
+    LicenseStartDate: body.licenseStartDate,
+    LicenseEndDate: body.licenseEndDate,
+    IsExclusive: body.isExclusive,
+});
+
+const toUpdateDistributionParams = (body: UpdateDistributionInputDto): UpdateDistributionRequestParams => ({
+    LicenseStartDate: body.licenseStartDate,
+    LicenseEndDate: body.licenseEndDate,
+    IsExclusive: body.isExclusive,
+});
+
 const createDistributionAsync = async (body: CreateDistributionInputDto): Promise<MovieDistributionOutputDto> => {
-    const response = await http.post<MovieDistributionOutputDto>(`${rootPath}${distributionPath}`, body);
+    const params = toCreateDistributionParams(body);
+    const response = await http.post<MovieDistributionOutputDto>(`${rootPath}${distributionPath}`, {}, {
+        params,
+    });
     return response.data;
 };
 
 const updateDistributionAsync = async (id: string, body: UpdateDistributionInputDto): Promise<MovieDistributionOutputDto> => {
-    const response = await http.put<MovieDistributionOutputDto>(`${rootPath}${distributionPath}/${id}`, body);
+    const params = toUpdateDistributionParams(body);
+    const response = await http.put<MovieDistributionOutputDto>(`${rootPath}${distributionPath}/${id}`, {}, {
+        params,
+    });
     return response.data;
 };
 

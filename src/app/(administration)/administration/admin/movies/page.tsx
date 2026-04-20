@@ -9,7 +9,7 @@ export default function MoviesPage() {
       <section>
         <ManagerMoviesPage />
       </section>
-      
+
       <section className="pt-8 border-t border-border-shadcn">
         <div className="mb-4">
           <h2 className="font-heading text-xl font-bold">Giấy phép Phân phối (Distribution Licenses)</h2>
