@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Pencil, Trash2, Search, Film, RefreshCw, Inbox, Loader2, X, Check, ChevronsUpDown } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Film, RefreshCw, Inbox, Loader2, X, Check, ChevronsUpDown, Upload } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
@@ -1085,7 +1085,7 @@ export default function MoviesPage() {
             <div className="grid gap-6 lg:grid-cols-[200px_1fr]">
               <div className="space-y-2">
                 <LTTLabel>{t("admin.manager_movies.form.poster_url")}</LTTLabel>
-                <div className="relative aspect-[2/3] w-full rounded-lg border-2 border-dashed border-border-shadcn bg-muted-shadcn/30 hover:border-primary-shadcn/50 transition-colors overflow-hidden">
+                <div className="relative aspect-2/3 w-full rounded-lg border-2 border-dashed border-[#d9d9d9] bg-[#fafafa] transition-colors hover:border-primary-shadcn/50 overflow-hidden">
                   <input
                     type="file"
                     accept="image/*"
@@ -1110,15 +1110,22 @@ export default function MoviesPage() {
                           setPosterPreviewUrl("");
                           setForm((prev) => ({ ...prev, posterUrl: "" }));
                         }}
-                        className="absolute right-2 top-2 z-[60] flex h-6 w-6 items-center justify-center rounded-full bg-background/80 text-foreground hover:bg-background"
+                        className="absolute right-2 top-2 z-60 flex h-6 w-6 items-center justify-center rounded-full bg-background/80 text-foreground hover:bg-background"
                       >
                         <X className="h-4 w-4" />
                       </button>
                     </>
                   ) : (
-                    <div className="flex h-full flex-col items-center justify-center text-muted-foreground-shadcn text-xs">
-                      <Film className="mb-2 h-8 w-8 opacity-50" />
-                      <span className="text-center px-4">{t("admin.manager_movies.form.upload_poster") || "Upload Poster"}</span>
+                    <div className="flex h-full flex-col items-center justify-center text-center px-4">
+                      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#fdecec] text-[#ef4444]">
+                        <Upload className="h-6 w-6" />
+                      </div>
+                      <p className="text-sm font-medium text-foreground-shadcn">
+                        {t("admin.manager_movies.form.poster_upload_click_or_drag")}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground-shadcn">
+                        {t("admin.manager_movies.form.poster_upload_hint")}
+                      </p>
                     </div>
                   )}
                 </div>

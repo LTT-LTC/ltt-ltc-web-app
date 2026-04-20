@@ -7,7 +7,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Bell,
-  Globe,
   ChevronDown,
   LogOut,
 } from "lucide-react";
@@ -24,6 +23,7 @@ import { administrationService } from "@/src/services/administration-service/adm
 import { customerService } from "@/src/services/customer-service/customer.service";
 import { Dropdown } from "../LTTDropdown/Dropdown";
 import { DropdownItem } from "../LTTDropdown/DropdownItem";
+import LTTLanguageSwitch from "../LTTLanguageSwitch";
 
 interface LTTAdminSubDomainLayoutProps {
   role: AdminRole;
@@ -41,9 +41,7 @@ export default function LTTAdminSubDomainLayout({
   const pathname = usePathname();
 
   // Language Logic
-  const { currentLanguage, changeLanguage, t } = useLocalization();
-  const isEN = currentLanguage.toUpperCase() === "EN";
-  const isVI = currentLanguage.toUpperCase() === "VI";
+  const { t } = useLocalization();
 
   // Notification Logic
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -172,27 +170,7 @@ export default function LTTAdminSubDomainLayout({
           </div>
           <div className="flex items-center gap-4">
             {/* Language Logic */}
-            <div className="flex items-center gap-1 rounded-full border border-border-shadcn p-0.5">
-              <Globe className="ml-1.5 h-4 w-4 text-muted-foreground-shadcn" />
-              <button
-                onClick={() => changeLanguage('vi')}
-                className={cn(
-                  "rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors",
-                  isVI ? "bg-primary-shadcn text-primary-shadcn-foreground" : "text-muted-foreground-shadcn hover:text-foreground"
-                )}
-              >
-                VI
-              </button>
-              <button
-                onClick={() => changeLanguage('en')}
-                className={cn(
-                  "rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors",
-                  isEN ? "bg-primary-shadcn text-primary-shadcn-foreground" : "text-muted-foreground-shadcn hover:text-foreground"
-                )}
-              >
-                EN
-              </button>
-            </div>
+            <LTTLanguageSwitch variant="neutral" />
 
             {/* Notification Logic */}
             <div className="relative">
