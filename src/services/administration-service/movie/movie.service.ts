@@ -29,6 +29,15 @@ const rootPath = "/movie-service";
 const moviePath = "/movie";
 const ratingPath = "/rating";
 const distributionPath = "/movie-distribution";
+const mediaFilePath = "/media-files";
+
+export interface UploadMoviePosterOutputDto {
+    secureUrl: string;
+    publicId: string;
+    displayName: string;
+    format?: string;
+    size: number;
+}
 
 const getMovieListAsync = async (params: GetMovieListDto): Promise<PagedResultDto<MovieOutputDto>> => {
     const response = await http.get<PagedResultDto<MovieOutputDto>>(`${rootPath}${moviePath}-all`, { params });
@@ -40,18 +49,90 @@ const getMovieDetailAsync = async (id: string): Promise<MovieDetailOutputDto> =>
     return response.data;
 };
 
+const appendMovieField = (formData: FormData, key: string, value?: string | number | boolean | null) => {
+    if (value === undefined || value === null || value === "") {
+        return;
+    }
+
+    formData.append(key, String(value));
+};
+
+const appendMovieActorRoles = (formData: FormData, actorRoles?: CreateMovieInputDto["actorRoles"]) => {
+    if (!actorRoles || actorRoles.length === 0) {
+        return;
+    }
+
+    actorRoles.forEach((item, index) => {
+        appendMovieField(formData, `ActorRoles[${index}].ActorName`, item.actorName);
+        appendMovieField(formData, `ActorRoles[${index}].RoleName`, item.roleName);
+    });
+};
+
+const appendMovieGenres = (formData: FormData, genreListId?: string[]) => {
+    if (!genreListId || genreListId.length === 0) {
+        return;
+    }
+
+    genreListId.forEach((item, index) => appendMovieField(formData, `GenreListId[${index}]`, item));
+};
+
+const buildMovieFormData = (body: CreateMovieInputDto | UpdateMovieInputDto): FormData => {
+    const formData = new FormData();
+
+    appendMovieField(formData, "Id", body.id);
+    appendMovieField(formData, "Title", body.title);
+    appendMovieField(formData, "OriginalTitle", body.originalTitle);
+    appendMovieField(formData, "DurationMins", body.durationMins);
+    appendMovieField(formData, "ReleaseDate", body.releaseDate);
+    appendMovieField(formData, "PremiereDate", body.premiereDate);
+    appendMovieField(formData, "Status", body.status);
+    appendMovieField(formData, "Description", body.description);
+    appendMovieField(formData, "PosterUrl", body.posterUrl);
+    appendMovieField(formData, "TrailerUrl", body.trailerUrl);
+    appendMovieField(formData, "StudioId", body.studioId);
+    appendMovieField(formData, "StudioName", body.studioName);
+    appendMovieField(formData, "RatingId", body.ratingId);
+    appendMovieField(formData, "RatingNumber", body.ratingNumber);
+
+    appendMovieGenres(formData, body.genreListId);
+    appendMovieActorRoles(formData, body.actorRoles);
+
+    if (body.imageFile) {
+        formData.append("ImageFile", body.imageFile);
+    }
+
+    return formData;
+};
+
 const createMovieAsync = async (body: CreateMovieInputDto): Promise<MovieOutputDto> => {
-    const response = await http.post<MovieOutputDto>(`${rootPath}${moviePath}`, body);
+    const formData = buildMovieFormData(body);
+    const response = await http.post<MovieOutputDto>(`${rootPath}${moviePath}`, formData, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+        },
+    });
     return response.data;
 };
 
 const updateMovieAsync = async (id: string, body: UpdateMovieInputDto): Promise<MovieOutputDto> => {
-    const response = await http.put<MovieOutputDto>(`${rootPath}${moviePath}/${id}`, body);
+    const formData = buildMovieFormData(body);
+    const response = await http.put<MovieOutputDto>(`${rootPath}${moviePath}/${id}`, formData, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+        },
+    });
     return response.data;
 };
 
 const deleteMovieAsync = async (id: string): Promise<void> => {
     await http.delete<void>(`${rootPath}${moviePath}/${id}`);
+};
+
+const uploadMoviePosterAsync = async (imageFile: File): Promise<UploadMoviePosterOutputDto> => {
+    const formData = new FormData();
+    formData.append("ImageFile", imageFile);
+    const response = await http.post<UploadMoviePosterOutputDto>(`${rootPath}${mediaFilePath}/poster`, formData);
+    return response.data;
 };
 
 const bulkDeleteMoviesAsync = async (ids: string[]): Promise<void> => {
@@ -141,6 +222,7 @@ export const movieService = {
     createMovieAsync,
     updateMovieAsync,
     deleteMovieAsync,
+    uploadMoviePosterAsync,
     bulkDeleteMoviesAsync,
 
     // Backward-compatible names used across existing pages/components
@@ -149,6 +231,7 @@ export const movieService = {
     createMovie: createMovieAsync,
     updateMovie: updateMovieAsync,
     deleteMovie: deleteMovieAsync,
+    uploadMoviePoster: uploadMoviePosterAsync,
     bulkDeleteMovies,
 
     ...genreService,

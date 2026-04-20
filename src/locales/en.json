@@ -1,9 +1,23 @@
 {
   "http": {
     "network_error": "Network error, please try again later.",
-    "unknown_error": "Unknown error, please contact administrators."
+    "unknown_error": "Unknown error, please contact administrators.",
+    "service_unavailable": "Service is temporarily unavailable. Please try again later."
+  },
+  "toast": {
+    "error_default": "An error occurred while processing. Please contact administrators.",
+    "success_default": "Operation completed successfully."
   },
   "admin": {
+    "common": {
+      "delete_confirm": {
+        "title": "Confirm delete",
+        "message": "Are you sure you want to delete this item? This action cannot be undone.",
+        "bulk_message": "Are you sure you want to delete {{count}} selected items? This action cannot be undone.",
+        "ok": "Delete",
+        "cancel": "Cancel"
+      }
+    },
     "menu": {
       "dashboard": "Dashboard",
       "tenant_management": "Tenant Management",
@@ -37,6 +51,496 @@
       "my_transactions": "My Transactions",
       "shift_report": "Shift Report",
       "notification": "Notification"
+    },
+    "auth": {
+      "login": {
+        "page_title": "Login",
+        "back_to_home": "Back to homepage",
+        "welcome_title": "Welcome Administrator",
+        "welcome_subtitle": "Please sign in to continue management tasks.",
+        "messages": {
+          "login_success": "Login successful."
+        },
+        "errors": {
+          "no_admin_access": "This account does not have access to the administration portal.",
+          "invalid_data": "Invalid data",
+          "generic": "An error occurred, please try again later."
+        },
+        "form": {
+          "branch_label": "Branch",
+          "branch_placeholder": "Select branch",
+          "username_label": "Username",
+          "password_label": "Password",
+          "forgot_password": "Forgot password?",
+          "submit": "Sign in"
+        }
+      },
+      "reset_password": {
+        "page_title": "Reset password",
+        "back_to_home": "Back to homepage",
+        "heading": "Reset password",
+        "subtitle": "Enter your details to reset your password.",
+        "form_title": "Reset password",
+        "form_subtitle": "Enter and confirm your new password so your account can be used again.",
+        "new_password_placeholder": "Enter new password",
+        "confirm_password_placeholder": "Confirm new password",
+        "submit": "Reset password",
+        "requirements": {
+          "intro": "The new password must contain from 8 to 32 characters.",
+          "uppercase": "1 uppercase letter (A-Z).",
+          "number": "1 number (0-9).",
+          "special": "1 special character (for example: !, @, #, $, %, etc.)."
+        },
+        "validation": {
+          "new_password_required": "Please enter a new password",
+          "new_password_too_short": "Password is too short",
+          "new_password_too_long": "Password is too long",
+          "new_password_invalid": "Password must include at least 1 uppercase letter, 1 number, and 1 special character",
+          "confirm_password_required": "Please confirm your password",
+          "confirm_password_mismatch": "Passwords do not match"
+        },
+        "request_link": {
+          "back_to_login": "Back to sign in",
+          "title": "Enter email",
+          "subtitle": "Enter your email. We will send a password reset link to your inbox.",
+          "tenant_label": "Tenant",
+          "tenant_required": "Please select a tenant",
+          "tenant_placeholder": "Select tenant",
+          "email_required": "Please enter email",
+          "email_invalid": "Invalid email or email does not exist in the system",
+          "email_placeholder": "Enter email",
+          "submit": "Verify account"
+        },
+        "success": {
+          "title": "Success!",
+          "subtitle": "Your password has been updated successfully.",
+          "login_now": "Sign in now"
+        }
+      }
+    },
+    "movies": {
+      "distribution": {
+        "section_title": "Distribution Licenses",
+        "section_description": "Manage copyright duration and movie distribution permissions.",
+        "refresh": "Refresh",
+        "add": "Add Distribution License",
+        "movie_name": "Movie Name",
+        "start_date": "Start Date",
+        "end_date": "End Date",
+        "exclusive": "Exclusive",
+        "actions": "Actions",
+        "retry": "Retry",
+        "loading": "Loading data...",
+        "empty": "No distribution records yet.",
+        "exclusive_badge": "Exclusive",
+        "standard_badge": "Standard",
+        "total_records": "Total: {{count}} records",
+        "previous": "Previous",
+        "next": "Next",
+        "page": "Page {{page}} / {{totalPages}}",
+        "create_title": "Add New License",
+        "edit_title": "Edit License",
+        "movie_label": "Select Movie *",
+        "load_movie_list": "Load Movie List",
+        "movie_placeholder": "Select a movie from the list",
+        "movie_loading": "Loading movie list...",
+        "movie_empty": "No movies available",
+        "license_start_date": "Start Date",
+        "license_end_date": "End Date",
+        "exclusive_toggle": "Exclusive distribution",
+        "cancel": "Cancel",
+        "save": "Save Changes",
+        "grant": "Grant License",
+        "select_movie_required": "Please select a movie",
+        "fetch_distribution_error": "Failed to load distribution list",
+        "fetch_movie_error": "Failed to load movie list",
+        "create_success": "Distribution record created",
+        "create_error": "Failed to create record",
+        "update_success": "Updated successfully",
+        "update_error": "Failed to update",
+        "delete_success": "Deleted",
+        "delete_error": "Failed to delete"
+      }
+    },
+    "movie_metadata": {
+      "title": "Movie Metadata Management",
+      "tabs": {
+        "genres": "Genres",
+        "actors": "Actors",
+        "roles": "Roles",
+        "studios": "Studios",
+        "formats": "Formats",
+        "ratings": "Age Ratings"
+      },
+      "common": {
+        "refresh": "Refresh",
+        "actions": "Actions",
+        "cancel": "Cancel",
+        "save": "Save",
+        "create": "Create",
+        "name_required": "Please enter a name",
+        "add_success": "Created successfully",
+        "update_success": "Updated successfully",
+        "delete_success": "Deleted",
+        "add_error": "Failed to create",
+        "update_error": "Failed to update",
+        "delete_error": "Failed to delete"
+      },
+      "genres": {
+        "add": "Add Genre",
+        "name": "Genre Name",
+        "loading": "Loading genre data...",
+        "empty": "No genre data.",
+        "edit_title": "Edit Genre",
+        "create_title": "Add New Genre",
+        "name_label": "Genre Name *",
+        "fetch_error": "Failed to load genre list"
+      },
+      "actors": {
+        "add": "Add Actor",
+        "name": "Full Name",
+        "loading": "Loading actor data...",
+        "empty": "No actor data.",
+        "edit_title": "Edit Actor",
+        "create_title": "Add New Actor",
+        "name_label": "Full Name *",
+        "fetch_error": "Failed to load actor list"
+      },
+      "roles": {
+        "add": "Add Role",
+        "name": "Role Name (Director, Lead Actor...)",
+        "loading": "Loading role data...",
+        "empty": "No role data.",
+        "edit_title": "Edit Role",
+        "create_title": "Add New Role",
+        "name_label": "Role Name *",
+        "fetch_error": "Failed to load role list"
+      },
+      "studios": {
+        "add": "Add Studio",
+        "name": "Studio Name",
+        "loading": "Loading studio data...",
+        "empty": "No studio data.",
+        "edit_title": "Edit Studio",
+        "create_title": "Add New Studio",
+        "name_label": "Studio Name *",
+        "fetch_error": "Failed to load studio list"
+      },
+      "formats": {
+        "add": "Add Format",
+        "name": "Format Name (2D, 3D, IMAX...)",
+        "loading": "Loading format data...",
+        "empty": "No format data.",
+        "edit_title": "Edit Format",
+        "create_title": "Add New Format",
+        "name_label": "Format Name *",
+        "fetch_error": "Failed to load format list"
+      },
+      "ratings": {
+        "add": "Add Rating",
+        "code": "Code",
+        "name": "Rating Name (P, T13, T16, T18...)",
+        "description": "Description",
+        "loading": "Loading rating data...",
+        "empty": "No rating data.",
+        "edit_title": "Edit Rating",
+        "create_title": "Add New Rating",
+        "code_label": "Code (e.g. T18) *",
+        "display_name_label": "Display Name *",
+        "description_label": "Description (For audience aged...)",
+        "code_name_required": "Please enter both code and name",
+        "fetch_error": "Failed to load age rating list"
+      }
+    },
+    "manager_movies": {
+      "title": "Movie Management",
+      "add_movie": "Add Movie",
+      "refresh": "Refresh",
+      "fetch_error": "Failed to load movie list",
+      "create_success": "Movie created successfully",
+      "update_success": "Movie updated successfully",
+      "delete_success": "Movie deleted successfully",
+      "generic_error": "An error occurred",
+      "retry": "Retry",
+      "loading": "Loading data...",
+      "empty": "No matching movies found.",
+      "empty_item": "No {{label}}",
+      "duration_minutes": "{{minutes}} mins",
+      "total_movies": "Total: {{count}} movies",
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page {{page}} / {{totalPages}}",
+      "close": "Close",
+      "delete": "Delete",
+      "search_placeholder": "Search movies...",
+      "loading_studios": "Loading studios...",
+      "loading_ratings": "Loading ratings...",
+      "loading_genres": "Loading genres...",
+      "loading_actors": "Loading actors...",
+      "loading_roles": "Loading roles...",
+      "entities": {
+        "studio": "studio",
+        "rating": "rating",
+        "genre": "genre",
+        "actor": "actor",
+        "role": "role"
+      },
+      "tabs": {
+        "all": "All ({{count}})",
+        "now_showing": "Now Showing ({{count}})",
+        "coming_soon": "Coming Soon ({{count}})",
+        "ended": "Ended ({{count}})"
+      },
+      "status": {
+        "now_showing": "Now Showing",
+        "coming_soon": "Coming Soon",
+        "ended": "Ended"
+      },
+      "table": {
+        "index": "No.",
+        "movie_name": "Movie Name",
+        "genre": "Genre",
+        "duration": "Duration",
+        "rating": "Age Rating",
+        "premiere": "Premiere Date",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "details": {
+        "title": "Movie Details",
+        "studio": "Studio"
+      },
+      "validation": {
+        "title_required": "Movie title is required",
+        "studio_name_required": "Studio name is required",
+        "studio_required": "Please select a studio",
+        "rating_required": "Please select a rating"
+      },
+      "form": {
+        "edit_title": "Edit Movie",
+        "create_title": "Add New Movie",
+        "movie_name": "Movie Name",
+        "movie_name_required": "Movie Name *",
+        "original_title": "Original Title",
+        "studio_required": "Production Studio *",
+        "studio_mode_existing": "Select existing studio",
+        "studio_mode_new": "Input new studio",
+        "select_studio_placeholder": "Select Studio",
+        "new_studio_placeholder": "Enter new studio name",
+        "duration_minutes": "Duration (minutes)",
+        "imdb_rating": "IMDb Rating (0.0 - 10.0)",
+        "rating": "Rating",
+        "rating_required": "Rating *",
+        "select_rating_placeholder": "Select Rating",
+        "status": "Status",
+        "genre": "Genre",
+        "description": "Description",
+        "cast_and_roles": "Cast and Roles",
+        "add_actor": "Add Actor",
+        "actor": "Actor",
+        "role": "Role",
+        "select_existing": "Select existing",
+        "input_new": "Input new",
+        "select_actor_placeholder": "Select actor",
+        "new_actor_placeholder": "New actor name",
+        "select_role_placeholder": "Select role",
+        "new_role_placeholder": "New role",
+        "poster_url": "Poster URL",
+        "trailer_url": "Trailer URL",
+        "trailer_url_hint": "Trailer URL (Youtube/Vimeo)",
+        "release_date": "Release Date",
+        "premiere_date": "Premiere Date",
+        "premiere_date_hint": "Premiere Date",
+        "cancel": "Cancel",
+        "save_changes": "Save Changes",
+        "create_movie": "Create Movie"
+      },
+      "exit_confirm": {
+        "title": "You Have Unsaved Changes",
+        "message_before": "You have unfinished changes. Exiting will",
+        "message_highlight": "discard all current inputs",
+        "message_after": "Are you sure you want to exit?",
+        "stay": "Stay Editing",
+        "exit": "Exit"
+      }
+    },
+    "cinema_configuration": {
+      "title": "Cinema Configuration",
+      "add": "Add Cinema",
+      "search_placeholder": "Search cinemas...",
+      "refresh": "Refresh",
+      "loading": "Loading cinema data...",
+      "empty": "No matching cinema data found.",
+      "fetch_error": "Failed to load cinema list",
+      "create_success": "Cinema created successfully",
+      "update_success": "Cinema updated successfully",
+      "delete_success": "Cinema deleted successfully",
+      "generic_error": "An error occurred",
+      "name_required": "Cinema name is required",
+      "bulk_delete_success": "Deleted {{count}} cinemas successfully",
+      "bulk_delete_partial": "Deleted {{successCount}}/{{count}} cinemas",
+      "total": "Total: {{count}} cinemas",
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page {{page}}",
+      "status": {
+        "active": "Active",
+        "maintenance": "Maintenance",
+        "closed": "Closed"
+      },
+      "table": {
+        "index": "No.",
+        "name": "Cinema Name",
+        "city": "City",
+        "address": "Address",
+        "screens": "Screens",
+        "status": "Status",
+        "updated": "Updated",
+        "actions": "Actions"
+      },
+      "form": {
+        "edit_title": "Edit Cinema",
+        "create_title": "Add New Cinema",
+        "name": "Cinema Name *",
+        "city": "City",
+        "ward": "Ward",
+        "status": "Status",
+        "address": "Address",
+        "phone": "Phone",
+        "city_placeholder": "Select or search city",
+        "ward_placeholder": "Select or search ward",
+        "ward_placeholder_disabled": "Please select city first",
+        "cancel": "Cancel",
+        "save": "Save",
+        "create": "Create"
+      },
+      "delete_confirm": {
+        "single_title": "Confirm delete",
+        "single_message": "Are you sure you want to delete this cinema? This action cannot be undone.",
+        "bulk_title": "Confirm delete",
+        "bulk_message": "Are you sure you want to delete {{count}} selected cinemas? This action cannot be undone.",
+        "confirm": "Confirm delete",
+        "cancel": "Cancel",
+        "ok": "Delete"
+      },
+      "filter": {
+        "keyword": "Search cinema",
+        "status": "Status",
+        "region": "Region"
+      }
+    },
+    "executive_dashboard": {
+      "title": "Executive Dashboard",
+      "export_report": "Export Report",
+      "summary_title": "Operations Overview",
+      "search_placeholder": "Enter search",
+      "time_range_placeholder": "Select time range",
+      "period": {
+        "today": "Today",
+        "week": "This Week",
+        "month": "This Month",
+        "quarter": "This Quarter"
+      },
+      "tabs": {
+        "overview": "Overview",
+        "detail": "Details"
+      },
+      "table": {
+        "index": "No.",
+        "metric": "Metric",
+        "current_value": "Current Value",
+        "change": "Change",
+        "trend": "Trend"
+      },
+      "empty_title": "No synchronized data available",
+      "empty_description": "Operational metrics will be updated automatically after cinemas officially operate in the selected time range.",
+      "detail_title": "Detailed information is being prepared",
+      "detail_description": "Please come back after system data cleanup is completed."
+    },
+    "seat_type": {
+      "title": "Seat Type Configuration",
+      "add": "Add Seat Type",
+      "search_placeholder": "Search seat types...",
+      "refresh": "Refresh",
+      "loading": "Loading seat type data...",
+      "empty": "No seat type data.",
+      "fetch_error": "Failed to load seat type list",
+      "create_success": "Seat type created successfully",
+      "update_success": "Seat type updated successfully",
+      "delete_success": "Seat type deleted successfully",
+      "generic_error": "An error occurred",
+      "validation": {
+        "name_required": "Seat type name is required",
+        "price_min": "Price multiplier must be greater than or equal to 0.5",
+        "seat_min": "Number of seats must be greater than or equal to 1",
+        "direction_invalid": "Display direction must be Horizontal or Vertical"
+      },
+      "bulk_delete_success": "Deleted {{count}} seat types successfully",
+      "bulk_delete_partial": "Deleted {{successCount}}/{{count}} seat types",
+      "table": {
+        "name": "Seat Type Name",
+        "description": "Description",
+        "number_of_seat": "Number of Seats",
+        "price_multiplier": "Price Multiplier",
+        "actions": "Actions"
+      },
+      "form": {
+        "edit_title": "Edit Seat Type",
+        "create_title": "Add New Seat Type",
+        "name": "Seat Type Name *",
+        "price_multiplier": "Price Multiplier (e.g. 1.5) *",
+        "number_of_seat": "Number of Seats *",
+        "display_direction": "Display Direction *",
+        "description": "Description",
+        "horizontal": "Horizontal",
+        "vertical": "Vertical",
+        "cancel": "Cancel",
+        "save": "Save",
+        "create": "Create"
+      },
+      "delete_confirm": {
+        "title": "Confirm delete",
+        "message": "Are you sure you want to delete {{count}} selected seat types? This action cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Confirm delete"
+      }
+    },
+    "customer_management": {
+      "title": "Customer Management",
+      "subtitle": "Manage member list and account status.",
+      "search_placeholder": "Search by name, email, phone...",
+      "refresh": "Refresh",
+      "fetch_error": "Failed to load customer list",
+      "loading": "Loading data...",
+      "empty": "No customers found.",
+      "member_fallback": "Member",
+      "status": {
+        "locked": "Locked",
+        "active": "Active"
+      },
+      "action_success": {
+        "lock": "Customer account locked",
+        "unlock": "Customer account unlocked",
+        "delete": "Customer account deleted"
+      },
+      "table": {
+        "customer": "Customer",
+        "contact": "Contact",
+        "birthday": "Date of Birth",
+        "gender": "Gender",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "confirm": {
+        "title_lock": "Confirm lock",
+        "title_unlock": "Confirm unlock",
+        "title_delete": "Confirm delete",
+        "message_lock": "Are you sure you want to lock customer {{name}}?",
+        "message_unlock": "Are you sure you want to unlock customer {{name}}?",
+        "message_delete": "Are you sure you want to permanently delete customer {{name}}?",
+        "cancel": "Cancel",
+        "confirm": "Confirm"
+      }
     }
   },
   "customer": {
@@ -82,6 +586,68 @@
       "coming_soon": "COMING SOON",
       "special_screening": "SPECIAL SCREENING",
       "view_details": "VIEW DETAILS"
+    },
+    "my_ltc": {
+      "title": "My LTC",
+      "nav": {
+        "dashboard": "Dashboard",
+        "account_details": "Account Details",
+        "membership_card": "Membership Card",
+        "points": "Points",
+        "vouchers": "Voucher & Giftcode",
+        "transaction_history": "Transaction History"
+      },
+      "dashboard": {
+        "general_information": "General Information",
+        "hello": "Hello {{name}},",
+        "manage_subtitle": "Manage all of your account information.",
+        "edit": "Edit",
+        "view": "View",
+        "membership_tier": "Membership Tier",
+        "total_spent": "Total Spent",
+        "points": "LTC Points",
+        "voucher": "Voucher"
+      },
+      "account_details": {
+        "title": "Account Details",
+        "edit": "Edit",
+        "cancel_text": "Cancel",
+        "cancel": "Cancel",
+        "save": "Save Changes",
+        "loading": "Loading account details...",
+        "not_updated": "Not updated",
+        "success": "Profile updated successfully.",
+        "fetch_error": "Unable to load account details.",
+        "update_error": "Update failed, please try again.",
+        "fields": {
+          "name": "Full Name",
+          "phone": "Phone Number",
+          "gender": "Gender",
+          "dob": "Date of Birth",
+          "email": "Email",
+          "address": "Address",
+          "member_code": "Member Code"
+        },
+        "placeholders": {
+          "name": "Enter your full name",
+          "phone": "Enter your phone number",
+          "email": "example@email.com",
+          "gender": "Select gender",
+          "dob": "DD/MM/YYYY",
+          "address": "Enter street, district, city..."
+        },
+        "gender_options": {
+          "male": "Male",
+          "female": "Female",
+          "other": "Other"
+        },
+        "validation": {
+          "name_required": "Please enter your full name",
+          "phone_required": "Please enter your phone number",
+          "email_required": "Please enter your email",
+          "email_invalid": "Invalid email"
+        }
+      }
     }
   },
   "NewsAndOffers": "News and Offers",

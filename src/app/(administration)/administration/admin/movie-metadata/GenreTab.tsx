@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, Tag, RefreshCw } from "lucide-react";
+import { Popconfirm } from "antd";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import {
@@ -17,6 +18,7 @@ import { GenreOutputDto } from "@/src/services/administration-service/movie/genr
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { toast } from "sonner";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 let genreItemsCache: GenreOutputDto[] | null = null;
 let genreItemsRequest: Promise<GenreOutputDto[]> | null = null;
@@ -39,6 +41,7 @@ const loadGenreItems = async () => {
 };
 
 export default function GenreTab() {
+    const { t } = useLocalization();
     const [items, setItems] = useState<GenreOutputDto[]>([]);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editing, setEditing] = useState<GenreOutputDto | null>(null);
@@ -51,36 +54,36 @@ export default function GenreTab() {
             genreItemsCache = nextItems;
             setItems(nextItems);
         },
-        onError: (err) => toast.error(err.message || "Lỗi tải danh sách thể loại")
+        onError: (err) => toast.error(err.message || t("admin.movie_metadata.genres.fetch_error"))
     });
 
     const createMutation = useLTTMutation<GenreOutputDto, { name: string }>({
         mutationFn: (body) => movieService.createGenreAsync(body),
         onSuccess: () => {
-            toast.success("Thêm thành công");
+            toast.success(t("admin.movie_metadata.common.add_success"));
             setDialogOpen(false);
             listMutation.mutation();
         },
-        onError: (err) => toast.error(err.message || "Lỗi khi thêm")
+        onError: (err) => toast.error(err.message || t("admin.movie_metadata.common.add_error"))
     });
 
     const updateMutation = useLTTMutation<GenreOutputDto, { id: string, name: string }>({
         mutationFn: (input) => movieService.updateGenreAsync(input.id, { name: input.name }),
         onSuccess: () => {
-            toast.success("Cập nhật thành công");
+            toast.success(t("admin.movie_metadata.common.update_success"));
             setDialogOpen(false);
             listMutation.mutation();
         },
-        onError: (err) => toast.error(err.message || "Lỗi khi cập nhật")
+        onError: (err) => toast.error(err.message || t("admin.movie_metadata.common.update_error"))
     });
 
     const deleteMutation = useLTTMutation<void, string>({
         mutationFn: (id) => movieService.deleteGenreAsync(id),
         onSuccess: () => {
-            toast.success("Đã xóa");
+            toast.success(t("admin.movie_metadata.common.delete_success"));
             listMutation.mutation();
         },
-        onError: (err) => toast.error(err.message || "Lỗi khi xóa")
+        onError: (err) => toast.error(err.message || t("admin.movie_metadata.common.delete_error"))
     });
 
     useEffect(() => {
@@ -100,7 +103,7 @@ export default function GenreTab() {
     const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || deleteMutation.isLoading;
 
     const handleSave = () => {
-        if (!name.trim()) return toast.error("Vui lòng nhập tên");
+        if (!name.trim()) return toast.error(t("admin.movie_metadata.common.name_required"));
         if (editing) {
             updateMutation.mutation({ id: editing.id, name });
         } else {
@@ -124,10 +127,10 @@ export default function GenreTab() {
         <div className="space-y-4">
             <div className="flex justify-end gap-2">
                 <LTTButton variant="outline" className="gap-2" onClick={() => listMutation.mutation()} loading={listMutation.isLoading}>
-                    <RefreshCw className="h-4 w-4" /> Làm mới
+                    <RefreshCw className="h-4 w-4" /> {t("admin.movie_metadata.common.refresh")}
                 </LTTButton>
                 <LTTButton className="gap-2" onClick={openCreate}>
-                    <Plus className="h-4 w-4" /> Thêm thể loại
+                    <Plus className="h-4 w-4" /> {t("admin.movie_metadata.genres.add")}
                 </LTTButton>
             </div>
 
@@ -135,21 +138,21 @@ export default function GenreTab() {
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
-                            <th className="px-4 py-3 text-left font-semibold">Tên thể loại</th>
-                            <th className="px-4 py-3 text-right font-semibold">Thao tác</th>
+                            <th className="px-4 py-3 text-left font-semibold">{t("admin.movie_metadata.genres.name")}</th>
+                            <th className="px-4 py-3 text-right font-semibold">{t("admin.movie_metadata.common.actions")}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
                             <tr>
                                 <td colSpan={2} className="py-12 text-center text-muted-foreground-shadcn">
-                                    Đang tải dữ liệu thể loại...
+                                    {t("admin.movie_metadata.genres.loading")}
                                 </td>
                             </tr>
                         ) : items.length === 0 ? (
                             <tr>
                                 <td colSpan={2} className="py-12 text-center text-muted-foreground-shadcn">
-                                    Không có dữ liệu thể loại.
+                                    {t("admin.movie_metadata.genres.empty")}
                                 </td>
                             </tr>
                         ) : (
@@ -164,9 +167,17 @@ export default function GenreTab() {
                                             <LTTButton variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
                                                 <Pencil className="h-4 w-4" />
                                             </LTTButton>
-                                            <LTTButton variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteMutation.mutation(item.id)}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </LTTButton>
+                                            <Popconfirm
+                                                title={t("admin.common.delete_confirm.title")}
+                                                description={t("admin.common.delete_confirm.message")}
+                                                okText={t("admin.common.delete_confirm.ok")}
+                                                cancelText={t("admin.common.delete_confirm.cancel")}
+                                                onConfirm={() => deleteMutation.mutation(item.id)}
+                                            >
+                                                <LTTButton variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                                                    <Trash2 className="h-4 w-4" />
+                                                </LTTButton>
+                                            </Popconfirm>
                                         </div>
                                     </td>
                                 </tr>
@@ -179,16 +190,16 @@ export default function GenreTab() {
             <LTTDialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <LTTDialogContent>
                     <LTTDialogHeader>
-                        <LTTDialogTitle>{editing ? "Sửa thể loại" : "Thêm thể loại mới"}</LTTDialogTitle>
+                        <LTTDialogTitle>{editing ? t("admin.movie_metadata.genres.edit_title") : t("admin.movie_metadata.genres.create_title")}</LTTDialogTitle>
                     </LTTDialogHeader>
                     <div className="py-4 space-y-2">
-                        <LTTLabel htmlFor="name">Tên thể loại *</LTTLabel>
+                        <LTTLabel htmlFor="name">{t("admin.movie_metadata.genres.name_label")}</LTTLabel>
                         <LTTInput id="name" value={name} onChange={e => setName(e.target.value)} />
                     </div>
                     <LTTDialogFooter>
-                        <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>Hủy</LTTButton>
+                        <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>{t("admin.movie_metadata.common.cancel")}</LTTButton>
                         <LTTButton onClick={handleSave} loading={createMutation.isLoading || updateMutation.isLoading}>
-                            {editing ? "Lưu" : "Tạo mới"}
+                            {editing ? t("admin.movie_metadata.common.save") : t("admin.movie_metadata.common.create")}
                         </LTTButton>
                     </LTTDialogFooter>
                 </LTTDialogContent>

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import LTTMovieCard from "@/src/@core/component/LTTMovieCard";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 
-// Placeholder data — will be replaced by BE service fetch (input.model / output.model)
+// Placeholder data — will be replaced by BE service fetch (input.models / output.models)
 const movies = [
     {
         title: "Stray Kids: dominATE",

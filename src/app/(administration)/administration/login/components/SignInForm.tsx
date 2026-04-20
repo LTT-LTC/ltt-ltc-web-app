@@ -25,6 +25,7 @@ import {
     getOrCreateTenantOnClient,
     syncTenantCookieFromLocalStorage,
 } from "@/src/@core/utils/tenant";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 interface LoginValidationError {
     members?: string[];
@@ -37,17 +38,20 @@ interface LoginBackendError {
 }
 
 interface LoginErrorShape {
+    message?: string;
     response?: {
         data?: {
             error?: LoginBackendError;
         };
     };
+    validationErrors?: LoginValidationError[];
     error?: LoginBackendError;
 }
 
 
 
 const FormDetail = () => {
+    const { t } = useLocalization();
     const [showPassword, setShowPassword] = useState(false);
     const [form] = Form.useForm();
     const [isRedirecting, setIsRedirecting] = useState(false);
@@ -83,11 +87,11 @@ const FormDetail = () => {
                 if (!role) {
                     removeCookie(ACCESS_TOKEN_KEY);
                     removeCookie(REFRESH_TOKEN_KEY);
-                    showNotificationError("Tài khoản không có quyền truy cập trang quản trị.");
+                    showNotificationError(t("admin.auth.login.errors.no_admin_access", "This account does not have access to the administration portal."));
                     return;
                 }
 
-                showNotificationSuccess("Đăng nhập thành công.");
+                showNotificationSuccess(t("admin.auth.login.messages.login_success", "Login successful."));
                 setCookie(ACCESS_TOKEN_KEY, res.accessToken);
                 setCookie(REFRESH_TOKEN_KEY, res.refreshToken);
                 setIsRedirecting(true);
@@ -97,25 +101,27 @@ const FormDetail = () => {
             }
         },
         onError: (err: unknown) => {
-            // Handle error from backend
             const error = err as LoginErrorShape;
-            const backendError = error.response?.data?.error || error.error;
-            if (backendError && backendError.validationErrors && backendError.validationErrors.length > 0) {
-                const validationErrors = backendError.validationErrors;
+            const validationErrors = error.validationErrors || error.error?.validationErrors || error.response?.data?.error?.validationErrors;
+            const backendErrorMessage =
+                error.message ||
+                error.error?.message ||
+                error.response?.data?.error?.message;
+
+            if (validationErrors && validationErrors.length > 0) {
                 const formErrors = validationErrors.map((errItem: LoginValidationError) => ({
                     name: errItem.members && errItem.members.length > 0 ? errItem.members[0].toLowerCase() : "username",
-                    errors: [errItem.message || "Dữ liệu không hợp lệ"]
+                    errors: [errItem.message || t("admin.auth.login.errors.invalid_data", "Invalid data")]
                 }));
                 form.setFields(formErrors);
-            } else if (backendError && backendError.message) {
-                // Return generic/push notification error for backend error
-                showNotificationError(backendError.message);
+            } else if (backendErrorMessage) {
+                showNotificationError(backendErrorMessage);
                 form.setFields([
                     { name: "username", errors: [] },
                     { name: "password", errors: [] }
                 ]);
             } else {
-                showNotificationError("Có lỗi xảy ra, vui lòng thử lại sau.");
+                showNotificationError(t("admin.auth.login.errors.generic", "An error occurred, please try again later."));
                 form.setFields([
                     { name: "username", errors: [] },
                     { name: "password", errors: [] }

@@ -8,6 +8,7 @@ import { seatTypeService } from "./seat-type/seat-type.service";
 import { cinemaAmenityService } from "./cinema-amenity/cinema-amenity.service";
 import { amenityTypeService } from "./amenity-type/amenity-type.service";
 import { movieService } from "./movie/movie.service";
+import { customerService } from "./customer/customer.service";
 
 export const rootPath: string = get.rootPath("/administration-service");
 
@@ -21,4 +22,5 @@ export const administrationService = {
     cinemaAmenityService: cinemaAmenityService,
     amenityTypeService: amenityTypeService,
     movieService: movieService,
+    customerService: customerService,
 };

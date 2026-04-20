@@ -8,6 +8,7 @@ import LTTButton from "@/src/@core/component/AntD/LTTButton";
 import LTTForm from "@/src/@core/component/AntD/LTTForm";
 import LTTFormItem from "@/src/@core/component/AntD/LTTFormItem";
 import LTTTooltip from "@/src/@core/component/AntD/LTTToolTip";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 interface ResetFormStepProps {
     form: FormInstance;
@@ -15,26 +16,28 @@ interface ResetFormStepProps {
     loading?: boolean;
 }
 
-const passwordRequirements = (
-    <div className="text-xs">
-        <div className="mb-1 font-semibold">Mật khẩu mới phải có từ 8 đến 32 ký tự.</div>
-        <ul className="list-disc pl-4 m-0 space-y-0.5">
-            <li>1 ký tự viết hoa (A-Z).</li>
-            <li>1 ký tự số (0-9).</li>
-            <li>1 ký tự đặc biệt (ví dụ: !, @, #, $, %, etc.).</li>
-        </ul>
-    </div>
-);
-
 export default function ResetPasswordForm({ form, onFinish, loading }: ResetFormStepProps) {
+    const { t } = useLocalization();
+
+    const passwordRequirements = (
+        <div className="text-xs">
+            <div className="mb-1 font-semibold">{t("admin.auth.reset_password.requirements.intro", "The new password must contain from 8 to 32 characters.")}</div>
+            <ul className="list-disc pl-4 m-0 space-y-0.5">
+                <li>{t("admin.auth.reset_password.requirements.uppercase", "1 uppercase letter (A-Z).")}</li>
+                <li>{t("admin.auth.reset_password.requirements.number", "1 number (0-9).")}</li>
+                <li>{t("admin.auth.reset_password.requirements.special", "1 special character (for example: !, @, #, $, %, etc.).")}</li>
+            </ul>
+        </div>
+    );
+
     return (
         <div className="animate-fade-in">
             <div className="mb-8 font-sans">
                 <h1 className="text-3xl font-bold text-gray-900 mb-3 tracking-tight">
-                    Khôi phục mật khẩu
+                    {t("admin.auth.reset_password.form_title", "Reset password")}
                 </h1>
                 <p className="text-gray-500 text-base leading-relaxed">
-                    Nhập mật khẩu mới của bạn và xác minh để tài khoản của bạn có thể được sử dụng.
+                    {t("admin.auth.reset_password.form_subtitle", "Enter and confirm your new password so your account can be used again.")}
                 </p>
             </div>
 
@@ -43,17 +46,17 @@ export default function ResetPasswordForm({ form, onFinish, loading }: ResetForm
                     name="newPassword"
                     className="mb-4"
                     rules={[
-                        { required: true, message: "Vui lòng nhập mật khẩu mới" },
-                        { min: 8, message: "Mật khẩu quá ngắn" },
-                        { max: 32, message: "Mật khẩu quá dài" },
+                        { required: true, message: t("admin.auth.reset_password.validation.new_password_required", "Please enter a new password") },
+                        { min: 8, message: t("admin.auth.reset_password.validation.new_password_too_short", "Password is too short") },
+                        { max: 32, message: t("admin.auth.reset_password.validation.new_password_too_long", "Password is too long") },
                         {
                             pattern: /^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).*$/,
-                            message: "Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 số và 1 ký tự đặc biệt",
+                            message: t("admin.auth.reset_password.validation.new_password_invalid", "Password must include at least 1 uppercase letter, 1 number, and 1 special character"),
                         },
                     ]}
                 >
                     <Input.Password
-                        placeholder="Nhập mật khẩu mới"
+                        placeholder={t("admin.auth.reset_password.new_password_placeholder", "Enter new password")}
                         size="large"
                         className="py-3 rounded-xl"
                         maxLength={32}
@@ -77,19 +80,19 @@ export default function ResetPasswordForm({ form, onFinish, loading }: ResetForm
                     dependencies={["newPassword"]}
                     className="mb-8"
                     rules={[
-                        { required: true, message: "Vui lòng nhập lại mật khẩu" },
+                        { required: true, message: t("admin.auth.reset_password.validation.confirm_password_required", "Please confirm your password") },
                         ({ getFieldValue }) => ({
                             validator(_, value) {
                                 if (!value || getFieldValue("newPassword") === value) {
                                     return Promise.resolve();
                                 }
-                                return Promise.reject(new Error("Mật khẩu không khớp!"));
+                                return Promise.reject(new Error(t("admin.auth.reset_password.validation.confirm_password_mismatch", "Passwords do not match")));
                             },
                         }),
                     ]}
                 >
                     <Input.Password
-                        placeholder="Nhập lại mật khẩu mới"
+                        placeholder={t("admin.auth.reset_password.confirm_password_placeholder", "Confirm new password")}
                         size="large"
                         className="py-3 rounded-xl"
                         maxLength={32}
@@ -104,7 +107,7 @@ export default function ResetPasswordForm({ form, onFinish, loading }: ResetForm
                     className="w-full bg-gray-200 text-gray-500 hover:bg-brand-500 hover:text-white
                           border-none font-semibold text-base py-6 rounded-xl transition-all"
                 >
-                    Khôi phục mật khẩu
+                    {t("admin.auth.reset_password.submit", "Reset password")}
                 </LTTButton>
             </LTTForm>
         </div>

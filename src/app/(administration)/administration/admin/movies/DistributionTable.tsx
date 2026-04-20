@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Plus, Pencil, Trash2, Calendar, ShieldCheck, RefreshCw, Inbox } from "lucide-react";
+import { Popconfirm } from "antd";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import {
@@ -30,8 +31,10 @@ import {
     CreateDistributionInputDto,
     UpdateDistributionInputDto,
 } from "@/src/services/administration-service/movie/models/input.model";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 export default function DistributionTable() {
+    const { t, currentLanguage } = useLocalization();
     const [items, setItems] = useState<MovieDistributionOutputDto[]>([]);
     const [movies, setMovies] = useState<MovieOutputDto[]>([]);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -68,7 +71,9 @@ export default function DistributionTable() {
             }
         },
         onError: (err) => {
-            const errorMsg = typeof err?.message === "string" && err.message.trim() ? err.message : "Lỗi tải danh sách phân phối";
+            const errorMsg = typeof err?.message === "string" && err.message.trim()
+                ? err.message
+                : t("admin.movies.distribution.fetch_distribution_error");
             setError(errorMsg);
             toast.error(errorMsg);
         }
@@ -82,36 +87,36 @@ export default function DistributionTable() {
                 setMoviesLoaded(true);
             }
         },
-        onError: (err) => toast.error(err.message || "Lỗi tải danh sách phim")
+        onError: (err) => toast.error(err.message || t("admin.movies.distribution.fetch_movie_error"))
     });
 
     const createMutation = useLTTMutation<MovieDistributionOutputDto, CreateDistributionInputDto>({
         mutationFn: (body) => movieService.createDistributionAsync(body),
         onSuccess: () => {
-            toast.success("Đã thêm bản ghi phân phối");
+            toast.success(t("admin.movies.distribution.create_success"));
             setDialogOpen(false);
             listMutation.mutation();
         },
-        onError: (err) => toast.error(err.message || "Lỗi khi thêm")
+        onError: (err) => toast.error(err.message || t("admin.movies.distribution.create_error"))
     });
 
     const updateMutation = useLTTMutation<MovieDistributionOutputDto, { id: string, body: UpdateDistributionInputDto }>({
         mutationFn: (input) => movieService.updateDistributionAsync(input.id, input.body),
         onSuccess: () => {
-            toast.success("Cập nhật thành công");
+            toast.success(t("admin.movies.distribution.update_success"));
             setDialogOpen(false);
             listMutation.mutation();
         },
-        onError: (err) => toast.error(err.message || "Lỗi khi cập nhật")
+        onError: (err) => toast.error(err.message || t("admin.movies.distribution.update_error"))
     });
 
     const deleteMutation = useLTTMutation<void, string>({
         mutationFn: (id) => movieService.deleteDistributionAsync(id),
         onSuccess: () => {
-            toast.success("Đã xóa");
+            toast.success(t("admin.movies.distribution.delete_success"));
             listMutation.mutation();
         },
-        onError: (err) => toast.error(err.message || "Lỗi khi xóa")
+        onError: (err) => toast.error(err.message || t("admin.movies.distribution.delete_error"))
     });
 
     useEffect(() => {
@@ -119,7 +124,7 @@ export default function DistributionTable() {
     }, [page, fetch]);
 
     const handleSave = () => {
-        if (!form.movieId) return toast.error("Vui lòng chọn phim");
+        if (!form.movieId) return toast.error(t("admin.movies.distribution.select_movie_required"));
         const payload = normalizeDistributionPayload();
 
         if (editing) {
@@ -166,15 +171,16 @@ export default function DistributionTable() {
     }, [dialogOpen, editing, form.movieId, movies]);
 
     const totalPages = Math.max(1, Math.ceil((totalCount || items.length) / fetch));
+    const dateLocale = currentLanguage === "en" ? "en-US" : "vi-VN";
 
     return (
         <div className="space-y-4">
             <div className="flex justify-end gap-2">
                 <LTTButton variant="outline" className="gap-2" onClick={fetchData} loading={listMutation.isLoading}>
-                    <RefreshCw className="h-4 w-4" /> Làm mới
+                    <RefreshCw className="h-4 w-4" /> {t("admin.movies.distribution.refresh")}
                 </LTTButton>
                 <LTTButton className="gap-2" onClick={openCreate}>
-                    <Plus className="h-4 w-4" /> Thêm giấy phép phân phối
+                    <Plus className="h-4 w-4" /> {t("admin.movies.distribution.add")}
                 </LTTButton>
             </div>
 
@@ -182,11 +188,11 @@ export default function DistributionTable() {
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
-                            <th className="px-4 py-3 text-left font-semibold">Tên Phim</th>
-                            <th className="px-4 py-3 text-left font-semibold">Ngày bắt đầu</th>
-                            <th className="px-4 py-3 text-left font-semibold">Ngày kết thúc</th>
-                            <th className="px-4 py-3 text-left font-semibold">Độc quyền</th>
-                            <th className="px-4 py-3 text-right font-semibold">Thao tác</th>
+                            <th className="px-4 py-3 text-left font-semibold">{t("admin.movies.distribution.movie_name")}</th>
+                            <th className="px-4 py-3 text-left font-semibold">{t("admin.movies.distribution.start_date")}</th>
+                            <th className="px-4 py-3 text-left font-semibold">{t("admin.movies.distribution.end_date")}</th>
+                            <th className="px-4 py-3 text-left font-semibold">{t("admin.movies.distribution.exclusive")}</th>
+                            <th className="px-4 py-3 text-right font-semibold">{t("admin.movies.distribution.actions")}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -201,7 +207,7 @@ export default function DistributionTable() {
                                             loading={listMutation.isLoading}
                                             className="mx-auto"
                                         >
-                                            Thử lại
+                                            {t("admin.movies.distribution.retry")}
                                         </LTTButton>
                                     </div>
                                 </td>
@@ -209,7 +215,7 @@ export default function DistributionTable() {
                         ) : items.length === 0 ? (
                             <tr>
                                 <td colSpan={5} className="py-12 text-center text-muted-foreground-shadcn">
-                                    {listMutation.isLoading ? "Đang tải dữ liệu..." : "Chưa có bản ghi phân phối nào."}
+                                    {listMutation.isLoading ? t("admin.movies.distribution.loading") : t("admin.movies.distribution.empty")}
                                 </td>
                             </tr>
                         ) : (
@@ -217,16 +223,16 @@ export default function DistributionTable() {
                                 <tr key={item.id} className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors">
                                     <td className="px-4 py-3 font-medium">{item.movieTitle}</td>
                                     <td className="px-4 py-3 text-xs">
-                                        {item.licenseStartDate ? new Date(item.licenseStartDate).toLocaleDateString("vi-VN") : "---"}
+                                        {item.licenseStartDate ? new Date(item.licenseStartDate).toLocaleDateString(dateLocale) : "---"}
                                     </td>
                                     <td className="px-4 py-3 text-xs">
-                                        {item.licenseEndDate ? new Date(item.licenseEndDate).toLocaleDateString("vi-VN") : "---"}
+                                        {item.licenseEndDate ? new Date(item.licenseEndDate).toLocaleDateString(dateLocale) : "---"}
                                     </td>
                                     <td className="px-4 py-3">
                                         {item.isExclusive ? (
-                                            <LTTBadge className="bg-yellow-100 text-yellow-800 border-yellow-200">Độc quyền</LTTBadge>
+                                            <LTTBadge className="bg-yellow-100 text-yellow-800 border-yellow-200">{t("admin.movies.distribution.exclusive_badge")}</LTTBadge>
                                         ) : (
-                                            <LTTBadge variant="outline">Phổ thông</LTTBadge>
+                                            <LTTBadge variant="outline">{t("admin.movies.distribution.standard_badge")}</LTTBadge>
                                         )}
                                     </td>
                                     <td className="px-4 py-3 text-right">
@@ -234,9 +240,17 @@ export default function DistributionTable() {
                                             <LTTButton variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
                                                 <Pencil className="h-4 w-4" />
                                             </LTTButton>
-                                            <LTTButton variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteMutation.mutation(item.id)}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </LTTButton>
+                                            <Popconfirm
+                                                title={t("admin.common.delete_confirm.title")}
+                                                description={t("admin.common.delete_confirm.message")}
+                                                okText={t("admin.common.delete_confirm.ok")}
+                                                cancelText={t("admin.common.delete_confirm.cancel")}
+                                                onConfirm={() => deleteMutation.mutation(item.id)}
+                                            >
+                                                <LTTButton variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                                                    <Trash2 className="h-4 w-4" />
+                                                </LTTButton>
+                                            </Popconfirm>
                                         </div>
                                     </td>
                                 </tr>
@@ -248,7 +262,7 @@ export default function DistributionTable() {
 
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border-shadcn bg-card px-4 py-3">
                 <div className="text-sm text-muted-foreground-shadcn">
-                    Tổng: {totalCount || items.length} bản ghi
+                    {t("admin.movies.distribution.total_records", { count: totalCount || items.length })}
                 </div>
                 <div className="flex items-center gap-2">
                     <LTTSelect value={String(fetch)} onValueChange={(value) => {
@@ -269,15 +283,15 @@ export default function DistributionTable() {
                         onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
                         disabled={page === 1 || listMutation.isLoading}
                     >
-                        Trước
+                        {t("admin.movies.distribution.previous")}
                     </LTTButton>
-                    <span className="text-sm">Trang {page} / {totalPages}</span>
+                    <span className="text-sm">{t("admin.movies.distribution.page", { page, totalPages })}</span>
                     <LTTButton
                         variant="outline"
                         onClick={() => setPage((currentPage) => currentPage + 1)}
                         disabled={page >= totalPages || listMutation.isLoading}
                     >
-                        Sau
+                        {t("admin.movies.distribution.next")}
                     </LTTButton>
                 </div>
             </div>
@@ -285,12 +299,12 @@ export default function DistributionTable() {
             <LTTDialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <LTTDialogContent className="sm:max-w-md">
                     <LTTDialogHeader>
-                        <LTTDialogTitle>{editing ? "Sửa giấy phép" : "Thêm giấy phép mới"}</LTTDialogTitle>
+                        <LTTDialogTitle>{editing ? t("admin.movies.distribution.edit_title") : t("admin.movies.distribution.create_title")}</LTTDialogTitle>
                     </LTTDialogHeader>
                     <div className="py-4 space-y-4">
                         <div className="space-y-2">
                             <div className="flex items-center justify-between gap-2">
-                                <LTTLabel>Chọn phim *</LTTLabel>
+                                <LTTLabel>{t("admin.movies.distribution.movie_label")}</LTTLabel>
                                 <LTTButton
                                     type="button"
                                     size="sm"
@@ -300,7 +314,7 @@ export default function DistributionTable() {
                                     loading={moviesMutation.isLoading}
                                     disabled={!!editing}
                                 >
-                                    <RefreshCw className="h-3.5 w-3.5" /> Tải danh sách phim
+                                    <RefreshCw className="h-3.5 w-3.5" /> {t("admin.movies.distribution.load_movie_list")}
                                 </LTTButton>
                             </div>
                             <LTTSelect
@@ -309,15 +323,15 @@ export default function DistributionTable() {
                                 disabled={!!editing}
                             >
                                 <LTTSelectTrigger>
-                                    <LTTSelectValue placeholder="Chọn phim từ danh sách" />
+                                    <LTTSelectValue placeholder={t("admin.movies.distribution.movie_placeholder")} />
                                 </LTTSelectTrigger>
                                 <LTTSelectContent>
                                     {moviesMutation.isLoading ? (
-                                        <div className="px-3 py-2 text-xs text-muted-foreground-shadcn">Đang tải danh sách phim...</div>
+                                        <div className="px-3 py-2 text-xs text-muted-foreground-shadcn">{t("admin.movies.distribution.movie_loading")}</div>
                                     ) : movies.length === 0 ? (
                                         <div className="px-3 py-6 flex flex-col items-center justify-center text-center text-muted-foreground-shadcn gap-2">
                                             <Inbox className="h-5 w-5" />
-                                            <span className="text-xs">Trống phim</span>
+                                            <span className="text-xs">{t("admin.movies.distribution.movie_empty")}</span>
                                         </div>
                                     ) : (
                                         movies.map((m) => (
@@ -329,11 +343,11 @@ export default function DistributionTable() {
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <LTTLabel>Ngày bắt đầu</LTTLabel>
+                                <LTTLabel>{t("admin.movies.distribution.license_start_date")}</LTTLabel>
                                 <LTTInput type="date" value={form.licenseStartDate} onChange={e => setForm({ ...form, licenseStartDate: e.target.value })} />
                             </div>
                             <div className="space-y-2">
-                                <LTTLabel>Ngày kết thúc</LTTLabel>
+                                <LTTLabel>{t("admin.movies.distribution.license_end_date")}</LTTLabel>
                                 <LTTInput type="date" value={form.licenseEndDate} onChange={e => setForm({ ...form, licenseEndDate: e.target.value })} />
                             </div>
                         </div>
@@ -342,13 +356,13 @@ export default function DistributionTable() {
                                 checked={form.isExclusive}
                                 onChange={(v) => setForm({ ...form, isExclusive: v })}
                             />
-                            <LTTLabel>Phân phối độc quyền</LTTLabel>
+                            <LTTLabel>{t("admin.movies.distribution.exclusive_toggle")}</LTTLabel>
                         </div>
                     </div>
                     <LTTDialogFooter>
-                        <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>Hủy</LTTButton>
+                        <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>{t("admin.movies.distribution.cancel")}</LTTButton>
                         <LTTButton onClick={handleSave} loading={createMutation.isLoading || updateMutation.isLoading}>
-                            {editing ? "Lưu thay đổi" : "Cấp phép"}
+                            {editing ? t("admin.movies.distribution.save") : t("admin.movies.distribution.grant")}
                         </LTTButton>
                     </LTTDialogFooter>
                 </LTTDialogContent>

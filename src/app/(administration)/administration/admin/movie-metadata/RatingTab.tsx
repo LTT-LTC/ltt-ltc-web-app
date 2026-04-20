@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, ShieldCheck, RefreshCw } from "lucide-react";
+import { Popconfirm } from "antd";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import {
@@ -19,6 +20,7 @@ import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 import { CreateRatingInputDto, UpdateRatingInputDto } from "@/src/services/administration-service/movie/models/input.model";
 import { RatingOutputDto } from "@/src/services/administration-service/movie/models/output.model";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 let ratingItemsCache: RatingOutputDto[] | null = null;
 let ratingItemsRequest: Promise<RatingOutputDto[]> | null = null;
@@ -41,6 +43,7 @@ const loadRatingItems = async () => {
 };
 
 export default function RatingTab() {
+    const { t } = useLocalization();
     const [items, setItems] = useState<RatingOutputDto[]>([]);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editing, setEditing] = useState<RatingOutputDto | null>(null);
@@ -53,36 +56,36 @@ export default function RatingTab() {
             ratingItemsCache = nextItems;
             setItems(nextItems);
         },
-        onError: (err) => toast.error(err.message || "Lỗi tải danh sách phân loại tuổi")
+        onError: (err) => toast.error(err.message || t("admin.movie_metadata.ratings.fetch_error"))
     });
 
     const createMutation = useLTTMutation<RatingOutputDto, CreateRatingInputDto>({
         mutationFn: (body) => movieService.createRatingAsync(body),
         onSuccess: () => {
-            toast.success("Thêm thành công");
+            toast.success(t("admin.movie_metadata.common.add_success"));
             setDialogOpen(false);
             listMutation.mutation();
         },
-        onError: (err) => toast.error(err.message || "Lỗi khi thêm")
+        onError: (err) => toast.error(err.message || t("admin.movie_metadata.common.add_error"))
     });
 
     const updateMutation = useLTTMutation<RatingOutputDto, { id: string, body: UpdateRatingInputDto }>({
         mutationFn: (input) => movieService.updateRatingAsync(input.id, input.body),
         onSuccess: () => {
-            toast.success("Cập nhật thành công");
+            toast.success(t("admin.movie_metadata.common.update_success"));
             setDialogOpen(false);
             listMutation.mutation();
         },
-        onError: (err) => toast.error(err.message || "Lỗi khi cập nhật")
+        onError: (err) => toast.error(err.message || t("admin.movie_metadata.common.update_error"))
     });
 
     const deleteMutation = useLTTMutation<void, string>({
         mutationFn: (id) => movieService.deleteRatingAsync(id),
         onSuccess: () => {
-            toast.success("Đã xóa");
+            toast.success(t("admin.movie_metadata.common.delete_success"));
             listMutation.mutation();
         },
-        onError: (err) => toast.error(err.message || "Lỗi khi xóa")
+        onError: (err) => toast.error(err.message || t("admin.movie_metadata.common.delete_error"))
     });
 
     useEffect(() => {
@@ -102,7 +105,7 @@ export default function RatingTab() {
     const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || deleteMutation.isLoading;
 
     const handleSave = () => {
-        if (!form.code.trim() || !form.name.trim()) return toast.error("Vui lòng nhập mã và tên");
+        if (!form.code.trim() || !form.name.trim()) return toast.error(t("admin.movie_metadata.ratings.code_name_required"));
         if (editing) {
             updateMutation.mutation({ id: editing.id, body: { code: form.code, name: form.name, description: form.description } });
         } else {
@@ -126,10 +129,10 @@ export default function RatingTab() {
         <div className="space-y-4">
             <div className="flex justify-end gap-2">
                 <LTTButton variant="outline" className="gap-2" onClick={() => listMutation.mutation()} loading={listMutation.isLoading}>
-                    <RefreshCw className="h-4 w-4" /> Làm mới
+                    <RefreshCw className="h-4 w-4" /> {t("admin.movie_metadata.common.refresh")}
                 </LTTButton>
                 <LTTButton className="gap-2" onClick={openCreate}>
-                    <Plus className="h-4 w-4" /> Thêm phân loại
+                    <Plus className="h-4 w-4" /> {t("admin.movie_metadata.ratings.add")}
                 </LTTButton>
             </div>
 
@@ -137,23 +140,23 @@ export default function RatingTab() {
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
-                            <th className="px-4 py-3 text-left font-semibold w-24">Mã</th>
-                            <th className="px-4 py-3 text-left font-semibold">Tên phân loại (P, T13, T16, T18...)</th>
-                            <th className="px-4 py-3 text-left font-semibold">Mô tả</th>
-                            <th className="px-4 py-3 text-right font-semibold">Thao tác</th>
+                            <th className="px-4 py-3 text-left font-semibold w-24">{t("admin.movie_metadata.ratings.code")}</th>
+                            <th className="px-4 py-3 text-left font-semibold">{t("admin.movie_metadata.ratings.name")}</th>
+                            <th className="px-4 py-3 text-left font-semibold">{t("admin.movie_metadata.ratings.description")}</th>
+                            <th className="px-4 py-3 text-right font-semibold">{t("admin.movie_metadata.common.actions")}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
                             <tr>
                                 <td colSpan={4} className="py-12 text-center text-muted-foreground-shadcn">
-                                    Đang tải dữ liệu phân loại tuổi...
+                                    {t("admin.movie_metadata.ratings.loading")}
                                 </td>
                             </tr>
                         ) : items.length === 0 ? (
                             <tr>
                                 <td colSpan={4} className="py-12 text-center text-muted-foreground-shadcn">
-                                    Không có dữ liệu phân loại.
+                                    {t("admin.movie_metadata.ratings.empty")}
                                 </td>
                             </tr>
                         ) : (
@@ -172,9 +175,17 @@ export default function RatingTab() {
                                             <LTTButton variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
                                                 <Pencil className="h-4 w-4" />
                                             </LTTButton>
-                                            <LTTButton variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteMutation.mutation(item.id)}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </LTTButton>
+                                            <Popconfirm
+                                                title={t("admin.common.delete_confirm.title")}
+                                                description={t("admin.common.delete_confirm.message")}
+                                                okText={t("admin.common.delete_confirm.ok")}
+                                                cancelText={t("admin.common.delete_confirm.cancel")}
+                                                onConfirm={() => deleteMutation.mutation(item.id)}
+                                            >
+                                                <LTTButton variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                                                    <Trash2 className="h-4 w-4" />
+                                                </LTTButton>
+                                            </Popconfirm>
                                         </div>
                                     </td>
                                 </tr>
@@ -187,21 +198,21 @@ export default function RatingTab() {
             <LTTDialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <LTTDialogContent>
                     <LTTDialogHeader>
-                        <LTTDialogTitle>{editing ? "Sửa phân loại" : "Thêm phân loại mới"}</LTTDialogTitle>
+                        <LTTDialogTitle>{editing ? t("admin.movie_metadata.ratings.edit_title") : t("admin.movie_metadata.ratings.create_title")}</LTTDialogTitle>
                     </LTTDialogHeader>
                     <div className="py-4 space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <LTTLabel htmlFor="code">Mã (VD: T18) *</LTTLabel>
+                                <LTTLabel htmlFor="code">{t("admin.movie_metadata.ratings.code_label")}</LTTLabel>
                                 <LTTInput id="code" value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} />
                             </div>
                             <div className="space-y-2">
-                                <LTTLabel htmlFor="name">Tên hiển thị *</LTTLabel>
+                                <LTTLabel htmlFor="name">{t("admin.movie_metadata.ratings.display_name_label")}</LTTLabel>
                                 <LTTInput id="name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <LTTLabel htmlFor="desc">Mô tả (Dành cho khán giả từ...)</LTTLabel>
+                            <LTTLabel htmlFor="desc">{t("admin.movie_metadata.ratings.description_label")}</LTTLabel>
                             <textarea
                                 id="desc"
                                 className="flex min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -211,9 +222,9 @@ export default function RatingTab() {
                         </div>
                     </div>
                     <LTTDialogFooter>
-                        <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>Hủy</LTTButton>
+                        <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>{t("admin.movie_metadata.common.cancel")}</LTTButton>
                         <LTTButton onClick={handleSave} loading={createMutation.isLoading || updateMutation.isLoading}>
-                            {editing ? "Lưu" : "Tạo mới"}
+                            {editing ? t("admin.movie_metadata.common.save") : t("admin.movie_metadata.common.create")}
                         </LTTButton>
                     </LTTDialogFooter>
                 </LTTDialogContent>

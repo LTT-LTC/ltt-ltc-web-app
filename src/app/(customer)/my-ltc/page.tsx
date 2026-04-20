@@ -10,8 +10,10 @@ import { customerMockData } from './_mock/data';
 import { getCookie } from '@/src/@core/utils/cookie';
 import { ACCESS_TOKEN_KEY } from '@/src/@core/const';
 import { getUserInfoFromToken } from '@/src/@core/utils/jwt';
+import { useLocalization } from '@/src/@core/hooks/use-localization';
 
 export default function DashboardPage() {
+    const { t } = useLocalization();
     const { customer: mockCustomer } = customerMockData;
     const router = useRouter();
     const compactViewButtonClass = "bg-[#cc3434] text-white border-none rounded hover:bg-[#a52626] !h-8 !min-h-0 !px-4 !text-sm";
@@ -35,7 +37,7 @@ export default function DashboardPage() {
     return (
         <div className="flex flex-col gap-6 w-full animate-[fadeInUp_0.4s_ease-out_forwards]">
             <LTTCard className="p-6 shadow-sm border border-gray-100 rounded-xl relative">
-                <h2 className="text-xl font-bold uppercase mb-6">GENERAL INFORMATION</h2>
+                <h2 className="text-xl font-bold uppercase mb-6">{t('customer.my_ltc.dashboard.general_information')}</h2>
 
                 <div className="flex flex-col lg:flex-row justify-between gap-6 mb-8">
                     <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
@@ -49,10 +51,10 @@ export default function DashboardPage() {
                             />
                         </div>
                         <div className="flex flex-col text-center md:text-left">
-                            <h3 className="text-xl font-bold">Hello {displayName},</h3>
-                            <p className="text-gray-500 mb-2">Manage all of your account information.</p>
+                            <h3 className="text-xl font-bold">{t('customer.my_ltc.dashboard.hello', { name: displayName })}</h3>
+                            <p className="text-gray-500 mb-2">{t('customer.my_ltc.dashboard.manage_subtitle')}</p>
                             <LTTButton className="w-fit self-center md:self-start mt-2" onClick={() => router.push('/my-ltc/account-details')}>
-                                Edit
+                                {t('customer.my_ltc.dashboard.edit')}
                             </LTTButton>
                         </div>
                     </div>
@@ -77,50 +79,50 @@ export default function DashboardPage() {
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center">
-                        <span className="text-sm text-gray-500 mb-1">Membership Tier</span>
+                        <span className="text-sm text-gray-500 mb-1">{t('customer.my_ltc.dashboard.membership_tier')}</span>
                         <span className="font-bold text-lg mb-3">{mockCustomer.memberLevel}</span>
                         <LTTButton
                             className={compactViewButtonClass}
                             size="sm"
                             onClick={() => handleCardClick('/my-ltc/membership-card')}
                         >
-                            Xem
+                            {t('customer.my_ltc.dashboard.view')}
                         </LTTButton>
                     </div>
 
                     <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center">
-                        <span className="text-sm text-gray-500 mb-1">Total Spent</span>
+                        <span className="text-sm text-gray-500 mb-1">{t('customer.my_ltc.dashboard.total_spent')}</span>
                         <span className="font-bold text-lg mb-3">{mockCustomer.totalSpent}đ</span>
                         <LTTButton
                             className={compactViewButtonClass}
                             size="sm"
                             onClick={() => handleCardClick('/my-ltc/transaction-history')}
                         >
-                            Xem
+                            {t('customer.my_ltc.dashboard.view')}
                         </LTTButton>
                     </div>
 
                     <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center">
-                        <span className="text-sm text-gray-500 mb-1">LTC Points</span>
+                        <span className="text-sm text-gray-500 mb-1">{t('customer.my_ltc.dashboard.points')}</span>
                         <span className="font-bold text-lg mb-3">{mockCustomer.currentPoints} P</span>
                         <LTTButton
                             className={compactViewButtonClass}
                             size="sm"
                             onClick={() => handleCardClick('/my-ltc/points')}
                         >
-                            Xem
+                            {t('customer.my_ltc.dashboard.view')}
                         </LTTButton>
                     </div>
 
                     <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center">
-                        <span className="text-sm text-gray-500 mb-1">Voucher</span>
+                        <span className="text-sm text-gray-500 mb-1">{t('customer.my_ltc.dashboard.voucher')}</span>
                         <span className="font-bold text-lg mb-3">{mockCustomer.voucherCount}</span>
                         <LTTButton
                             className={compactViewButtonClass}
                             size="sm"
                             onClick={() => handleCardClick('/my-ltc/vouchers')}
                         >
-                            Xem
+                            {t('customer.my_ltc.dashboard.view')}
                         </LTTButton>
                     </div>
                 </div>
