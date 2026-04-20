@@ -48,6 +48,44 @@ type MovieCastFormEntry = {
   roleName: string;
 };
 
+const createEmptyCastRow = (mode: "existing" | "new" = "new"): MovieCastFormEntry => ({
+  actorMode: mode,
+  roleMode: mode,
+  actorId: "",
+  roleId: "",
+  actorName: "",
+  roleName: "",
+});
+
+const buildCastRowsFromMovie = (movie: MovieOutputDto, actors: ActorOutputDto[], roles: RoleOutputDto[]): MovieCastFormEntry[] => {
+  const castSources = movie.actorRoles && movie.actorRoles.length > 0
+    ? movie.actorRoles.map((item) => ({ actorName: item.actorName, roleName: item.roleName }))
+    : movie.cast && movie.cast.length > 0
+      ? movie.cast.map((item) => ({
+        actorName: item.actorName || item.actor?.name || "",
+        roleName: item.roleName || item.role?.name || "",
+      }))
+      : [];
+
+  if (castSources.length === 0) {
+    return [createEmptyCastRow("new")];
+  }
+
+  return castSources.map((item) => {
+    const matchedActor = actors.find((actor) => actor.name === item.actorName);
+    const matchedRole = roles.find((role) => role.name === item.roleName);
+
+    return {
+      actorMode: matchedActor ? "existing" : "new",
+      roleMode: matchedRole ? "existing" : "new",
+      actorId: matchedActor?.id || "",
+      roleId: matchedRole?.id || "",
+      actorName: item.actorName,
+      roleName: item.roleName,
+    };
+  });
+};
+
 const statusLabel: Record<string, string> = {
   now_showing: "Đang chiếu",
   coming_soon: "Sắp chiếu",
@@ -318,7 +356,7 @@ export default function MoviesPage() {
       ratingNumber: 7,
       studioId: "",
       studioName: "",
-      cast: [{ actorMode: "new", roleMode: "new", actorId: "", roleId: "", actorName: "", roleName: "" } as MovieCastFormEntry],
+      cast: [createEmptyCastRow("new")],
       status: "coming_soon",
       description: "",
       posterUrl: "",
@@ -337,6 +375,8 @@ export default function MoviesPage() {
     setEditing(m);
     const nextStudioMode: "existing" | "new" = "existing";
     ensureStudiosLoaded();
+    ensureActorsLoaded();
+    ensureRolesLoaded();
     const nextForm: typeof form = {
       title: m.title,
       originalTitle: m.originalTitle || "",
@@ -346,7 +386,7 @@ export default function MoviesPage() {
       ratingNumber: 7,
       studioId: m.studioId || "",
       studioName: m.studioName || "",
-      cast: [{ actorMode: "new", roleMode: "new", actorId: "", roleId: "", actorName: "", roleName: "" } as MovieCastFormEntry],
+      cast: buildCastRowsFromMovie(m, actors, roles),
       status: m.status || "coming_soon",
       description: m.description || "",
       posterUrl: m.posterUrl || "",
@@ -486,17 +526,7 @@ export default function MoviesPage() {
   const addCastRow = () => {
     setForm((prev) => ({
       ...prev,
-      cast: [
-        ...prev.cast,
-        {
-          actorMode: "new",
-          roleMode: "new",
-          actorId: "",
-          roleId: "",
-          actorName: "",
-          roleName: "",
-        }
-      ]
+      cast: [...prev.cast, createEmptyCastRow("new")]
     }));
   };
 
@@ -505,7 +535,7 @@ export default function MoviesPage() {
       if (prev.cast.length <= 1) {
         return {
           ...prev,
-          cast: [{ actorMode: "new", roleMode: "new", actorId: "", roleId: "", actorName: "", roleName: "" }]
+          cast: [createEmptyCastRow("new")]
         };
       }
       return { ...prev, cast: prev.cast.filter((_, i) => i !== index) };
