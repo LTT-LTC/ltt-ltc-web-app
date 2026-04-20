@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Pencil, Trash2, Search, Film, RefreshCw, Inbox } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Film, RefreshCw, Inbox, Loader2 } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
@@ -117,10 +117,12 @@ export default function MoviesPage() {
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
   const [editing, setEditing] = useState<MovieOutputDto | null>(null);
   const [studioMode, setStudioMode] = useState<"existing" | "new">("existing");
+  const [genresLoaded, setGenresLoaded] = useState(false);
   const [studiosLoaded, setStudiosLoaded] = useState(false);
   const [ratingsLoaded, setRatingsLoaded] = useState(false);
   const [actorsLoaded, setActorsLoaded] = useState(false);
   const [rolesLoaded, setRolesLoaded] = useState(false);
+  const [metadataQueueLoading, setMetadataQueueLoading] = useState(false);
   const [initialFormSnapshot, setInitialFormSnapshot] = useState("");
   const skipNextFetchRef = useRef(false);
   const [form, setForm] = useState({
@@ -165,7 +167,12 @@ export default function MoviesPage() {
 
   const genresMutation = useLTTMutation<PagedResultDto<GenreOutputDto> | undefined, void>({
     mutationFn: () => movieService.getGenresAsync({ page: 1, fetch: 1000 }),
-    onSuccess: (res) => { if (res && res.items) setGenres(res.items); }
+    onSuccess: (res) => {
+      if (res && res.items) {
+        setGenres(res.items);
+        setGenresLoaded(true);
+      }
+    }
   });
 
   const studiosMutation = useLTTMutation<PagedResultDto<StudioOutputDto> | undefined, void>({
@@ -270,10 +277,11 @@ export default function MoviesPage() {
     fetchData();
   }, [page, fetch, debouncedSearch, tab]);
 
-  useEffect(() => {
-    genresMutation.mutation();
-    ratingsMutation.mutation();
-  }, []);
+  const ensureGenresLoaded = () => {
+    if (!genresLoaded && !genresMutation.isLoading) {
+      genresMutation.mutation();
+    }
+  };
 
   const ensureStudiosLoaded = () => {
     if (!studiosLoaded && !studiosMutation.isLoading) {
@@ -296,6 +304,23 @@ export default function MoviesPage() {
   const ensureRolesLoaded = () => {
     if (!rolesLoaded && !rolesMutation.isLoading) {
       rolesMutation.mutation();
+    }
+  };
+
+  const queueMetadataFetch = async (tasks: Array<() => void>, delayMs = 300) => {
+    const queuedTasks = tasks.filter(Boolean);
+    if (queuedTasks.length === 0) {
+      return;
+    }
+
+    setMetadataQueueLoading(true);
+    try {
+      for (const task of queuedTasks) {
+        task();
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    } finally {
+      setMetadataQueueLoading(false);
     }
   };
 
@@ -366,7 +391,10 @@ export default function MoviesPage() {
     };
     setStudioMode(nextStudioMode);
     setForm(nextForm);
-    ensureRatingsLoaded();
+    void queueMetadataFetch([
+      ensureGenresLoaded,
+      ensureRatingsLoaded,
+    ]);
     setInitialFormSnapshot(buildFormSnapshot(nextForm, nextStudioMode));
     setDialogOpen(true);
   };
@@ -374,9 +402,13 @@ export default function MoviesPage() {
   const openEdit = (m: MovieOutputDto) => {
     setEditing(m);
     const nextStudioMode: "existing" | "new" = "existing";
-    ensureStudiosLoaded();
-    ensureActorsLoaded();
-    ensureRolesLoaded();
+    void queueMetadataFetch([
+      ensureGenresLoaded,
+      ensureStudiosLoaded,
+      ensureActorsLoaded,
+      ensureRolesLoaded,
+      ensureRatingsLoaded,
+    ]);
     const nextForm: typeof form = {
       title: m.title,
       originalTitle: m.originalTitle || "",
@@ -396,7 +428,6 @@ export default function MoviesPage() {
     };
     setStudioMode(nextStudioMode);
     setForm(nextForm);
-    ensureRatingsLoaded();
     setInitialFormSnapshot(buildFormSnapshot(nextForm, nextStudioMode));
     setDialogOpen(true);
   };
@@ -844,7 +875,10 @@ export default function MoviesPage() {
         <LTTDialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
           <LTTDialogHeader>
             <LTTDialogTitle>
-              {editing ? "Chỉnh sửa phim" : "Thêm phim mới"}
+              <div className="flex items-center gap-2">
+                <span>{editing ? "Chỉnh sửa phim" : "Thêm phim mới"}</span>
+                {metadataQueueLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground-shadcn" />}
+              </div>
             </LTTDialogTitle>
           </LTTDialogHeader>
           <div className="grid gap-4 py-2 sm:grid-cols-2">

@@ -46,7 +46,6 @@ export default function DistributionTable() {
         licenseEndDate: "",
         isExclusive: false
     });
-    const didInitRef = useRef(false);
     const [moviesLoaded, setMoviesLoaded] = useState(false);
 
     const normalizeDistributionPayload = () => ({
@@ -116,17 +115,7 @@ export default function DistributionTable() {
     });
 
     useEffect(() => {
-        if (didInitRef.current) {
-            return;
-        }
-        didInitRef.current = true;
-        moviesMutation.mutation();
-    }, []);
-
-    useEffect(() => {
-        if (didInitRef.current) {
-            listMutation.mutation();
-        }
+        listMutation.mutation();
     }, [page, fetch]);
 
     const handleSave = () => {
@@ -151,6 +140,9 @@ export default function DistributionTable() {
     };
 
     const openEdit = (item: MovieDistributionOutputDto) => {
+        if (!moviesLoaded && !moviesMutation.isLoading) {
+            moviesMutation.mutation();
+        }
         setEditing(item);
         setForm({
             movieId: item.movieId,
