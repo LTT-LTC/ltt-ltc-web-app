@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, Box, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
@@ -18,16 +18,39 @@ import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { toast } from "sonner";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 
+let formatItemsCache: FormatOutputDto[] | null = null;
+let formatItemsRequest: Promise<FormatOutputDto[]> | null = null;
+
+const loadFormatItems = async () => {
+    if (formatItemsCache !== null) {
+        return formatItemsCache;
+    }
+
+    if (!formatItemsRequest) {
+        formatItemsRequest = movieService.getFormatsAsync({ page: 1, fetch: 1000 }).then((res) => {
+            formatItemsCache = res?.items ?? [];
+            return formatItemsCache;
+        }).finally(() => {
+            formatItemsRequest = null;
+        });
+    }
+
+    return formatItemsRequest;
+};
+
 export default function FormatTab() {
     const [items, setItems] = useState<FormatOutputDto[]>([]);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editing, setEditing] = useState<FormatOutputDto | null>(null);
     const [name, setName] = useState("");
-    const didInitRef = useRef(false);
 
     const listMutation = useLTTMutation<PagedResultDto<FormatOutputDto> | undefined, void>({
         mutationFn: () => movieService.getFormatsAsync({ page: 1, fetch: 1000 }),
-        onSuccess: (res) => { if (res && res.items) setItems(res.items); },
+        onSuccess: (res) => {
+            const nextItems = res?.items ?? [];
+            formatItemsCache = nextItems;
+            setItems(nextItems);
+        },
         onError: (err) => toast.error(err.message || "Lỗi tải danh sách định dạng")
     });
 
@@ -61,11 +84,17 @@ export default function FormatTab() {
     });
 
     useEffect(() => {
-        if (didInitRef.current) {
-            return;
-        }
-        didInitRef.current = true;
-        listMutation.mutation();
+        let active = true;
+
+        void loadFormatItems().then((nextItems) => {
+            if (active) {
+                setItems(nextItems);
+            }
+        });
+
+        return () => {
+            active = false;
+        };
     }, []);
 
     const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || deleteMutation.isLoading;

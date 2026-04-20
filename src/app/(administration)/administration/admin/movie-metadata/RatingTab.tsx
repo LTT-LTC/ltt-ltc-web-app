@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, ShieldCheck, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
@@ -20,16 +20,39 @@ import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 import { CreateRatingInputDto, UpdateRatingInputDto } from "@/src/services/administration-service/movie/models/input.model";
 import { RatingOutputDto } from "@/src/services/administration-service/movie/models/output.model";
 
+let ratingItemsCache: RatingOutputDto[] | null = null;
+let ratingItemsRequest: Promise<RatingOutputDto[]> | null = null;
+
+const loadRatingItems = async () => {
+    if (ratingItemsCache !== null) {
+        return ratingItemsCache;
+    }
+
+    if (!ratingItemsRequest) {
+        ratingItemsRequest = movieService.getRatingsAsync().then((res) => {
+            ratingItemsCache = res?.items ?? [];
+            return ratingItemsCache;
+        }).finally(() => {
+            ratingItemsRequest = null;
+        });
+    }
+
+    return ratingItemsRequest;
+};
+
 export default function RatingTab() {
     const [items, setItems] = useState<RatingOutputDto[]>([]);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editing, setEditing] = useState<RatingOutputDto | null>(null);
     const [form, setForm] = useState<CreateRatingInputDto>({ code: "", name: "", description: "" });
-    const didInitRef = useRef(false);
 
     const listMutation = useLTTMutation<PagedResultDto<RatingOutputDto> | undefined, void>({
         mutationFn: () => movieService.getRatingsAsync(),
-        onSuccess: (res) => { if (res && res.items) setItems(res.items); },
+        onSuccess: (res) => {
+            const nextItems = res?.items ?? [];
+            ratingItemsCache = nextItems;
+            setItems(nextItems);
+        },
         onError: (err) => toast.error(err.message || "Lỗi tải danh sách phân loại tuổi")
     });
 
@@ -63,11 +86,17 @@ export default function RatingTab() {
     });
 
     useEffect(() => {
-        if (didInitRef.current) {
-            return;
-        }
-        didInitRef.current = true;
-        listMutation.mutation();
+        let active = true;
+
+        void loadRatingItems().then((nextItems) => {
+            if (active) {
+                setItems(nextItems);
+            }
+        });
+
+        return () => {
+            active = false;
+        };
     }, []);
 
     const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || deleteMutation.isLoading;
@@ -175,7 +204,7 @@ export default function RatingTab() {
                             <LTTLabel htmlFor="desc">Mô tả (Dành cho khán giả từ...)</LTTLabel>
                             <textarea
                                 id="desc"
-                                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="flex min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                 value={form.description}
                                 onChange={e => setForm({ ...form, description: e.target.value })}
                             />
