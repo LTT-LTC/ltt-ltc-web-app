@@ -220,13 +220,16 @@ export default function MoviesPage() {
     }
   };
 
-  const bulkDelete = () => {
-    movieService.bulkDeleteMoviesAsync(Array.from(selected)).then(() => {
+  const bulkDelete = async () => {
+    try {
+      await movieService.bulkDeleteMoviesAsync(Array.from(selected));
       toast.success(`Đã xóa ${selected.size} phim`);
       setSelected(new Set());
       setDeleteOpen(false);
       fetchData();
-    });
+    } catch (error: any) {
+      toast.error(error?.message || "Không thể xóa phim, vui lòng thử lại.");
+    }
   };
 
   return (
