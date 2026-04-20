@@ -23,6 +23,7 @@ import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 import { toast } from "sonner";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
+import LTTConfirmDialog from "@/src/@core/component/LTTConfirmDialog";
 import { refundService } from "@/src/services/administration-service/refund/refund.service";
 import { RefundOutputDto } from "@/src/services/administration-service/masterdata/models/refund.model";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
@@ -221,14 +222,23 @@ export default function RefundApprovalPage() {
                       </LTTButton>
                       {item.status === "pending" && (
                         <>
-                          <LTTButton
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-green-600 hover:text-green-700"
-                            onClick={() => handleApprove(item.id)}
-                          >
-                            <CheckCircle2 className="h-4 w-4" />
-                          </LTTButton>
+                          <LTTConfirmDialog
+                            title="Xác nhận duyệt"
+                            description="Bạn có chắc chắn muốn duyệt yêu cầu hoàn tiền này?"
+                            confirmText="Duyệt"
+                            cancelText="Hủy"
+                            onConfirm={() => handleApprove(item.id)}
+                            loading={approveMutation.isLoading}
+                            trigger={
+                              <LTTButton
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-green-600 hover:text-green-700"
+                              >
+                                <CheckCircle2 className="h-4 w-4" />
+                              </LTTButton>
+                            }
+                          />
                           <LTTButton
                             variant="ghost"
                             size="icon"
@@ -309,15 +319,23 @@ export default function RefundApprovalPage() {
                         setViewItem(null);
                       }}
                       className="gap-2 text-destructive border-red-200"
+                      loading={rejectMutation.isLoading}
                     >
                       <XCircle className="h-4 w-4" /> Từ chối
                     </LTTButton>
-                    <LTTButton
-                      onClick={() => handleApprove(viewItem.id)}
-                      className="gap-2"
-                    >
-                      <CheckCircle2 className="h-4 w-4" /> Duyệt hoàn tiền
-                    </LTTButton>
+                    <LTTConfirmDialog
+                      title="Xác nhận duyệt"
+                      description="Bạn có chắc chắn muốn duyệt yêu cầu hoàn tiền này?"
+                      confirmText="Duyệt"
+                      cancelText="Hủy"
+                      onConfirm={() => handleApprove(viewItem.id)}
+                      loading={approveMutation.isLoading}
+                      trigger={
+                        <LTTButton className="gap-2">
+                          <CheckCircle2 className="h-4 w-4" /> Duyệt hoàn tiền
+                        </LTTButton>
+                      }
+                    />
                   </div>
                 )}
               </div>
@@ -350,7 +368,7 @@ export default function RefundApprovalPage() {
             <LTTButton variant="outline" onClick={() => setRejectOpen(false)}>
               Hủy
             </LTTButton>
-            <LTTButton variant="destructive" onClick={handleReject}>
+            <LTTButton variant="destructive" onClick={handleReject} loading={rejectMutation.isLoading}>
               Xác nhận từ chối
             </LTTButton>
           </LTTDialogFooter>

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Plus, Pencil, Trash2, Search, RefreshCw } from "lucide-react";
-import { Popconfirm } from "antd";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
@@ -13,6 +12,7 @@ import {
   LTTDialogTitle,
   LTTDialogFooter,
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
+import LTTConfirmDialog from "@/src/@core/component/LTTConfirmDialog";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import {
   LTTSelect,
@@ -50,6 +50,7 @@ export default function CinemaConfigPage() {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [editing, setEditing] = useState<CinemaOutputDto | null>(null);
   const [form, setForm] = useState({
     name: "",
@@ -206,23 +207,32 @@ export default function CinemaConfigPage() {
   };
 
   const bulkDelete = async () => {
+    if (isBulkDeleting) {
+      return;
+    }
+
     const ids = Array.from(selected);
     if (ids.length === 0) {
       return;
     }
 
-    const results = await Promise.allSettled(ids.map((id) => cinemaService.deleteCinemaAsync(id)));
-    const failed = results.filter((r) => r.status === "rejected").length;
+    setIsBulkDeleting(true);
+    try {
+      const results = await Promise.allSettled(ids.map((id) => cinemaService.deleteCinemaAsync(id)));
+      const failed = results.filter((r) => r.status === "rejected").length;
 
-    if (failed === 0) {
-      toast.success(t("admin.cinema_configuration.bulk_delete_success", { count: ids.length }));
-    } else {
-      toast.error(t("admin.cinema_configuration.bulk_delete_partial", { successCount: ids.length - failed, count: ids.length }));
+      if (failed === 0) {
+        toast.success(t("admin.cinema_configuration.bulk_delete_success", { count: ids.length }));
+      } else {
+        toast.error(t("admin.cinema_configuration.bulk_delete_partial", { successCount: ids.length - failed, count: ids.length }));
+      }
+
+      setSelected(new Set());
+      setDeleteOpen(false);
+      fetchData();
+    } finally {
+      setIsBulkDeleting(false);
     }
-
-    setSelected(new Set());
-    setDeleteOpen(false);
-    fetchData();
   };
 
   return (
@@ -337,24 +347,26 @@ export default function CinemaConfigPage() {
                       >
                         <Pencil className="h-4 w-4" />
                       </LTTButton>
-                      <Popconfirm
+                      <LTTConfirmDialog
                         title={t("admin.cinema_configuration.delete_confirm.single_title")}
                         description={t("admin.cinema_configuration.delete_confirm.single_message")}
-                        okText={t("admin.cinema_configuration.delete_confirm.ok")}
+                        confirmText={t("admin.cinema_configuration.delete_confirm.ok")}
                         cancelText={t("admin.cinema_configuration.delete_confirm.cancel")}
                         onConfirm={async () => {
                           await removeMutation.mutation(item.id);
                           fetchData();
                         }}
-                      >
-                        <LTTButton
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </LTTButton>
-                      </Popconfirm>
+                        loading={removeMutation.isLoading}
+                        trigger={
+                          <LTTButton
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </LTTButton>
+                        }
+                      />
                     </div>
                   </td>
                 </tr>
@@ -453,7 +465,9 @@ export default function CinemaConfigPage() {
             <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>
               {t("admin.cinema_configuration.form.cancel")}
             </LTTButton>
-            <LTTButton onClick={save}>{editing ? t("admin.cinema_configuration.form.save") : t("admin.cinema_configuration.form.create")}</LTTButton>
+            <LTTButton onClick={save} loading={createMutation.isLoading || updateMutation.isLoading}>
+              {editing ? t("admin.cinema_configuration.form.save") : t("admin.cinema_configuration.form.create")}
+            </LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
       </LTTDialog>
@@ -501,7 +515,7 @@ export default function CinemaConfigPage() {
             <LTTButton variant="outline" onClick={() => setDeleteOpen(false)}>
               {t("admin.cinema_configuration.delete_confirm.cancel")}
             </LTTButton>
-            <LTTButton variant="destructive" onClick={bulkDelete}>
+            <LTTButton variant="destructive" onClick={bulkDelete} loading={isBulkDeleting}>
               {t("admin.cinema_configuration.delete_confirm.confirm")}
             </LTTButton>
           </LTTDialogFooter>

@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { Plus, Pencil, Trash2, Search, RefreshCw } from "lucide-react";
-import { Popconfirm } from "antd";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
@@ -13,6 +12,7 @@ import {
   LTTDialogTitle,
   LTTDialogFooter,
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
+import LTTConfirmDialog from "@/src/@core/component/LTTConfirmDialog";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import {
   LTTSelect,
@@ -49,6 +49,7 @@ export default function CinemaAmenitiesAdminPage() {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [editing, setEditing] = useState<CinemaAmenityOutputDto | null>(null);
 
   const [form, setForm] = useState({
@@ -183,25 +184,34 @@ export default function CinemaAmenitiesAdminPage() {
   };
 
   const bulkDelete = async () => {
+    if (isBulkDeleting) {
+      return;
+    }
+
     if (!selectedCinemaId || selected.size === 0) {
       return;
     }
 
     const ids = Array.from(selected);
-    const results = await Promise.allSettled(
-      ids.map((id) => cinemaAmenityService.deleteCinemaAmenityAsync(selectedCinemaId, id))
-    );
-    const failed = results.filter((r) => r.status === "rejected").length;
+    setIsBulkDeleting(true);
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) => cinemaAmenityService.deleteCinemaAmenityAsync(selectedCinemaId, id))
+      );
+      const failed = results.filter((r) => r.status === "rejected").length;
 
-    if (failed === 0) {
-      toast.success(`Xóa ${ids.length} tiện ích thành công`);
-    } else {
-      toast.error(`Xóa thành công ${ids.length - failed}/${ids.length} tiện ích`);
+      if (failed === 0) {
+        toast.success(`Xóa ${ids.length} tiện ích thành công`);
+      } else {
+        toast.error(`Xóa thành công ${ids.length - failed}/${ids.length} tiện ích`);
+      }
+
+      setSelected(new Set());
+      setDeleteOpen(false);
+      fetchData(debouncedSearch);
+    } finally {
+      setIsBulkDeleting(false);
     }
-
-    setSelected(new Set());
-    setDeleteOpen(false);
-    fetchData(debouncedSearch);
   };
 
   return (
@@ -314,24 +324,26 @@ export default function CinemaAmenitiesAdminPage() {
                       <LTTButton variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
                         <Pencil className="h-4 w-4" />
                       </LTTButton>
-                      <Popconfirm
+                      <LTTConfirmDialog
                         title="Xác nhận xóa"
                         description="Bạn có chắc chắn muốn xóa tiện ích này? Hành động này không thể hoàn tác."
-                        okText="Xóa"
+                        confirmText="Xóa"
                         cancelText="Hủy"
                         onConfirm={async () => {
                           await removeMutation.mutation({ cinemaId: selectedCinemaId, id: item.id });
                           fetchData();
                         }}
-                      >
-                        <LTTButton
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </LTTButton>
-                      </Popconfirm>
+                        loading={removeMutation.isLoading}
+                        trigger={
+                          <LTTButton
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </LTTButton>
+                        }
+                      />
                     </div>
                   </td>
                 </tr>
@@ -375,7 +387,9 @@ export default function CinemaAmenitiesAdminPage() {
           </div>
           <LTTDialogFooter>
             <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>Hủy</LTTButton>
-            <LTTButton onClick={save}>{editing ? "Lưu" : "Tạo mới"}</LTTButton>
+            <LTTButton onClick={save} loading={createMutation.isLoading || updateMutation.isLoading}>
+              {editing ? "Lưu" : "Tạo mới"}
+            </LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
       </LTTDialog>
@@ -392,7 +406,7 @@ export default function CinemaAmenitiesAdminPage() {
           </div>
           <LTTDialogFooter>
             <LTTButton variant="outline" onClick={() => setDeleteOpen(false)}>Hủy</LTTButton>
-            <LTTButton variant="destructive" onClick={bulkDelete}>Xác nhận xóa</LTTButton>
+            <LTTButton variant="destructive" onClick={bulkDelete} loading={isBulkDeleting}>Xác nhận xóa</LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
       </LTTDialog>

@@ -13,6 +13,7 @@ import {
   LTTDialogFooter,
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
+import LTTUnsavedChangesDialog from "@/src/@core/component/LTTUnsavedChangesDialog";
 import {
   LTTSelect,
   LTTSelectContent,
@@ -29,6 +30,7 @@ import { GetListEmployeeInputDto, CreateEmployeeInputDto, UpdateEmployeeInputDto
 import { cinemaService } from "@/src/services/administration-service/cinema/cinema.service";
 import { cn } from "@/src/@core/utils/cn";
 import { useSearchParams } from "next/navigation";
+import LTTConfirmDialog from "@/src/@core/component/LTTConfirmDialog";
 
 const statusColor: Record<string, string> = {
   active: "bg-green-100 text-green-700 border-green-200",
@@ -84,7 +86,10 @@ export default function StaffPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [editing, setEditing] = useState<EmployeeOutputDto | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [form, setForm] = useState<EmployeeFormState>(emptyForm);
@@ -106,6 +111,8 @@ export default function StaffPage() {
       toast.success("Thêm nhân viên thành công");
       fetchData();
       setDialogOpen(false);
+      setExitConfirmOpen(false);
+      setIsDirty(false);
     },
     onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
   });
@@ -116,12 +123,18 @@ export default function StaffPage() {
       toast.success("Cập nhật thành công");
       fetchData();
       setDialogOpen(false);
+      setExitConfirmOpen(false);
+      setIsDirty(false);
     },
     onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
   });
 
   const deleteMutation = useLTTMutation<void, string>({
     mutationFn: (id) => employeeService.deleteEmployeeAsync(id),
+    onSuccess: () => {
+      toast.success("Đã xóa nhân viên thành công");
+      fetchData();
+    },
     onError: (err) => toast.error(err.message || "Không thể xóa nhân viên")
   });
 
@@ -184,6 +197,8 @@ export default function StaffPage() {
   const openCreate = () => {
     setEditing(null);
     setForm(emptyForm());
+    setIsDirty(false);
+    setExitConfirmOpen(false);
     setDialogOpen(true);
   };
 
@@ -201,7 +216,31 @@ export default function StaffPage() {
       role: normalizeRole(s),
       isActive: s.isActive ?? true,
     });
+    setIsDirty(false);
+    setExitConfirmOpen(false);
     setDialogOpen(true);
+  };
+
+  const resetDialog = () => {
+    setDialogOpen(false);
+    setExitConfirmOpen(false);
+    setIsDirty(false);
+    setEditing(null);
+    setForm(emptyForm());
+  };
+
+  const handleDialogOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      setDialogOpen(true);
+      return;
+    }
+
+    if (isDirty) {
+      setExitConfirmOpen(true);
+      return;
+    }
+
+    resetDialog();
   };
 
   const save = () => {
@@ -229,19 +268,28 @@ export default function StaffPage() {
   };
 
   const bulkDelete = async () => {
+    if (isBulkDeleting) return;
+
     const ids = Array.from(selected);
-    const results = await Promise.allSettled(ids.map((id) => employeeService.deleteEmployeeAsync(id)));
-    const failed = results.filter((r) => r.status === "rejected").length;
+    if (ids.length === 0) return;
 
-    if (failed === 0) {
-      toast.success(`Đã xóa ${ids.length} nhân viên`);
-    } else {
-      toast.error(`Xóa thành công ${ids.length - failed}/${ids.length} nhân viên`);
+    setIsBulkDeleting(true);
+    try {
+      const results = await Promise.allSettled(ids.map((id) => employeeService.deleteEmployeeAsync(id)));
+      const failed = results.filter((r) => r.status === "rejected").length;
+
+      if (failed === 0) {
+        toast.success(`Đã xóa ${ids.length} nhân viên`);
+      } else {
+        toast.error(`Xóa thành công ${ids.length - failed}/${ids.length} nhân viên`);
+      }
+
+      fetchData();
+      setSelected(new Set());
+      setDeleteOpen(false);
+    } finally {
+      setIsBulkDeleting(false);
     }
-
-    fetchData();
-    setSelected(new Set());
-    setDeleteOpen(false);
   };
 
   return (
@@ -368,22 +416,23 @@ export default function StaffPage() {
                       >
                         <Pencil className="h-4 w-4" />
                       </LTTButton>
-                      <LTTButton
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={async () => {
-                          try {
-                            await employeeService.deleteEmployeeAsync(item.id);
-                            toast.success("Đã xóa nhân viên " + item.name);
-                            fetchData();
-                          } catch (error: any) {
-                            toast.error(error?.message || "Không thể xóa nhân viên");
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </LTTButton>
+                      <LTTConfirmDialog
+                        title="Xác nhận xóa"
+                        description="Bạn có chắc chắn muốn xóa nhân viên này?"
+                        confirmText="Xóa"
+                        cancelText="Hủy"
+                        onConfirm={() => deleteMutation.mutation(item.id)}
+                        loading={deleteMutation.isLoading}
+                        trigger={
+                          <LTTButton
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </LTTButton>
+                        }
+                      />
                     </div>
                   </td>
                 </tr>
@@ -393,7 +442,7 @@ export default function StaffPage() {
         </table>
       </div>
 
-      <LTTDialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <LTTDialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
         <LTTDialogContent className="sm:max-w-lg">
           <LTTDialogHeader>
             <LTTDialogTitle>
@@ -405,7 +454,7 @@ export default function StaffPage() {
               <LTTLabel>Họ tên *</LTTLabel>
               <LTTInput
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onChange={(e) => { setIsDirty(true); setForm({ ...form, name: e.target.value }); }}
               />
             </div>
             <div className="space-y-2">
@@ -413,28 +462,28 @@ export default function StaffPage() {
               <LTTInput
                 type="email"
                 value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                onChange={(e) => { setIsDirty(true); setForm({ ...form, email: e.target.value }); }}
               />
             </div>
             <div className="space-y-2">
               <LTTLabel>SĐT *</LTTLabel>
               <LTTInput
                 value={form.phoneNumber}
-                onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
+                onChange={(e) => { setIsDirty(true); setForm({ ...form, phoneNumber: e.target.value }); }}
               />
             </div>
             <div className="space-y-2">
               <LTTLabel>Mã nhân viên</LTTLabel>
               <LTTInput
                 value={form.code}
-                onChange={(e) => setForm({ ...form, code: e.target.value })}
+                onChange={(e) => { setIsDirty(true); setForm({ ...form, code: e.target.value }); }}
               />
             </div>
             <div className="space-y-2">
               <LTTLabel>Vai trò *</LTTLabel>
               <LTTSelect
                 value={form.role}
-                onValueChange={(v: EmployeeRole) => setForm({ ...form, role: v })}
+                onValueChange={(v: EmployeeRole) => { setIsDirty(true); setForm({ ...form, role: v }); }}
               >
                 <LTTSelectTrigger>
                   <LTTSelectValue placeholder="Chọn vai trò" />
@@ -450,7 +499,7 @@ export default function StaffPage() {
               <LTTLabel>Rạp (Phòng ban)</LTTLabel>
               <LTTSelect
                 value={form.organizationUnitId}
-                onValueChange={(v) => setForm({ ...form, organizationUnitId: v })}
+                onValueChange={(v) => { setIsDirty(true); setForm({ ...form, organizationUnitId: v }); }}
               >
                 <LTTSelectTrigger>
                   <LTTSelectValue placeholder="Chọn rạp" />
@@ -469,7 +518,7 @@ export default function StaffPage() {
               <LTTInput
                 type="date"
                 value={form.joinedDate}
-                onChange={(e) => setForm({ ...form, joinedDate: e.target.value })}
+                onChange={(e) => { setIsDirty(true); setForm({ ...form, joinedDate: e.target.value }); }}
               />
             </div>
             <div className="space-y-2">
@@ -477,14 +526,14 @@ export default function StaffPage() {
               <LTTInput
                 type="date"
                 value={form.dateOfBirth}
-                onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
+                onChange={(e) => { setIsDirty(true); setForm({ ...form, dateOfBirth: e.target.value }); }}
               />
             </div>
             <div className="space-y-2">
               <LTTLabel>Trạng thái</LTTLabel>
               <LTTSelect
                 value={form.isActive ? "active" : "inactive"}
-                onValueChange={(v: any) => setForm({ ...form, isActive: v === "active" })}
+                onValueChange={(v: any) => { setIsDirty(true); setForm({ ...form, isActive: v === "active" }); }}
               >
                 <LTTSelectTrigger>
                   <LTTSelectValue />
@@ -497,13 +546,27 @@ export default function StaffPage() {
             </div>
           </div>
           <LTTDialogFooter>
-            <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>
+            <LTTButton variant="outline" onClick={() => handleDialogOpenChange(false)}>
               Hủy
             </LTTButton>
-            <LTTButton onClick={save}>{editing ? "Lưu" : "Tạo mới"}</LTTButton>
+            <LTTButton onClick={save} loading={createMutation.isLoading || updateMutation.isLoading}>
+              {editing ? "Lưu" : "Tạo mới"}
+            </LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
       </LTTDialog>
+
+      <LTTUnsavedChangesDialog
+        open={exitConfirmOpen}
+        onOpenChange={setExitConfirmOpen}
+        title="Bạn có thay đổi chưa lưu"
+        messageBefore="Bạn có thay đổi chưa hoàn tất. Thoát sẽ"
+        messageHighlight="xóa toàn bộ nội dung đang nhập"
+        messageAfter="Bạn có chắc chắn muốn thoát?"
+        stayText="Ở lại chỉnh sửa"
+        exitText="Thoát"
+        onExit={resetDialog}
+      />
 
       <LTTDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <LTTDialogContent className="sm:max-w-sm">
@@ -520,7 +583,7 @@ export default function StaffPage() {
             <LTTButton variant="outline" onClick={() => setDeleteOpen(false)}>
               Hủy
             </LTTButton>
-            <LTTButton variant="destructive" onClick={bulkDelete}>
+            <LTTButton variant="destructive" onClick={bulkDelete} loading={isBulkDeleting}>
               Xác nhận xóa
             </LTTButton>
           </LTTDialogFooter>

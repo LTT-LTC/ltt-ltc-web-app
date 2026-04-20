@@ -5,12 +5,13 @@ import { Plus, Pencil, Trash2, Search, Settings2 } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
-import { 
-    LTTDialog, 
-    LTTDialogContent, 
-    LTTDialogHeader, 
-    LTTDialogTitle, 
-    LTTDialogFooter 
+import LTTConfirmDialog from "@/src/@core/component/LTTConfirmDialog";
+import {
+    LTTDialog,
+    LTTDialogContent,
+    LTTDialogHeader,
+    LTTDialogTitle,
+    LTTDialogFooter
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 import { toast } from "sonner";
@@ -60,8 +61,8 @@ export default function PricingRulesPage() {
     const filtered = useMemo(() => {
         if (!search) return items;
         const q = search.toLowerCase();
-        return items.filter(i => 
-            i.seatTypeName?.toLowerCase().includes(q) || 
+        return items.filter(i =>
+            i.seatTypeName?.toLowerCase().includes(q) ||
             i.ruleType.toLowerCase().includes(q)
         );
     }, [items, search]);
@@ -147,9 +148,19 @@ export default function PricingRulesPage() {
                                             <LTTButton variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
                                                 <Pencil className="h-4 w-4" />
                                             </LTTButton>
-                                            <LTTButton variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteMutation.mutation(item.id)}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </LTTButton>
+                                            <LTTConfirmDialog
+                                                title="Xác nhận xóa"
+                                                description="Bạn có chắc chắn muốn xóa quy tắc giá này?"
+                                                confirmText="Xóa"
+                                                cancelText="Hủy"
+                                                onConfirm={() => deleteMutation.mutation(item.id)}
+                                                loading={deleteMutation.isLoading}
+                                                trigger={
+                                                    <LTTButton variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </LTTButton>
+                                                }
+                                            />
                                         </div>
                                     </td>
                                 </tr>
@@ -159,10 +170,10 @@ export default function PricingRulesPage() {
                 </table>
             </div>
 
-            <UpsertPricingRuleDialog 
-                open={upsertOpen} 
-                onOpenChange={setUpsertOpen} 
-                editingItem={editing} 
+            <UpsertPricingRuleDialog
+                open={upsertOpen}
+                onOpenChange={setUpsertOpen}
+                editingItem={editing}
                 onSuccess={() => listMutation.mutation()}
                 cinemaId={TEMP_CINEMA_ID}
             />

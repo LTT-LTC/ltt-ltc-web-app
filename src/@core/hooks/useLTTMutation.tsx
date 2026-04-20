@@ -40,8 +40,14 @@ const useLTTMutation = <LTTOutputType, LTTInputType = void>({
     const [input, setInput] = useState<LTTInputType | null>(null);
     const [output, setOutput] = useState<LTTOutputType | null>(null);
     const isLoaded = useRef<boolean>(false);
+    const isMutatingRef = useRef<boolean>(false);
 
     const mutation = async (input: LTTInputType) => {
+        if (isMutatingRef.current) {
+            return;
+        }
+
+        isMutatingRef.current = true;
         setIsLoading(true);
         if (!isLoaded.current) setIsInitLoading(true);
 
@@ -54,6 +60,7 @@ const useLTTMutation = <LTTOutputType, LTTInputType = void>({
             if (onError) onError(normalizeMutationError(error));
         } finally {
             setIsLoading(false);
+            isMutatingRef.current = false;
             if (!isLoaded.current) {
                 setIsInitLoading(false);
                 isLoaded.current = true;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Plus, Search } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
@@ -12,7 +12,7 @@ export default function NewsAndOffersPage() {
     const [search, setSearch] = useState("");
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<NewsAndOffersOutputDto | null>(null);
-    const tableRef = useRef<{ refresh: () => void }>(null);
+    const [refreshKey, setRefreshKey] = useState(0);
 
     const handleCreate = () => {
         setEditingItem(null);
@@ -25,10 +25,7 @@ export default function NewsAndOffersPage() {
     };
 
     const handleSuccess = () => {
-        // Since we don't have a direct ref to the table's internal fetchData,
-        // we can trigger a re-render or use a state-based refresh if needed.
-        // For now, search update or simple re-mount works.
-        setSearch(prev => prev); 
+        setRefreshKey((current) => current + 1);
     };
 
     return (
@@ -52,12 +49,12 @@ export default function NewsAndOffersPage() {
                 </div>
             </div>
 
-            <NewsAndOffersTable search={search} onEdit={handleEdit} />
+            <NewsAndOffersTable key={refreshKey} search={search} onEdit={handleEdit} />
 
-            <UpsertNewsAndOffersDialog 
-                open={dialogOpen} 
-                onOpenChange={setDialogOpen} 
-                editingItem={editingItem} 
+            <UpsertNewsAndOffersDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                editingItem={editingItem}
                 onSuccess={handleSuccess}
             />
         </div>

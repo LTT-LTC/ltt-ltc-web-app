@@ -18,7 +18,7 @@ export interface CreateGiftCodeInputDto {
 }
 
 export interface UpdateGiftCodeInputDto {
-    ccode: string;
+    code: string;
     description?: string;
     discountType?: string;
     discountValue: number;

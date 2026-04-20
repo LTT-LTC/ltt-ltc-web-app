@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Pencil, Trash2, Tag, RefreshCw } from "lucide-react";
-import { Popconfirm } from "antd";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import {
@@ -12,6 +11,8 @@ import {
     LTTDialogTitle,
     LTTDialogFooter
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
+import LTTConfirmDialog from "@/src/@core/component/LTTConfirmDialog";
+import LTTUnsavedChangesDialog from "@/src/@core/component/LTTUnsavedChangesDialog";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import { movieService } from "@/src/services/administration-service/movie/movie.service";
 import { GenreOutputDto } from "@/src/services/administration-service/movie/genre/models/output.model";
@@ -44,6 +45,8 @@ export default function GenreTab() {
     const { t } = useLocalization();
     const [items, setItems] = useState<GenreOutputDto[]>([]);
     const [dialogOpen, setDialogOpen] = useState(false);
+    const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
+    const [isDirty, setIsDirty] = useState(false);
     const [editing, setEditing] = useState<GenreOutputDto | null>(null);
     const [name, setName] = useState("");
 
@@ -62,6 +65,8 @@ export default function GenreTab() {
         onSuccess: () => {
             toast.success(t("admin.movie_metadata.common.add_success"));
             setDialogOpen(false);
+            setExitConfirmOpen(false);
+            setIsDirty(false);
             listMutation.mutation();
         },
         onError: (err) => toast.error(err.message || t("admin.movie_metadata.common.add_error"))
@@ -72,6 +77,8 @@ export default function GenreTab() {
         onSuccess: () => {
             toast.success(t("admin.movie_metadata.common.update_success"));
             setDialogOpen(false);
+            setExitConfirmOpen(false);
+            setIsDirty(false);
             listMutation.mutation();
         },
         onError: (err) => toast.error(err.message || t("admin.movie_metadata.common.update_error"))
@@ -111,16 +118,40 @@ export default function GenreTab() {
         }
     };
 
+    const resetDialog = () => {
+        setDialogOpen(false);
+        setExitConfirmOpen(false);
+        setIsDirty(false);
+        setEditing(null);
+        setName("");
+    };
+
     const openCreate = () => {
         setEditing(null);
         setName("");
+        setIsDirty(false);
         setDialogOpen(true);
     };
 
     const openEdit = (item: GenreOutputDto) => {
         setEditing(item);
         setName(item.name);
+        setIsDirty(false);
         setDialogOpen(true);
+    };
+
+    const handleDialogOpenChange = (nextOpen: boolean) => {
+        if (nextOpen) {
+            setDialogOpen(true);
+            return;
+        }
+
+        if (isDirty) {
+            setExitConfirmOpen(true);
+            return;
+        }
+
+        resetDialog();
     };
 
     return (
@@ -167,17 +198,19 @@ export default function GenreTab() {
                                             <LTTButton variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
                                                 <Pencil className="h-4 w-4" />
                                             </LTTButton>
-                                            <Popconfirm
+                                            <LTTConfirmDialog
                                                 title={t("admin.common.delete_confirm.title")}
                                                 description={t("admin.common.delete_confirm.message")}
-                                                okText={t("admin.common.delete_confirm.ok")}
+                                                confirmText={t("admin.common.delete_confirm.ok")}
                                                 cancelText={t("admin.common.delete_confirm.cancel")}
                                                 onConfirm={() => deleteMutation.mutation(item.id)}
-                                            >
-                                                <LTTButton variant="ghost" size="icon" className="h-8 w-8 text-destructive">
-                                                    <Trash2 className="h-4 w-4" />
-                                                </LTTButton>
-                                            </Popconfirm>
+                                                loading={deleteMutation.isLoading}
+                                                trigger={
+                                                    <LTTButton variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </LTTButton>
+                                                }
+                                            />
                                         </div>
                                     </td>
                                 </tr>
@@ -187,23 +220,35 @@ export default function GenreTab() {
                 </table>
             </div>
 
-            <LTTDialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <LTTDialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                 <LTTDialogContent>
                     <LTTDialogHeader>
                         <LTTDialogTitle>{editing ? t("admin.movie_metadata.genres.edit_title") : t("admin.movie_metadata.genres.create_title")}</LTTDialogTitle>
                     </LTTDialogHeader>
                     <div className="py-4 space-y-2">
                         <LTTLabel htmlFor="name">{t("admin.movie_metadata.genres.name_label")}</LTTLabel>
-                        <LTTInput id="name" value={name} onChange={e => setName(e.target.value)} />
+                        <LTTInput id="name" value={name} onChange={e => { setIsDirty(true); setName(e.target.value); }} />
                     </div>
                     <LTTDialogFooter>
-                        <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>{t("admin.movie_metadata.common.cancel")}</LTTButton>
+                        <LTTButton variant="outline" onClick={() => handleDialogOpenChange(false)}>{t("admin.movie_metadata.common.cancel")}</LTTButton>
                         <LTTButton onClick={handleSave} loading={createMutation.isLoading || updateMutation.isLoading}>
                             {editing ? t("admin.movie_metadata.common.save") : t("admin.movie_metadata.common.create")}
                         </LTTButton>
                     </LTTDialogFooter>
                 </LTTDialogContent>
             </LTTDialog>
+
+            <LTTUnsavedChangesDialog
+                open={exitConfirmOpen}
+                onOpenChange={setExitConfirmOpen}
+                title={t("admin.common.unsaved_changes_dialog.title")}
+                messageBefore={t("admin.common.unsaved_changes_dialog.message_before")}
+                messageHighlight={t("admin.common.unsaved_changes_dialog.message_highlight")}
+                messageAfter={t("admin.common.unsaved_changes_dialog.message_after")}
+                stayText={t("admin.common.unsaved_changes_dialog.stay")}
+                exitText={t("admin.common.unsaved_changes_dialog.exit")}
+                onExit={resetDialog}
+            />
         </div>
     );
 }

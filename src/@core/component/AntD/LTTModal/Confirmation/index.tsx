@@ -19,6 +19,7 @@ const LTTConfirmationModal = ({
         open={props?.open}
         onOk={props?.onOk}
         onCancel={props?.onCancel}
+        maskTransitionName="ant-fade"
       >
         {children}
       </Modal>
