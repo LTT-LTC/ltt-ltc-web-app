@@ -10,6 +10,14 @@
   },
   "admin": {
     "common": {
+      "unsaved_changes_dialog": {
+        "title": "Bạn có thay đổi chưa lưu",
+        "message_before": "Bạn có thay đổi chưa hoàn tất. Thoát sẽ",
+        "message_highlight": "xóa toàn bộ nội dung đang nhập",
+        "message_after": "Bạn có chắc chắn muốn thoát?",
+        "stay": "Ở lại chỉnh sửa",
+        "exit": "Thoát"
+      },
       "delete_confirm": {
         "title": "Xác nhận xóa",
         "message": "Bạn có chắc chắn muốn xóa mục này? Hành động này không thể hoàn tác.",

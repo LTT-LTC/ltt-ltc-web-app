@@ -6,6 +6,7 @@ import { Plus, Pencil, Trash2, Search, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
+import LTTConfirmDialog from "@/src/@core/component/LTTConfirmDialog";
 import {
   LTTDialog,
   LTTDialogContent,
@@ -260,17 +261,26 @@ export default function SeatTypesManagerPage() {
                       <LTTButton variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
                         <Pencil className="h-4 w-4" />
                       </LTTButton>
-                      <LTTButton
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={async () => {
+                      <LTTConfirmDialog
+                        title="Xác nhận xóa"
+                        description="Bạn có chắc chắn muốn xóa loại ghế này?"
+                        confirmText="Xóa"
+                        cancelText="Hủy"
+                        onConfirm={async () => {
                           await removeMutation.mutation(item.id);
                           fetchData();
                         }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </LTTButton>
+                        loading={removeMutation.isLoading}
+                        trigger={
+                          <LTTButton
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </LTTButton>
+                        }
+                      />
                     </div>
                   </td>
                 </tr>

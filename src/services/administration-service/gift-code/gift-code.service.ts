@@ -3,7 +3,8 @@ import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { rootPath } from "../administration.service";
 import {
     GetGiftCodeListInputDto,
-    CreateGiftCodeInputDto
+    CreateGiftCodeInputDto,
+    UpdateGiftCodeInputDto
 } from "./models/input.model";
 import { GiftCodeOutputDto } from "./models/output.model";
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
@@ -25,7 +26,7 @@ const createGiftCodeAsync = async (body: CreateGiftCodeInputDto): Promise<GiftCo
     return response.data.data;
 };
 
-const updateGiftCodeAsync = async (id: string, body: any): Promise<GiftCodeOutputDto> => {
+const updateGiftCodeAsync = async (id: string, body: UpdateGiftCodeInputDto): Promise<GiftCodeOutputDto> => {
     const response = await http.put<ApiResult<GiftCodeOutputDto>>(`${rootPath}${path}/${id}`, body);
     return response.data.data;
 }
@@ -37,5 +38,6 @@ const deleteGiftCodeAsync = async (id: string): Promise<void> => {
 export const giftCodeService = {
     getGiftCodeListAsync,
     createGiftCodeAsync,
+    updateGiftCodeAsync,
     deleteGiftCodeAsync,
 };

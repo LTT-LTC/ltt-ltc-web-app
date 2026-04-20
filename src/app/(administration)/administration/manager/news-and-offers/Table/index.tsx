@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Pencil, Trash2, Newspaper } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
+import LTTConfirmDialog from "@/src/@core/component/LTTConfirmDialog";
 import LTTTable from "@/src/@core/component/AntD/LTTTable";
 import { newsAndOffersService } from "@/src/services/administration-service/news-and-offers/news-and-offers.service";
 import { NewsAndOffersOutputDto, PagedResultNewsAndOffersOutputDto } from "@/src/services/administration-service/news-and-offers/models/output.model";
@@ -108,14 +109,23 @@ export default function NewsAndOffersTable({ search, onEdit }: Props) {
                             >
                                 <Pencil className="h-4 w-4" />
                             </LTTButton>
-                            <LTTButton
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => deleteMutation.mutation(record.id)}
-                                className="h-8 w-8 text-destructive hover:text-destructive"
-                            >
-                                <Trash2 className="h-4 w-4" />
-                            </LTTButton>
+                            <LTTConfirmDialog
+                                title="Xác nhận xóa"
+                                description="Bạn có chắc chắn muốn xóa tin tức hoặc ưu đãi này?"
+                                confirmText="Xóa"
+                                cancelText="Hủy"
+                                onConfirm={() => deleteMutation.mutation(record.id)}
+                                loading={deleteMutation.isLoading}
+                                trigger={
+                                    <LTTButton
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-destructive hover:text-destructive"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </LTTButton>
+                                }
+                            />
                         </div>
                     )
                 }

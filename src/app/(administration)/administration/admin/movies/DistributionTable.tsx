@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Plus, Pencil, Trash2, Calendar, ShieldCheck, RefreshCw, Inbox } from "lucide-react";
-import { Popconfirm } from "antd";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import {
@@ -12,6 +11,7 @@ import {
     LTTDialogTitle,
     LTTDialogFooter
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
+import LTTConfirmDialog from "@/src/@core/component/LTTConfirmDialog";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import LTTSwitch from "@/src/@core/component/AntD/LTTSwitch";
 import {
@@ -240,17 +240,19 @@ export default function DistributionTable() {
                                             <LTTButton variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
                                                 <Pencil className="h-4 w-4" />
                                             </LTTButton>
-                                            <Popconfirm
+                                            <LTTConfirmDialog
                                                 title={t("admin.common.delete_confirm.title")}
                                                 description={t("admin.common.delete_confirm.message")}
-                                                okText={t("admin.common.delete_confirm.ok")}
+                                                confirmText={t("admin.common.delete_confirm.ok")}
                                                 cancelText={t("admin.common.delete_confirm.cancel")}
                                                 onConfirm={() => deleteMutation.mutation(item.id)}
-                                            >
-                                                <LTTButton variant="ghost" size="icon" className="h-8 w-8 text-destructive">
-                                                    <Trash2 className="h-4 w-4" />
-                                                </LTTButton>
-                                            </Popconfirm>
+                                                loading={deleteMutation.isLoading}
+                                                trigger={
+                                                    <LTTButton variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </LTTButton>
+                                                }
+                                            />
                                         </div>
                                     </td>
                                 </tr>

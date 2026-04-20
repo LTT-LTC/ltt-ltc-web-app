@@ -5,6 +5,7 @@ import { Plus, Pencil, Trash2, Search, Coffee } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
+import LTTConfirmDialog from "@/src/@core/component/LTTConfirmDialog";
 import { toast } from "sonner";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { cinemaAmenityService } from "@/src/services/administration-service/cinema-amenity/cinema-amenity.service";
@@ -135,9 +136,19 @@ export default function CinemaAmenitiesPage() {
                                             <LTTButton variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(item)}>
                                                 <Pencil className="h-4 w-4" />
                                             </LTTButton>
-                                            <LTTButton variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteMutation.mutation({ cinemaId: TEMP_CINEMA_ID, id: item.id })}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </LTTButton>
+                                            <LTTConfirmDialog
+                                                title="Xác nhận xóa"
+                                                description="Bạn có chắc chắn muốn xóa tiện ích này?"
+                                                confirmText="Xóa"
+                                                cancelText="Hủy"
+                                                onConfirm={() => deleteMutation.mutation({ cinemaId: TEMP_CINEMA_ID, id: item.id })}
+                                                loading={deleteMutation.isLoading}
+                                                trigger={
+                                                    <LTTButton variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </LTTButton>
+                                                }
+                                            />
                                         </div>
                                     </td>
                                 </tr>
