@@ -340,74 +340,76 @@ export default function PromotionsListPage() {
             </div>
 
             <LTTDialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
-                <LTTDialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
-                    <LTTDialogHeader>
+                <LTTDialogContent className="sm:max-w-2xl p-0 gap-0 grid-rows-[auto_minmax(0,1fr)_auto] max-h-[90vh] sm:max-h-[90vh]">
+                    <LTTDialogHeader className="px-6 pt-6 pb-4 border-b border-border-shadcn">
                         <LTTDialogTitle>{editing ? "Chỉnh sửa khuyến mãi" : "Thêm khuyến mãi mới"}</LTTDialogTitle>
                         <LTTDialogDescription>
                             {editing ? "Cập nhật thông tin gift code hoặc mã khuyến mãi." : "Tạo mới mã giảm giá hoặc gift card."}
                         </LTTDialogDescription>
                     </LTTDialogHeader>
-                    <div className="grid grid-cols-2 gap-4 py-2">
-                        <div className="col-span-2 space-y-2">
-                            <LTTLabel>Mã *</LTTLabel>
-                            <LTTInput value={form.code} onChange={(e) => { setIsDirty(true); setForm({ ...form, code: e.target.value }); }} />
-                        </div>
-                        <div className="col-span-2 space-y-2">
-                            <LTTLabel>Mô tả</LTTLabel>
-                            <LTTInput value={form.description} onChange={(e) => { setIsDirty(true); setForm({ ...form, description: e.target.value }); }} />
-                        </div>
-                        <div className="space-y-2">
-                            <LTTLabel>Loại</LTTLabel>
-                            <LTTSelect value={form.discountType} onValueChange={(value) => { setIsDirty(true); setForm({ ...form, discountType: value }); }}>
-                                <LTTSelectTrigger>
-                                    <LTTSelectValue placeholder="Chọn loại" />
-                                </LTTSelectTrigger>
-                                <LTTSelectContent>
-                                    <LTTSelectItem value="Percentage">Giảm %</LTTSelectItem>
-                                    <LTTSelectItem value="Fixed">Giảm cố định</LTTSelectItem>
-                                    <LTTSelectItem value="GiftCard">Gift Card</LTTSelectItem>
-                                </LTTSelectContent>
-                            </LTTSelect>
-                        </div>
-                        <div className="space-y-2">
-                            <LTTLabel>Giá trị</LTTLabel>
-                            <LTTInput type="number" value={form.discountValue} onChange={(e) => { setIsDirty(true); setForm({ ...form, discountValue: e.target.value }); }} />
-                        </div>
-                        <div className="space-y-2">
-                            <LTTLabel>Đơn tối thiểu</LTTLabel>
-                            <LTTInput type="number" value={form.minOrderAmount} onChange={(e) => { setIsDirty(true); setForm({ ...form, minOrderAmount: e.target.value }); }} />
-                        </div>
-                        <div className="space-y-2">
-                            <LTTLabel>Giới hạn sử dụng</LTTLabel>
-                            <LTTInput type="number" value={form.usageLimit} onChange={(e) => { setIsDirty(true); setForm({ ...form, usageLimit: e.target.value }); }} />
-                        </div>
-                        <div className="space-y-2">
-                            <LTTLabel>Giới hạn mỗi khách</LTTLabel>
-                            <LTTInput type="number" value={form.perUserLimit} onChange={(e) => { setIsDirty(true); setForm({ ...form, perUserLimit: e.target.value }); }} />
-                        </div>
-                        <div className="space-y-2">
-                            <LTTLabel>Ngày bắt đầu</LTTLabel>
-                            <LTTInput type="date" value={form.startDate} onChange={(e) => { setIsDirty(true); setForm({ ...form, startDate: e.target.value }); }} />
-                        </div>
-                        <div className="space-y-2">
-                            <LTTLabel>Ngày kết thúc</LTTLabel>
-                            <LTTInput type="date" value={form.endDate} onChange={(e) => { setIsDirty(true); setForm({ ...form, endDate: e.target.value }); }} />
-                        </div>
-                        <div className="space-y-2">
-                            <LTTLabel>Trạng thái</LTTLabel>
-                            <LTTSelect value={form.status} onValueChange={(value) => { setIsDirty(true); setForm({ ...form, status: value }); }}>
-                                <LTTSelectTrigger>
-                                    <LTTSelectValue placeholder="Chọn trạng thái" />
-                                </LTTSelectTrigger>
-                                <LTTSelectContent>
-                                    <LTTSelectItem value="Draft">Bản nháp</LTTSelectItem>
-                                    <LTTSelectItem value="Active">Đang chạy</LTTSelectItem>
-                                    <LTTSelectItem value="Expired">Hết hạn</LTTSelectItem>
-                                </LTTSelectContent>
-                            </LTTSelect>
+                    <div className="overflow-y-auto px-6 py-5">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="col-span-2 space-y-2">
+                                <LTTLabel>Mã *</LTTLabel>
+                                <LTTInput value={form.code} onChange={(e) => { setIsDirty(true); setForm({ ...form, code: e.target.value }); }} />
+                            </div>
+                            <div className="col-span-2 space-y-2">
+                                <LTTLabel>Mô tả</LTTLabel>
+                                <LTTInput value={form.description} onChange={(e) => { setIsDirty(true); setForm({ ...form, description: e.target.value }); }} />
+                            </div>
+                            <div className="space-y-2">
+                                <LTTLabel>Loại</LTTLabel>
+                                <LTTSelect value={form.discountType} onValueChange={(value) => { setIsDirty(true); setForm({ ...form, discountType: value }); }}>
+                                    <LTTSelectTrigger>
+                                        <LTTSelectValue placeholder="Chọn loại" />
+                                    </LTTSelectTrigger>
+                                    <LTTSelectContent>
+                                        <LTTSelectItem value="Percentage">Giảm %</LTTSelectItem>
+                                        <LTTSelectItem value="Fixed">Giảm cố định</LTTSelectItem>
+                                        <LTTSelectItem value="GiftCard">Gift Card</LTTSelectItem>
+                                    </LTTSelectContent>
+                                </LTTSelect>
+                            </div>
+                            <div className="space-y-2">
+                                <LTTLabel>Giá trị</LTTLabel>
+                                <LTTInput type="number" value={form.discountValue} onChange={(e) => { setIsDirty(true); setForm({ ...form, discountValue: e.target.value }); }} />
+                            </div>
+                            <div className="space-y-2">
+                                <LTTLabel>Đơn tối thiểu</LTTLabel>
+                                <LTTInput type="number" value={form.minOrderAmount} onChange={(e) => { setIsDirty(true); setForm({ ...form, minOrderAmount: e.target.value }); }} />
+                            </div>
+                            <div className="space-y-2">
+                                <LTTLabel>Giới hạn sử dụng</LTTLabel>
+                                <LTTInput type="number" value={form.usageLimit} onChange={(e) => { setIsDirty(true); setForm({ ...form, usageLimit: e.target.value }); }} />
+                            </div>
+                            <div className="space-y-2">
+                                <LTTLabel>Giới hạn mỗi khách</LTTLabel>
+                                <LTTInput type="number" value={form.perUserLimit} onChange={(e) => { setIsDirty(true); setForm({ ...form, perUserLimit: e.target.value }); }} />
+                            </div>
+                            <div className="space-y-2">
+                                <LTTLabel>Ngày bắt đầu</LTTLabel>
+                                <LTTInput type="date" value={form.startDate} onChange={(e) => { setIsDirty(true); setForm({ ...form, startDate: e.target.value }); }} />
+                            </div>
+                            <div className="space-y-2">
+                                <LTTLabel>Ngày kết thúc</LTTLabel>
+                                <LTTInput type="date" value={form.endDate} onChange={(e) => { setIsDirty(true); setForm({ ...form, endDate: e.target.value }); }} />
+                            </div>
+                            <div className="space-y-2">
+                                <LTTLabel>Trạng thái</LTTLabel>
+                                <LTTSelect value={form.status} onValueChange={(value) => { setIsDirty(true); setForm({ ...form, status: value }); }}>
+                                    <LTTSelectTrigger>
+                                        <LTTSelectValue placeholder="Chọn trạng thái" />
+                                    </LTTSelectTrigger>
+                                    <LTTSelectContent>
+                                        <LTTSelectItem value="Draft">Bản nháp</LTTSelectItem>
+                                        <LTTSelectItem value="Active">Đang chạy</LTTSelectItem>
+                                        <LTTSelectItem value="Expired">Hết hạn</LTTSelectItem>
+                                    </LTTSelectContent>
+                                </LTTSelect>
+                            </div>
                         </div>
                     </div>
-                    <LTTDialogFooter>
+                    <LTTDialogFooter className="px-6 py-4 border-t border-border-shadcn">
                         <LTTButton variant="outline" onClick={() => handleDialogOpenChange(false)}>Hủy</LTTButton>
                         <LTTButton onClick={handleSave} loading={createMutation.isLoading || updateMutation.isLoading}>
                             {editing ? "Lưu" : "Tạo mới"}
