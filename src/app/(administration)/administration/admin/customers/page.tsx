@@ -15,30 +15,34 @@ import {
 import { toast } from "sonner";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import useDebouncedListQuery from "@/src/@core/hooks/useDebouncedListQuery";
-import { customerService } from "@/src/services/customer-service/customer.service";
+import { customerService } from "@/src/services/administration-service/customer/customer.service";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
+import { GetCustomerListInputDto } from "@/src/services/administration-service/customer/models/input.model";
+import { CustomerOutputDto } from "@/src/services/administration-service/customer/models/output.model";
 
 export default function CustomersPage() {
-    const [items, setItems] = useState<any[]>([]);
+    const { t, currentLanguage } = useLocalization();
+    const [items, setItems] = useState<CustomerOutputDto[]>([]);
     const [search, setSearch] = useState("");
-    const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
+    const [selectedCustomer, setSelectedCustomer] = useState<CustomerOutputDto | null>(null);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [confirmType, setConfirmType] = useState<"lock" | "unlock" | "delete">("lock");
 
     const fetchData = (keyword: string) => {
-        listMutation.mutation({ skipCount: 0, maxResultCount: 100, filter: keyword.trim() });
+        listMutation.mutation({ page: 1, fetch: 100, keyword: keyword.trim() });
     };
 
-    const listMutation = useLTTMutation<PagedResultDto<any>, any>({
-        mutationFn: (params) => customerService.getCustomerAsync(params),
+    const listMutation = useLTTMutation<PagedResultDto<CustomerOutputDto>, GetCustomerListInputDto>({
+        mutationFn: (params) => customerService.getCustomerListAsync(params),
         onSuccess: (res) => { if (res && res.items) setItems(res.items); },
-        onError: (err) => toast.error(err.message || "Lỗi tải danh sách khách hàng")
+        onError: (err) => toast.error(err.message || t("admin.customer_management.fetch_error"))
     });
 
     const lockMutation = useLTTMutation<void, string>({
         mutationFn: (id) => customerService.lockCustomerAsync(id),
         onSuccess: () => {
-            toast.success("Đã khóa tài khoản khách hàng");
+            toast.success(t("admin.customer_management.action_success.lock"));
             setConfirmOpen(false);
             fetchData(debouncedSearch);
         }
@@ -47,7 +51,7 @@ export default function CustomersPage() {
     const unlockMutation = useLTTMutation<void, string>({
         mutationFn: (id) => customerService.unlockCustomerAsync(id),
         onSuccess: () => {
-            toast.success("Đã mở khóa tài khoản khách hàng");
+            toast.success(t("admin.customer_management.action_success.unlock"));
             setConfirmOpen(false);
             fetchData(debouncedSearch);
         }
@@ -56,7 +60,7 @@ export default function CustomersPage() {
     const deleteMutation = useLTTMutation<void, string>({
         mutationFn: (id) => customerService.deleteCustomerAsync(id),
         onSuccess: () => {
-            toast.success("Đã xóa tài khoản khách hàng");
+            toast.success(t("admin.customer_management.action_success.delete"));
             setConfirmOpen(false);
             fetchData(debouncedSearch);
         }
@@ -69,7 +73,7 @@ export default function CustomersPage() {
         }
     );
 
-    const handleAction = (customer: any, type: "lock" | "unlock" | "delete") => {
+    const handleAction = (customer: CustomerOutputDto, type: "lock" | "unlock" | "delete") => {
         setSelectedCustomer(customer);
         setConfirmType(type);
         setConfirmOpen(true);
@@ -86,8 +90,8 @@ export default function CustomersPage() {
         <div className="space-y-4 animate-fade-in-up">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="font-heading text-2xl font-bold">Quản lý khách hàng</h1>
-                    <p className="text-sm text-muted-foreground-shadcn">Quản lý danh sách thành viên và trạng thái tài khoản.</p>
+                    <h1 className="font-heading text-2xl font-bold">{t("admin.customer_management.title")}</h1>
+                    <p className="text-sm text-muted-foreground-shadcn">{t("admin.customer_management.subtitle")}</p>
                 </div>
             </div>
 
@@ -95,7 +99,7 @@ export default function CustomersPage() {
                 <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
                     <LTTInput
-                        placeholder="Tìm theo tên, email, SĐT..."
+                        placeholder={t("admin.customer_management.search_placeholder")}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="pl-9"
@@ -107,7 +111,7 @@ export default function CustomersPage() {
                     onClick={() => fetchData(debouncedSearch)}
                     loading={listMutation.isLoading}
                 >
-                    <RefreshCw className="h-4 w-4" /> Làm mới
+                    <RefreshCw className="h-4 w-4" /> {t("admin.customer_management.refresh")}
                 </LTTButton>
             </div>
 
@@ -115,19 +119,19 @@ export default function CustomersPage() {
                 <table className="w-full text-sm text-left">
                     <thead>
                         <tr className="border-b border-border-shadcn bg-muted-shadcn/50 font-semibold">
-                            <th className="px-4 py-3">Khách hàng</th>
-                            <th className="px-4 py-3">Liên hệ</th>
-                            <th className="px-4 py-3">Ngày sinh</th>
-                            <th className="px-4 py-3">Giới tính</th>
-                            <th className="px-4 py-3">Trạng thái</th>
-                            <th className="px-4 py-3 text-right">Thao tác</th>
+                            <th className="px-4 py-3">{t("admin.customer_management.table.customer")}</th>
+                            <th className="px-4 py-3">{t("admin.customer_management.table.contact")}</th>
+                            <th className="px-4 py-3">{t("admin.customer_management.table.birthday")}</th>
+                            <th className="px-4 py-3">{t("admin.customer_management.table.gender")}</th>
+                            <th className="px-4 py-3">{t("admin.customer_management.table.status")}</th>
+                            <th className="px-4 py-3 text-right">{t("admin.customer_management.table.actions")}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border-shadcn">
                         {items.length === 0 ? (
                             <tr>
                                 <td colSpan={6} className="py-12 text-center text-muted-foreground-shadcn">
-                                    {listMutation.isLoading ? "Đang tải dữ liệu..." : "Không tìm thấy khách hàng nào."}
+                                    {listMutation.isLoading ? t("admin.customer_management.loading") : t("admin.customer_management.empty")}
                                 </td>
                             </tr>
                         ) : (
@@ -140,7 +144,7 @@ export default function CustomersPage() {
                                             </div>
                                             <div>
                                                 <div className="font-bold">{c.name}</div>
-                                                <div className="text-[10px] text-muted-foreground-shadcn uppercase tracking-wider font-semibold">{c.memberCode || "Member"}</div>
+                                                <div className="text-[10px] text-muted-foreground-shadcn uppercase tracking-wider font-semibold">{c.memberCode || t("admin.customer_management.member_fallback")}</div>
                                             </div>
                                         </div>
                                     </td>
@@ -150,11 +154,11 @@ export default function CustomersPage() {
                                             <div className="flex items-center gap-1.5"><Phone className="w-3 h-3" /> {c.phoneNumber}</div>
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3 text-xs">{c.dateOfBirth ? new Date(c.dateOfBirth).toLocaleDateString("vi-VN") : "---"}</td>
+                                    <td className="px-4 py-3 text-xs">{c.dateOfBirth ? new Date(c.dateOfBirth).toLocaleDateString(currentLanguage === "en" ? "en-US" : "vi-VN") : "---"}</td>
                                     <td className="px-4 py-3 text-xs">{c.gender || "---"}</td>
                                     <td className="px-4 py-3">
                                         <LTTBadge className={c.isLocked ? "bg-red-100 text-red-700 border-red-200" : "bg-green-100 text-green-700 border-green-200"}>
-                                            {c.isLocked ? "Đã khóa" : "Hoạt động"}
+                                            {c.isLocked ? t("admin.customer_management.status.locked") : t("admin.customer_management.status.active")}
                                         </LTTBadge>
                                     </td>
                                     <td className="px-4 py-3 text-right">
@@ -184,22 +188,26 @@ export default function CustomersPage() {
                 <LTTDialogContent className="sm:max-w-sm">
                     <LTTDialogHeader>
                         <LTTDialogTitle>
-                            {confirmType === "lock" ? "Xác nhận khóa" : confirmType === "unlock" ? "Xác nhận mở khóa" : "Xác nhận xóa"}
+                            {confirmType === "lock" ? t("admin.customer_management.confirm.title_lock") : confirmType === "unlock" ? t("admin.customer_management.confirm.title_unlock") : t("admin.customer_management.confirm.title_delete")}
                         </LTTDialogTitle>
                     </LTTDialogHeader>
                     <div className="py-4">
                         <p className="text-sm text-muted-foreground-shadcn">
-                            Bạn có chắc chắn muốn {confirmType === "lock" ? "khóa" : confirmType === "unlock" ? "mở khóa" : "xóa vĩnh viễn"} khách hàng <strong>{selectedCustomer?.name}</strong>?
+                            {confirmType === "lock"
+                                ? t("admin.customer_management.confirm.message_lock", { name: selectedCustomer?.name })
+                                : confirmType === "unlock"
+                                    ? t("admin.customer_management.confirm.message_unlock", { name: selectedCustomer?.name })
+                                    : t("admin.customer_management.confirm.message_delete", { name: selectedCustomer?.name })}
                         </p>
                     </div>
                     <LTTDialogFooter>
-                        <LTTButton variant="outline" onClick={() => setConfirmOpen(false)}>Hủy</LTTButton>
+                        <LTTButton variant="outline" onClick={() => setConfirmOpen(false)}>{t("admin.customer_management.confirm.cancel")}</LTTButton>
                         <LTTButton
                             variant={confirmType === "delete" ? "destructive" : "default"}
                             onClick={confirmAction}
                             loading={lockMutation.isLoading || unlockMutation.isLoading || deleteMutation.isLoading}
                         >
-                            Xác nhận
+                            {t("admin.customer_management.confirm.confirm")}
                         </LTTButton>
                     </LTTDialogFooter>
                 </LTTDialogContent>

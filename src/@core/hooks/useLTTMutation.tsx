@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { translate } from "../utils/localization";
 
 type LTTMutationProps<LTTOutputType, LTTInputType> = {
     onSuccess?: (res: LTTOutputType | null) => void;
@@ -26,7 +27,7 @@ const normalizeMutationError = (error: unknown) => {
         return { message: error };
     }
 
-    return { message: "Có lỗi xảy ra, vui lòng thử lại." };
+    return { message: translate("http.unknown_error", "Có lỗi xảy ra, vui lòng thử lại.") };
 };
 
 const useLTTMutation = <LTTOutputType, LTTInputType = void>({

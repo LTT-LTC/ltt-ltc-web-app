@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { Plus, Pencil, Trash2, Search, RefreshCw } from "lucide-react";
+import { Popconfirm } from "antd";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
@@ -144,8 +145,8 @@ export default function CinemaAmenitiesAdminPage() {
 
   const openCreate = () => {
     if (!selectedCinemaId) {
-        toast.error("Vui lòng chọn rạp trước");
-        return;
+      toast.error("Vui lòng chọn rạp trước");
+      return;
     }
     setEditing(null);
     setForm({
@@ -173,7 +174,7 @@ export default function CinemaAmenitiesAdminPage() {
       toast.error("Tên tiện ích không được để trống");
       return;
     }
-    
+
     if (editing) {
       updateMutation.mutation({ cinemaId: selectedCinemaId, id: editing.id, body: form });
     } else {
@@ -208,19 +209,19 @@ export default function CinemaAmenitiesAdminPage() {
       <div className="flex items-center justify-between">
         <h1 className="font-heading text-2xl font-bold">Cơ Sở Vật Chất / Tiện Ích Rạp</h1>
         <div className="flex items-center gap-4">
-            <div className="w-64">
-              <LTTSelect value={selectedCinemaId} onValueChange={(v: any) => setSelectedCinemaId(v)}>
-                  <LTTSelectTrigger><LTTSelectValue placeholder="Chọn rạp" /></LTTSelectTrigger>
-                  <LTTSelectContent>
-                      {cinemas.map(c => (
-                          <LTTSelectItem key={c.id} value={c.id}>{c.name}</LTTSelectItem>
-                      ))}
-                  </LTTSelectContent>
-              </LTTSelect>
-            </div>
-            <LTTButton onClick={openCreate} className="gap-2" disabled={!selectedCinemaId}>
+          <div className="w-64">
+            <LTTSelect value={selectedCinemaId} onValueChange={(v: any) => setSelectedCinemaId(v)}>
+              <LTTSelectTrigger><LTTSelectValue placeholder="Chọn rạp" /></LTTSelectTrigger>
+              <LTTSelectContent>
+                {cinemas.map(c => (
+                  <LTTSelectItem key={c.id} value={c.id}>{c.name}</LTTSelectItem>
+                ))}
+              </LTTSelectContent>
+            </LTTSelect>
+          </div>
+          <LTTButton onClick={openCreate} className="gap-2" disabled={!selectedCinemaId}>
             <Plus className="h-4 w-4" /> Thêm tiện ích
-            </LTTButton>
+          </LTTButton>
         </div>
       </div>
 
@@ -270,13 +271,13 @@ export default function CinemaAmenitiesAdminPage() {
           </thead>
           <tbody>
             {loading ? (
-                <tr>
+              <tr>
                 <td colSpan={5} className="py-12 text-center text-muted-foreground-shadcn">
                   Đang tải dữ liệu tiện ích...
                 </td>
               </tr>
             ) : !selectedCinemaId ? (
-                <tr>
+              <tr>
                 <td colSpan={5} className="py-12 text-center text-muted-foreground-shadcn">
                   Vui lòng chọn rạp để xem tiện ích.
                 </td>
@@ -313,17 +314,24 @@ export default function CinemaAmenitiesAdminPage() {
                       <LTTButton variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
                         <Pencil className="h-4 w-4" />
                       </LTTButton>
-                      <LTTButton
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={async () => {
+                      <Popconfirm
+                        title="Xác nhận xóa"
+                        description="Bạn có chắc chắn muốn xóa tiện ích này? Hành động này không thể hoàn tác."
+                        okText="Xóa"
+                        cancelText="Hủy"
+                        onConfirm={async () => {
                           await removeMutation.mutation({ cinemaId: selectedCinemaId, id: item.id });
                           fetchData();
                         }}
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </LTTButton>
+                        <LTTButton
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </LTTButton>
+                      </Popconfirm>
                     </div>
                   </td>
                 </tr>

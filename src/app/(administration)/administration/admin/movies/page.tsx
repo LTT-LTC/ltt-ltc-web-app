@@ -2,8 +2,11 @@
 
 import ManagerMoviesPage from "../../manager/movies/page";
 import DistributionTable from "./DistributionTable";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 export default function MoviesPage() {
+  const { t } = useLocalization();
+
   return (
     <div className="space-y-8">
       <section>
@@ -12,8 +15,8 @@ export default function MoviesPage() {
 
       <section className="pt-8 border-t border-border-shadcn">
         <div className="mb-4">
-          <h2 className="font-heading text-xl font-bold">Giấy phép Phân phối (Distribution Licenses)</h2>
-          <p className="text-sm text-muted-foreground-shadcn">Quản lý thời hạn bản quyền và quyền phân phối phim.</p>
+          <h2 className="font-heading text-xl font-bold">{t("admin.movies.distribution.section_title")}</h2>
+          <p className="text-sm text-muted-foreground-shadcn">{t("admin.movies.distribution.section_description")}</p>
         </div>
         <DistributionTable />
       </section>

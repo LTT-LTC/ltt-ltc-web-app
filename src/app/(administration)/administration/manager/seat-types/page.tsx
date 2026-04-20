@@ -28,8 +28,10 @@ import { seatTypeService } from "@/src/services/administration-service/seat-type
 import { SeatTypeOutputDto } from "@/src/services/administration-service/seat-type/models/output.model";
 import { GetSeatTypeListInputDto, CreateSeatTypeInputDto, UpdateSeatTypeInputDto } from "@/src/services/administration-service/seat-type/models/input.model";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 export default function SeatTypesManagerPage() {
+  const { t } = useLocalization();
   const [items, setItems] = useState<SeatTypeOutputDto[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
@@ -50,35 +52,35 @@ export default function SeatTypesManagerPage() {
     onSuccess: (res) => {
       if (res && res.items) setItems(res.items);
     },
-    onError: (err) => toast.error(err.message || "Lỗi tải danh sách loại ghế")
+    onError: (err) => toast.error(err.message || t("admin.seat_type.fetch_error"))
   });
 
   const createMutation = useLTTMutation<SeatTypeOutputDto | undefined, CreateSeatTypeInputDto>({
     mutationFn: (input) => seatTypeService.createSeatTypeAsync(input),
     onSuccess: () => {
-      toast.success("Thêm loại ghế thành công");
+      toast.success(t("admin.seat_type.create_success"));
       fetchData();
       setDialogOpen(false);
     },
-    onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
+    onError: (err) => toast.error(err.message || t("admin.seat_type.generic_error"))
   });
 
   const updateMutation = useLTTMutation<SeatTypeOutputDto | undefined, { id: string; body: UpdateSeatTypeInputDto }>({
     mutationFn: (input) => seatTypeService.updateSeatTypeAsync(input.id, input.body),
     onSuccess: () => {
-      toast.success("Cập nhật loại ghế thành công");
+      toast.success(t("admin.seat_type.update_success"));
       fetchData();
       setDialogOpen(false);
     },
-    onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
+    onError: (err) => toast.error(err.message || t("admin.seat_type.generic_error"))
   });
 
   const removeMutation = useLTTMutation<boolean, string>({
     mutationFn: async (id) => { await seatTypeService.deleteSeatTypeAsync(id); return true; },
     onSuccess: () => {
-      toast.success("Xóa loại ghế thành công");
+      toast.success(t("admin.seat_type.delete_success"));
     },
-    onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
+    onError: (err) => toast.error(err.message || t("admin.seat_type.generic_error"))
   });
 
   const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || removeMutation.isLoading;
@@ -131,22 +133,22 @@ export default function SeatTypesManagerPage() {
 
   const save = async () => {
     if (!form.name.trim()) {
-      toast.error("Tên loại ghế không được để trống");
+      toast.error(t("admin.seat_type.validation.name_required"));
       return;
     }
 
     if (form.priceMultiplier < 0.5) {
-      toast.error("Hệ số giá phải lớn hơn hoặc bằng 0.5");
+      toast.error(t("admin.seat_type.validation.price_min"));
       return;
     }
 
     if (form.numberOfSeat < 1) {
-      toast.error("Số chỗ ngồi phải lớn hơn hoặc bằng 1");
+      toast.error(t("admin.seat_type.validation.seat_min"));
       return;
     }
 
     if (!["HORIZONTAL", "VERTICAL"].includes(form.displayDirection)) {
-      toast.error("Hướng xếp ghế chỉ cho phép Horizontal hoặc Vertical");
+      toast.error(t("admin.seat_type.validation.direction_invalid"));
       return;
     }
 
@@ -167,9 +169,9 @@ export default function SeatTypesManagerPage() {
     const failed = results.filter((r) => r.status === "rejected").length;
 
     if (failed === 0) {
-      toast.success(`Xóa ${ids.length} loại ghế thành công`);
+      toast.success(t("admin.seat_type.bulk_delete_success", { count: ids.length }));
     } else {
-      toast.error(`Xóa thành công ${ids.length - failed}/${ids.length} loại ghế`);
+      toast.error(t("admin.seat_type.bulk_delete_partial", { successCount: ids.length - failed, count: ids.length }));
     }
 
     setSelected(new Set());
@@ -180,9 +182,9 @@ export default function SeatTypesManagerPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl font-bold">Quản lý Cấu hình Loại Ghế</h1>
+        <h1 className="font-heading text-2xl font-bold">{t("admin.seat_type.title")}</h1>
         <LTTButton onClick={openCreate} className="gap-2">
-          <Plus className="h-4 w-4" /> Thêm loại ghế
+          <Plus className="h-4 w-4" /> {t("admin.seat_type.add")}
         </LTTButton>
       </div>
 
@@ -190,7 +192,7 @@ export default function SeatTypesManagerPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
           <LTTInput
-            placeholder="Tìm kiếm loại ghế..."
+            placeholder={t("admin.seat_type.search_placeholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -202,7 +204,7 @@ export default function SeatTypesManagerPage() {
           onClick={() => fetchData()}
           loading={listMutation.isLoading}
         >
-          <RefreshCw className="h-4 w-4" /> Làm mới
+          <RefreshCw className="h-4 w-4" /> {t("admin.seat_type.refresh")}
         </LTTButton>
         {selected.size > 0 && (
           <LTTButton
@@ -211,7 +213,7 @@ export default function SeatTypesManagerPage() {
             className="gap-2"
             onClick={() => setDeleteOpen(true)}
           >
-            <Trash2 className="h-4 w-4" /> Xóa {selected.size}
+            <Trash2 className="h-4 w-4" /> {t("admin.common.delete_confirm.ok")} {selected.size}
           </LTTButton>
         )}
       </div>
@@ -223,18 +225,18 @@ export default function SeatTypesManagerPage() {
               <th className="w-10 px-3 py-3">
                 <LTTCheckbox checked={allSel} onCheckedChange={toggleAll} />
               </th>
-              <th className="px-4 py-3 text-left font-semibold">Tên loại ghế</th>
-              <th className="px-4 py-3 text-left font-semibold">Mô tả</th>
-              <th className="px-4 py-3 text-left font-semibold">Số chỗ ngồi</th>
-              <th className="px-4 py-3 text-left font-semibold">Hệ số giá</th>
-              <th className="px-4 py-3 text-right font-semibold">Thao tác</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.seat_type.table.name")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.seat_type.table.description")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.seat_type.table.number_of_seat")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.seat_type.table.price_multiplier")}</th>
+              <th className="px-4 py-3 text-right font-semibold">{t("admin.seat_type.table.actions")}</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={6} className="py-12 text-center text-muted-foreground-shadcn">
-                  Không có dữ liệu loại ghế.
+                  {t("admin.seat_type.empty")}
                 </td>
               </tr>
             ) : (
@@ -281,18 +283,18 @@ export default function SeatTypesManagerPage() {
       <LTTDialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <LTTDialogContent className="sm:max-w-lg">
           <LTTDialogHeader>
-            <LTTDialogTitle>{editing ? "Chỉnh sửa loại ghế" : "Thêm loại ghế mới"}</LTTDialogTitle>
+            <LTTDialogTitle>{editing ? t("admin.seat_type.form.edit_title") : t("admin.seat_type.form.create_title")}</LTTDialogTitle>
           </LTTDialogHeader>
           <div className="grid gap-4 py-2 sm:grid-cols-2">
             <div className="space-y-2">
-              <LTTLabel>Tên loại ghế *</LTTLabel>
+              <LTTLabel>{t("admin.seat_type.form.name")}</LTTLabel>
               <LTTInput
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Hệ số giá (VD: 1.5) *</LTTLabel>
+              <LTTLabel>{t("admin.seat_type.form.price_multiplier")}</LTTLabel>
               <LTTInput
                 type="number"
                 step="0.1"
@@ -302,7 +304,7 @@ export default function SeatTypesManagerPage() {
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Số chỗ ngồi *</LTTLabel>
+              <LTTLabel>{t("admin.seat_type.form.number_of_seat")}</LTTLabel>
               <LTTInput
                 type="number"
                 min="1"
@@ -311,7 +313,7 @@ export default function SeatTypesManagerPage() {
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Hướng xếp ghế *</LTTLabel>
+              <LTTLabel>{t("admin.seat_type.form.display_direction")}</LTTLabel>
               <LTTSelect
                 value={form.displayDirection}
                 onValueChange={(v: "HORIZONTAL" | "VERTICAL") => setForm({ ...form, displayDirection: v })}
@@ -320,13 +322,13 @@ export default function SeatTypesManagerPage() {
                   <LTTSelectValue />
                 </LTTSelectTrigger>
                 <LTTSelectContent>
-                  <LTTSelectItem value="HORIZONTAL">Horizontal</LTTSelectItem>
-                  <LTTSelectItem value="VERTICAL">Vertical</LTTSelectItem>
+                  <LTTSelectItem value="HORIZONTAL">{t("admin.seat_type.form.horizontal")}</LTTSelectItem>
+                  <LTTSelectItem value="VERTICAL">{t("admin.seat_type.form.vertical")}</LTTSelectItem>
                 </LTTSelectContent>
               </LTTSelect>
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <LTTLabel>Mô tả</LTTLabel>
+              <LTTLabel>{t("admin.seat_type.form.description")}</LTTLabel>
               <LTTInput
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -334,8 +336,8 @@ export default function SeatTypesManagerPage() {
             </div>
           </div>
           <LTTDialogFooter>
-            <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>Hủy</LTTButton>
-            <LTTButton onClick={save}>{editing ? "Lưu" : "Tạo mới"}</LTTButton>
+            <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>{t("admin.seat_type.form.cancel")}</LTTButton>
+            <LTTButton onClick={save}>{editing ? t("admin.seat_type.form.save") : t("admin.seat_type.form.create")}</LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
       </LTTDialog>
@@ -343,16 +345,16 @@ export default function SeatTypesManagerPage() {
       <LTTDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <LTTDialogContent className="sm:max-w-sm">
           <LTTDialogHeader>
-            <LTTDialogTitle>Xác nhận xóa</LTTDialogTitle>
+            <LTTDialogTitle>{t("admin.seat_type.delete_confirm.title")}</LTTDialogTitle>
           </LTTDialogHeader>
           <div className="py-4">
             <p className="text-sm text-muted-foreground-shadcn">
-              Bạn có chắc chắn muốn xóa <strong>{selected.size}</strong> loại ghế đã chọn? Hành động này không thể hoàn tác.
+              {t("admin.seat_type.delete_confirm.message", { count: selected.size })}
             </p>
           </div>
           <LTTDialogFooter>
-            <LTTButton variant="outline" onClick={() => setDeleteOpen(false)}>Hủy</LTTButton>
-            <LTTButton variant="destructive" onClick={bulkDelete}>Xác nhận xóa</LTTButton>
+            <LTTButton variant="outline" onClick={() => setDeleteOpen(false)}>{t("admin.seat_type.delete_confirm.cancel")}</LTTButton>
+            <LTTButton variant="destructive" onClick={bulkDelete}>{t("admin.seat_type.delete_confirm.confirm")}</LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
       </LTTDialog>

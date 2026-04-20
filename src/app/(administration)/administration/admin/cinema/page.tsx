@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { Plus, Pencil, Trash2, Search, RefreshCw } from "lucide-react";
+import { Popconfirm } from "antd";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
@@ -29,6 +30,7 @@ import { GetCinemaListInputDto, CreateCinemaInputDto, UpdateCinemaInputDto } fro
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { Select } from "antd";
 import vnCityDistricts from "@/src/@core/const/location/vn-city-districts.json";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-100 text-green-700 border-green-200",
@@ -42,6 +44,7 @@ type CityDistrictData = {
 };
 
 export default function CinemaConfigPage() {
+  const { t } = useLocalization();
   const [items, setItems] = useState<CinemaOutputDto[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
@@ -103,35 +106,35 @@ export default function CinemaConfigPage() {
     onSuccess: (res) => {
       if (res && res.items) setItems(res.items);
     },
-    onError: (err) => toast.error(err.message || "Lỗi tải danh sách rạp")
+    onError: (err) => toast.error(err.message || t("admin.cinema_configuration.fetch_error"))
   });
 
   const createMutation = useLTTMutation<CinemaOutputDto | undefined, CreateCinemaInputDto>({
     mutationFn: (input) => cinemaService.createCinemaAsync(input),
     onSuccess: () => {
-      toast.success("Tạo rạp thành công");
+      toast.success(t("admin.cinema_configuration.create_success"));
       fetchData();
       setDialogOpen(false);
     },
-    onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
+    onError: (err) => toast.error(err.message || t("admin.cinema_configuration.generic_error"))
   });
 
   const updateMutation = useLTTMutation<CinemaOutputDto | undefined, { id: string, body: UpdateCinemaInputDto }>({
     mutationFn: (input) => cinemaService.updateCinemaAsync(input.id, input.body),
     onSuccess: () => {
-      toast.success("Cập nhật rạp thành công");
+      toast.success(t("admin.cinema_configuration.update_success"));
       fetchData();
       setDialogOpen(false);
     },
-    onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
+    onError: (err) => toast.error(err.message || t("admin.cinema_configuration.generic_error"))
   });
 
   const removeMutation = useLTTMutation<boolean, string>({
     mutationFn: async (id) => { await cinemaService.deleteCinemaAsync(id); return true; },
     onSuccess: () => {
-      toast.success("Xóa rạp thành công");
+      toast.success(t("admin.cinema_configuration.delete_success"));
     },
-    onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
+    onError: (err) => toast.error(err.message || t("admin.cinema_configuration.generic_error"))
   });
 
   const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || removeMutation.isLoading;
@@ -191,7 +194,7 @@ export default function CinemaConfigPage() {
 
   const save = async () => {
     if (!form.name.trim()) {
-      toast.error("Tên rạp không được để trống");
+      toast.error(t("admin.cinema_configuration.name_required"));
       return;
     }
 
@@ -212,9 +215,9 @@ export default function CinemaConfigPage() {
     const failed = results.filter((r) => r.status === "rejected").length;
 
     if (failed === 0) {
-      toast.success(`Xóa ${ids.length} rạp thành công`);
+      toast.success(t("admin.cinema_configuration.bulk_delete_success", { count: ids.length }));
     } else {
-      toast.error(`Xóa thành công ${ids.length - failed}/${ids.length} rạp`);
+      toast.error(t("admin.cinema_configuration.bulk_delete_partial", { successCount: ids.length - failed, count: ids.length }));
     }
 
     setSelected(new Set());
@@ -225,9 +228,9 @@ export default function CinemaConfigPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl font-bold">Cấu hình rạp chiếu</h1>
+        <h1 className="font-heading text-2xl font-bold">{t("admin.cinema_configuration.title")}</h1>
         <LTTButton onClick={openCreate} className="gap-2">
-          <Plus className="h-4 w-4" /> Thêm rạp
+          <Plus className="h-4 w-4" /> {t("admin.cinema_configuration.add")}
         </LTTButton>
       </div>
 
@@ -235,7 +238,7 @@ export default function CinemaConfigPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
           <LTTInput
-            placeholder="Tìm kiếm rạp..."
+            placeholder={t("admin.cinema_configuration.search_placeholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -247,7 +250,7 @@ export default function CinemaConfigPage() {
           onClick={fetchData}
           loading={listMutation.isLoading}
         >
-          <RefreshCw className="h-4 w-4" /> Làm mới
+          <RefreshCw className="h-4 w-4" /> {t("admin.cinema_configuration.refresh")}
         </LTTButton>
         {selected.size > 0 && (
           <LTTButton
@@ -256,7 +259,7 @@ export default function CinemaConfigPage() {
             className="gap-2"
             onClick={() => setDeleteOpen(true)}
           >
-            <Trash2 className="h-4 w-4" /> Xóa {selected.size}
+            <Trash2 className="h-4 w-4" /> {t("admin.common.delete_confirm.ok")} {selected.size}
           </LTTButton>
         )}
       </div>
@@ -268,27 +271,27 @@ export default function CinemaConfigPage() {
               <th className="w-10 px-3 py-3">
                 <LTTCheckbox checked={allSel} onCheckedChange={toggleAll} />
               </th>
-              <th className="px-4 py-3 text-left font-semibold">STT</th>
-              <th className="px-4 py-3 text-left font-semibold">Tên rạp</th>
-              <th className="px-4 py-3 text-left font-semibold">Thành phố</th>
-              <th className="px-4 py-3 text-left font-semibold">Địa chỉ</th>
-              <th className="px-4 py-3 text-left font-semibold">Phòng chiếu</th>
-              <th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
-              <th className="px-4 py-3 text-left font-semibold">Cập nhật</th>
-              <th className="px-4 py-3 text-right font-semibold">Thao tác</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.index")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.name")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.city")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.address")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.screens")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.status")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.updated")}</th>
+              <th className="px-4 py-3 text-right font-semibold">{t("admin.cinema_configuration.table.actions")}</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
                 <td colSpan={9} className="py-12 text-center text-muted-foreground-shadcn">
-                  Đang tải dữ liệu rạp...
+                  {t("admin.cinema_configuration.loading")}
                 </td>
               </tr>
             ) : items.length === 0 ? (
               <tr>
                 <td colSpan={9} className="py-12 text-center text-muted-foreground-shadcn">
-                  Không có dữ liệu rạp chiếu nào phù hợp.
+                  {t("admin.cinema_configuration.empty")}
                 </td>
               </tr>
             ) : (
@@ -315,10 +318,10 @@ export default function CinemaConfigPage() {
                       className={`font-medium ${statusColors[item.status || "active"] || statusColors.active}`}
                     >
                       {item.status === "active"
-                        ? "Hoạt động"
+                        ? t("admin.cinema_configuration.status.active")
                         : item.status === "maintenance"
-                          ? "Bảo trì"
-                          : item.status === "closed" ? "Đóng cửa" : item.status || "Hoạt động"}
+                          ? t("admin.cinema_configuration.status.maintenance")
+                          : item.status === "closed" ? t("admin.cinema_configuration.status.closed") : item.status || t("admin.cinema_configuration.status.active")}
                     </LTTBadge>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground-shadcn text-xs">
@@ -334,17 +337,24 @@ export default function CinemaConfigPage() {
                       >
                         <Pencil className="h-4 w-4" />
                       </LTTButton>
-                      <LTTButton
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={async () => {
+                      <Popconfirm
+                        title={t("admin.cinema_configuration.delete_confirm.single_title")}
+                        description={t("admin.cinema_configuration.delete_confirm.single_message")}
+                        okText={t("admin.cinema_configuration.delete_confirm.ok")}
+                        cancelText={t("admin.cinema_configuration.delete_confirm.cancel")}
+                        onConfirm={async () => {
                           await removeMutation.mutation(item.id);
                           fetchData();
                         }}
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </LTTButton>
+                        <LTTButton
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </LTTButton>
+                      </Popconfirm>
                     </div>
                   </td>
                 </tr>
@@ -358,26 +368,26 @@ export default function CinemaConfigPage() {
         <LTTDialogContent className="sm:max-w-lg">
           <LTTDialogHeader>
             <LTTDialogTitle>
-              {editing ? "Chỉnh sửa rạp" : "Thêm rạp mới"}
+              {editing ? t("admin.cinema_configuration.form.edit_title") : t("admin.cinema_configuration.form.create_title")}
             </LTTDialogTitle>
           </LTTDialogHeader>
           <div className="grid gap-4 py-2 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
-              <LTTLabel>Tên rạp *</LTTLabel>
+              <LTTLabel>{t("admin.cinema_configuration.form.name")}</LTTLabel>
               <LTTInput
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Thành phố</LTTLabel>
+              <LTTLabel>{t("admin.cinema_configuration.form.city")}</LTTLabel>
               <Select
                 value={form.city}
                 options={cityOptions}
                 allowClear
                 showSearch
                 getPopupContainer={(trigger) => trigger.parentElement as HTMLElement}
-                placeholder="Chọn hoặc tìm thành phố"
+                placeholder={t("admin.cinema_configuration.form.city_placeholder")}
                 className="w-full"
                 optionFilterProp="label"
                 onChange={(value) => setForm({
@@ -391,7 +401,7 @@ export default function CinemaConfigPage() {
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Xã/Phường</LTTLabel>
+              <LTTLabel>{t("admin.cinema_configuration.form.ward")}</LTTLabel>
               <Select
                 value={form.ward}
                 options={districtOptions}
@@ -399,7 +409,7 @@ export default function CinemaConfigPage() {
                 showSearch
                 disabled={!form.city}
                 getPopupContainer={(trigger) => trigger.parentElement as HTMLElement}
-                placeholder={form.city ? "Chọn hoặc tìm xã/phường" : "Vui lòng chọn thành phố trước"}
+                placeholder={form.city ? t("admin.cinema_configuration.form.ward_placeholder") : t("admin.cinema_configuration.form.ward_placeholder_disabled")}
                 className="w-full"
                 optionFilterProp="label"
                 onChange={(value) => setForm({ ...form, ward: String(value || "") })}
@@ -409,7 +419,7 @@ export default function CinemaConfigPage() {
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Trạng thái</LTTLabel>
+              <LTTLabel>{t("admin.cinema_configuration.form.status")}</LTTLabel>
               <LTTSelect
                 value={form.status}
                 onValueChange={(v: any) => setForm({ ...form, status: v })}
@@ -418,21 +428,21 @@ export default function CinemaConfigPage() {
                   <LTTSelectValue />
                 </LTTSelectTrigger>
                 <LTTSelectContent>
-                  <LTTSelectItem value="active">Hoạt động</LTTSelectItem>
-                  <LTTSelectItem value="maintenance">Bảo trì</LTTSelectItem>
-                  <LTTSelectItem value="closed">Đóng cửa</LTTSelectItem>
+                  <LTTSelectItem value="active">{t("admin.cinema_configuration.status.active")}</LTTSelectItem>
+                  <LTTSelectItem value="maintenance">{t("admin.cinema_configuration.status.maintenance")}</LTTSelectItem>
+                  <LTTSelectItem value="closed">{t("admin.cinema_configuration.status.closed")}</LTTSelectItem>
                 </LTTSelectContent>
               </LTTSelect>
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <LTTLabel>Địa chỉ</LTTLabel>
+              <LTTLabel>{t("admin.cinema_configuration.form.address")}</LTTLabel>
               <LTTInput
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Điện thoại</LTTLabel>
+              <LTTLabel>{t("admin.cinema_configuration.form.phone")}</LTTLabel>
               <LTTInput
                 value={form.serviceNumber}
                 onChange={(e) => setForm({ ...form, serviceNumber: e.target.value })}
@@ -441,16 +451,16 @@ export default function CinemaConfigPage() {
           </div>
           <LTTDialogFooter>
             <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>
-              Hủy
+              {t("admin.cinema_configuration.form.cancel")}
             </LTTButton>
-            <LTTButton onClick={save}>{editing ? "Lưu" : "Tạo mới"}</LTTButton>
+            <LTTButton onClick={save}>{editing ? t("admin.cinema_configuration.form.save") : t("admin.cinema_configuration.form.create")}</LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
       </LTTDialog>
 
       <div className="flex items-center justify-between rounded-lg border border-border-shadcn bg-card px-4 py-3">
         <div className="text-sm text-muted-foreground-shadcn">
-          Tổng: {listMutation.data?.totalCount ?? items.length} rạp
+          {t("admin.cinema_configuration.total", { count: listMutation.data?.totalCount ?? items.length })}
         </div>
         <div className="flex items-center gap-2">
           <LTTSelect value={String(fetch)} onValueChange={(v) => setFetch(Number(v))}>
@@ -464,15 +474,15 @@ export default function CinemaConfigPage() {
             </LTTSelectContent>
           </LTTSelect>
           <LTTButton variant="outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
-            Trước
+            {t("admin.cinema_configuration.previous")}
           </LTTButton>
-          <span className="text-sm">Trang {page}</span>
+          <span className="text-sm">{t("admin.cinema_configuration.page", { page })}</span>
           <LTTButton
             variant="outline"
             onClick={() => setPage((p) => p + 1)}
             disabled={page * fetch >= (listMutation.data?.totalCount ?? 0)}
           >
-            Sau
+            {t("admin.cinema_configuration.next")}
           </LTTButton>
         </div>
       </div>
@@ -480,20 +490,19 @@ export default function CinemaConfigPage() {
       <LTTDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <LTTDialogContent className="sm:max-w-sm">
           <LTTDialogHeader>
-            <LTTDialogTitle>Xác nhận xóa</LTTDialogTitle>
+            <LTTDialogTitle>{t("admin.cinema_configuration.delete_confirm.bulk_title")}</LTTDialogTitle>
           </LTTDialogHeader>
           <div className="py-4">
             <p className="text-sm text-muted-foreground-shadcn">
-              Bạn có chắc chắn muốn xóa <strong>{selected.size}</strong> rạp đã
-              chọn? Hành động này không thể hoàn tác.
+              {t("admin.cinema_configuration.delete_confirm.bulk_message", { count: selected.size })}
             </p>
           </div>
           <LTTDialogFooter>
             <LTTButton variant="outline" onClick={() => setDeleteOpen(false)}>
-              Hủy
+              {t("admin.cinema_configuration.delete_confirm.cancel")}
             </LTTButton>
             <LTTButton variant="destructive" onClick={bulkDelete}>
-              Xác nhận xóa
+              {t("admin.cinema_configuration.delete_confirm.confirm")}
             </LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>

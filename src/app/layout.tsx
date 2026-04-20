@@ -10,6 +10,7 @@ import { useMessageInit } from "../@core/utils/message";
 import { Provider } from "react-redux";
 import { store } from "../stores";
 import { Index } from "../@core/provider/localization-provider";
+import { LTTToaster } from "../@core/component/LTTShadcnUI/LTTSonner";
 
 export default function RootLayout({
     children,
@@ -43,6 +44,7 @@ export default function RootLayout({
                                 <Index>
                                     <MessageInitializer>
                                         <SidebarProvider>{children}</SidebarProvider>
+                                        <LTTToaster />
                                     </MessageInitializer>
                                 </Index>
                             </ThemeProvider>

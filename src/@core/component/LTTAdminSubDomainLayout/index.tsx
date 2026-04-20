@@ -24,7 +24,6 @@ import { administrationService } from "@/src/services/administration-service/adm
 import { customerService } from "@/src/services/customer-service/customer.service";
 import { Dropdown } from "../LTTDropdown/Dropdown";
 import { DropdownItem } from "../LTTDropdown/DropdownItem";
-import { LTTToaster } from "../LTTShadcnUI/LTTSonner";
 
 interface LTTAdminSubDomainLayoutProps {
   role: AdminRole;
@@ -284,7 +283,6 @@ export default function LTTAdminSubDomainLayout({
           <div className="animate-fade-in-up">{children}</div>
         </main>
       </div>
-      <LTTToaster />
     </div>
   );
 }

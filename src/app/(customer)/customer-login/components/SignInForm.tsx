@@ -19,8 +19,32 @@ import { customerService } from "@/src/services/customer-service/customer.servic
 import { showNotificationSuccess, showNotificationError } from "@/src/@core/utils/message";
 import { getOrCreateTenantOnClient } from "@/src/@core/utils/tenant";
 import { getCookie, setCookie } from "@/src/@core/utils/cookie";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
+
+interface LoginValidationError {
+    members?: string[];
+    message?: string;
+}
+
+interface LoginErrorShape {
+    message?: string;
+    response?: {
+        data?: {
+            error?: {
+                message?: string;
+                validationErrors?: LoginValidationError[];
+            };
+        };
+    };
+    validationErrors?: LoginValidationError[];
+    error?: {
+        message?: string;
+        validationErrors?: LoginValidationError[];
+    };
+}
 
 const FormDetail = () => {
+    const { t } = useLocalization();
     const [showPassword, setShowPassword] = useState(false);
     const [form] = Form.useForm();
     const [isRedirecting, setIsRedirecting] = useState(false);
@@ -42,7 +66,7 @@ const FormDetail = () => {
         },
         onSuccess: (res: CustomerLoginOutputDto | null) => {
             if (res) {
-                showNotificationSuccess("Đăng nhập thành công.");
+                showNotificationSuccess(t("admin.auth.login.messages.login_success", "Login successful."));
                 setCookie(ACCESS_TOKEN_KEY, res.accessToken);
                 setCookie(REFRESH_TOKEN_KEY, res.refreshToken);
                 setIsRedirecting(true);
@@ -51,27 +75,30 @@ const FormDetail = () => {
                 }, 1000);
             }
         },
-        onError: (err: any) => {
-            // Handle error from backend
-            const backendError = err?.response?.data?.error || err?.error;
-            if (backendError && backendError.validationErrors && backendError.validationErrors.length > 0) {
-                const validationErrors = backendError.validationErrors;
-                const formErrors = validationErrors.map((errItem: any) => ({
+        onError: (err: unknown) => {
+            const error = err as LoginErrorShape;
+            const validationErrors = error.validationErrors || error.error?.validationErrors || error.response?.data?.error?.validationErrors;
+            const backendErrorMessage =
+                error.message ||
+                error.error?.message ||
+                error.response?.data?.error?.message;
+
+            if (validationErrors && validationErrors.length > 0) {
+                const formErrors = validationErrors.map((errItem: LoginValidationError) => ({
                     name: errItem.members && errItem.members.length > 0 ?
                         (errItem.members[0].toLowerCase() === "userName" ? "identifier" : errItem.members[0])
                         : "identifier",
-                    errors: [errItem.message]
+                    errors: [errItem.message || t("admin.auth.login.errors.invalid_data", "Invalid data")]
                 }));
                 form.setFields(formErrors);
-            } else if (backendError && backendError.message) {
-                // Return generic/push notification error for backend error
-                showNotificationError(backendError.message);
+            } else if (backendErrorMessage) {
+                showNotificationError(backendErrorMessage);
                 form.setFields([
                     { name: "identifier", errors: [] },
                     { name: "password", errors: [] }
                 ]);
             } else {
-                showNotificationError("Có lỗi xảy ra, vui lòng thử lại sau.");
+                showNotificationError(t("admin.auth.login.errors.generic", "An error occurred, please try again later."));
                 form.setFields([
                     { name: "identifier", errors: [] },
                     { name: "password", errors: [] }

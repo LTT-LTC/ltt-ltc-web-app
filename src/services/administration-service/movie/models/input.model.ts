@@ -22,6 +22,7 @@ export interface CreateMovieInputDto {
     status?: string;
     description?: string;
     posterUrl?: string;
+    imageFile?: File;
     trailerUrl?: string;
     studioId?: string;
     studioName?: string;
@@ -42,6 +43,7 @@ export interface UpdateMovieInputDto {
     status?: string;
     description?: string;
     posterUrl?: string;
+    imageFile?: File;
     trailerUrl?: string;
     studioId?: string;
     studioName?: string;

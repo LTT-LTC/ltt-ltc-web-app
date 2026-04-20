@@ -1,6 +1,9 @@
 import { App } from "antd";
 import type { MessageInstance } from "antd/es/message/interface";
 import type { ArgsProps, NotificationInstance } from "antd/es/notification/interface";
+import type { ReactNode } from "react";
+import { toast } from "sonner";
+import { translate } from "./localization";
 
 let message: MessageInstance;
 let notification: NotificationInstance;
@@ -15,37 +18,37 @@ export const useMessageInit = () => {
   setMessageInstance(msg, notif);
 };
 
-const showMessageError = (content: string = "Có lỗi xảy ra") => {
-  return message?.error(content);
+const showMessageError = (content: string = translate("toast.error_default", "Có lỗi xảy ra")) => {
+  return toast.error(content);
 };
 
-const showMessageSuccess = (content: string = "Xử lý thành công") => {
-  return message?.success(content);
+const showMessageSuccess = (content: string = translate("toast.success_default", "Xử lý thành công")) => {
+  return toast.success(content);
 };
 
-const showNotificationError = (description?: string | React.ReactNode, options?: ArgsProps) => {
-  return notification?.error({
-    ...options,
-    title: "Thao tác không thành công",
-    description: description ?? "Lỗi xảy ra trong quá trình xử lý, vui lòng liên hệ admin.",
-    placement: options?.placement ?? "topRight",
-    className: "whitespace-pre-line z-99999!",
+const showNotificationError = (description?: string | ReactNode, options?: ArgsProps) => {
+  const messageText =
+    typeof description === "string"
+      ? description
+      : translate("toast.error_default", "Lỗi xảy ra trong quá trình xử lý, vui lòng liên hệ admin.");
+  return toast.error(messageText, {
+    id: options?.key ? String(options.key) : undefined,
   });
 };
 
-const showNotificationSuccess = (description?: string | React.ReactNode, options?: ArgsProps) => {
-  return notification?.success({
-    ...options,
-    title: options?.title ?? "Thao tác thành công",
-    description: description ?? "Xử lý thành công.",
-    placement: options?.placement ?? "topRight",
-    className: "whitespace-pre-line z-99999!",
+const showNotificationSuccess = (description?: string | ReactNode, options?: ArgsProps) => {
+  const messageText =
+    typeof description === "string"
+      ? description
+      : translate("toast.success_default", "Xử lý thành công.");
+  return toast.success(messageText, {
+    id: options?.key ? String(options.key) : undefined,
   });
 };
 
 export {
-    showMessageError,
-    showMessageSuccess,
-    showNotificationError,
-    showNotificationSuccess,
+  showMessageError,
+  showMessageSuccess,
+  showNotificationError,
+  showNotificationSuccess,
 }

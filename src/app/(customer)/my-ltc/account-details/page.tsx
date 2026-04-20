@@ -7,8 +7,10 @@ import { showNotificationSuccess, showNotificationError } from '@/src/@core/util
 import LTTButton from '@/src/@core/component/AntD/LTTButton';
 import { Form, Input, Select, DatePicker } from 'antd';
 import dayjs from 'dayjs';
+import { useLocalization } from '@/src/@core/hooks/use-localization';
 
 export default function AccountDetailsPage() {
+    const { t } = useLocalization();
     const [profile, setProfile] = useState<CustomerProfileOutputDto | null>(null);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
@@ -28,7 +30,7 @@ export default function AccountDetailsPage() {
                 dateOfBirth: data.dateOfBirth ? dayjs(data.dateOfBirth) : null
             });
         } catch (error) {
-            showNotificationError("Không thể tải thông tin tài khoản.");
+            showNotificationError(t('customer.my_ltc.account_details.fetch_error'));
         } finally {
             setLoading(false);
         }
@@ -42,27 +44,27 @@ export default function AccountDetailsPage() {
                 dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString() : null
             });
             setProfile(updatedProfile);
-            showNotificationSuccess("Cập nhật thông tin thành công.");
+            showNotificationSuccess(t('customer.my_ltc.account_details.success'));
             setIsEditing(false);
         } catch (error) {
-            showNotificationError("Cập nhật thất bại, vui lòng thử lại.");
+            showNotificationError(t('customer.my_ltc.account_details.update_error'));
         } finally {
             setLoading(false);
         }
     };
 
     const rows = [
-        { label: 'Họ và tên', key: 'name', value: profile?.name },
-        { label: 'Số điện thoại', key: 'phoneNumber', value: profile?.phoneNumber },
-        { label: 'Giới tính', key: 'gender', value: profile?.gender },
-        { label: 'Ngày sinh', key: 'dateOfBirth', value: profile?.dateOfBirth ? dayjs(profile.dateOfBirth).format('DD/MM/YYYY') : 'Chưa cập nhật' },
-        { label: 'Email', key: 'emailAddress', value: profile?.emailAddress },
-        { label: 'Địa chỉ chi tiết', key: 'address', value: profile?.address || 'Chưa cập nhật' },
-        { label: 'Mã thành viên', key: 'memberCode', value: profile?.memberCode, readOnly: true },
+        { label: t('customer.my_ltc.account_details.fields.name'), key: 'name', value: profile?.name },
+        { label: t('customer.my_ltc.account_details.fields.phone'), key: 'phoneNumber', value: profile?.phoneNumber },
+        { label: t('customer.my_ltc.account_details.fields.gender'), key: 'gender', value: profile?.gender },
+        { label: t('customer.my_ltc.account_details.fields.dob'), key: 'dateOfBirth', value: profile?.dateOfBirth ? dayjs(profile.dateOfBirth).format('DD/MM/YYYY') : t('customer.my_ltc.account_details.not_updated') },
+        { label: t('customer.my_ltc.account_details.fields.email'), key: 'emailAddress', value: profile?.emailAddress },
+        { label: t('customer.my_ltc.account_details.fields.address'), key: 'address', value: profile?.address || t('customer.my_ltc.account_details.not_updated') },
+        { label: t('customer.my_ltc.account_details.fields.member_code'), key: 'memberCode', value: profile?.memberCode, readOnly: true },
     ];
 
     if (loading && !profile) {
-        return <div className="p-8 text-center text-gray-500 animate-pulse font-medium">Đang tải thông tin tài khoản...</div>;
+        return <div className="p-8 text-center text-gray-500 animate-pulse font-medium">{t('customer.my_ltc.account_details.loading')}</div>;
     }
 
     return (
@@ -71,24 +73,24 @@ export default function AccountDetailsPage() {
                 <div className="flex justify-between items-center mb-8 border-b border-gray-100 pb-5">
                     <div className="flex items-center gap-3">
                         <div className="w-1.5 h-6 bg-[#cc3434] rounded-full"></div>
-                        <h2 className="text-2xl font-black text-gray-900 tracking-tight uppercase">THÔNG TIN TÀI KHOẢN</h2>
+                        <h2 className="text-2xl font-black text-gray-900 tracking-tight uppercase">{t('customer.my_ltc.account_details.title')}</h2>
                     </div>
-                    
+
                     {!isEditing ? (
-                        <button 
+                        <button
                             onClick={() => setIsEditing(true)}
                             className="bg-gray-50 hover:bg-[#fff1f1] text-[#cc3434] px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 border border-gray-100 transition-all duration-300 hover:shadow-md active:scale-95 cursor-pointer"
                         >
                             <span className="material-symbols-outlined text-[18px]">edit_square</span>
-                            THAY ĐỔI
+                            {t('customer.my_ltc.account_details.edit')}
                         </button>
                     ) : (
                         <div className="flex gap-3">
-                             <button 
+                            <button
                                 onClick={() => setIsEditing(false)}
                                 className="text-gray-500 hover:text-gray-700 font-bold text-sm border-none bg-transparent cursor-pointer transition-colors"
                             >
-                                HỦY BỎ
+                                {t('customer.my_ltc.account_details.cancel_text')}
                             </button>
                         </div>
                     )}
@@ -119,76 +121,76 @@ export default function AccountDetailsPage() {
                         requiredMark={false}
                     >
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
-                            <Form.Item 
-                                label={<span className="font-bold text-gray-700 uppercase text-xs tracking-wider">Họ và tên</span>} 
-                                name="name" 
-                                rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
+                            <Form.Item
+                                label={<span className="font-bold text-gray-700 uppercase text-xs tracking-wider">{t('customer.my_ltc.account_details.fields.name')}</span>}
+                                name="name"
+                                rules={[{ required: true, message: t('customer.my_ltc.account_details.validation.name_required') }]}
                             >
-                                <Input size="large" className="rounded-lg border-gray-300 focus:border-[#cc3434] focus:ring-0" placeholder="Nhập họ và tên đầy đủ" />
+                                <Input size="large" className="rounded-lg border-gray-300 focus:border-[#cc3434] focus:ring-0" placeholder={t('customer.my_ltc.account_details.placeholders.name')} />
                             </Form.Item>
-                            
-                            <Form.Item 
-                                label={<span className="font-bold text-gray-700 uppercase text-xs tracking-wider">Số điện thoại</span>} 
+
+                            <Form.Item
+                                label={<span className="font-bold text-gray-700 uppercase text-xs tracking-wider">{t('customer.my_ltc.account_details.fields.phone')}</span>}
                                 name="phoneNumber"
-                                rules={[{ required: true, message: 'Vui lòng nhập số điện thoại' }]}
+                                rules={[{ required: true, message: t('customer.my_ltc.account_details.validation.phone_required') }]}
                             >
-                                <Input size="large" className="rounded-lg border-gray-300 focus:border-[#cc3434] focus:ring-0" placeholder="Nhập số điện thoại" />
+                                <Input size="large" className="rounded-lg border-gray-300 focus:border-[#cc3434] focus:ring-0" placeholder={t('customer.my_ltc.account_details.placeholders.phone')} />
                             </Form.Item>
 
-                            <Form.Item 
-                                label={<span className="font-bold text-gray-700 uppercase text-xs tracking-wider">Email</span>} 
-                                name="emailAddress" 
-                                rules={[{ type: 'email', message: 'Email không hợp lệ' }, { required: true, message: 'Vui lòng nhập email' }]}
+                            <Form.Item
+                                label={<span className="font-bold text-gray-700 uppercase text-xs tracking-wider">{t('customer.my_ltc.account_details.fields.email')}</span>}
+                                name="emailAddress"
+                                rules={[{ type: 'email', message: t('customer.my_ltc.account_details.validation.email_invalid') }, { required: true, message: t('customer.my_ltc.account_details.validation.email_required') }]}
                             >
-                                <Input size="large" className="rounded-lg border-gray-300 focus:border-[#cc3434] focus:ring-0" placeholder="example@email.com" />
+                                <Input size="large" className="rounded-lg border-gray-300 focus:border-[#cc3434] focus:ring-0" placeholder={t('customer.my_ltc.account_details.placeholders.email')} />
                             </Form.Item>
 
-                            <Form.Item 
-                                label={<span className="font-bold text-gray-700 uppercase text-xs tracking-wider">Giới tính</span>} 
+                            <Form.Item
+                                label={<span className="font-bold text-gray-700 uppercase text-xs tracking-wider">{t('customer.my_ltc.account_details.fields.gender')}</span>}
                                 name="gender"
                             >
-                                <Select size="large" className="w-full rounded-lg outline-none [&_.ant-select-selector]:!rounded-lg" placeholder="Chọn giới tính">
-                                    <Select.Option value="Nam">Nam</Select.Option>
-                                    <Select.Option value="Nữ">Nữ</Select.Option>
-                                    <Select.Option value="Khác">Khác</Select.Option>
+                                <Select size="large" className="w-full rounded-lg outline-none [&_.ant-select-selector]:!rounded-lg" placeholder={t('customer.my_ltc.account_details.placeholders.gender')}>
+                                    <Select.Option value="Nam">{t('customer.my_ltc.account_details.gender_options.male')}</Select.Option>
+                                    <Select.Option value="Nữ">{t('customer.my_ltc.account_details.gender_options.female')}</Select.Option>
+                                    <Select.Option value="Khác">{t('customer.my_ltc.account_details.gender_options.other')}</Select.Option>
                                 </Select>
                             </Form.Item>
 
-                            <Form.Item 
-                                label={<span className="font-bold text-gray-700 uppercase text-xs tracking-wider">Ngày sinh</span>} 
+                            <Form.Item
+                                label={<span className="font-bold text-gray-700 uppercase text-xs tracking-wider">{t('customer.my_ltc.account_details.fields.dob')}</span>}
                                 name="dateOfBirth"
                             >
-                                <DatePicker className="w-full rounded-lg border-gray-300 h-[40px]" size="large" format="DD/MM/YYYY" placeholder="DD/MM/YYYY" />
+                                <DatePicker className="w-full rounded-lg border-gray-300 h-[40px]" size="large" format="DD/MM/YYYY" placeholder={t('customer.my_ltc.account_details.placeholders.dob')} />
                             </Form.Item>
 
                             <div className="md:col-span-2 mt-2">
-                                <Form.Item 
-                                    label={<span className="font-bold text-gray-700 uppercase text-xs tracking-wider">Địa chỉ chi tiết</span>} 
+                                <Form.Item
+                                    label={<span className="font-bold text-gray-700 uppercase text-xs tracking-wider">{t('customer.my_ltc.account_details.fields.address')}</span>}
                                     name="address"
                                 >
-                                    <Input.TextArea 
-                                        size="large" 
-                                        rows={3} 
+                                    <Input.TextArea
+                                        size="large"
+                                        rows={3}
                                         className="rounded-lg border-gray-300 focus:border-[#cc3434] focus:ring-0"
-                                        placeholder="Nhập địa chỉ nhà, tên đường, quận/huyện, tỉnh/thành phố..."
+                                        placeholder={t('customer.my_ltc.account_details.placeholders.address')}
                                     />
                                 </Form.Item>
                             </div>
                         </div>
 
                         <div className="mt-10 flex justify-end gap-4 border-t border-gray-100 pt-8">
-                            <LTTButton 
+                            <LTTButton
                                 onClick={() => setIsEditing(false)}
                                 className="px-8 !bg-gray-100 !text-gray-600 !border-none hover:!bg-gray-200 transition-all font-bold uppercase tracking-wider"
                             >
-                                Hủy
+                                {t('customer.my_ltc.account_details.cancel')}
                             </LTTButton>
-                            <LTTButton 
-                                htmlType="submit" 
+                            <LTTButton
+                                htmlType="submit"
                                 loading={loading}
                                 className="px-10 !bg-[#cc3434] !text-white !border-none hover:!bg-[#a51818] transition-all font-bold shadow-lg shadow-red-100 uppercase tracking-wider"
                             >
-                                LƯU THAY ĐỔI
+                                {t('customer.my_ltc.account_details.save')}
                             </LTTButton>
                         </div>
                     </Form>
