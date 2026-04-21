@@ -184,7 +184,7 @@ export default function DistributionTable() {
                 </LTTButton>
             </div>
 
-            <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
+            <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm my-3">
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
@@ -262,7 +262,7 @@ export default function DistributionTable() {
                 </table>
             </div>
 
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-border-shadcn bg-card px-4 py-3">
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-border-shadcn bg-card px-4 py-3 my-3">
                 <div className="text-sm text-muted-foreground-shadcn">
                     {t("admin.movies.distribution.total_records", { count: totalCount || items.length })}
                 </div>

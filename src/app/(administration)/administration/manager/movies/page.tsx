@@ -808,7 +808,7 @@ export default function MoviesPage() {
         </LTTTabsList>
       </LTTTabs>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 py-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
           <LTTInput
@@ -829,7 +829,7 @@ export default function MoviesPage() {
         </LTTButton>
       </div>
 
-      <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
+      <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm py-3">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
@@ -930,7 +930,7 @@ export default function MoviesPage() {
         </table>
       </div>
 
-      <div className="flex items-center justify-between gap-3 rounded-lg border border-border-shadcn bg-card px-4 py-3">
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-border-shadcn bg-card px-4 py-3 my-3">
         <div className="text-sm text-muted-foreground-shadcn">
           {t("admin.manager_movies.total_movies", { count: totalCount || items.length })}
         </div>
