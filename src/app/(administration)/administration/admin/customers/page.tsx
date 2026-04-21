@@ -63,7 +63,7 @@ export default function CustomersPage() {
         onSuccess: () => {
             toast.success(t("admin.customer_management.action_success.lock"));
             setConfirmOpen(false);
-            fetchData(debouncedSearch);
+            fetchData();
         }
     });
 
@@ -72,7 +72,7 @@ export default function CustomersPage() {
         onSuccess: () => {
             toast.success(t("admin.customer_management.action_success.unlock"));
             setConfirmOpen(false);
-            fetchData(debouncedSearch);
+            fetchData();
         }
     });
 
@@ -81,7 +81,7 @@ export default function CustomersPage() {
         onSuccess: () => {
             toast.success(t("admin.customer_management.action_success.delete"));
             setConfirmOpen(false);
-            fetchData(debouncedSearch);
+            fetchData();
         }
     });
 
