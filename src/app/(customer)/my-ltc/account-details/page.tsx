@@ -2,7 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import LTTCard from '@/src/@core/component/AntD/LTTCard';
-import { partyService, CustomerProfileOutputDto } from '@/src/services/customer-management/party/party.service';
+import { customerProfileService } from '@/src/services/customer-service/profile/profile.service';
+import { UpdateCustomerProfileInputDto } from '@/src/services/customer-service/profile/models/input.model';
+import { CustomerProfileOutputDto } from '@/src/services/customer-service/profile/models/output.model';
 import { showNotificationSuccess, showNotificationError } from '@/src/@core/utils/message';
 import LTTButton from '@/src/@core/component/AntD/LTTButton';
 import useLTTMutation from '@/src/@core/hooks/useLTTMutation';
@@ -21,7 +23,7 @@ export default function AccountDetailsPage() {
         isLoading: isFetchingProfile,
         isInitLoading: isFetchingProfileInit,
     } = useLTTMutation<CustomerProfileOutputDto, undefined>({
-        mutationFn: () => partyService.getProfileAsync(),
+        mutationFn: () => customerProfileService.getProfileAsync(),
         onSuccess: (data) => {
             if (!data) return;
             setProfile(data);
@@ -35,18 +37,8 @@ export default function AccountDetailsPage() {
         },
     });
 
-    const { mutation: updateProfile, isLoading: isUpdatingProfile } = useLTTMutation<
-        CustomerProfileOutputDto,
-        {
-            name?: string;
-            phoneNumber?: string;
-            gender?: string;
-            dateOfBirth?: string | null;
-            emailAddress?: string;
-            address?: string;
-        }
-    >({
-        mutationFn: (body) => partyService.updateProfileAsync(body),
+    const { mutation: updateProfile, isLoading: isUpdatingProfile } = useLTTMutation<CustomerProfileOutputDto, UpdateCustomerProfileInputDto>({
+        mutationFn: (body) => customerProfileService.updateProfileAsync(body),
         onSuccess: (updatedProfile) => {
             if (!updatedProfile) return;
             setProfile(updatedProfile);
