@@ -71,6 +71,25 @@ const createEmptyCastRow = (mode: "existing" | "new" = "new"): MovieCastFormEntr
   roleName: "",
 });
 
+const buildActorRolesPayload = (
+  cast: MovieCastFormEntry[],
+  actors: ActorOutputDto[],
+  roles: RoleOutputDto[]
+) => {
+  return cast
+    .map((item) => {
+      const actorName = item.actorMode === "new"
+        ? item.actorName.trim()
+        : (actors.find((actor) => actor.id === item.actorId)?.name || item.actorName.trim());
+      const roleName = item.roleMode === "new"
+        ? item.roleName.trim()
+        : (roles.find((role) => role.id === item.roleId)?.name || item.roleName.trim());
+
+      return { actorName, roleName };
+    })
+    .filter((item) => item.actorName && item.roleName);
+};
+
 const buildCastRowsFromMovie = (movie: MovieOutputDto, actors: ActorOutputDto[], roles: RoleOutputDto[]): MovieCastFormEntry[] => {
   const castSources = movie.actorRoles && movie.actorRoles.length > 0
     ? movie.actorRoles.map((item) => ({ actorName: item.actorName, roleName: item.roleName }))
@@ -612,18 +631,7 @@ export default function MoviesPage() {
       return;
     }
 
-    const actorRoles = form.cast
-      .map((item) => {
-        const actorName = item.actorMode === "new"
-          ? item.actorName.trim()
-          : (actors.find((actor) => actor.id === item.actorId)?.name || "");
-        const roleName = item.roleMode === "new"
-          ? item.roleName.trim()
-          : (roles.find((role) => role.id === item.roleId)?.name || "");
-
-        return { actorName, roleName };
-      })
-      .filter((item) => item.actorName && item.roleName);
+    const actorRoles = buildActorRolesPayload(form.cast, actors, roles);
 
     const selectedStudioName = studioMode === "existing"
       ? (studios.find((studio) => studio.id === form.studioId)?.name || "")
@@ -651,10 +659,6 @@ export default function MoviesPage() {
 
       updateMutation.mutation({ id: editing.id, body: updatePayload });
     } else {
-      const actorRoles = form.cast
-        .map((item) => ({ actorName: item.actorName.trim(), roleName: item.roleName.trim() }))
-        .filter((item) => item.actorName && item.roleName);
-
       const payload: CreateMovieInputDto = {
         title: form.title.trim(),
         originalTitle: form.originalTitle?.trim() || undefined,
@@ -804,7 +808,7 @@ export default function MoviesPage() {
         </LTTTabsList>
       </LTTTabs>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 py-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
           <LTTInput
@@ -825,7 +829,7 @@ export default function MoviesPage() {
         </LTTButton>
       </div>
 
-      <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
+      <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm py-3">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
@@ -926,7 +930,7 @@ export default function MoviesPage() {
         </table>
       </div>
 
-      <div className="flex items-center justify-between gap-3 rounded-lg border border-border-shadcn bg-card px-4 py-3">
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-border-shadcn bg-card px-4 py-3 my-3">
         <div className="text-sm text-muted-foreground-shadcn">
           {t("admin.manager_movies.total_movies", { count: totalCount || items.length })}
         </div>

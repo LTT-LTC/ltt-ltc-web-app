@@ -192,7 +192,11 @@
         "delete_success": "Deleted",
         "add_error": "Failed to create",
         "update_error": "Failed to update",
-        "delete_error": "Failed to delete"
+        "delete_error": "Failed to delete",
+        "total_items": "Total: {{count}} items",
+        "previous": "Previous",
+        "page": "Page {{page}} / {{totalPages}}",
+        "next": "Next"
       },
       "genres": {
         "add": "Add Genre",
@@ -535,6 +539,7 @@
       },
       "table": {
         "customer": "Customer",
+        "index": "No.",
         "contact": "Contact",
         "birthday": "Date of Birth",
         "gender": "Gender",
@@ -550,7 +555,11 @@
         "message_delete": "Are you sure you want to permanently delete customer {{name}}?",
         "cancel": "Cancel",
         "confirm": "Confirm"
-      }
+      },
+      "total_customers": "Total: {{count}} customers",
+      "previous": "Previous",
+      "page": "Page {{page}} / {{totalPages}}",
+      "next": "Next"
     }
   },
   "customer": {

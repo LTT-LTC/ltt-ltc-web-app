@@ -192,7 +192,11 @@
         "delete_success": "Đã xóa",
         "add_error": "Lỗi khi thêm",
         "update_error": "Lỗi khi cập nhật",
-        "delete_error": "Lỗi khi xóa"
+        "delete_error": "Lỗi khi xóa",
+        "total_items": "Tổng: {{count}} mục",
+        "previous": "Trước",
+        "page": "Trang {{page}} / {{totalPages}}",
+        "next": "Sau"
       },
       "genres": {
         "add": "Thêm thể loại",
@@ -535,6 +539,7 @@
       },
       "table": {
         "customer": "Khách hàng",
+        "index": "STT",
         "contact": "Liên hệ",
         "birthday": "Ngày sinh",
         "gender": "Giới tính",
@@ -550,7 +555,11 @@
         "message_delete": "Bạn có chắc chắn muốn xóa vĩnh viễn khách hàng {{name}}?",
         "cancel": "Hủy",
         "confirm": "Xác nhận"
-      }
+      },
+      "total_customers": "Tổng cộng: {{count}} khách hàng",
+      "previous": "Trước",
+      "page": "Trang {{page}} / {{totalPages}}",
+      "next": "Sau"
     }
   },
   "customer": {
