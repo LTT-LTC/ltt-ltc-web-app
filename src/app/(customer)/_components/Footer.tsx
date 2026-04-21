@@ -16,11 +16,11 @@ const Footer: React.FC = () => {
                     <div>
                         <h4 className="text-white font-black uppercase text-sm border-b-2 border-primary pb-3 mb-6">LTCinema</h4>
                         <ul className="space-y-4 text-sm">
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.about_us") || "About Us"}</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.use_giftcard") || "Use Giftcode Card"}</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.career") || "Career Opportunities"}</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.contact") || "Contact LTT"}</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.for_partners") || "For Business Partners"}</Link></li>
+                            <li><Link href="/ltcinema/about-us" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.about_us") || "About Us"}</Link></li>
+                            <li><Link href="/ltcinema/use-giftcard" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.use_giftcard") || "Use Giftcode Card"}</Link></li>
+                            <li><Link href="/ltcinema/career" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.career") || "Career Opportunities"}</Link></li>
+                            <li><Link href="/ltcinema/contact" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.contact") || "Contact LTT"}</Link></li>
+                            <li><Link href="/ltcinema/for-partners" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.for_partners") || "For Business Partners"}</Link></li>
                         </ul>
                     </div>
 
@@ -28,12 +28,12 @@ const Footer: React.FC = () => {
                     <div>
                         <h4 className="text-white font-black uppercase text-sm border-b-2 border-primary pb-3 mb-6">{t("customer.footer.policy_legal") || "Policy & Legal"}</h4>
                         <ul className="space-y-4 text-sm">
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.website_conditions") || "Conditions of Website Use"}</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.terms_of_use") || "Terms of Use"}</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.payment_policy") || "Payment Policy"}</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.privacy_policy") || "Privacy Policy"}</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">Cinema Rules</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">F.A.Q.</Link></li>
+                            <li><Link href="/policy-legal/website-conditions" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.website_conditions") || "Conditions of Website Use"}</Link></li>
+                            <li><Link href="/policy-legal/terms-of-use" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.terms_of_use") || "Terms of Use"}</Link></li>
+                            <li><Link href="/policy-legal/payment-policy" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.payment_policy") || "Payment Policy"}</Link></li>
+                            <li><Link href="/policy-legal/privacy-policy" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.privacy_policy") || "Privacy Policy"}</Link></li>
+                            <li><Link href="/policy-legal/cinema-rules" className="text-primary hover:text-primary/80 transition-colors">Cinema Rules</Link></li>
+                            <li><Link href="/policy-legal/faq" className="text-primary hover:text-primary/80 transition-colors">F.A.Q.</Link></li>
                         </ul>
                     </div>
 

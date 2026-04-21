@@ -6,7 +6,7 @@ import Header from "../../_components/Header";
 import Footer from "../../_components/Footer";
 import LTTBadge from "@/src/@core/component/LTTBadge";
 import LTTCastCard from "@/src/@core/component/LTTCastCard";
-import LTTModal from "@/src/@core/component/AntD/LTTModal";
+import LTTTrailerModal from "@/src/@core/component/LTTTrailerModal";
 import { use } from "react";
 
 // ── Rating config (international film classification) ────────────
@@ -207,31 +207,12 @@ export default function MovieDetailPage({
             <Footer />
 
             {/* ── Trailer Modal ──────────────────────────────────── */}
-            <LTTModal
+            <LTTTrailerModal
                 open={trailerOpen}
-                onCancel={() => setTrailerOpen(false)}
-                footer={null}
-                width={900}
-                destroyOnHidden
-                centered
-                title={`${movie.title} — Trailer`}
-                className="trailer-modal"
-                styles={{
-                    body: { padding: 0 },
-                    mask: { backdropFilter: "blur(8px)", background: "rgba(0,0,0,0.75)" },
-                }}
-            >
-                <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
-                    <iframe
-                        className="absolute inset-0 w-full h-full"
-                        src={`https://www.youtube.com/embed/${movie.trailerYoutubeId}`}
-                        title={`${movie.title} Trailer`}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        referrerPolicy="strict-origin-when-cross-origin"
-                    />
-                </div>
-            </LTTModal>
+                onClose={() => setTrailerOpen(false)}
+                trailerYoutubeId={movie.trailerYoutubeId}
+                title={`${movie.title} - Trailer`}
+            />
         </div>
     );
 }

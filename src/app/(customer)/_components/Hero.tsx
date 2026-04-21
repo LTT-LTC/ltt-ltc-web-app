@@ -1,35 +1,50 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-
-const banners = [
-    "/images/banners/980x448-kitkat_1.png",
-    "/images/banners/980x448_132.png",
-    "/images/banners/980x448_8__3.png",
-    "/images/banners/980wx448h_16__3.jpg",
-    "/images/banners/980_x_448_1__3.jpg",
-    "/images/banners/b_n_sao_c_a_980x448_1__1.png",
-    "/images/banners/lny_980_x_448_1.jpg",
-    "/images/banners/pnj_980x448_1.jpg",
-];
+import Link from "next/link";
+import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
+import { getHeroNewsBannersMutation } from "@/src/mutations/customer-content/getHeroNewsBanners.mutation";
+import { CustomerNewsOfferOutputDto } from "@/src/services/customer-service/content/models/output.model";
 
 const Hero: React.FC = () => {
     const [current, setCurrent] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
 
+    const { mutation, data } = useLTTMutation<CustomerNewsOfferOutputDto[], { limit: number }>({
+        mutationFn: getHeroNewsBannersMutation,
+    });
+
+    const banners = data ?? [];
+
     const next = useCallback(() => {
+        if (banners.length === 0) return;
         setCurrent((prev) => (prev + 1) % banners.length);
-    }, []);
+    }, [banners.length]);
 
     const prev = useCallback(() => {
+        if (banners.length === 0) return;
         setCurrent((prev) => (prev - 1 + banners.length) % banners.length);
+    }, [banners.length]);
+
+    useEffect(() => {
+        mutation({ limit: 6 });
     }, []);
 
     useEffect(() => {
-        if (isHovered) return;
+        if (current >= banners.length && banners.length > 0) {
+            setCurrent(0);
+        }
+    }, [banners.length, current]);
+
+    useEffect(() => {
+        if (isHovered || banners.length <= 1) return;
         const timer = setInterval(next, 4000);
         return () => clearInterval(timer);
-    }, [isHovered, next]);
+    }, [isHovered, next, banners.length]);
+
+    if (banners.length === 0) {
+        return null;
+    }
 
     return (
         <section className="w-full flex justify-center px-4 lg:px-0 py-4 sm:py-6 bg-background-light dark:bg-background-dark">
@@ -43,16 +58,20 @@ const Hero: React.FC = () => {
                     className="flex transition-transform duration-700 ease-in-out"
                     style={{ transform: `translateX(-${current * 100}%)` }}
                 >
-                    {banners.map((src, index) => (
-                        <div key={index} className="w-full flex-shrink-0 relative aspect-[980/448]">
+                    {banners.map((item, index) => (
+                        <Link
+                            key={item.id}
+                            href={`/news-offers/${item.id}`}
+                            className="w-full flex-shrink-0 relative aspect-[980/448] block"
+                        >
                             <Image
-                                src={src}
-                                alt={`Banner ${index + 1}`}
+                                src={item.banner}
+                                alt={item.title}
                                 fill
                                 className="object-cover"
                                 priority={index === 0}
                             />
-                        </div>
+                        </Link>
                     ))}
                 </div>
 
@@ -72,9 +91,9 @@ const Hero: React.FC = () => {
 
                 {/* Dot indicators */}
                 <div className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2">
-                    {banners.map((_, index) => (
+                    {banners.map((item, index) => (
                         <button
-                            key={index}
+                            key={item.id}
                             onClick={() => setCurrent(index)}
                             className={`h-2 rounded-full transition-all duration-300 ${index === current
                                 ? "w-8 bg-primary"

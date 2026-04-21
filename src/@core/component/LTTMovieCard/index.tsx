@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import Image from "next/image";
+import LTTTrailerModal from "@/src/@core/component/LTTTrailerModal";
 
 export interface MovieTag {
     text: string;
@@ -17,6 +18,7 @@ export interface LTTMovieCardProps {
     releaseDate?: string;
     rank?: number;
     loading?: boolean;
+    trailerYoutubeId?: string;
     onQuickBook?: () => void;
     onViewDetail?: () => void;
 }
@@ -31,9 +33,12 @@ const LTTMovieCard: React.FC<LTTMovieCardProps> = ({
     releaseDate,
     rank,
     loading,
+    trailerYoutubeId,
     onQuickBook,
     onViewDetail,
 }) => {
+    const [trailerOpen, setTrailerOpen] = React.useState(false);
+
     // Determine rank color
     const getRankColor = (r: number) => {
         if (r === 1) return "bg-red-600";
@@ -92,7 +97,12 @@ const LTTMovieCard: React.FC<LTTMovieCardProps> = ({
                         <p className="text-white text-xs font-medium leading-tight line-clamp-4 mb-2">{description}</p>
                     )}
                     <button
-                        onClick={(e) => { e.stopPropagation(); onQuickBook?.(); }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (!trailerYoutubeId) return;
+                            setTrailerOpen(true);
+                        }}
+                        disabled={!trailerYoutubeId}
                         className="bg-white text-primary px-4 py-2 rounded-full text-xs font-bold w-full uppercase hover:scale-105 transition-transform"
                     >
                         Trailer
@@ -126,6 +136,15 @@ const LTTMovieCard: React.FC<LTTMovieCardProps> = ({
                     )}
                 </div>
             </div>
+
+            {trailerYoutubeId ? (
+                <LTTTrailerModal
+                    open={trailerOpen}
+                    onClose={() => setTrailerOpen(false)}
+                    trailerYoutubeId={trailerYoutubeId}
+                    title={`${title} - Trailer`}
+                />
+            ) : null}
         </div>
     );
 };
