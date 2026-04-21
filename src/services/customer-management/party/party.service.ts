@@ -22,25 +22,15 @@ type UpdateCustomerProfileInput = {
 };
 
 const getProfileAsync = async (): Promise<CustomerProfileOutputDto> => {
-    try {
-        const { data } = await http.get<CustomerProfileOutputDto>(`${rootCustomerPath}/profile/me`);
-        return data;
-    } catch {
-        const { data } = await http.get<CustomerProfileOutputDto>(`${rootCustomerPath}/profile`);
-        return data;
-    }
+    const { data } = await http.get<CustomerProfileOutputDto>(`${rootCustomerPath}/profile`);
+    return data;
 };
 
 const updateProfileAsync = async (
     body: UpdateCustomerProfileInput,
 ): Promise<CustomerProfileOutputDto> => {
-    try {
-        const { data } = await http.put<CustomerProfileOutputDto>(`${rootCustomerPath}/profile/me`, body);
-        return data;
-    } catch {
-        const { data } = await http.put<CustomerProfileOutputDto>(`${rootCustomerPath}/profile`, body);
-        return data;
-    }
+    const { data } = await http.put<CustomerProfileOutputDto>(`${rootCustomerPath}/profile`, body);
+    return data;
 };
 
 export const partyService = {

@@ -23,7 +23,6 @@ const RATED_CONFIG: Record<string, { label: string; icon: string; color: string;
 };
 
 const FALLBACK_BACKDROP = "/images/movie-current-banners/470x700-us.jpg";
-const DEFAULT_AVATAR = "/images/main/default_avatar.png";
 
 const formatDate = (value?: string) => {
     if (!value) return "-";
@@ -55,24 +54,44 @@ const formatDuration = (value?: number) => {
     return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
 };
 
+const getCastName = (item: MovieDetailOutputDto["cast"][number]) => {
+    return item.actorName || item.actor?.name || "Unknown";
+};
+
+const getCastRole = (item: MovieDetailOutputDto["cast"][number]) => {
+    return item.roleName || item.role?.name || item.characterName || "";
+};
+
 const getCastList = (movie: MovieDetailOutputDto) => {
+    if (movie.cast && movie.cast.length > 0) {
+        return movie.cast.map((item) => ({
+            name: getCastName(item),
+            role: getCastRole(item),
+        }));
+    }
+
     if (movie.actorRoles && movie.actorRoles.length > 0) {
         return movie.actorRoles.map((item) => ({
             name: item.actorName,
             role: item.roleName,
-            image: DEFAULT_AVATAR,
-        }));
-    }
-
-    if (movie.cast && movie.cast.length > 0) {
-        return movie.cast.map((item) => ({
-            name: item.actorName || item.actor?.name || "Unknown",
-            role: item.roleName || item.role?.name || "",
-            image: DEFAULT_AVATAR,
         }));
     }
 
     return [];
+};
+
+const getDirectorNames = (movie: MovieDetailOutputDto) => {
+    const fromCast = movie.cast
+        ?.filter((item) => (item.roleName || item.role?.name || "").toLowerCase().includes("director"))
+        .map((item) => getCastName(item)) ?? [];
+
+    if (fromCast.length > 0) {
+        return fromCast;
+    }
+
+    return movie.actorRoles
+        ?.filter((item) => item.roleName.toLowerCase().includes("director"))
+        .map((item) => item.actorName) ?? [];
 };
 
 export default function MovieDetailPage() {
@@ -131,6 +150,8 @@ export default function MovieDetailPage() {
     const poster = getMoviePoster(movie?.posterUrl, 0);
     const backdrop = movie?.posterUrl || FALLBACK_BACKDROP;
     const castList = movie ? getCastList(movie) : [];
+    const directorNames = movie ? getDirectorNames(movie) : [];
+    const genreNames = movie ? (movie.genreNames || movie.genres?.map((genre) => genre.name) || []) : [];
 
     useEffect(() => {
         if (searchParams.get("trailer") === "1" && trailerYoutubeId) {
@@ -209,7 +230,7 @@ export default function MovieDetailPage() {
                                 </div>
 
                                 <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                                    {(movie.genreNames || movie.genres?.map((genre) => genre.name) || []).map((genre) => (
+                                    {genreNames.map((genre) => (
                                         <LTTBadge key={genre} color="light" variant="solid" size="sm">
                                             {genre}
                                         </LTTBadge>
@@ -283,7 +304,8 @@ export default function MovieDetailPage() {
                                 <h3 className="text-base font-bold text-slate-900 dark:text-white m-0 pb-3 border-b border-slate-100 dark:border-slate-700">
                                     Movie Info
                                 </h3>
-                                <InfoRow icon="movie" label="Title" value={movie.title} />
+                                <InfoRow icon="person" label="Director" value={directorNames.length > 0 ? directorNames.join(", ") : "-"} />
+                                <InfoRow icon="local_movies" label="Genre" value={genreNames.length > 0 ? genreNames.join(", ") : "-"} />
                                 <InfoRow icon="theaters" label="Studio" value={movie.studioName || movie.studio?.name || "-"} />
                                 <InfoRow icon="calendar_today" label="Release Date" value={formatDate(movie.releaseDate || movie.premiereDate)} />
                                 <InfoRow icon="schedule" label="Running Time" value={formatDuration(movie.durationMins)} />
