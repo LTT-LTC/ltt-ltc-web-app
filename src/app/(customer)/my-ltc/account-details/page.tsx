@@ -5,6 +5,7 @@ import LTTCard from '@/src/@core/component/AntD/LTTCard';
 import { partyService, CustomerProfileOutputDto } from '@/src/services/customer-management/party/party.service';
 import { showNotificationSuccess, showNotificationError } from '@/src/@core/utils/message';
 import LTTButton from '@/src/@core/component/AntD/LTTButton';
+import useLTTMutation from '@/src/@core/hooks/useLTTMutation';
 import { Form, Input, Select, DatePicker } from 'antd';
 import dayjs from 'dayjs';
 import { useLocalization } from '@/src/@core/hooks/use-localization';
@@ -12,45 +13,64 @@ import { useLocalization } from '@/src/@core/hooks/use-localization';
 export default function AccountDetailsPage() {
     const { t } = useLocalization();
     const [profile, setProfile] = useState<CustomerProfileOutputDto | null>(null);
-    const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [form] = Form.useForm();
 
-    useEffect(() => {
-        fetchProfile();
-    }, []);
-
-    const fetchProfile = async () => {
-        try {
-            setLoading(true);
-            const data = await partyService.getProfileAsync();
+    const {
+        mutation: fetchProfile,
+        isLoading: isFetchingProfile,
+        isInitLoading: isFetchingProfileInit,
+    } = useLTTMutation<CustomerProfileOutputDto, undefined>({
+        mutationFn: () => partyService.getProfileAsync(),
+        onSuccess: (data) => {
+            if (!data) return;
             setProfile(data);
             form.setFieldsValue({
                 ...data,
-                dateOfBirth: data.dateOfBirth ? dayjs(data.dateOfBirth) : null
+                dateOfBirth: data.dateOfBirth ? dayjs(data.dateOfBirth) : null,
             });
-        } catch (error) {
+        },
+        onError: () => {
             showNotificationError(t('customer.my_ltc.account_details.fetch_error'));
-        } finally {
-            setLoading(false);
-        }
-    };
+        },
+    });
 
-    const handleUpdate = async (values: any) => {
-        try {
-            setLoading(true);
-            const updatedProfile = await partyService.updateProfileAsync({
-                ...values,
-                dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString() : null
-            });
+    const { mutation: updateProfile, isLoading: isUpdatingProfile } = useLTTMutation<
+        CustomerProfileOutputDto,
+        {
+            name?: string;
+            phoneNumber?: string;
+            gender?: string;
+            dateOfBirth?: string | null;
+            emailAddress?: string;
+            address?: string;
+        }
+    >({
+        mutationFn: (body) => partyService.updateProfileAsync(body),
+        onSuccess: (updatedProfile) => {
+            if (!updatedProfile) return;
             setProfile(updatedProfile);
+            form.setFieldsValue({
+                ...updatedProfile,
+                dateOfBirth: updatedProfile.dateOfBirth ? dayjs(updatedProfile.dateOfBirth) : null,
+            });
             showNotificationSuccess(t('customer.my_ltc.account_details.success'));
             setIsEditing(false);
-        } catch (error) {
+        },
+        onError: () => {
             showNotificationError(t('customer.my_ltc.account_details.update_error'));
-        } finally {
-            setLoading(false);
-        }
+        },
+    });
+
+    useEffect(() => {
+        fetchProfile(undefined);
+    }, []);
+
+    const handleUpdate = async (values: any) => {
+        await updateProfile({
+            ...values,
+            dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString() : null,
+        });
     };
 
     const rows = [
@@ -63,7 +83,7 @@ export default function AccountDetailsPage() {
         { label: t('customer.my_ltc.account_details.fields.member_code'), key: 'memberCode', value: profile?.memberCode, readOnly: true },
     ];
 
-    if (loading && !profile) {
+    if ((isFetchingProfile || isFetchingProfileInit) && !profile) {
         return <div className="p-8 text-center text-gray-500 animate-pulse font-medium">{t('customer.my_ltc.account_details.loading')}</div>;
     }
 
@@ -187,7 +207,7 @@ export default function AccountDetailsPage() {
                             </LTTButton>
                             <LTTButton
                                 htmlType="submit"
-                                loading={loading}
+                                loading={isUpdatingProfile}
                                 className="px-10 !bg-[#cc3434] !text-white !border-none hover:!bg-[#a51818] transition-all font-bold shadow-lg shadow-red-100 uppercase tracking-wider"
                             >
                                 {t('customer.my_ltc.account_details.save')}
