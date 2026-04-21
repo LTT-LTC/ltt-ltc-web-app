@@ -48,8 +48,9 @@ const SignUpForm = () => {
     useEffect(() => {
         getOrCreateTenantOnClient();
         const accessToken = getCookie(ACCESS_TOKEN_KEY);
-        if (accessToken) {
-            window.location.href = "/";
+        const refreshToken = getCookie(REFRESH_TOKEN_KEY);
+        if (accessToken || refreshToken) {
+            window.location.href = "/homepage";
         }
     }, []);
 

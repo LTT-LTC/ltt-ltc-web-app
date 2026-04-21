@@ -143,6 +143,8 @@ const resolveValidatedAdminRole = async (request: NextRequest, accessToken: stri
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const accessToken = request.cookies.get(ACCESS_TOKEN_KEY)?.value;
+    const refreshToken = request.cookies.get(REFRESH_TOKEN_KEY)?.value;
+    const hasAuthToken = Boolean(accessToken || refreshToken);
 
     const isSensitiveCustomer = sensitiveCustomerRoutes.some(route => pathname.startsWith(route));
     const isCustomerAuthPath = customerAuthRoutes.some(route => pathname.startsWith(route));
@@ -154,8 +156,8 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    if (isCustomerAuthPath && accessToken) {
-        return NextResponse.redirect(new URL('/', request.url));
+    if (isCustomerAuthPath && hasAuthToken) {
+        return NextResponse.redirect(new URL('/homepage', request.url));
     }
 
     if (isSensitiveCustomer) {
