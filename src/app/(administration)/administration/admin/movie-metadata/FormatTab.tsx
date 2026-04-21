@@ -5,6 +5,13 @@ import { Plus, Pencil, Trash2, Box, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import {
+    LTTSelect,
+    LTTSelectContent,
+    LTTSelectItem,
+    LTTSelectTrigger,
+    LTTSelectValue,
+} from "@/src/@core/component/LTTShadcnUI/LTTSelect";
+import {
     LTTDialog,
     LTTDialogContent,
     LTTDialogHeader,
@@ -21,29 +28,12 @@ import { toast } from "sonner";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 
-let formatItemsCache: FormatOutputDto[] | null = null;
-let formatItemsRequest: Promise<FormatOutputDto[]> | null = null;
-
-const loadFormatItems = async () => {
-    if (formatItemsCache !== null) {
-        return formatItemsCache;
-    }
-
-    if (!formatItemsRequest) {
-        formatItemsRequest = movieService.getFormatsAsync({ page: 1, fetch: 1000 }).then((res) => {
-            formatItemsCache = res?.items ?? [];
-            return formatItemsCache;
-        }).finally(() => {
-            formatItemsRequest = null;
-        });
-    }
-
-    return formatItemsRequest;
-};
-
 export default function FormatTab() {
     const { t } = useLocalization();
     const [items, setItems] = useState<FormatOutputDto[]>([]);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [totalCount, setTotalCount] = useState(0);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
@@ -51,11 +41,11 @@ export default function FormatTab() {
     const [name, setName] = useState("");
 
     const listMutation = useLTTMutation<PagedResultDto<FormatOutputDto> | undefined, void>({
-        mutationFn: () => movieService.getFormatsAsync({ page: 1, fetch: 1000 }),
+        mutationFn: () => movieService.getFormatsAsync({ page, fetch: pageSize }),
         onSuccess: (res) => {
             const nextItems = res?.items ?? [];
-            formatItemsCache = nextItems;
             setItems(nextItems);
+            setTotalCount(res?.totalCount ?? 0);
         },
         onError: (err) => toast.error(err.message || t("admin.movie_metadata.formats.fetch_error"))
     });
@@ -67,6 +57,7 @@ export default function FormatTab() {
             setDialogOpen(false);
             setExitConfirmOpen(false);
             setIsDirty(false);
+            setPage(1);
             listMutation.mutation();
         },
         onError: (err) => toast.error(err.message || t("admin.movie_metadata.common.add_error"))
@@ -88,167 +79,209 @@ export default function FormatTab() {
         mutationFn: (id) => movieService.deleteFormatAsync(id),
         onSuccess: () => {
             toast.success(t("admin.movie_metadata.common.delete_success"));
-            listMutation.mutation();
+            if (items.length === 1 && page > 1) {
+                setPage(page - 1);
+                // useEffect will trigger refresh due to page dependency
+            } else {
+                listMutation.mutation();
+            }
         },
         onError: (err) => toast.error(err.message || t("admin.movie_metadata.common.delete_error"))
     });
 
-    useEffect(() => {
-        let active = true;
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
-        void loadFormatItems().then((nextItems) => {
-            if (active) {
-                setItems(nextItems);
-            }
+    useEffect(() => {
+        listMutation.mutation();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [page, pageSize]);
+    setItems(nextItems);
+}
         });
 
-        return () => {
-            active = false;
-        };
+return () => {
+    active = false;
+};
     }, []);
 
-    const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || deleteMutation.isLoading;
+const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || deleteMutation.isLoading;
 
-    const handleSave = () => {
-        if (!name.trim()) return toast.error(t("admin.movie_metadata.common.name_required"));
-        if (editing) {
-            updateMutation.mutation({ id: editing.id, name });
-        } else {
-            createMutation.mutation({ name });
-        }
-    };
+const handleSave = () => {
+    if (!name.trim()) return toast.error(t("admin.movie_metadata.common.name_required"));
+    if (editing) {
+        updateMutation.mutation({ id: editing.id, name });
+    } else {
+        createMutation.mutation({ name });
+    }
+};
 
-    const resetDialog = () => {
-        setDialogOpen(false);
-        setExitConfirmOpen(false);
-        setIsDirty(false);
-        setEditing(null);
-        setName("");
-    };
+const resetDialog = () => {
+    setDialogOpen(false);
+    setExitConfirmOpen(false);
+    setIsDirty(false);
+    setEditing(null);
+    setName("");
+};
 
-    const openCreate = () => {
-        setEditing(null);
-        setName("");
-        setIsDirty(false);
+const openCreate = () => {
+    setEditing(null);
+    setName("");
+    setIsDirty(false);
+    setDialogOpen(true);
+};
+
+const openEdit = (item: FormatOutputDto) => {
+    setEditing(item);
+    setName(item.name);
+    setIsDirty(false);
+    setDialogOpen(true);
+};
+
+const handleDialogOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
         setDialogOpen(true);
-    };
+        return;
+    }
 
-    const openEdit = (item: FormatOutputDto) => {
-        setEditing(item);
-        setName(item.name);
-        setIsDirty(false);
-        setDialogOpen(true);
-    };
+    if (isDirty) {
+        setExitConfirmOpen(true);
+        return;
+    }
 
-    const handleDialogOpenChange = (nextOpen: boolean) => {
-        if (nextOpen) {
-            setDialogOpen(true);
-            return;
-        }
+    resetDialog();
+};
 
-        if (isDirty) {
-            setExitConfirmOpen(true);
-            return;
-        }
-
-        resetDialog();
-    };
-
-    return (
-        <div className="space-y-4">
-            <div className="flex justify-end gap-2">
-                <LTTButton variant="outline" className="gap-2" onClick={() => listMutation.mutation()} loading={listMutation.isLoading}>
-                    <RefreshCw className="h-4 w-4" /> {t("admin.movie_metadata.common.refresh")}
-                </LTTButton>
-                <LTTButton className="gap-2" onClick={openCreate}>
-                    <Plus className="h-4 w-4" /> {t("admin.movie_metadata.formats.add")}
-                </LTTButton>
-            </div>
-
-            <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
-                <table className="w-full text-sm">
-                    <thead>
-                        <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
-                            <th className="px-4 py-3 text-left font-semibold">{t("admin.movie_metadata.formats.name")}</th>
-                            <th className="px-4 py-3 text-right font-semibold">{t("admin.movie_metadata.common.actions")}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? (
-                            <tr>
-                                <td colSpan={2} className="py-12 text-center text-muted-foreground-shadcn">
-                                    {t("admin.movie_metadata.formats.loading")}
-                                </td>
-                            </tr>
-                        ) : items.length === 0 ? (
-                            <tr>
-                                <td colSpan={2} className="py-12 text-center text-muted-foreground-shadcn">
-                                    {t("admin.movie_metadata.formats.empty")}
-                                </td>
-                            </tr>
-                        ) : (
-                            items.map((item) => (
-                                <tr key={item.id} className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors">
-                                    <td className="px-4 py-3 font-medium flex items-center gap-2">
-                                        <Box className="h-4 w-4 text-primary-shadcn" />
-                                        {item.name}
-                                    </td>
-                                    <td className="px-4 py-3 text-right">
-                                        <div className="flex justify-end gap-1">
-                                            <LTTButton variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
-                                                <Pencil className="h-4 w-4" />
-                                            </LTTButton>
-                                            <LTTConfirmDialog
-                                                title={t("admin.common.delete_confirm.title")}
-                                                description={t("admin.common.delete_confirm.message")}
-                                                confirmText={t("admin.common.delete_confirm.ok")}
-                                                cancelText={t("admin.common.delete_confirm.cancel")}
-                                                onConfirm={() => deleteMutation.mutation(item.id)}
-                                                loading={deleteMutation.isLoading}
-                                                trigger={
-                                                    <LTTButton variant="ghost" size="icon" className="h-8 w-8 text-destructive">
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </LTTButton>
-                                                }
-                                            />
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
-
-            <LTTDialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
-                <LTTDialogContent>
-                    <LTTDialogHeader>
-                        <LTTDialogTitle>{editing ? t("admin.movie_metadata.formats.edit_title") : t("admin.movie_metadata.formats.create_title")}</LTTDialogTitle>
-                    </LTTDialogHeader>
-                    <div className="py-4 space-y-2">
-                        <LTTLabel htmlFor="name">{t("admin.movie_metadata.formats.name_label")}</LTTLabel>
-                        <LTTInput id="name" value={name} onChange={e => { setIsDirty(true); setName(e.target.value); }} />
-                    </div>
-                    <LTTDialogFooter>
-                        <LTTButton variant="outline" onClick={() => handleDialogOpenChange(false)}>{t("admin.movie_metadata.common.cancel")}</LTTButton>
-                        <LTTButton onClick={handleSave} loading={createMutation.isLoading || updateMutation.isLoading}>
-                            {editing ? t("admin.movie_metadata.common.save") : t("admin.movie_metadata.common.create")}
-                        </LTTButton>
-                    </LTTDialogFooter>
-                </LTTDialogContent>
-            </LTTDialog>
-
-            <LTTUnsavedChangesDialog
-                open={exitConfirmOpen}
-                onOpenChange={setExitConfirmOpen}
-                title={t("admin.common.unsaved_changes_dialog.title")}
-                messageBefore={t("admin.common.unsaved_changes_dialog.message_before")}
-                messageHighlight={t("admin.common.unsaved_changes_dialog.message_highlight")}
-                messageAfter={t("admin.common.unsaved_changes_dialog.message_after")}
-                stayText={t("admin.common.unsaved_changes_dialog.stay")}
-                exitText={t("admin.common.unsaved_changes_dialog.exit")}
-                onExit={resetDialog}
-            />
+return (
+    <div className="space-y-4">
+        <div className="flex justify-end gap-2">
+            <LTTButton variant="outline" className="gap-2" onClick={() => listMutation.mutation()} loading={listMutation.isLoading}>
+                <RefreshCw className="h-4 w-4" /> {t("admin.movie_metadata.common.refresh")}
+            </LTTButton>
+            <LTTButton className="gap-2" onClick={openCreate}>
+                <Plus className="h-4 w-4" /> {t("admin.movie_metadata.formats.add")}
+            </LTTButton>
         </div>
-    );
+
+        <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
+            <table className="w-full text-sm">
+                <thead>
+                    <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
+                        <th className="px-4 py-3 text-left font-semibold">{t("admin.movie_metadata.formats.name")}</th>
+                        <th className="px-4 py-3 text-right font-semibold">{t("admin.movie_metadata.common.actions")}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {loading ? (
+                        <tr>
+                            <td colSpan={2} className="py-12 text-center text-muted-foreground-shadcn">
+                                {t("admin.movie_metadata.formats.loading")}
+                            </td>
+                        </tr>
+                    ) : items.length === 0 ? (
+                        <tr>
+                            <td colSpan={2} className="py-12 text-center text-muted-foreground-shadcn">
+                                {t("admin.movie_metadata.formats.empty")}
+                            </td>
+                        </tr>
+                    ) : (
+                        items.map((item) => (
+                            <tr key={item.id} className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors">
+                                <td className="px-4 py-3 font-medium flex items-center gap-2">
+                                    <Box className="h-4 w-4 text-primary-shadcn" />
+                                    {item.name}
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                    <div className="flex justify-end gap-1">
+                                        <LTTButton variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
+                                            <Pencil className="h-4 w-4" />
+                                        </LTTButton>
+                                        <LTTConfirmDialog
+                                            title={t("admin.common.delete_confirm.title")}
+                                            description={t("admin.common.delete_confirm.message")}
+                                            confirmText={t("admin.common.delete_confirm.ok")}
+                                            cancelText={t("admin.common.delete_confirm.cancel")}
+                                            onConfirm={() => deleteMutation.mutation(item.id)}
+                                            loading={deleteMutation.isLoading}
+                                            trigger={
+                                                <LTTButton variant="ghost" size="icon" className="h-8 w-8 text-destructive">
+                                                    <Trash2 className="h-4 w-4" />
+                                                </LTTButton>
+                                            }
+                                        />
+                                    </div>
+                                </td>
+                            </tr>
+                        ))
+                    )}
+                </tbody>
+            </table>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-border-shadcn bg-card px-4 py-3">
+            <div className="text-sm text-muted-foreground-shadcn">
+                {t("admin.movie_metadata.common.total_items", { count: totalCount })}
+            </div>
+            <div className="flex items-center gap-2">
+                <LTTSelect value={String(pageSize)} onValueChange={(value) => {
+                    setPage(1);
+                    setPageSize(Number(value));
+                }}>
+                    <LTTSelectTrigger className="w-24">
+                        <LTTSelectValue />
+                    </LTTSelectTrigger>
+                    <LTTSelectContent>
+                        <LTTSelectItem value="10">10</LTTSelectItem>
+                        <LTTSelectItem value="20">20</LTTSelectItem>
+                        <LTTSelectItem value="50">50</LTTSelectItem>
+                    </LTTSelectContent>
+                </LTTSelect>
+                <LTTButton
+                    variant="outline"
+                    onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
+                    disabled={page === 1 || listMutation.isLoading}
+                >
+                    {t("admin.movie_metadata.common.previous")}
+                </LTTButton>
+                <span className="text-sm">{t("admin.movie_metadata.common.page", { page, totalPages })}</span>
+                <LTTButton
+                    variant="outline"
+                    onClick={() => setPage((currentPage) => currentPage + 1)}
+                    disabled={page >= totalPages || listMutation.isLoading}
+                >
+                    {t("admin.movie_metadata.common.next")}
+                </LTTButton>
+            </div>
+        </div>
+
+        <LTTDialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
+            <LTTDialogContent>
+                <LTTDialogHeader>
+                    <LTTDialogTitle>{editing ? t("admin.movie_metadata.formats.edit_title") : t("admin.movie_metadata.formats.create_title")}</LTTDialogTitle>
+                </LTTDialogHeader>
+                <div className="py-4 space-y-2">
+                    <LTTLabel htmlFor="name">{t("admin.movie_metadata.formats.name_label")}</LTTLabel>
+                    <LTTInput id="name" value={name} onChange={e => { setIsDirty(true); setName(e.target.value); }} />
+                </div>
+                <LTTDialogFooter>
+                    <LTTButton variant="outline" onClick={() => handleDialogOpenChange(false)}>{t("admin.movie_metadata.common.cancel")}</LTTButton>
+                    <LTTButton onClick={handleSave} loading={createMutation.isLoading || updateMutation.isLoading}>
+                        {editing ? t("admin.movie_metadata.common.save") : t("admin.movie_metadata.common.create")}
+                    </LTTButton>
+                </LTTDialogFooter>
+            </LTTDialogContent>
+        </LTTDialog>
+
+        <LTTUnsavedChangesDialog
+            open={exitConfirmOpen}
+            onOpenChange={setExitConfirmOpen}
+            title={t("admin.common.unsaved_changes_dialog.title")}
+            messageBefore={t("admin.common.unsaved_changes_dialog.message_before")}
+            messageHighlight={t("admin.common.unsaved_changes_dialog.message_highlight")}
+            messageAfter={t("admin.common.unsaved_changes_dialog.message_after")}
+            stayText={t("admin.common.unsaved_changes_dialog.stay")}
+            exitText={t("admin.common.unsaved_changes_dialog.exit")}
+            onExit={resetDialog}
+        />
+    </div>
+);
 }

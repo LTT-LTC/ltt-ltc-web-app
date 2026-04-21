@@ -71,6 +71,25 @@ const createEmptyCastRow = (mode: "existing" | "new" = "new"): MovieCastFormEntr
   roleName: "",
 });
 
+const buildActorRolesPayload = (
+  cast: MovieCastFormEntry[],
+  actors: ActorOutputDto[],
+  roles: RoleOutputDto[]
+) => {
+  return cast
+    .map((item) => {
+      const actorName = item.actorMode === "new"
+        ? item.actorName.trim()
+        : (actors.find((actor) => actor.id === item.actorId)?.name || item.actorName.trim());
+      const roleName = item.roleMode === "new"
+        ? item.roleName.trim()
+        : (roles.find((role) => role.id === item.roleId)?.name || item.roleName.trim());
+
+      return { actorName, roleName };
+    })
+    .filter((item) => item.actorName && item.roleName);
+};
+
 const buildCastRowsFromMovie = (movie: MovieOutputDto, actors: ActorOutputDto[], roles: RoleOutputDto[]): MovieCastFormEntry[] => {
   const castSources = movie.actorRoles && movie.actorRoles.length > 0
     ? movie.actorRoles.map((item) => ({ actorName: item.actorName, roleName: item.roleName }))
@@ -612,18 +631,7 @@ export default function MoviesPage() {
       return;
     }
 
-    const actorRoles = form.cast
-      .map((item) => {
-        const actorName = item.actorMode === "new"
-          ? item.actorName.trim()
-          : (actors.find((actor) => actor.id === item.actorId)?.name || "");
-        const roleName = item.roleMode === "new"
-          ? item.roleName.trim()
-          : (roles.find((role) => role.id === item.roleId)?.name || "");
-
-        return { actorName, roleName };
-      })
-      .filter((item) => item.actorName && item.roleName);
+    const actorRoles = buildActorRolesPayload(form.cast, actors, roles);
 
     const selectedStudioName = studioMode === "existing"
       ? (studios.find((studio) => studio.id === form.studioId)?.name || "")
@@ -651,10 +659,6 @@ export default function MoviesPage() {
 
       updateMutation.mutation({ id: editing.id, body: updatePayload });
     } else {
-      const actorRoles = form.cast
-        .map((item) => ({ actorName: item.actorName.trim(), roleName: item.roleName.trim() }))
-        .filter((item) => item.actorName && item.roleName);
-
       const payload: CreateMovieInputDto = {
         title: form.title.trim(),
         originalTitle: form.originalTitle?.trim() || undefined,
