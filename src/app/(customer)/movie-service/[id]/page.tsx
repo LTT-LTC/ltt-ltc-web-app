@@ -54,11 +54,13 @@ const formatDuration = (value?: number) => {
     return `${hours}h ${minutes.toString().padStart(2, "0")}m`;
 };
 
-const getCastName = (item: MovieDetailOutputDto["cast"][number]) => {
+type CastItem = NonNullable<MovieDetailOutputDto["cast"]>[number];
+
+const getCastName = (item: CastItem) => {
     return item.actorName || item.actor?.name || "Unknown";
 };
 
-const getCastRole = (item: MovieDetailOutputDto["cast"][number]) => {
+const getCastRole = (item: CastItem) => {
     return item.roleName || item.role?.name || item.characterName || "";
 };
 
