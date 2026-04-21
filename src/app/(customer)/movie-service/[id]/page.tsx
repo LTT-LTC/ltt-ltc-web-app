@@ -55,6 +55,7 @@ const formatDuration = (value?: number) => {
 };
 
 type CastItem = NonNullable<MovieDetailOutputDto["cast"]>[number];
+type CastCardItem = { name: string; role: string; image?: string };
 
 const getCastName = (item: CastItem) => {
     return item.actorName || item.actor?.name || "Unknown";
@@ -64,11 +65,12 @@ const getCastRole = (item: CastItem) => {
     return item.roleName || item.role?.name || item.characterName || "";
 };
 
-const getCastList = (movie: MovieDetailOutputDto) => {
+const getCastList = (movie: MovieDetailOutputDto): CastCardItem[] => {
     if (movie.cast && movie.cast.length > 0) {
         return movie.cast.map((item) => ({
             name: getCastName(item),
             role: getCastRole(item),
+            image: undefined,
         }));
     }
 
@@ -76,6 +78,7 @@ const getCastList = (movie: MovieDetailOutputDto) => {
         return movie.actorRoles.map((item) => ({
             name: item.actorName,
             role: item.roleName,
+            image: undefined,
         }));
     }
 
