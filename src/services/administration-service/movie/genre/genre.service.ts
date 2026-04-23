@@ -3,7 +3,7 @@ import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { GenreOutputDto } from "./models/output.model";
 import { CreateGenreInputDto, GetGenreListInputDto, UpdateGenreInputDto } from "./models/input.model";
 
-const rootPath = "/movie-service";
+const rootPath = "/movie-service/admin/genre";
 const genrePath = "/genre";
 
 const getGenresAsync = async (

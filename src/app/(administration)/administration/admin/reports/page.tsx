@@ -105,7 +105,7 @@ export default function RevenueReportsPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 my-4">
         {cards.map((c) => (
           <div
             key={c.label}
@@ -132,7 +132,7 @@ export default function RevenueReportsPage() {
       </div>
 
       {/* Charts */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2 my-4">
         <div className="rounded-xl border border-border-shadcn bg-card p-5 shadow-sm">
           <h3 className="mb-6 font-heading text-base font-semibold border-b border-border-shadcn pb-2">
             Doanh thu theo ngày

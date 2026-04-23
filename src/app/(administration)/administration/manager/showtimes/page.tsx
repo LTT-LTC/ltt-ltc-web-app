@@ -256,10 +256,13 @@ export default function ShowtimeSchedulerPage() {
 
     createMutation.mutation({
       movieId: form.movieId,
+      cinemaId: form.cinemaId,
       screenId: form.screenId,
-      movieDistributionId: form.movieDistributionId || "00000000-0000-0000-0000-000000000000",
+      distributionId: form.movieDistributionId || "00000000-0000-0000-0000-000000000000",
+      showDate: form.date,
       startTime: start,
-      endTime: end
+      endTime: end,
+      basePrice: 0,
     });
   };
 

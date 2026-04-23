@@ -27,6 +27,7 @@ import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { toast } from "sonner";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
+import AdminTablePagination from "../_components/AdminTablePagination";
 
 export default function GenreTab() {
     const { t } = useLocalization();
@@ -88,8 +89,6 @@ export default function GenreTab() {
         },
         onError: (err) => toast.error(err.message || t("admin.movie_metadata.common.delete_error"))
     });
-
-    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
     useEffect(() => {
         listMutation.mutation();
@@ -209,41 +208,17 @@ export default function GenreTab() {
                 </table>
             </div>
 
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-border-shadcn bg-card px-4 py-3">
-                <div className="text-sm text-muted-foreground-shadcn">
-                    {t("admin.movie_metadata.common.total_items", { count: totalCount })}
-                </div>
-                <div className="flex items-center gap-2">
-                    <LTTSelect value={String(pageSize)} onValueChange={(value) => {
-                        setPage(1);
-                        setPageSize(Number(value));
-                    }}>
-                        <LTTSelectTrigger className="w-24">
-                            <LTTSelectValue />
-                        </LTTSelectTrigger>
-                        <LTTSelectContent>
-                            <LTTSelectItem value="10">10</LTTSelectItem>
-                            <LTTSelectItem value="20">20</LTTSelectItem>
-                            <LTTSelectItem value="50">50</LTTSelectItem>
-                        </LTTSelectContent>
-                    </LTTSelect>
-                    <LTTButton
-                        variant="outline"
-                        onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
-                        disabled={page === 1 || listMutation.isLoading}
-                    >
-                        {t("admin.movie_metadata.common.previous")}
-                    </LTTButton>
-                    <span className="text-sm">{t("admin.movie_metadata.common.page", { page, totalPages })}</span>
-                    <LTTButton
-                        variant="outline"
-                        onClick={() => setPage((currentPage) => currentPage + 1)}
-                        disabled={page >= totalPages || listMutation.isLoading}
-                    >
-                        {t("admin.movie_metadata.common.next")}
-                    </LTTButton>
-                </div>
-            </div>
+            <AdminTablePagination
+                totalCount={totalCount}
+                page={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(size) => {
+                    setPage(1);
+                    setPageSize(size);
+                }}
+                loading={listMutation.isLoading}
+            />
 
             <LTTDialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                 <LTTDialogContent>

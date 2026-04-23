@@ -3,7 +3,7 @@ import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { RoleOutputDto } from "./models/output.model";
 import { CreateRoleInputDto, GetRoleListInputDto, UpdateRoleInputDto } from "./models/input.model";
 
-const rootPath = "/movie-service";
+const rootPath = "/movie-service/admin/movie-role";
 const rolePath = "/role";
 
 const getRolesAsync = async (

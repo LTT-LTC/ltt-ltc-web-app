@@ -16,10 +16,11 @@ import {
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 import { toast } from "sonner";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
-import { pricingRuleService } from "@/src/services/administration-service/pricing-rule/pricing-rule.service";
-import { PricingRuleOutputDto } from "@/src/services/administration-service/masterdata/models/commercial.model";
+import { managerPricingRulesService as pricingRuleService } from "@/src/services/administration-service/manager/pricing-rules/pricing-rules.service";
+import { PricingRuleOutputDto } from "@/src/services/administration-service/pricing-rule/models/output.model";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import UpsertPricingRuleDialog from "./UpsertPricingRuleDialog";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 const TEMP_CINEMA_ID = "00000000-0000-0000-0000-000000000000";
 
@@ -34,6 +35,7 @@ const dayLabels: Record<number, string> = {
 };
 
 export default function PricingRulesPage() {
+    const { t } = useLocalization();
     const [items, setItems] = useState<PricingRuleOutputDto[]>([]);
     const [search, setSearch] = useState("");
     const [upsertOpen, setUpsertOpen] = useState(false);
@@ -42,16 +44,16 @@ export default function PricingRulesPage() {
     const listMutation = useLTTMutation<PagedResultDto<PricingRuleOutputDto>, void>({
         mutationFn: () => pricingRuleService.getPricingRuleListAsync(TEMP_CINEMA_ID),
         onSuccess: (res) => { if (res && res.items) setItems(res.items); },
-        onError: (err) => toast.error(err.message || "Lỗi tải danh sách quy tắc giá")
+        onError: (err) => toast.error(err.message || t("admin.pricing_rules.fetch_error"))
     });
 
     const deleteMutation = useLTTMutation<void, string>({
         mutationFn: (id) => pricingRuleService.deletePricingRuleAsync(TEMP_CINEMA_ID, id),
         onSuccess: () => {
-            toast.success("Đã xóa quy tắc giá");
+            toast.success(t("admin.pricing_rules.delete_success"));
             listMutation.mutation();
         },
-        onError: (err) => toast.error(err.message || "Lỗi khi xóa")
+        onError: (err) => toast.error(err.message || t("admin.pricing_rules.delete_error"))
     });
 
     useEffect(() => {
@@ -81,11 +83,11 @@ export default function PricingRulesPage() {
         <div className="space-y-4 animate-fade-in-up">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="font-heading text-2xl font-bold">Quy tắc Giá (Pricing Rules)</h1>
-                    <p className="text-sm text-muted-foreground-shadcn">Quản lý hệ số giá theo loại ghế, thời gian và ngày trong tuần.</p>
+                    <h1 className="font-heading text-2xl font-bold">{t("admin.pricing_rules.title")}</h1>
+                    <p className="text-sm text-muted-foreground-shadcn">{t("admin.pricing_rules.subtitle")}</p>
                 </div>
                 <LTTButton className="gap-2" onClick={openCreate}>
-                    <Plus className="h-4 w-4" /> Thêm quy tắc
+                    <Plus className="h-4 w-4" /> {t("admin.pricing_rules.add")}
                 </LTTButton>
             </div>
 
@@ -93,7 +95,7 @@ export default function PricingRulesPage() {
                 <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
                     <LTTInput
-                        placeholder="Tìm theo loại ghế hoặc loại quy tắc..."
+                        placeholder={t("admin.pricing_rules.search_placeholder")}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="pl-9"
@@ -105,27 +107,27 @@ export default function PricingRulesPage() {
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
-                            <th className="px-4 py-3 text-left font-semibold">Loại ghế</th>
-                            <th className="px-4 py-3 text-left font-semibold">Loại quy tắc</th>
-                            <th className="px-4 py-3 text-left font-semibold">Hệ số (Multiplier)</th>
-                            <th className="px-4 py-3 text-left font-semibold">Thời gian/Thứ</th>
-                            <th className="px-4 py-3 text-left font-semibold">Độ ưu tiên</th>
-                            <th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
-                            <th className="px-4 py-3 text-right font-semibold">Thao tác</th>
+                            <th className="px-4 py-3 text-left font-semibold">{t("admin.pricing_rules.table.seat_type")}</th>
+                            <th className="px-4 py-3 text-left font-semibold">{t("admin.pricing_rules.table.rule_type")}</th>
+                            <th className="px-4 py-3 text-left font-semibold">{t("admin.pricing_rules.table.multiplier")}</th>
+                            <th className="px-4 py-3 text-left font-semibold">{t("admin.pricing_rules.table.time_day")}</th>
+                            <th className="px-4 py-3 text-left font-semibold">{t("admin.pricing_rules.table.priority")}</th>
+                            <th className="px-4 py-3 text-left font-semibold">{t("admin.pricing_rules.table.status")}</th>
+                            <th className="px-4 py-3 text-right font-semibold">{t("admin.pricing_rules.table.actions")}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {filtered.length === 0 ? (
                             <tr>
                                 <td colSpan={7} className="py-12 text-center text-muted-foreground-shadcn">
-                                    {listMutation.isLoading ? "Đang tải..." : "Chưa có quy tắc giá nào."}
+                                    {listMutation.isLoading ? t("admin.common.loading") : t("admin.pricing_rules.empty")}
                                 </td>
                             </tr>
                         ) : (
                             filtered.map((item) => (
                                 <tr key={item.id} className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors">
                                     <td className="px-4 py-3 font-medium">
-                                        {item.seatTypeName || "Áp dụng tất cả"}
+                                        {item.seatTypeName || t("admin.pricing_rules.all_seat_types")}
                                     </td>
                                     <td className="px-4 py-3">
                                         <LTTBadge variant="outline">{item.ruleType}</LTTBadge>
@@ -134,13 +136,13 @@ export default function PricingRulesPage() {
                                         x{item.multiplier}
                                     </td>
                                     <td className="px-4 py-3 text-xs text-muted-foreground-shadcn">
-                                        {item.dayOfWeek !== undefined ? dayLabels[item.dayOfWeek] : "Hàng ngày"}
+                                        {item.dayOfWeek !== undefined ? dayLabels[item.dayOfWeek] : t("admin.pricing_rules.every_day")}
                                         {item.startTime && item.endTime && ` (${item.startTime} - ${item.endTime})`}
                                     </td>
                                     <td className="px-4 py-3">{item.priority}</td>
                                     <td className="px-4 py-3">
                                         <LTTBadge className={item.isActive ? "bg-green-100 text-green-700" : "bg-muted-shadcn text-muted-foreground-shadcn"}>
-                                            {item.isActive ? "Hoạt động" : "Tạm dừng"}
+                                            {item.isActive ? t("admin.common.active") : t("admin.common.inactive")}
                                         </LTTBadge>
                                     </td>
                                     <td className="px-4 py-3 text-right">
@@ -149,10 +151,10 @@ export default function PricingRulesPage() {
                                                 <Pencil className="h-4 w-4" />
                                             </LTTButton>
                                             <LTTConfirmDialog
-                                                title="Xác nhận xóa"
-                                                description="Bạn có chắc chắn muốn xóa quy tắc giá này?"
-                                                confirmText="Xóa"
-                                                cancelText="Hủy"
+                                                title={t("admin.common.delete_confirm.title")}
+                                                description={t("admin.pricing_rules.delete_confirm_message")}
+                                                confirmText={t("admin.common.delete_confirm.ok")}
+                                                cancelText={t("admin.common.delete_confirm.cancel")}
                                                 onConfirm={() => deleteMutation.mutation(item.id)}
                                                 loading={deleteMutation.isLoading}
                                                 trigger={

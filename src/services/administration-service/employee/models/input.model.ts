@@ -17,6 +17,7 @@ export interface UpdateEmployeeInputDto {
     positionId?: string | null;
     organizationUnitId?: string | null;
     isActive?: boolean;
+    role?: "Admin" | "Manager" | "Staff" | "POS";
 }
 
 export interface CreateEmployeeInputDto {
@@ -30,4 +31,5 @@ export interface CreateEmployeeInputDto {
     joinedDate: string;
     positionId?: string | null;
     organizationUnitId?: string | null;
+    role: "Admin" | "Manager" | "Staff" | "POS";
 }

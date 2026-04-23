@@ -4,22 +4,23 @@ import http from "@/src/@core/http";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 
 export const rootCustomerPath: string = get.rootPath("/customer-service");
+const adminProfilePath = `${rootCustomerPath}/admin/profile`;
 
 const getAdminList = async (params: any): Promise<PagedResultDto<any>> => {
-    const response = await http.get<PagedResultDto<any>>(`${rootCustomerPath}/profile/list`, { params });
+    const response = await http.get<PagedResultDto<any>>(`${adminProfilePath}/list`, { params });
     return response.data;
 };
 
 const deleteCustomer = async (id: string): Promise<void> => {
-    await http.delete<void>(`${rootCustomerPath}/profile/${id}`);
+    await http.delete<void>(`${adminProfilePath}/${id}`);
 };
 
 const lockCustomer = async (id: string): Promise<void> => {
-    await http.post<void>(`${rootCustomerPath}/profile/${id}/lock`);
+    await http.post<void>(`${adminProfilePath}/${id}/lock`);
 };
 
 const unlockCustomer = async (id: string): Promise<void> => {
-    await http.post<void>(`${rootCustomerPath}/profile/${id}/unlock`);
+    await http.post<void>(`${adminProfilePath}/${id}/unlock`);
 };
 
 export const customerService = {

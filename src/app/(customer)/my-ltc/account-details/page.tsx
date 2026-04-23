@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import LTTCard from '@/src/@core/component/AntD/LTTCard';
 import { customerProfileService } from '@/src/services/customer-service/profile/profile.service';
-import { UpdateCustomerProfileInputDto } from '@/src/services/customer-service/profile/models/input.model';
+import { CustomerAddressJson, CustomerGender, UpdateCustomerProfileInputDto } from '@/src/services/customer-service/profile/models/input.model';
 import { CustomerProfileOutputDto } from '@/src/services/customer-service/profile/models/output.model';
 import { showNotificationSuccess, showNotificationError } from '@/src/@core/utils/message';
 import LTTButton from '@/src/@core/component/AntD/LTTButton';
@@ -11,12 +11,108 @@ import useLTTMutation from '@/src/@core/hooks/useLTTMutation';
 import { Form, Input, Select, DatePicker } from 'antd';
 import dayjs from 'dayjs';
 import { useLocalization } from '@/src/@core/hooks/use-localization';
+import vnCityDistricts from "@/src/@core/const/location/vn-city-districts.json";
+
+type AddressOption = {
+    provinceCity: string;
+    wardCommunes: string[];
+};
+
+type CityDistrictData = {
+    city: string;
+    wards: string[];
+};
+
+const ADDRESS_OPTIONS: AddressOption[] = (vnCityDistricts as CityDistrictData[]).map((item) => ({
+    provinceCity: item.city,
+    wardCommunes: item.wards,
+}));
+
+const resolveProvinceValue = (provinceCity?: string): string | undefined => {
+    if (!provinceCity) {
+        return undefined;
+    }
+
+    const exactMatch = ADDRESS_OPTIONS.find((option) => option.provinceCity === provinceCity);
+    if (exactMatch) {
+        return exactMatch.provinceCity;
+    }
+
+    const suffixMatch = ADDRESS_OPTIONS.find((option) => option.provinceCity.endsWith(provinceCity));
+    if (suffixMatch) {
+        return suffixMatch.provinceCity;
+    }
+
+    return provinceCity;
+};
+
+const parseAddressJson = (address?: string): CustomerAddressJson | null => {
+    if (!address) {
+        return null;
+    }
+
+    try {
+        const parsed = JSON.parse(address);
+        if (parsed && typeof parsed === "object" && parsed.provinceCity && parsed.wardCommune) {
+            return {
+                provinceCity: String(parsed.provinceCity),
+                wardCommune: String(parsed.wardCommune),
+                hamletRoad: parsed.hamletRoad ? String(parsed.hamletRoad) : "",
+            };
+        }
+    } catch {
+        const segments = address.split(",").map((segment) => segment.trim()).filter(Boolean);
+        if (segments.length >= 2) {
+            return {
+                provinceCity: segments[0],
+                wardCommune: segments[1],
+                hamletRoad: segments[2] ?? "",
+            };
+        }
+    }
+
+    return null;
+};
+
+const stringifyAddressJson = (provinceCity?: string, wardCommune?: string, hamletRoad?: string): string | undefined => {
+    if (!provinceCity || !wardCommune) {
+        return undefined;
+    }
+
+    return JSON.stringify({
+        provinceCity,
+        wardCommune,
+        hamletRoad: (hamletRoad || "").trim(),
+    });
+};
+
+const displayAddress = (address?: string): string => {
+    if (!address) {
+        return "---";
+    }
+
+    const parsed = parseAddressJson(address);
+    if (!parsed) {
+        return address;
+    }
+
+    return [parsed.provinceCity, parsed.wardCommune, parsed.hamletRoad].filter(Boolean).join(", ");
+};
 
 export default function AccountDetailsPage() {
     const { t } = useLocalization();
     const [profile, setProfile] = useState<CustomerProfileOutputDto | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [form] = Form.useForm();
+    const selectedProvince = Form.useWatch("addressProvinceCity", form);
+    const provinceOptions = ADDRESS_OPTIONS.map((option) => ({
+        label: option.provinceCity,
+        value: option.provinceCity,
+    }));
+    const wardOptions = (ADDRESS_OPTIONS.find((option) => option.provinceCity === selectedProvince)?.wardCommunes ?? []).map((ward) => ({
+        label: ward,
+        value: ward,
+    }));
 
     const {
         mutation: fetchProfile,
@@ -27,9 +123,14 @@ export default function AccountDetailsPage() {
         onSuccess: (data) => {
             if (!data) return;
             setProfile(data);
+            const parsedAddress = parseAddressJson(data.address);
+            const resolvedProvince = resolveProvinceValue(parsedAddress?.provinceCity);
             form.setFieldsValue({
                 ...data,
                 dateOfBirth: data.dateOfBirth ? dayjs(data.dateOfBirth) : null,
+                addressProvinceCity: resolvedProvince,
+                addressWardCommune: parsedAddress?.wardCommune,
+                addressHamletRoad: parsedAddress?.hamletRoad,
             });
         },
         onError: () => {
@@ -42,9 +143,14 @@ export default function AccountDetailsPage() {
         onSuccess: (updatedProfile) => {
             if (!updatedProfile) return;
             setProfile(updatedProfile);
+            const parsedAddress = parseAddressJson(updatedProfile.address);
+            const resolvedProvince = resolveProvinceValue(parsedAddress?.provinceCity);
             form.setFieldsValue({
                 ...updatedProfile,
                 dateOfBirth: updatedProfile.dateOfBirth ? dayjs(updatedProfile.dateOfBirth) : null,
+                addressProvinceCity: resolvedProvince,
+                addressWardCommune: parsedAddress?.wardCommune,
+                addressHamletRoad: parsedAddress?.hamletRoad,
             });
             showNotificationSuccess(t('customer.my_ltc.account_details.success'));
             setIsEditing(false);
@@ -58,10 +164,20 @@ export default function AccountDetailsPage() {
         fetchProfile(undefined);
     }, []);
 
-    const handleUpdate = async (values: any) => {
+    const handleUpdate = async (values: Record<string, unknown>) => {
+        const address = stringifyAddressJson(
+            values.addressProvinceCity as string | undefined,
+            values.addressWardCommune as string | undefined,
+            values.addressHamletRoad as string | undefined,
+        );
+
         await updateProfile({
-            ...values,
-            dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString() : null,
+            name: values.name as string,
+            phoneNumber: values.phoneNumber as string | undefined,
+            emailAddress: values.emailAddress as string,
+            gender: values.gender as CustomerGender | undefined,
+            dateOfBirth: values.dateOfBirth ? (values.dateOfBirth as dayjs.Dayjs).toISOString() : null,
+            address,
         });
     };
 
@@ -71,8 +187,20 @@ export default function AccountDetailsPage() {
         { label: t('customer.my_ltc.account_details.fields.gender'), key: 'gender', value: profile?.gender },
         { label: t('customer.my_ltc.account_details.fields.dob'), key: 'dateOfBirth', value: profile?.dateOfBirth ? dayjs(profile.dateOfBirth).format('DD/MM/YYYY') : t('customer.my_ltc.account_details.not_updated') },
         { label: t('customer.my_ltc.account_details.fields.email'), key: 'emailAddress', value: profile?.emailAddress },
-        { label: t('customer.my_ltc.account_details.fields.address'), key: 'address', value: profile?.address || t('customer.my_ltc.account_details.not_updated') },
-        { label: t('customer.my_ltc.account_details.fields.member_code'), key: 'memberCode', value: profile?.memberCode, readOnly: true },
+        { label: t('customer.my_ltc.account_details.fields.address'), key: 'address', value: profile?.address ? displayAddress(profile.address) : t('customer.my_ltc.account_details.not_updated') },
+        {
+            label: "Profile QR URL",
+            key: 'profileQRUrl',
+            value: profile?.profileQRUrl ? (
+                <img
+                    src={profile.profileQRUrl}
+                    alt="Profile QR code"
+                    className="w-28 h-28 object-contain bg-white rounded-lg border border-gray-200 p-1"
+                    loading="lazy"
+                />
+            ) : "---",
+            readOnly: true
+        },
     ];
 
     if ((isFetchingProfile || isFetchingProfileInit) && !profile) {
@@ -162,9 +290,9 @@ export default function AccountDetailsPage() {
                                 name="gender"
                             >
                                 <Select size="large" className="w-full rounded-lg outline-none [&_.ant-select-selector]:!rounded-lg" placeholder={t('customer.my_ltc.account_details.placeholders.gender')}>
-                                    <Select.Option value="Nam">{t('customer.my_ltc.account_details.gender_options.male')}</Select.Option>
-                                    <Select.Option value="Nữ">{t('customer.my_ltc.account_details.gender_options.female')}</Select.Option>
-                                    <Select.Option value="Khác">{t('customer.my_ltc.account_details.gender_options.other')}</Select.Option>
+                                    <Select.Option value="Male">{t('customer.my_ltc.account_details.gender_options.male')}</Select.Option>
+                                    <Select.Option value="Female">{t('customer.my_ltc.account_details.gender_options.female')}</Select.Option>
+                                    <Select.Option value="Other">{t('customer.my_ltc.account_details.gender_options.other')}</Select.Option>
                                 </Select>
                             </Form.Item>
 
@@ -175,16 +303,57 @@ export default function AccountDetailsPage() {
                                 <DatePicker className="w-full rounded-lg border-gray-300 h-[40px]" size="large" format="DD/MM/YYYY" placeholder={t('customer.my_ltc.account_details.placeholders.dob')} />
                             </Form.Item>
 
-                            <div className="md:col-span-2 mt-2">
+                            <Form.Item
+                                label={<span className="font-bold text-gray-700 uppercase text-xs tracking-wider">Province/City</span>}
+                                name="addressProvinceCity"
+                                rules={[{ required: true, message: "Province/City is required." }]}
+                            >
+                                <Select
+                                    size="large"
+                                    options={provinceOptions}
+                                    allowClear
+                                    showSearch
+                                    optionFilterProp="label"
+                                    className="w-full rounded-lg outline-none [&_.ant-select-selector]:!rounded-lg"
+                                    getPopupContainer={(trigger) => trigger.parentElement as HTMLElement}
+                                    placeholder="Select province/city"
+                                    onChange={() => form.setFieldValue("addressWardCommune", undefined)}
+                                    filterOption={(inputValue, option) =>
+                                        String(option?.label ?? "").toLowerCase().includes(inputValue.toLowerCase())
+                                    }
+                                />
+                            </Form.Item>
+
+                            <Form.Item
+                                label={<span className="font-bold text-gray-700 uppercase text-xs tracking-wider">Ward/Commune</span>}
+                                name="addressWardCommune"
+                                rules={[{ required: true, message: "Ward/Commune is required." }]}
+                            >
+                                <Select
+                                    size="large"
+                                    options={wardOptions}
+                                    allowClear
+                                    showSearch
+                                    disabled={!selectedProvince}
+                                    optionFilterProp="label"
+                                    className="w-full rounded-lg outline-none [&_.ant-select-selector]:!rounded-lg"
+                                    getPopupContainer={(trigger) => trigger.parentElement as HTMLElement}
+                                    placeholder={selectedProvince ? "Select ward/commune" : "Please select province/city first"}
+                                    filterOption={(inputValue, option) =>
+                                        String(option?.label ?? "").toLowerCase().includes(inputValue.toLowerCase())
+                                    }
+                                />
+                            </Form.Item>
+
+                            <div className="md:col-span-2">
                                 <Form.Item
-                                    label={<span className="font-bold text-gray-700 uppercase text-xs tracking-wider">{t('customer.my_ltc.account_details.fields.address')}</span>}
-                                    name="address"
+                                    label={<span className="font-bold text-gray-700 uppercase text-xs tracking-wider">Hamlet/Road (optional)</span>}
+                                    name="addressHamletRoad"
                                 >
-                                    <Input.TextArea
+                                    <Input
                                         size="large"
-                                        rows={3}
                                         className="rounded-lg border-gray-300 focus:border-[#cc3434] focus:ring-0"
-                                        placeholder={t('customer.my_ltc.account_details.placeholders.address')}
+                                        placeholder="Enter hamlet/road"
                                     />
                                 </Form.Item>
                             </div>

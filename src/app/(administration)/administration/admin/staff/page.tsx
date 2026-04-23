@@ -31,15 +31,12 @@ import { cinemaService } from "@/src/services/administration-service/cinema/cine
 import { cn } from "@/src/@core/utils/cn";
 import { useSearchParams } from "next/navigation";
 import LTTConfirmDialog from "@/src/@core/component/LTTConfirmDialog";
+import AdminTablePagination from "../_components/AdminTablePagination";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 const statusColor: Record<string, string> = {
   active: "bg-green-100 text-green-700 border-green-200",
   inactive: "bg-muted-shadcn text-muted-foreground-shadcn border-muted-shadcn",
-};
-
-const statusLabel: Record<string, string> = {
-  active: "Hoạt động",
-  inactive: "Ngưng",
 };
 
 const EMPLOYEE_ROLES = ["Admin", "Manager", "Staff"] as const;
@@ -59,9 +56,10 @@ type EmployeeFormState = {
 };
 
 const normalizeRole = (item: EmployeeOutputDto): EmployeeRole => {
-  const roleName = (item.positionName || "").trim().toLowerCase();
+  const roleName = (item.role || item.positionName || "").trim().toLowerCase();
   if (roleName === "admin") return "Admin";
   if (roleName === "manager") return "Manager";
+  if (roleName === "pos") return "Staff";
   return "Staff";
 };
 
@@ -79,6 +77,7 @@ const emptyForm = (): EmployeeFormState => ({
 });
 
 export default function StaffPage() {
+  const { t } = useLocalization();
   const searchParams = useSearchParams();
   const cinemaId = searchParams.get("cinemaId") || undefined;
   const [items, setItems] = useState<EmployeeOutputDto[]>([]);
@@ -92,11 +91,19 @@ export default function StaffPage() {
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [editing, setEditing] = useState<EmployeeOutputDto | null>(null);
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
   const [form, setForm] = useState<EmployeeFormState>(emptyForm);
   const listMutation = useLTTMutation<PagedResultEmployeeOutputDto | undefined, GetListEmployeeInputDto>({
     mutationFn: (params) => employeeService.getEmployeeListAsync(params),
-    onSuccess: (res) => { if (res && res.items) setItems(res.items); },
-    onError: (err) => toast.error(err.message || "Lỗi tải danh sách nhân viên")
+    onSuccess: (res) => {
+      if (res && res.items) {
+        setItems(res.items);
+        setTotalCount(res.totalCount || res.items.length);
+      }
+    },
+    onError: (err) => toast.error(err.message || t("admin.staff.fetch_error"))
   });
 
   const [cinemas, setCinemas] = useState<any[]>([]);
@@ -108,38 +115,38 @@ export default function StaffPage() {
   const createMutation = useLTTMutation<string | undefined, CreateEmployeeInputDto>({
     mutationFn: (input) => employeeService.createEmployeeAsync(input),
     onSuccess: () => {
-      toast.success("Thêm nhân viên thành công");
+      toast.success(t("admin.staff.toast.create_success"));
       fetchData();
       setDialogOpen(false);
       setExitConfirmOpen(false);
       setIsDirty(false);
     },
-    onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
+    onError: (err) => toast.error(err.message || t("admin.staff.toast.generic_error"))
   });
 
   const updateMutation = useLTTMutation<boolean | undefined, { id: string; body: UpdateEmployeeInputDto }>({
     mutationFn: (input) => employeeService.updateEmployeeAsync(input.id, input.body),
     onSuccess: () => {
-      toast.success("Cập nhật thành công");
+      toast.success(t("admin.staff.toast.update_success"));
       fetchData();
       setDialogOpen(false);
       setExitConfirmOpen(false);
       setIsDirty(false);
     },
-    onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
+    onError: (err) => toast.error(err.message || t("admin.staff.toast.generic_error"))
   });
 
   const deleteMutation = useLTTMutation<void, string>({
     mutationFn: (id) => employeeService.deleteEmployeeAsync(id),
     onSuccess: () => {
-      toast.success("Đã xóa nhân viên thành công");
+      toast.success(t("admin.staff.toast.delete_success"));
       fetchData();
     },
-    onError: (err) => toast.error(err.message || "Không thể xóa nhân viên")
+    onError: (err) => toast.error(err.message || t("admin.staff.toast.delete_error"))
   });
 
   const fetchData = () => {
-    listMutation.mutation({ page: 1, fetch: 100, keyword: debouncedSearch, cinemaId });
+    listMutation.mutation({ page, fetch: pageSize, keyword: debouncedSearch, cinemaId });
   };
 
   useEffect(() => {
@@ -148,8 +155,12 @@ export default function StaffPage() {
   }, [search]);
 
   useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  useEffect(() => {
     fetchData();
-  }, [debouncedSearch, cinemaId]);
+  }, [debouncedSearch, cinemaId, page, pageSize]);
 
   useEffect(() => {
     cinemasMutation.mutation({ page: 1, fetch: 100 });
@@ -172,15 +183,8 @@ export default function StaffPage() {
     if (roleFilter !== "all") {
       list = list.filter((s) => normalizeRole(s) === roleFilter);
     }
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (s) =>
-          s.name.toLowerCase().includes(q) || (s.email || "").toLowerCase().includes(q)
-      );
-    }
     return list;
-  }, [items, search, roleFilter]);
+  }, [items, roleFilter]);
 
   const allSel =
     filtered.length > 0 && filtered.every((i) => selected.has(i.id));
@@ -245,7 +249,7 @@ export default function StaffPage() {
 
   const save = () => {
     if (!form.name.trim() || !form.email.trim() || !form.phoneNumber.trim() || !form.code.trim()) {
-      toast.error("Vui lòng điền đầy đủ họ tên, email, số điện thoại và mã nhân viên");
+      toast.error(t("admin.staff.toast.validation_required"));
       return;
     }
 
@@ -258,6 +262,7 @@ export default function StaffPage() {
     const payload = {
       ...form,
       positionId: resolvedPositionId,
+      role: form.role,
     };
 
     if (editing) {
@@ -279,9 +284,14 @@ export default function StaffPage() {
       const failed = results.filter((r) => r.status === "rejected").length;
 
       if (failed === 0) {
-        toast.success(`Đã xóa ${ids.length} nhân viên`);
+        toast.success(t("admin.staff.toast.bulk_delete_success", { count: ids.length }));
       } else {
-        toast.error(`Xóa thành công ${ids.length - failed}/${ids.length} nhân viên`);
+        toast.error(
+          t("admin.staff.toast.bulk_delete_partial", {
+            success: ids.length - failed,
+            total: ids.length,
+          }),
+        );
       }
 
       fetchData();
@@ -295,9 +305,9 @@ export default function StaffPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl font-bold">Nhân viên & Phân quyền</h1>
+        <h1 className="font-heading text-2xl font-bold">{t("admin.staff.title")}</h1>
         <LTTButton onClick={openCreate} className="gap-2">
-          <Plus className="h-4 w-4" /> Thêm nhân viên
+          <Plus className="h-4 w-4" /> {t("admin.staff.add_employee")}
         </LTTButton>
       </div>
 
@@ -305,7 +315,7 @@ export default function StaffPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
           <LTTInput
-            placeholder="Tìm nhân viên..."
+            placeholder={t("admin.staff.search_placeholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -313,13 +323,13 @@ export default function StaffPage() {
         </div>
         <LTTSelect value={roleFilter} onValueChange={setRoleFilter}>
           <LTTSelectTrigger className="w-48">
-            <LTTSelectValue placeholder="Tất cả vai trò" />
+            <LTTSelectValue placeholder={t("admin.staff.filters.role_placeholder")} />
           </LTTSelectTrigger>
           <LTTSelectContent>
-            <LTTSelectItem value="all">Tất cả vai trò</LTTSelectItem>
+            <LTTSelectItem value="all">{t("admin.staff.filters.all_roles")}</LTTSelectItem>
             {EMPLOYEE_ROLES.map((r) => (
               <LTTSelectItem key={r} value={r}>
-                {r}
+                {t(`admin.staff.roles.${r}`)}
               </LTTSelectItem>
             ))}
           </LTTSelectContent>
@@ -330,7 +340,7 @@ export default function StaffPage() {
           onClick={fetchData}
           loading={listMutation.isLoading}
         >
-          <RefreshCw className="h-4 w-4" /> Làm mới
+          <RefreshCw className="h-4 w-4" /> {t("admin.staff.refresh")}
         </LTTButton>
         {selected.size > 0 && (
           <LTTButton
@@ -339,39 +349,39 @@ export default function StaffPage() {
             className="gap-2"
             onClick={() => setDeleteOpen(true)}
           >
-            <Trash2 className="h-4 w-4" /> Xóa {selected.size}
+            <Trash2 className="h-4 w-4" /> {t("admin.staff.delete_selected", { count: selected.size })}
           </LTTButton>
         )}
       </div>
 
-      <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
+      <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm my-3">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
               <th className="w-10 px-3 py-3">
                 <LTTCheckbox checked={allSel} onCheckedChange={toggleAll} />
               </th>
-              <th className="px-4 py-3 text-left font-semibold">Họ tên</th>
-              <th className="px-4 py-3 text-left font-semibold">Email</th>
-              <th className="px-4 py-3 text-left font-semibold">SĐT</th>
-              <th className="px-4 py-3 text-left font-semibold">Vai trò</th>
-              <th className="px-4 py-3 text-left font-semibold">Rạp</th>
-              <th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
-              <th className="px-4 py-3 text-left font-semibold">Đăng nhập cuối</th>
-              <th className="px-4 py-3 text-right font-semibold">Thao tác</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.staff.table.full_name")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.staff.table.email")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.staff.table.phone")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.staff.table.role")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.staff.table.cinema")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.staff.table.status")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.staff.table.last_login")}</th>
+              <th className="px-4 py-3 text-right font-semibold">{t("admin.staff.table.actions")}</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
                 <td colSpan={9} className="py-12 text-center text-muted-foreground-shadcn">
-                  Đang tải dữ liệu nhân viên...
+                  {t("admin.staff.loading")}
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={9} className="py-12 text-center text-muted-foreground-shadcn">
-                  Không tìm thấy nhân viên nào phù hợp.
+                  {t("admin.staff.empty")}
                 </td>
               </tr>
             ) : (
@@ -392,19 +402,19 @@ export default function StaffPage() {
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center gap-1 rounded-full bg-accent-shadcn px-2.5 py-0.5 text-xs font-medium text-accent-shadcn-foreground border border-red-200">
                       <Shield className="h-3 w-3" />
-                      {normalizeRole(item)}
+                      {t(`admin.staff.roles.${normalizeRole(item)}`)}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-xs">{item.organizationUnitName || "—"}</td>
+                  <td className="px-4 py-3 text-xs">{item.organizationUnitName || t("admin.staff.table.dash")}</td>
                   <td className="px-4 py-3">
                     <LTTBadge
                       className={cn("font-medium", item.isActive ? statusColor.active : statusColor.inactive)}
                     >
-                      {item.isActive ? statusLabel.active : statusLabel.inactive}
+                      {item.isActive ? t("admin.staff.status.active") : t("admin.staff.status.inactive")}
                     </LTTBadge>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground-shadcn text-xs">
-                    —
+                    {t("admin.staff.table.dash")}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
@@ -417,10 +427,10 @@ export default function StaffPage() {
                         <Pencil className="h-4 w-4" />
                       </LTTButton>
                       <LTTConfirmDialog
-                        title="Xác nhận xóa"
-                        description="Bạn có chắc chắn muốn xóa nhân viên này?"
-                        confirmText="Xóa"
-                        cancelText="Hủy"
+                        title={t("admin.staff.confirm_delete.title")}
+                        description={t("admin.staff.confirm_delete.description")}
+                        confirmText={t("admin.common.delete_confirm.ok")}
+                        cancelText={t("admin.common.delete_confirm.cancel")}
                         onConfirm={() => deleteMutation.mutation(item.id)}
                         loading={deleteMutation.isLoading}
                         trigger={
@@ -442,23 +452,35 @@ export default function StaffPage() {
         </table>
       </div>
 
+      <AdminTablePagination
+        totalCount={totalCount}
+        page={page}
+        pageSize={pageSize}
+        loading={listMutation.isLoading}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => {
+          setPage(1);
+          setPageSize(size);
+        }}
+      />
+
       <LTTDialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
         <LTTDialogContent className="sm:max-w-lg">
           <LTTDialogHeader>
             <LTTDialogTitle>
-              {editing ? "Chỉnh sửa nhân viên" : "Thêm nhân viên mới"}
+              {editing ? t("admin.staff.form.edit_title") : t("admin.staff.form.create_title")}
             </LTTDialogTitle>
           </LTTDialogHeader>
           <div className="grid gap-4 py-2 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
-              <LTTLabel>Họ tên *</LTTLabel>
+              <LTTLabel>{t("admin.staff.form.full_name")}</LTTLabel>
               <LTTInput
                 value={form.name}
                 onChange={(e) => { setIsDirty(true); setForm({ ...form, name: e.target.value }); }}
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Email *</LTTLabel>
+              <LTTLabel>{t("admin.staff.form.email")}</LTTLabel>
               <LTTInput
                 type="email"
                 value={form.email}
@@ -473,36 +495,36 @@ export default function StaffPage() {
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Mã nhân viên</LTTLabel>
+              <LTTLabel>{t("admin.staff.form.code")}</LTTLabel>
               <LTTInput
                 value={form.code}
                 onChange={(e) => { setIsDirty(true); setForm({ ...form, code: e.target.value }); }}
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Vai trò *</LTTLabel>
+              <LTTLabel>{t("admin.staff.form.role")}</LTTLabel>
               <LTTSelect
                 value={form.role}
                 onValueChange={(v: EmployeeRole) => { setIsDirty(true); setForm({ ...form, role: v }); }}
               >
                 <LTTSelectTrigger>
-                  <LTTSelectValue placeholder="Chọn vai trò" />
+                  <LTTSelectValue placeholder={t("admin.staff.form.role_placeholder")} />
                 </LTTSelectTrigger>
                 <LTTSelectContent>
                   {EMPLOYEE_ROLES.map((role) => (
-                    <LTTSelectItem key={role} value={role}>{role}</LTTSelectItem>
+                    <LTTSelectItem key={role} value={role}>{t(`admin.staff.roles.${role}`)}</LTTSelectItem>
                   ))}
                 </LTTSelectContent>
               </LTTSelect>
             </div>
             <div className="space-y-2">
-              <LTTLabel>Rạp (Phòng ban)</LTTLabel>
+              <LTTLabel>{t("admin.staff.form.cinema")}</LTTLabel>
               <LTTSelect
                 value={form.organizationUnitId}
                 onValueChange={(v) => { setIsDirty(true); setForm({ ...form, organizationUnitId: v }); }}
               >
                 <LTTSelectTrigger>
-                  <LTTSelectValue placeholder="Chọn rạp" />
+                  <LTTSelectValue placeholder={t("admin.staff.form.cinema_placeholder")} />
                 </LTTSelectTrigger>
                 <LTTSelectContent>
                   {cinemas.map((c) => (
@@ -522,7 +544,7 @@ export default function StaffPage() {
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Ngày sinh</LTTLabel>
+              <LTTLabel>{t("admin.staff.form.birth_date")}</LTTLabel>
               <LTTInput
                 type="date"
                 value={form.dateOfBirth}
@@ -530,7 +552,7 @@ export default function StaffPage() {
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Trạng thái</LTTLabel>
+              <LTTLabel>{t("admin.staff.form.account_status")}</LTTLabel>
               <LTTSelect
                 value={form.isActive ? "active" : "inactive"}
                 onValueChange={(v: any) => { setIsDirty(true); setForm({ ...form, isActive: v === "active" }); }}
@@ -539,18 +561,18 @@ export default function StaffPage() {
                   <LTTSelectValue />
                 </LTTSelectTrigger>
                 <LTTSelectContent>
-                  <LTTSelectItem value="active">Hoạt động</LTTSelectItem>
-                  <LTTSelectItem value="inactive">Tạm ngưng</LTTSelectItem>
+                  <LTTSelectItem value="active">{t("admin.staff.status.active")}</LTTSelectItem>
+                  <LTTSelectItem value="inactive">{t("admin.common.inactive")}</LTTSelectItem>
                 </LTTSelectContent>
               </LTTSelect>
             </div>
           </div>
           <LTTDialogFooter>
             <LTTButton variant="outline" onClick={() => handleDialogOpenChange(false)}>
-              Hủy
+              {t("admin.staff.form.cancel")}
             </LTTButton>
             <LTTButton onClick={save} loading={createMutation.isLoading || updateMutation.isLoading}>
-              {editing ? "Lưu" : "Tạo mới"}
+              {editing ? t("admin.staff.form.save") : t("admin.staff.form.create")}
             </LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
@@ -559,32 +581,31 @@ export default function StaffPage() {
       <LTTUnsavedChangesDialog
         open={exitConfirmOpen}
         onOpenChange={setExitConfirmOpen}
-        title="Bạn có thay đổi chưa lưu"
-        messageBefore="Bạn có thay đổi chưa hoàn tất. Thoát sẽ"
-        messageHighlight="xóa toàn bộ nội dung đang nhập"
-        messageAfter="Bạn có chắc chắn muốn thoát?"
-        stayText="Ở lại chỉnh sửa"
-        exitText="Thoát"
+        title={t("admin.common.unsaved_changes_dialog.title")}
+        messageBefore={t("admin.common.unsaved_changes_dialog.message_before")}
+        messageHighlight={t("admin.common.unsaved_changes_dialog.message_highlight")}
+        messageAfter={t("admin.common.unsaved_changes_dialog.message_after")}
+        stayText={t("admin.common.unsaved_changes_dialog.stay")}
+        exitText={t("admin.common.unsaved_changes_dialog.exit")}
         onExit={resetDialog}
       />
 
       <LTTDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <LTTDialogContent className="sm:max-w-sm">
           <LTTDialogHeader>
-            <LTTDialogTitle>Xác nhận xóa</LTTDialogTitle>
+            <LTTDialogTitle>{t("admin.staff.bulk_delete.title")}</LTTDialogTitle>
           </LTTDialogHeader>
           <div className="py-4">
             <p className="text-sm text-muted-foreground-shadcn">
-              Bạn có chắc chắn muốn xóa <strong>{selected.size}</strong> nhân viên
-              đã chọn? Hành động này không thể hoàn tác.
+              {t("admin.staff.bulk_delete.description", { count: selected.size })}
             </p>
           </div>
           <LTTDialogFooter>
             <LTTButton variant="outline" onClick={() => setDeleteOpen(false)}>
-              Hủy
+              {t("admin.staff.form.cancel")}
             </LTTButton>
             <LTTButton variant="destructive" onClick={bulkDelete} loading={isBulkDeleting}>
-              Xác nhận xóa
+              {t("admin.staff.bulk_confirm_delete")}
             </LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>

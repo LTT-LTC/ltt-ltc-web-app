@@ -3,14 +3,14 @@ import React from "react";
 import Link from "next/link";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 import { getCookie } from "@/src/@core/utils/cookie";
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/src/@core/const";
+import { CUSTOMER_ACCESS_TOKEN_KEY, CUSTOMER_REFRESH_TOKEN_KEY } from "@/src/@core/const";
 
 const SubNav: React.FC = () => {
     const { t } = useLocalization();
 
     const handleRegisterClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-        const accessToken = getCookie(ACCESS_TOKEN_KEY);
-        const refreshToken = getCookie(REFRESH_TOKEN_KEY);
+        const accessToken = getCookie(CUSTOMER_ACCESS_TOKEN_KEY);
+        const refreshToken = getCookie(CUSTOMER_REFRESH_TOKEN_KEY);
         if (accessToken || refreshToken) {
             event.preventDefault();
             window.location.href = "/homepage";

@@ -2,6 +2,7 @@ import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 
 export interface EmployeeOutputDto {
     id: string;
+    userId?: string | null;
     avatarUrl?: string;
     avatarFileId?: string | null;
     name: string;
@@ -15,6 +16,7 @@ export interface EmployeeOutputDto {
     positionName?: string | null;
     organizationUnitId?: string | null;
     organizationUnitName?: string | null;
+    role?: "Admin" | "Manager" | "Staff" | "POS" | string;
     isActive?: boolean | null;
 }
 

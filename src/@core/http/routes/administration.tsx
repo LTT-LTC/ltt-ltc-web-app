@@ -67,6 +67,13 @@ export const adminNavItems: NavItemConfig[] = [
     permissionKey: "admin:staff",
   },
   {
+    key: "member-card-requests",
+    label: "MemberCard Request",
+    path: "/administration/admin/member-card-request",
+    icon: Users,
+    permissionKey: "admin:staff",
+  },
+  {
     key: "staff",
     label: "Staff & RBAC",
     path: "/administration/admin/staff",
@@ -78,6 +85,13 @@ export const adminNavItems: NavItemConfig[] = [
     label: "Promotion & Giftcard",
     path: "/administration/admin/promotions",
     icon: Gift,
+    permissionKey: "admin:promotions",
+  },
+  {
+    key: "member-tier",
+    label: "Member Tier",
+    path: "/administration/admin/member-tier",
+    icon: Grid3X3,
     permissionKey: "admin:promotions",
   },
   {

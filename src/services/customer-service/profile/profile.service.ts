@@ -3,7 +3,7 @@ import { rootCustomerPath } from "../customer.service";
 import { UpdateCustomerProfileInputDto } from "./models/input.model";
 import { CustomerProfileOutputDto } from "./models/output.model";
 
-const profilePath = "/profile";
+const profilePath = "/customer/profile";
 
 const getProfileAsync = async (): Promise<CustomerProfileOutputDto> => {
     const { data } = await http.get<CustomerProfileOutputDto>(`${rootCustomerPath}${profilePath}`);

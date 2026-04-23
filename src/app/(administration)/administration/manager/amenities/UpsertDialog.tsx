@@ -28,6 +28,7 @@ import { amenityTypeService } from "@/src/services/administration-service/amenit
 import { productService } from "@/src/services/administration-service/product/product.service";
 import { toast } from "sonner";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 interface Props {
     open: boolean;
@@ -38,6 +39,7 @@ interface Props {
 }
 
 export default function UpsertAmenityDialog({ open, onOpenChange, editingItem, cinemaId, onSuccess }: Props) {
+    const { t } = useLocalization();
     const [form, setForm] = useState<CreateCinemaAmenityInputDto>({
         name: "",
         description: "",
@@ -88,26 +90,26 @@ export default function UpsertAmenityDialog({ open, onOpenChange, editingItem, c
     const createMutation = useLTTMutation<CinemaAmenityOutputDto | null, { cinemaId: string, body: CreateCinemaAmenityInputDto }>({
         mutationFn: (input) => cinemaAmenityService.createCinemaAmenityAsync(input.cinemaId, input.body),
         onSuccess: () => {
-            toast.success("Tạo mới thành công");
+            toast.success(t("admin.amenities.create_success"));
             onSuccess();
             onOpenChange(false);
         },
-        onError: (err) => toast.error(err.message || "Lỗi khi tạo mới")
+        onError: (err) => toast.error(err.message || t("admin.amenities.create_error"))
     });
 
     const updateMutation = useLTTMutation<CinemaAmenityOutputDto | null, { cinemaId: string, id: string, body: UpdateCinemaAmenityInputDto }>({
         mutationFn: (input) => cinemaAmenityService.updateCinemaAmenityAsync(input.cinemaId, input.id, input.body),
         onSuccess: () => {
-            toast.success("Cập nhật thành công");
+            toast.success(t("admin.amenities.update_success"));
             onSuccess();
             onOpenChange(false);
         },
-        onError: (err) => toast.error(err.message || "Lỗi khi cập nhật")
+        onError: (err) => toast.error(err.message || t("admin.amenities.update_error"))
     });
 
     const handleSave = () => {
         if (!form.name || !form.amenityTypeId) {
-            toast.error("Vui lòng điền đủ thông tin bắt buộc");
+            toast.error(t("admin.amenities.validation.required"));
             return;
         }
         
@@ -131,12 +133,12 @@ export default function UpsertAmenityDialog({ open, onOpenChange, editingItem, c
         <LTTDialog open={open} onOpenChange={onOpenChange}>
             <LTTDialogContent className="sm:max-w-[500px]">
                 <LTTDialogHeader>
-                    <LTTDialogTitle>{editingItem ? "Cập nhật tiện ích" : "Thêm mới tiện ích"}</LTTDialogTitle>
+                    <LTTDialogTitle>{editingItem ? t("admin.amenities.form.edit_title") : t("admin.amenities.form.create_title")}</LTTDialogTitle>
                 </LTTDialogHeader>
                 
                 <div className="grid gap-4 py-4">
                     <div className="space-y-2">
-                        <LTTLabel htmlFor="name">Tên tiện ích *</LTTLabel>
+                        <LTTLabel htmlFor="name">{t("admin.amenities.form.name")}</LTTLabel>
                         <LTTInput 
                             id="name" 
                             value={form.name} 
@@ -145,13 +147,13 @@ export default function UpsertAmenityDialog({ open, onOpenChange, editingItem, c
                     </div>
 
                     <div className="space-y-2">
-                        <LTTLabel>Loại tiện ích *</LTTLabel>
+                        <LTTLabel>{t("admin.amenities.form.type")}</LTTLabel>
                         <LTTSelect 
                             value={form.amenityTypeId} 
                             onValueChange={v => setForm({...form, amenityTypeId: v})}
                         >
                             <LTTSelectTrigger>
-                                <LTTSelectValue placeholder="Chọn loại tiện ích" />
+                                <LTTSelectValue placeholder={t("admin.amenities.form.type_placeholder")} />
                             </LTTSelectTrigger>
                             <LTTSelectContent>
                                 {types.map(t => (
@@ -162,26 +164,26 @@ export default function UpsertAmenityDialog({ open, onOpenChange, editingItem, c
                     </div>
 
                     <div className="space-y-2">
-                        <LTTLabel>Sản phẩm liên kết</LTTLabel>
+                        <LTTLabel>{t("admin.amenities.form.linked_product")}</LTTLabel>
                         <LTTSelect 
                             value={form.productId || "none"} 
                             onValueChange={v => setForm({...form, productId: v === "none" ? undefined : v})}
                         >
                             <LTTSelectTrigger>
-                                <LTTSelectValue placeholder="Chọn sản phẩm (optional)" />
+                                <LTTSelectValue placeholder={t("admin.amenities.form.linked_product_placeholder")} />
                             </LTTSelectTrigger>
                             <LTTSelectContent>
-                                <LTTSelectItem value="none">Không liên kết</LTTSelectItem>
+                                <LTTSelectItem value="none">{t("admin.amenities.form.none")}</LTTSelectItem>
                                 {products.map(p => (
                                     <LTTSelectItem key={p.id} value={p.id}>{p.name}</LTTSelectItem>
                                 ))}
                             </LTTSelectContent>
                         </LTTSelect>
-                        <p className="text-[10px] text-muted-foreground-shadcn">Tiện ích này sẽ được xử lý như sản phẩm đặc biệt khi bán vé.</p>
+                        <p className="text-[10px] text-muted-foreground-shadcn">{t("admin.amenities.form.linked_product_hint")}</p>
                     </div>
 
                     <div className="space-y-2">
-                        <LTTLabel htmlFor="desc">Mô tả</LTTLabel>
+                        <LTTLabel htmlFor="desc">{t("admin.amenities.form.description")}</LTTLabel>
                         <LTTInput 
                             id="desc" 
                             value={form.description || ""} 
@@ -190,7 +192,7 @@ export default function UpsertAmenityDialog({ open, onOpenChange, editingItem, c
                     </div>
 
                     <div className="space-y-2">
-                        <LTTLabel>Trạng thái</LTTLabel>
+                        <LTTLabel>{t("admin.amenities.form.status")}</LTTLabel>
                         <LTTSelect 
                             value={form.status} 
                             onValueChange={v => setForm({...form, status: v})}
@@ -199,17 +201,17 @@ export default function UpsertAmenityDialog({ open, onOpenChange, editingItem, c
                                 <LTTSelectValue />
                             </LTTSelectTrigger>
                             <LTTSelectContent>
-                                <LTTSelectItem value="active">Hoạt động</LTTSelectItem>
-                                <LTTSelectItem value="inactive">Tạm ngưng</LTTSelectItem>
+                                <LTTSelectItem value="active">{t("admin.common.active")}</LTTSelectItem>
+                                <LTTSelectItem value="inactive">{t("admin.common.inactive")}</LTTSelectItem>
                             </LTTSelectContent>
                         </LTTSelect>
                     </div>
                 </div>
 
                 <LTTDialogFooter>
-                    <LTTButton variant="outline" onClick={() => onOpenChange(false)}>Hủy</LTTButton>
+                    <LTTButton variant="outline" onClick={() => onOpenChange(false)}>{t("admin.common.delete_confirm.cancel")}</LTTButton>
                     <LTTButton onClick={handleSave} loading={isLoading}>
-                        {editingItem ? "Lưu thay đổi" : "Tạo mới"}
+                        {editingItem ? t("admin.amenities.form.save") : t("admin.amenities.form.create")}
                     </LTTButton>
                 </LTTDialogFooter>
             </LTTDialogContent>

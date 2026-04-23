@@ -10,6 +10,9 @@
   },
   "admin": {
     "common": {
+      "loading": "Đang tải...",
+      "active": "Hoạt động",
+      "inactive": "Tạm dừng",
       "unsaved_changes_dialog": {
         "title": "Bạn có thay đổi chưa lưu",
         "message_before": "Bạn có thay đổi chưa hoàn tất. Thoát sẽ",
@@ -24,6 +27,185 @@
         "bulk_message": "Bạn có chắc chắn muốn xóa {{count}} mục đã chọn? Hành động này không thể hoàn tác.",
         "ok": "Xóa",
         "cancel": "Hủy"
+      }
+    },
+    "news_and_offers": {
+      "title": "Tin tức & Ưu đãi",
+      "add": "Thêm mới",
+      "search_placeholder": "Tìm kiếm tin tức hoặc ưu đãi...",
+      "fetch_error": "Không thể tải danh sách tin tức",
+      "delete_success": "Đã xóa tin tức/ưu đãi",
+      "delete_error": "Lỗi khi xóa",
+      "delete_confirm_message": "Bạn có chắc chắn muốn xóa tin tức hoặc ưu đãi này?",
+      "create_success": "Tạo mới thành công",
+      "create_error": "Lỗi khi tạo mới",
+      "update_success": "Cập nhật thành công",
+      "update_error": "Lỗi khi cập nhật",
+      "validation": {
+        "title_required": "Vui lòng nhập tiêu đề"
+      },
+      "status": {
+        "active": "Hoạt động",
+        "inactive": "Tạm ngưng"
+      },
+      "table": {
+        "title": "Tiêu đề",
+        "start_date": "Ngày bắt đầu",
+        "end_date": "Ngày kết thúc",
+        "status": "Trạng thái",
+        "actions": "Thao tác"
+      },
+      "form": {
+        "edit_title": "Cập nhật tin tức/ưu đãi",
+        "create_title": "Thêm mới tin tức/ưu đãi",
+        "title": "Tiêu đề *",
+        "content": "Nội dung",
+        "start_date": "Ngày bắt đầu",
+        "end_date": "Ngày kết thúc",
+        "poster_url": "Poster URL",
+        "active": "Kích hoạt hiển thị",
+        "save": "Lưu thay đổi",
+        "create": "Tạo mới"
+      }
+    },
+    "pricing_rules": {
+      "title": "Quy tắc Giá (Pricing Rules)",
+      "subtitle": "Quản lý hệ số giá theo loại ghế, thời gian và ngày trong tuần.",
+      "add": "Thêm quy tắc",
+      "search_placeholder": "Tìm theo loại ghế hoặc loại quy tắc...",
+      "fetch_error": "Lỗi tải danh sách quy tắc giá",
+      "delete_success": "Đã xóa quy tắc giá",
+      "delete_error": "Lỗi khi xóa",
+      "delete_confirm_message": "Bạn có chắc chắn muốn xóa quy tắc giá này?",
+      "create_success": "Tạo mới thành công",
+      "update_success": "Cập nhật thành công",
+      "generic_error": "Lỗi thao tác",
+      "empty": "Chưa có quy tắc giá nào.",
+      "all": "Tất cả",
+      "all_seat_types": "Áp dụng tất cả",
+      "every_day": "Hàng ngày",
+      "day": {
+        "0": "Chủ nhật",
+        "1": "Thứ 2",
+        "2": "Thứ 3",
+        "3": "Thứ 4",
+        "4": "Thứ 5",
+        "5": "Thứ 6",
+        "6": "Thứ 7"
+      },
+      "rule_type": {
+        "fixed": "Cố định (Fixed)",
+        "surcharge": "Phụ thu (Surcharge)",
+        "discount": "Giảm giá (Discount)"
+      },
+      "table": {
+        "seat_type": "Loại ghế",
+        "rule_type": "Loại quy tắc",
+        "multiplier": "Hệ số (Multiplier)",
+        "time_day": "Thời gian/Thứ",
+        "priority": "Độ ưu tiên",
+        "status": "Trạng thái",
+        "actions": "Thao tác"
+      },
+      "form": {
+        "edit_title": "Chỉnh sửa quy tắc giá",
+        "create_title": "Thêm quy tắc giá mới",
+        "seat_type": "Loại ghế áp dụng",
+        "rule_type": "Loại quy tắc",
+        "multiplier": "Hệ số (Multiplier)",
+        "priority": "Độ ưu tiên",
+        "day_of_week": "Ngày trong tuần",
+        "status": "Trạng thái",
+        "start_time": "Giờ bắt đầu",
+        "end_time": "Giờ kết thúc",
+        "save": "Lưu thay đổi",
+        "create": "Tạo quy tắc"
+      }
+    },
+    "fnb": {
+      "title": "Quản lý F&B",
+      "add": "Thêm sản phẩm",
+      "search_placeholder": "Tìm sản phẩm...",
+      "fetch_error": "Lỗi tải danh sách sản phẩm",
+      "create_success": "Thêm thành công",
+      "update_success": "Cập nhật thành công",
+      "generic_error": "Lỗi thao tác",
+      "empty": "Không tìm thấy sản phẩm nào.",
+      "fallback_product": "Sản phẩm",
+      "empty_value": "—",
+      "bulk_delete_success": "Đã xóa {{count}} sản phẩm",
+      "delete_single_success": "Đã xóa sản phẩm {{name}}",
+      "validation": {
+        "name_required": "Tên sản phẩm không được để trống"
+      },
+      "tabs": {
+        "all": "Tất cả ({{count}})"
+      },
+      "table": {
+        "index": "STT",
+        "product": "Sản phẩm",
+        "category": "Danh mục",
+        "price": "Giá bán",
+        "description": "Mô tả",
+        "actions": "Thao tác"
+      },
+      "form": {
+        "edit_title": "Chỉnh sửa sản phẩm",
+        "create_title": "Thêm sản phẩm mới",
+        "name": "Tên sản phẩm *",
+        "category": "Danh mục *",
+        "category_placeholder": "Chọn danh mục",
+        "price": "Giá bán (VNĐ) *",
+        "description": "Mô tả sản phẩm",
+        "description_placeholder": "Mô tả thành phần, kích thước...",
+        "save": "Lưu thay đổi",
+        "create": "Tạo sản phẩm"
+      },
+      "delete_confirm": {
+        "title": "Xác nhận xóa sản phẩm",
+        "message": "Bạn có chắc chắn muốn xóa {{count}} sản phẩm đã chọn khỏi danh mục?",
+        "confirm": "Xác nhận xóa"
+      }
+    },
+    "amenities": {
+      "title": "Tiện ích rạp (Amenities)",
+      "add": "Thêm tiện ích",
+      "search_placeholder": "Tìm kiếm tiện ích...",
+      "loading": "Đang tải dữ liệu tiện ích...",
+      "empty": "Chưa có tiện ích nào được tạo.",
+      "fetch_error": "Lỗi tải danh sách tiện ích",
+      "delete_success": "Đã xóa tiện ích",
+      "delete_error": "Lỗi khi xóa",
+      "create_success": "Tạo mới thành công",
+      "create_error": "Lỗi khi tạo mới",
+      "update_success": "Cập nhật thành công",
+      "update_error": "Lỗi khi cập nhật",
+      "no_linked_product": "Không có",
+      "delete_confirm_message": "Bạn có chắc chắn muốn xóa tiện ích này?",
+      "validation": {
+        "required": "Vui lòng điền đủ thông tin bắt buộc"
+      },
+      "table": {
+        "name": "Tên tiện ích",
+        "type": "Loại",
+        "linked_product": "Sản phẩm liên kết",
+        "status": "Trạng thái",
+        "actions": "Thao tác"
+      },
+      "form": {
+        "edit_title": "Cập nhật tiện ích",
+        "create_title": "Thêm mới tiện ích",
+        "name": "Tên tiện ích *",
+        "type": "Loại tiện ích *",
+        "type_placeholder": "Chọn loại tiện ích",
+        "linked_product": "Sản phẩm liên kết",
+        "linked_product_placeholder": "Chọn sản phẩm (optional)",
+        "none": "Không liên kết",
+        "linked_product_hint": "Tiện ích này sẽ được xử lý như sản phẩm đặc biệt khi bán vé.",
+        "description": "Mô tả",
+        "status": "Trạng thái",
+        "save": "Lưu thay đổi",
+        "create": "Tạo mới"
       }
     },
     "menu": {
@@ -560,6 +742,141 @@
       "previous": "Trước",
       "page": "Trang {{page}} / {{totalPages}}",
       "next": "Sau"
+    },
+    "staff": {
+      "title": "Nhân viên & Phân quyền",
+      "add_employee": "Thêm nhân viên",
+      "search_placeholder": "Tìm nhân viên...",
+      "refresh": "Làm mới",
+      "fetch_error": "Lỗi tải danh sách nhân viên",
+      "delete_selected": "Xóa {{count}}",
+      "loading": "Đang tải dữ liệu nhân viên...",
+      "empty": "Không tìm thấy nhân viên nào phù hợp.",
+      "filters": {
+        "all_roles": "Tất cả vai trò",
+        "role_placeholder": "Tất cả vai trò"
+      },
+      "roles": {
+        "Admin": "Admin",
+        "Manager": "Manager",
+        "Staff": "Staff"
+      },
+      "status": {
+        "active": "Hoạt động",
+        "inactive": "Ngưng"
+      },
+      "table": {
+        "full_name": "Họ tên",
+        "email": "Email",
+        "phone": "SĐT",
+        "role": "Vai trò",
+        "cinema": "Rạp",
+        "status": "Trạng thái",
+        "last_login": "Đăng nhập cuối",
+        "actions": "Thao tác",
+        "dash": "—"
+      },
+      "toast": {
+        "create_success": "Thêm nhân viên thành công",
+        "update_success": "Cập nhật thành công",
+        "delete_success": "Đã xóa nhân viên thành công",
+        "delete_error": "Không thể xóa nhân viên",
+        "generic_error": "Có lỗi xảy ra",
+        "validation_required": "Vui lòng điền đầy đủ họ tên, email, số điện thoại và mã nhân viên",
+        "bulk_delete_success": "Đã xóa {{count}} nhân viên",
+        "bulk_delete_partial": "Xóa thành công {{success}}/{{total}} nhân viên"
+      },
+      "confirm_delete": {
+        "title": "Xác nhận xóa",
+        "description": "Bạn có chắc chắn muốn xóa nhân viên này?"
+      },
+      "bulk_delete": {
+        "title": "Xác nhận xóa",
+        "description": "Bạn có chắc chắn muốn xóa {{count}} nhân viên đã chọn? Hành động này không thể hoàn tác."
+      },
+      "form": {
+        "edit_title": "Chỉnh sửa nhân viên",
+        "create_title": "Thêm nhân viên mới",
+        "full_name": "Họ tên *",
+        "email": "Email *",
+        "phone": "SĐT *",
+        "code": "Mã nhân viên",
+        "role": "Vai trò *",
+        "role_placeholder": "Chọn vai trò",
+        "cinema": "Rạp (Phòng ban)",
+        "cinema_placeholder": "Chọn rạp",
+        "joined_date": "Ngày gia nhập",
+        "birth_date": "Ngày sinh",
+        "account_status": "Trạng thái",
+        "cancel": "Hủy",
+        "save": "Lưu",
+        "create": "Tạo mới"
+      },
+      "bulk_confirm_delete": "Xác nhận xóa"
+    },
+    "promotions_giftcard": {
+      "title": "Khuyến mãi & Gift Card",
+      "create_discount": "Tạo mã giảm giá",
+      "create_giftcard": "Tạo Gift Card",
+      "search_placeholder": "Tìm kiếm mã...",
+      "refresh": "Làm mới",
+      "fetch_error": "Lỗi tải danh sách",
+      "tab_promotions": "Mã khuyến mãi",
+      "tab_giftcards": "Gift Cards",
+      "loading": "Đang tải...",
+      "empty": "Chưa có dữ liệu.",
+      "table": {
+        "code": "Mã",
+        "description": "Mô tả",
+        "discount": "Giảm giá",
+        "validity": "Hiệu lực",
+        "status": "Trạng thái",
+        "actions": "Thao tác",
+        "dash": "—",
+        "date_range_separator": "→"
+      },
+      "toast": {
+        "create_success": "Tạo mới thành công",
+        "update_success": "Cập nhật thành công",
+        "delete_success": "Đã xóa mã thành công",
+        "create_error": "Không thể tạo mã",
+        "update_error": "Không thể cập nhật mã",
+        "delete_error": "Không thể xóa mã",
+        "code_required": "Mã không được để trống"
+      },
+      "confirm_delete": {
+        "title": "Xác nhận xóa",
+        "description": "Bạn có chắc chắn muốn xóa khuyến mãi này?"
+      },
+      "dialog": {
+        "edit_title": "Chỉnh sửa khuyến mãi",
+        "create_title": "Thêm khuyến mãi mới",
+        "edit_description": "Cập nhật thông tin gift code hoặc mã khuyến mãi.",
+        "create_description": "Tạo mới mã giảm giá hoặc gift card."
+      },
+      "form": {
+        "code": "Mã *",
+        "description": "Mô tả",
+        "type": "Loại",
+        "type_placeholder": "Chọn loại",
+        "discount_percent": "Giảm %",
+        "discount_fixed": "Giảm cố định",
+        "giftcard": "Gift Card",
+        "value": "Giá trị",
+        "min_order": "Đơn tối thiểu",
+        "usage_limit": "Giới hạn sử dụng",
+        "per_user_limit": "Giới hạn mỗi khách",
+        "start_date": "Ngày bắt đầu",
+        "end_date": "Ngày kết thúc",
+        "status": "Trạng thái",
+        "status_placeholder": "Chọn trạng thái",
+        "status_draft": "Bản nháp",
+        "status_active": "Đang chạy",
+        "status_expired": "Hết hạn",
+        "cancel": "Hủy",
+        "save": "Lưu",
+        "create": "Tạo mới"
+      }
     }
   },
   "customer": {

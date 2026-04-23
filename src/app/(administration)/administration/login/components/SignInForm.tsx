@@ -7,8 +7,8 @@ import LTTEyeIcon from "@/src/@core/component/LTTIcon/iconoir/eye";
 import LTTEyeClosedIcon from "@/src/@core/component/LTTIcon/iconoir/eye-closed";
 import Link from "next/link";
 import {
-    ACCESS_TOKEN_KEY,
-    REFRESH_TOKEN_KEY,
+    ADMIN_ACCESS_TOKEN_KEY,
+    ADMIN_REFRESH_TOKEN_KEY,
 } from "@/src/@core/const";
 import { useEffect, useState } from "react";
 import { Form } from "antd";
@@ -59,7 +59,7 @@ const FormDetail = () => {
     useEffect(() => {
         getOrCreateTenantOnClient();
 
-        const accessToken = getCookie(ACCESS_TOKEN_KEY);
+        const accessToken = getCookie(ADMIN_ACCESS_TOKEN_KEY);
         if (accessToken) {
             const role = resolveAdminRoleFromToken(accessToken);
             if (role) {
@@ -67,8 +67,8 @@ const FormDetail = () => {
                 return;
             }
 
-            removeCookie(ACCESS_TOKEN_KEY);
-            removeCookie(REFRESH_TOKEN_KEY);
+            removeCookie(ADMIN_ACCESS_TOKEN_KEY);
+            removeCookie(ADMIN_REFRESH_TOKEN_KEY);
         }
     }, []);
 
@@ -85,15 +85,15 @@ const FormDetail = () => {
 
                 const role = resolveAdminRoleFromToken(res.accessToken);
                 if (!role) {
-                    removeCookie(ACCESS_TOKEN_KEY);
-                    removeCookie(REFRESH_TOKEN_KEY);
+                    removeCookie(ADMIN_ACCESS_TOKEN_KEY);
+                    removeCookie(ADMIN_REFRESH_TOKEN_KEY);
                     showNotificationError(t("admin.auth.login.errors.no_admin_access", "This account does not have access to the administration portal."));
                     return;
                 }
 
                 showNotificationSuccess(t("admin.auth.login.messages.login_success", "Login successful."));
-                setCookie(ACCESS_TOKEN_KEY, res.accessToken);
-                setCookie(REFRESH_TOKEN_KEY, res.refreshToken);
+                setCookie(ADMIN_ACCESS_TOKEN_KEY, res.accessToken);
+                setCookie(ADMIN_REFRESH_TOKEN_KEY, res.refreshToken);
                 setIsRedirecting(true);
                 setTimeout(() => {
                     window.location.href = getAdminHomePathByRole(role);
