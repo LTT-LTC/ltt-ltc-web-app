@@ -69,8 +69,8 @@ export default function MembershipCardPage() {
     const pointHistoryMutation = useLTTMutation<PagedResultDto<PointTransactionOutputDto>, { skipCount: number; maxResultCount: number }>({
         mutationFn: (params) => customerMemberCardService.getPointHistoryAsync(params),
         onSuccess: (res) => {
-            setPointHistory(res.items || []);
-            setPointPagination((prev) => ({ ...prev, totalCount: res.totalCount || 0 }));
+            setPointHistory(res?.items || []);
+            setPointPagination((prev) => ({ ...prev, totalCount: res?.totalCount || 0 }));
         },
     });
 

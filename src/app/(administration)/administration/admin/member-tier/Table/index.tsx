@@ -53,8 +53,8 @@ export default function MemberTierListPage() {
     const listMutation = useLTTMutation<PagedResultDto<MemberTierOutputDto>, { skipCount: number; maxResultCount: number }>({
         mutationFn: (params) => memberTierService.getMemberTierListAsync(params),
         onSuccess: (res) => {
-            setItems(res.items || []);
-            setTotalCount(res.totalCount || 0);
+            setItems(res?.items || []);
+            setTotalCount(res?.totalCount || 0);
         },
         onError: (err) => toast.error(err.message || "Failed to fetch member tiers."),
     });

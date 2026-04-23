@@ -19,8 +19,8 @@ export default function MemberCardRequestListPage() {
     const listMutation = useLTTMutation<PagedResultDto<MemberCardRequestOutputDto>, { skipCount: number; maxResultCount: number }>({
         mutationFn: (params) => memberCardRequestService.getListAsync(params),
         onSuccess: (res) => {
-            setItems(res.items || []);
-            setTotalCount(res.totalCount || 0);
+            setItems(res?.items || []);
+            setTotalCount(res?.totalCount || 0);
         },
         onError: (err) => toast.error(err.message || "Failed to fetch member card requests."),
     });
