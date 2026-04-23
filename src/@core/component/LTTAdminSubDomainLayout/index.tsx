@@ -17,7 +17,13 @@ import { cn } from "@/src/@core/utils/cn";
 import { useLocalization } from "../../hooks/use-localization";
 import { getUserInfoFromToken, UserClaims } from "../../utils/jwt";
 import { getCookie, removeCookie } from "../../utils/cookie";
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, TENANT_KEY } from "../../const";
+import {
+  ADMIN_ACCESS_TOKEN_KEY,
+  ADMIN_REFRESH_TOKEN_KEY,
+  CUSTOMER_ACCESS_TOKEN_KEY,
+  CUSTOMER_REFRESH_TOKEN_KEY,
+  TENANT_KEY
+} from "../../const";
 import useLTTMutation from "../../hooks/useLTTMutation";
 import { administrationService } from "@/src/services/administration-service/administration.service";
 import { customerService } from "@/src/services/customer-service/customer.service";
@@ -48,7 +54,7 @@ export default function LTTAdminSubDomainLayout({
 
   // User Logic
   const [isUserOpen, setIsUserOpen] = useState(false);
-  const accessToken = getCookie(ACCESS_TOKEN_KEY);
+  const accessToken = getCookie(ADMIN_ACCESS_TOKEN_KEY) || getCookie(CUSTOMER_ACCESS_TOKEN_KEY);
   const userInfo: UserClaims | null = accessToken ? getUserInfoFromToken(accessToken) : null;
 
   const { mutation: logOut, isLoading: isLoggingOut } = useLTTMutation<boolean, void>({
@@ -82,10 +88,15 @@ export default function LTTAdminSubDomainLayout({
     );
 
     localStorage.removeItem("user_info");
-    localStorage.removeItem(TENANT_KEY);
-    removeCookie(ACCESS_TOKEN_KEY);
-    removeCookie(REFRESH_TOKEN_KEY);
-    removeCookie(TENANT_KEY);
+    if (isAdmin) {
+      localStorage.removeItem(TENANT_KEY);
+      removeCookie(ADMIN_ACCESS_TOKEN_KEY);
+      removeCookie(ADMIN_REFRESH_TOKEN_KEY);
+      removeCookie(TENANT_KEY);
+    } else {
+      removeCookie(CUSTOMER_ACCESS_TOKEN_KEY);
+      removeCookie(CUSTOMER_REFRESH_TOKEN_KEY);
+    }
 
     if (isAdmin) {
       window.location.href = "/administration-login";

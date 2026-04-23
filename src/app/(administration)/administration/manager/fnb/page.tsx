@@ -30,12 +30,13 @@ import {
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 import { toast } from "sonner";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
-import { productService } from "@/src/services/administration-service/product/product.service";
+import { managerFnbService as productService } from "@/src/services/administration-service/manager/fnb/fnb.service";
 import { ProductOutputDto, CategoryOutputDto } from "@/src/services/administration-service/product/models/output.model";
 import { GetProductListInputDto, CreateProductInputDto, UpdateProductInputDto } from "@/src/services/administration-service/product/models/input.model";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { useEffect } from "react";
 import { cn } from "@/src/@core/utils/cn";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 const catLabel: Record<string, string> = {
   popcorn: "Bắp rang",
@@ -58,6 +59,7 @@ const statusLabel: Record<string, string> = {
 const formatVND = (n: number) => n.toLocaleString("vi-VN") + "đ";
 
 export default function FnBPage() {
+  const { t } = useLocalization();
   const [items, setItems] = useState<ProductOutputDto[]>([]);
   const [categories, setCategories] = useState<CategoryOutputDto[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -77,7 +79,7 @@ export default function FnBPage() {
   const listMutation = useLTTMutation<PagedResultDto<ProductOutputDto> | undefined, GetProductListInputDto>({
     mutationFn: (input) => productService.getProductListAsync(input),
     onSuccess: (res) => { if (res && res.items) setItems(res.items); },
-    onError: (err) => toast.error(err.message || "Lỗi tải danh sách sản phẩm")
+    onError: (err) => toast.error(err.message || t("admin.fnb.fetch_error"))
   });
 
   const catMutation = useLTTMutation<PagedResultDto<CategoryOutputDto> | undefined, void>({
@@ -88,21 +90,21 @@ export default function FnBPage() {
   const createMutation = useLTTMutation<ProductOutputDto | undefined, CreateProductInputDto>({
     mutationFn: (input) => productService.createProductAsync(input),
     onSuccess: () => {
-      toast.success("Thêm thành công");
+      toast.success(t("admin.fnb.create_success"));
       fetchData();
       setDialogOpen(false);
     },
-    onError: (err) => toast.error(err.message || "Lỗi")
+    onError: (err) => toast.error(err.message || t("admin.fnb.generic_error"))
   });
 
   const updateMutation = useLTTMutation<ProductOutputDto | undefined, { id: string; body: UpdateProductInputDto }>({
     mutationFn: (input) => productService.updateProductAsync(input.id, input.body),
     onSuccess: () => {
-      toast.success("Cập nhật thành công");
+      toast.success(t("admin.fnb.update_success"));
       fetchData();
       setDialogOpen(false);
     },
-    onError: (err) => toast.error(err.message || "Lỗi")
+    onError: (err) => toast.error(err.message || t("admin.fnb.generic_error"))
   });
 
   const fetchData = () => {
@@ -167,7 +169,7 @@ export default function FnBPage() {
 
   const save = () => {
     if (!form.name.trim()) {
-      toast.error("Tên sản phẩm không được để trống");
+      toast.error(t("admin.fnb.validation.name_required"));
       return;
     }
     if (editing) {
@@ -179,7 +181,7 @@ export default function FnBPage() {
 
   const bulkDelete = () => {
     setItems((p) => p.filter((i) => !selected.has(i.id)));
-    toast.success(`Đã xóa ${selected.size} sản phẩm`);
+    toast.success(t("admin.fnb.bulk_delete_success", { count: selected.size }));
     setSelected(new Set());
     setDeleteOpen(false);
   };
@@ -187,16 +189,16 @@ export default function FnBPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl font-bold">Quản lý F&B</h1>
+        <h1 className="font-heading text-2xl font-bold">{t("admin.fnb.title")}</h1>
         <LTTButton onClick={openCreate} className="gap-2">
-          <Plus className="h-4 w-4" /> Thêm sản phẩm
+          <Plus className="h-4 w-4" /> {t("admin.fnb.add")}
         </LTTButton>
       </div>
 
       <LTTTabs value={catFilter} onValueChange={setCatFilter}>
         <LTTTabsList className="bg-muted-shadcn/50">
           <LTTTabsTrigger value="all">
-            Tất cả ({items.length})
+            {t("admin.fnb.tabs.all", { count: items.length })}
           </LTTTabsTrigger>
           {categories.map((c) => (
             <LTTTabsTrigger key={c.id} value={c.id}>
@@ -210,7 +212,7 @@ export default function FnBPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
           <LTTInput
-            placeholder="Tìm sản phẩm..."
+            placeholder={t("admin.fnb.search_placeholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -223,7 +225,7 @@ export default function FnBPage() {
             className="gap-2"
             onClick={() => setDeleteOpen(true)}
           >
-            <Trash2 className="h-4 w-4" /> Xóa {selected.size}
+            <Trash2 className="h-4 w-4" /> {t("admin.common.delete_confirm.ok")} {selected.size}
           </LTTButton>
         )}
       </div>
@@ -235,19 +237,19 @@ export default function FnBPage() {
               <th className="w-10 px-3 py-3">
                 <LTTCheckbox checked={allSel} onCheckedChange={toggleAll} />
               </th>
-              <th className="px-4 py-3 text-left font-semibold">STT</th>
-              <th className="px-4 py-3 text-left font-semibold">Sản phẩm</th>
-              <th className="px-4 py-3 text-left font-semibold">Danh mục</th>
-              <th className="px-4 py-3 text-right font-semibold">Giá bán</th>
-              <th className="px-4 py-3 text-left font-semibold">Mô tả</th>
-              <th className="px-4 py-3 text-right font-semibold">Thao tác</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.fnb.table.index")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.fnb.table.product")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.fnb.table.category")}</th>
+              <th className="px-4 py-3 text-right font-semibold">{t("admin.fnb.table.price")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.fnb.table.description")}</th>
+              <th className="px-4 py-3 text-right font-semibold">{t("admin.fnb.table.actions")}</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={9} className="py-12 text-center text-muted-foreground-shadcn">
-                  Không tìm thấy sản phẩm nào.
+                  {t("admin.fnb.empty")}
                 </td>
               </tr>
             ) : (
@@ -269,12 +271,12 @@ export default function FnBPage() {
                   </td>
                   <td className="px-4 py-3">
                     <LTTBadge className="bg-accent-shadcn text-accent-shadcn-foreground border-red-200">
-                      {item.categoryName || "Sản phẩm"}
+                      {item.categoryName || t("admin.fnb.fallback_product")}
                     </LTTBadge>
                   </td>
                   <td className="px-4 py-3 text-right font-semibold">{formatVND(item.price)}</td>
                   <td className="px-4 py-3 text-xs text-muted-foreground-shadcn max-w-[200px] truncate">
-                    {item.description || "—"}
+                    {item.description || t("admin.fnb.empty_value")}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-1">
@@ -292,7 +294,7 @@ export default function FnBPage() {
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={() => {
                           setItems((p) => p.filter((i) => i.id !== item.id));
-                          toast.success("Đã xóa sản phẩm " + item.name);
+                          toast.success(t("admin.fnb.delete_single_success", { name: item.name }));
                         }}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -310,25 +312,25 @@ export default function FnBPage() {
         <LTTDialogContent className="sm:max-w-lg">
           <LTTDialogHeader>
             <LTTDialogTitle>
-              {editing ? "Chỉnh sửa sản phẩm" : "Thêm sản phẩm mới"}
+              {editing ? t("admin.fnb.form.edit_title") : t("admin.fnb.form.create_title")}
             </LTTDialogTitle>
           </LTTDialogHeader>
           <div className="grid gap-4 py-2 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
-              <LTTLabel>Tên sản phẩm *</LTTLabel>
+              <LTTLabel>{t("admin.fnb.form.name")}</LTTLabel>
               <LTTInput
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Danh mục *</LTTLabel>
+              <LTTLabel>{t("admin.fnb.form.category")}</LTTLabel>
               <LTTSelect
                 value={form.categoryId}
                 onValueChange={(v: any) => setForm({ ...form, categoryId: v })}
               >
                 <LTTSelectTrigger>
-                  <LTTSelectValue placeholder="Chọn danh mục" />
+                  <LTTSelectValue placeholder={t("admin.fnb.form.category_placeholder")} />
                 </LTTSelectTrigger>
                 <LTTSelectContent>
                   {categories.map((c) => (
@@ -340,7 +342,7 @@ export default function FnBPage() {
               </LTTSelect>
             </div>
             <div className="space-y-2">
-              <LTTLabel>Giá bán (VNĐ) *</LTTLabel>
+              <LTTLabel>{t("admin.fnb.form.price")}</LTTLabel>
               <LTTInput
                 type="number"
                 value={form.price}
@@ -348,21 +350,21 @@ export default function FnBPage() {
               />
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <LTTLabel>Mô tả sản phẩm</LTTLabel>
+              <LTTLabel>{t("admin.fnb.form.description")}</LTTLabel>
               <LTTTextarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 rows={2}
-                placeholder="Mô tả thành phần, kích thước..."
+                placeholder={t("admin.fnb.form.description_placeholder")}
               />
             </div>
           </div>
           <LTTDialogFooter>
             <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>
-              Hủy
+              {t("admin.common.delete_confirm.cancel")}
             </LTTButton>
             <LTTButton onClick={save}>
-              {editing ? "Lưu thay đổi" : "Tạo sản phẩm"}
+              {editing ? t("admin.fnb.form.save") : t("admin.fnb.form.create")}
             </LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
@@ -371,20 +373,19 @@ export default function FnBPage() {
       <LTTDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <LTTDialogContent className="sm:max-w-sm">
           <LTTDialogHeader>
-            <LTTDialogTitle>Xác nhận xóa sản phẩm</LTTDialogTitle>
+            <LTTDialogTitle>{t("admin.fnb.delete_confirm.title")}</LTTDialogTitle>
           </LTTDialogHeader>
           <div className="py-4">
             <p className="text-sm text-muted-foreground-shadcn">
-              Bạn có chắc chắn muốn xóa <strong>{selected.size}</strong> sản phẩm
-              đã chọn khỏi danh mục?
+              {t("admin.fnb.delete_confirm.message", { count: selected.size })}
             </p>
           </div>
           <LTTDialogFooter>
             <LTTButton variant="outline" onClick={() => setDeleteOpen(false)}>
-              Hủy
+              {t("admin.common.delete_confirm.cancel")}
             </LTTButton>
             <LTTButton variant="destructive" onClick={bulkDelete}>
-              Xác nhận xóa
+              {t("admin.fnb.delete_confirm.confirm")}
             </LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>

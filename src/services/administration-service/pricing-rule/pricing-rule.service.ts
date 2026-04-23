@@ -7,13 +7,14 @@ import {
 } from "./models/input.model";
 import { PricingRuleOutputDto } from "./models/output.model";
 import { rootPath } from "../administration.service";
+import { toAbpPaginationParams } from "../_shared/pagination";
 
 const pricingPath = "/pricing";
 const subPath = "/cinema";
 
 const getPricingRuleListAsync = async (cinemaId: string, skip: number = 0, count: number = 10): Promise<PagedResultDto<PricingRuleOutputDto>> => {
     const response = await http.get<ApiResult<PagedResultDto<PricingRuleOutputDto>>>(`${rootPath}${subPath}/${cinemaId}${pricingPath}-all`, {
-        params: { skipCount: skip, maxResultCount: count }
+        params: { ...toAbpPaginationParams({ page: Math.floor(skip / count) + 1, fetch: count }), skipCount: skip }
     });
     return response.data.data;
 };

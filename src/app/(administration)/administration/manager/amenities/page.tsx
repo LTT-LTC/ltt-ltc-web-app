@@ -13,12 +13,14 @@ import { CinemaAmenityOutputDto } from "@/src/services/administration-service/ci
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { cn } from "@/src/@core/utils/cn";
 import UpsertAmenityDialog from "./UpsertDialog";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 // For now, we assume a fixed cinema context or a way to select it.
 // In a manager context, the cinemaId might come from the user's profile/claims.
 const TEMP_CINEMA_ID = "00000000-0000-0000-0000-000000000000"; // Placeholder
 
 export default function CinemaAmenitiesPage() {
+    const { t } = useLocalization();
     const [items, setItems] = useState<CinemaAmenityOutputDto[]>([]);
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -30,16 +32,16 @@ export default function CinemaAmenitiesPage() {
         onSuccess: (res) => {
             if (res && res.items) setItems(res.items);
         },
-        onError: (err) => toast.error(err.message || "Lỗi tải danh sách tiện ích")
+        onError: (err) => toast.error(err.message || t("admin.amenities.fetch_error"))
     });
 
     const deleteMutation = useLTTMutation<any, { cinemaId: string, id: string }>({
         mutationFn: (input) => cinemaAmenityService.deleteCinemaAmenityAsync(input.cinemaId, input.id),
         onSuccess: () => {
-            toast.success("Đã xóa tiện ích");
+            toast.success(t("admin.amenities.delete_success"));
             fetchData();
         },
-        onError: (err) => toast.error(err.message || "Lỗi khi xóa")
+        onError: (err) => toast.error(err.message || t("admin.amenities.delete_error"))
     });
 
     const loading = listMutation.isLoading || deleteMutation.isLoading;
@@ -73,9 +75,9 @@ export default function CinemaAmenitiesPage() {
     return (
         <div className="space-y-4 animate-fade-in-up">
             <div className="flex items-center justify-between">
-                <h1 className="font-heading text-2xl font-bold">Tiện ích rạp (Amenities)</h1>
+                <h1 className="font-heading text-2xl font-bold">{t("admin.amenities.title")}</h1>
                 <LTTButton className="gap-2" onClick={handleCreate}>
-                    <Plus className="h-4 w-4" /> Thêm tiện ích
+                    <Plus className="h-4 w-4" /> {t("admin.amenities.add")}
                 </LTTButton>
             </div>
 
@@ -83,7 +85,7 @@ export default function CinemaAmenitiesPage() {
                 <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
                     <LTTInput
-                        placeholder="Tìm kiếm tiện ích..."
+                        placeholder={t("admin.amenities.search_placeholder")}
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         className="pl-9"
@@ -95,24 +97,24 @@ export default function CinemaAmenitiesPage() {
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
-                            <th className="px-4 py-3 text-left font-semibold">Tên tiện ích</th>
-                            <th className="px-4 py-3 text-left font-semibold">Loại</th>
-                            <th className="px-4 py-3 text-left font-semibold">Sản phẩm liên kết</th>
-                            <th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
-                            <th className="px-4 py-3 text-right font-semibold">Thao tác</th>
+                            <th className="px-4 py-3 text-left font-semibold">{t("admin.amenities.table.name")}</th>
+                            <th className="px-4 py-3 text-left font-semibold">{t("admin.amenities.table.type")}</th>
+                            <th className="px-4 py-3 text-left font-semibold">{t("admin.amenities.table.linked_product")}</th>
+                            <th className="px-4 py-3 text-left font-semibold">{t("admin.amenities.table.status")}</th>
+                            <th className="px-4 py-3 text-right font-semibold">{t("admin.amenities.table.actions")}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {loading ? (
                             <tr>
                                 <td colSpan={5} className="py-12 text-center text-muted-foreground-shadcn">
-                                    Đang tải dữ liệu tiện ích...
+                                    {t("admin.amenities.loading")}
                                 </td>
                             </tr>
                         ) : items.length === 0 ? (
                             <tr>
                                 <td colSpan={5} className="py-12 text-center text-muted-foreground-shadcn">
-                                    Chưa có tiện ích nào được tạo.
+                                    {t("admin.amenities.empty")}
                                 </td>
                             </tr>
                         ) : (
@@ -124,11 +126,11 @@ export default function CinemaAmenitiesPage() {
                                     </td>
                                     <td className="px-4 py-3 text-xs">{item.amenityTypeId}</td>
                                     <td className="px-4 py-3 text-xs text-muted-foreground-shadcn">
-                                        {item.productId || "Không có"}
+                                        {item.productId || t("admin.amenities.no_linked_product")}
                                     </td>
                                     <td className="px-4 py-3">
                                         <LTTBadge className={cn(item.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700")}>
-                                            {item.status === "active" ? "Hoạt động" : "Tạm ngưng"}
+                                            {item.status === "active" ? t("admin.common.active") : t("admin.common.inactive")}
                                         </LTTBadge>
                                     </td>
                                     <td className="px-4 py-3 text-right">
@@ -137,10 +139,10 @@ export default function CinemaAmenitiesPage() {
                                                 <Pencil className="h-4 w-4" />
                                             </LTTButton>
                                             <LTTConfirmDialog
-                                                title="Xác nhận xóa"
-                                                description="Bạn có chắc chắn muốn xóa tiện ích này?"
-                                                confirmText="Xóa"
-                                                cancelText="Hủy"
+                                                title={t("admin.common.delete_confirm.title")}
+                                                description={t("admin.amenities.delete_confirm_message")}
+                                                confirmText={t("admin.common.delete_confirm.ok")}
+                                                cancelText={t("admin.common.delete_confirm.cancel")}
                                                 onConfirm={() => deleteMutation.mutation({ cinemaId: TEMP_CINEMA_ID, id: item.id })}
                                                 loading={deleteMutation.isLoading}
                                                 trigger={

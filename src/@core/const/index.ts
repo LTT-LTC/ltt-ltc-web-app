@@ -2,6 +2,10 @@ export const TENANT_KEY = "X-Tenant"
 
 export const REFRESH_TOKEN_KEY = "refreshToken";
 export const ACCESS_TOKEN_KEY = "accessToken";
+export const ADMIN_REFRESH_TOKEN_KEY = "adminRefreshToken";
+export const ADMIN_ACCESS_TOKEN_KEY = "adminAccessToken";
+export const CUSTOMER_REFRESH_TOKEN_KEY = "customerRefreshToken";
+export const CUSTOMER_ACCESS_TOKEN_KEY = "customerAccessToken";
 export const AUTHORIZATION_KEY = "Authorization";
 export const TOKEN_TYPE_KEY = "Bearer";
 export const LANGUAGE_KEY = "language";

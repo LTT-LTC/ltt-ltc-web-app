@@ -7,8 +7,10 @@ import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import NewsAndOffersTable from "./Table";
 import UpsertNewsAndOffersDialog from "./UpsertDialog";
 import { NewsAndOffersOutputDto } from "@/src/services/administration-service/news-and-offers/models/output.model";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 export default function NewsAndOffersPage() {
+    const { t } = useLocalization();
     const [search, setSearch] = useState("");
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<NewsAndOffersOutputDto | null>(null);
@@ -31,9 +33,9 @@ export default function NewsAndOffersPage() {
     return (
         <div className="space-y-4 animate-fade-in-up">
             <div className="flex items-center justify-between">
-                <h1 className="font-heading text-2xl font-bold">Tin tức & Ưu đãi</h1>
+                <h1 className="font-heading text-2xl font-bold">{t("admin.news_and_offers.title")}</h1>
                 <LTTButton className="gap-2" onClick={handleCreate}>
-                    <Plus className="h-4 w-4" /> Thêm mới
+                    <Plus className="h-4 w-4" /> {t("admin.news_and_offers.add")}
                 </LTTButton>
             </div>
 
@@ -41,7 +43,7 @@ export default function NewsAndOffersPage() {
                 <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
                     <LTTInput
-                        placeholder="Tìm kiếm tin tức hoặc ưu đãi..."
+                        placeholder={t("admin.news_and_offers.search_placeholder")}
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         className="pl-9"

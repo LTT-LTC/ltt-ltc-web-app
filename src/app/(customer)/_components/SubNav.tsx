@@ -2,9 +2,21 @@
 import React from "react";
 import Link from "next/link";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
+import { getCookie } from "@/src/@core/utils/cookie";
+import { CUSTOMER_ACCESS_TOKEN_KEY, CUSTOMER_REFRESH_TOKEN_KEY } from "@/src/@core/const";
 
 const SubNav: React.FC = () => {
     const { t } = useLocalization();
+
+    const handleRegisterClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+        const accessToken = getCookie(CUSTOMER_ACCESS_TOKEN_KEY);
+        const refreshToken = getCookie(CUSTOMER_REFRESH_TOKEN_KEY);
+        if (accessToken || refreshToken) {
+            event.preventDefault();
+            window.location.href = "/homepage";
+        }
+    };
+
     return (
         <div className="bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
             <div className="w-[92%] lg:w-[70%] mx-auto py-4 flex overflow-x-auto gap-2 sm:grid sm:grid-cols-3 md:grid-cols-5 sm:gap-4 scrollbar-hide">
@@ -32,7 +44,7 @@ const SubNav: React.FC = () => {
                     </div>
                     <span className="text-[10px] sm:text-xs font-bold uppercase tracking-tight text-slate-500 text-center">News & Offers</span>
                 </Link>
-                <Link href="/customer-register" className="flex flex-col items-center gap-2 group shrink-0 min-w-[80px]">
+                <Link href="/customer-register" onClick={handleRegisterClick} className="flex flex-col items-center gap-2 group shrink-0 min-w-[80px]">
                     <div className="size-10 sm:size-12 rounded-full bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
                         <span className="material-symbols-outlined text-xl sm:text-2xl">person_add</span>
                     </div>

@@ -3,7 +3,7 @@ import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { StudioOutputDto } from "./models/output.model";
 import { CreateStudioInputDto, GetStudioListInputDto, UpdateStudioInputDto } from "./models/input.model";
 
-const rootPath = "/movie-service";
+const rootPath = "/movie-service/admin/studio";
 const studioPath = "/studio";
 
 const getStudiosAsync = async (

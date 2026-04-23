@@ -3,7 +3,7 @@ import React from "react";
 import Link from "next/link";
 import LTTLanguageSwitch from "@/src/@core/component/LTTLanguageSwitch";
 import { getCookie } from "@/src/@core/utils/cookie";
-import { ACCESS_TOKEN_KEY } from "@/src/@core/const";
+import { CUSTOMER_ACCESS_TOKEN_KEY } from "@/src/@core/const";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 const TopBar: React.FC = () => {
@@ -11,7 +11,7 @@ const TopBar: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = React.useState(false);
 
   React.useEffect(() => {
-    const accessToken = getCookie(ACCESS_TOKEN_KEY);
+    const accessToken = getCookie(CUSTOMER_ACCESS_TOKEN_KEY);
     setIsLoggedIn(!!accessToken);
   }, []);
 

@@ -6,7 +6,7 @@ import LTTInput from "@/src/@core/component/AntD/LTTInput";
 import LTTEyeIcon from "@/src/@core/component/LTTIcon/iconoir/eye";
 import LTTEyeClosedIcon from "@/src/@core/component/LTTIcon/iconoir/eye-closed";
 import Link from "next/link";
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/src/@core/const";
+import { CUSTOMER_ACCESS_TOKEN_KEY, CUSTOMER_REFRESH_TOKEN_KEY } from "@/src/@core/const";
 import { useEffect, useState } from "react";
 import { Form } from "antd";
 import { rules } from "@/src/@core/utils/rules";
@@ -47,9 +47,10 @@ const SignUpForm = () => {
 
     useEffect(() => {
         getOrCreateTenantOnClient();
-        const accessToken = getCookie(ACCESS_TOKEN_KEY);
-        if (accessToken) {
-            window.location.href = "/";
+        const accessToken = getCookie(CUSTOMER_ACCESS_TOKEN_KEY);
+        const refreshToken = getCookie(CUSTOMER_REFRESH_TOKEN_KEY);
+        if (accessToken || refreshToken) {
+            window.location.href = "/homepage";
         }
     }, []);
 
@@ -60,8 +61,8 @@ const SignUpForm = () => {
         onSuccess: (res: CustomerLoginOutputDto | null) => {
             if (res) {
                 showNotificationSuccess("Đăng ký thành công.");
-                setCookie(ACCESS_TOKEN_KEY, res.accessToken);
-                setCookie(REFRESH_TOKEN_KEY, res.refreshToken);
+                setCookie(CUSTOMER_ACCESS_TOKEN_KEY, res.accessToken);
+                setCookie(CUSTOMER_REFRESH_TOKEN_KEY, res.refreshToken);
                 setIsRedirecting(true);
                 setTimeout(() => {
                     const returnUrl = new URLSearchParams(window.location.search).get("returnUrl") || "/my-ltc";

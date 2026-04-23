@@ -31,6 +31,7 @@ import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { Select } from "antd";
 import vnCityDistricts from "@/src/@core/const/location/vn-city-districts.json";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
+import AdminTablePagination from "../_components/AdminTablePagination";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-100 text-green-700 border-green-200",
@@ -472,34 +473,17 @@ export default function CinemaConfigPage() {
         </LTTDialogContent>
       </LTTDialog>
 
-      <div className="flex items-center justify-between rounded-lg border border-border-shadcn bg-card px-4 py-3">
-        <div className="text-sm text-muted-foreground-shadcn">
-          {t("admin.cinema_configuration.total", { count: listMutation.data?.totalCount ?? items.length })}
-        </div>
-        <div className="flex items-center gap-2">
-          <LTTSelect value={String(fetch)} onValueChange={(v) => setFetch(Number(v))}>
-            <LTTSelectTrigger className="w-24">
-              <LTTSelectValue />
-            </LTTSelectTrigger>
-            <LTTSelectContent>
-              <LTTSelectItem value="10">10</LTTSelectItem>
-              <LTTSelectItem value="20">20</LTTSelectItem>
-              <LTTSelectItem value="50">50</LTTSelectItem>
-            </LTTSelectContent>
-          </LTTSelect>
-          <LTTButton variant="outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
-            {t("admin.cinema_configuration.previous")}
-          </LTTButton>
-          <span className="text-sm">{t("admin.cinema_configuration.page", { page })}</span>
-          <LTTButton
-            variant="outline"
-            onClick={() => setPage((p) => p + 1)}
-            disabled={page * fetch >= (listMutation.data?.totalCount ?? 0)}
-          >
-            {t("admin.cinema_configuration.next")}
-          </LTTButton>
-        </div>
-      </div>
+      <AdminTablePagination
+        totalCount={listMutation.data?.totalCount ?? items.length}
+        page={page}
+        pageSize={fetch}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => {
+          setPage(1);
+          setFetch(size);
+        }}
+        loading={listMutation.isLoading}
+      />
 
       <LTTDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <LTTDialogContent className="sm:max-w-sm">

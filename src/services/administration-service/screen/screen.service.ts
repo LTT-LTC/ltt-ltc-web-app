@@ -17,8 +17,8 @@ const getScreenListAsync = async (cinemaId: string, params: GetScreenListInputDt
     return response.data.data;
 };
 
-const getScreenByIdAsync = async (cinemaId: string, id: string): Promise<ScreenOutputDto> => {
-    const response = await http.get<ApiResult<ScreenOutputDto>>(`${rootPath}${path}${subPath}/${cinemaId}/${id}`);
+const getScreenByIdAsync = async (_cinemaId: string, id: string): Promise<ScreenOutputDto> => {
+    const response = await http.get<ApiResult<ScreenOutputDto>>(`${rootPath}${path}/${id}`);
     return response.data.data;
 };
 
@@ -27,13 +27,13 @@ const createScreenAsync = async (cinemaId: string, body: CreateScreenInputDto): 
     return response.data.data;
 };
 
-const updateScreenAsync = async (cinemaId: string, id: string, body: UpdateScreenInputDto): Promise<ScreenOutputDto> => {
-    const response = await http.put<ApiResult<ScreenOutputDto>>(`${rootPath}${path}${subPath}/${cinemaId}/${id}`, body);
+const updateScreenAsync = async (_cinemaId: string, id: string, body: UpdateScreenInputDto): Promise<ScreenOutputDto> => {
+    const response = await http.put<ApiResult<ScreenOutputDto>>(`${rootPath}${path}/${id}`, body);
     return response.data.data;
 };
 
-const deleteScreenAsync = async (cinemaId: string, id: string): Promise<void> => {
-    await http.delete<ApiResult<void>>(`${rootPath}${path}${subPath}/${cinemaId}/${id}`);
+const deleteScreenAsync = async (_cinemaId: string, id: string): Promise<void> => {
+    await http.delete<ApiResult<void>>(`${rootPath}${path}/${id}`);
 };
 
 export const screenService = {

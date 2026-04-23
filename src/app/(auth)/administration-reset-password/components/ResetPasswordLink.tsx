@@ -11,7 +11,7 @@ import LTTForm from "@/src/@core/component/AntD/LTTForm";
 import LTTFormItem from "@/src/@core/component/AntD/LTTFormItem";
 import LTTInput from "@/src/@core/component/AntD/LTTInput";
 import LTTSelect from "@/src/@core/component/AntD/LTTSelect";
-import { TENANT_KEY } from "@/src/@core/const";
+import { setTenantOnClient } from "@/src/@core/utils/tenant";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 const tenants = JSON.parse(process.env.NEXT_PUBLIC_TENANTS || "[]");
@@ -27,9 +27,9 @@ export default function ResetPasswordLink({ form, onFinish, loading }: RequestLi
 
     const onChangeTenant = (value: string) => {
         if (value) {
-            localStorage.setItem(TENANT_KEY, value);
+            setTenantOnClient(value);
         } else {
-            localStorage.removeItem(TENANT_KEY);
+            setTenantOnClient("LTC");
         }
     };
 

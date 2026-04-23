@@ -169,7 +169,7 @@ export default function MovieDetailPage() {
             <TopBar />
             <Header />
 
-            <section className="w-[92%] lg:w-[70%] mx-auto relative overflow-hidden rounded-2xl mt-6">
+            <section className="w-[92%] lg:w-[70%] mx-auto relative overflow-hidden rounded-2xl mt-6 mb-6">
                 <div className="absolute inset-0">
                     <img src={backdrop} alt="" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-linear-to-r from-slate-900/95 via-slate-900/80 to-slate-900/40" />

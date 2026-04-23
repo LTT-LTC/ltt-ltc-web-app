@@ -5,11 +5,11 @@ import {
 } from "./models/output.model";
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
 
-const paymentpath = "/payment-service";
-const path = "/refunds";
+const paymentpath = "/payment-service/admin/refund";
+const path = "/refund";
 
 const getRefundListAsync = async (params: any): Promise<PagedResultDto<RefundOutputDto>> => {
-    const response = await http.get<ApiResult<PagedResultDto<RefundOutputDto>>>(`${paymentpath}${path}`, { params });
+    const response = await http.get<ApiResult<PagedResultDto<RefundOutputDto>>>(`${paymentpath}${path}-all`, { params });
     return response.data.data;
 };
 

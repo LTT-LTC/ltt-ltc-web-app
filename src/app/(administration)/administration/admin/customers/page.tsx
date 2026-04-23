@@ -26,6 +26,7 @@ import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 import { GetCustomerListInputDto } from "@/src/services/administration-service/customer/models/input.model";
 import { CustomerOutputDto } from "@/src/services/administration-service/customer/models/output.model";
+import AdminTablePagination from "../_components/AdminTablePagination";
 
 export default function CustomersPage() {
     const { t, currentLanguage } = useLocalization();
@@ -98,8 +99,6 @@ export default function CustomersPage() {
         fetchData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [page, pageSize, debouncedSearch]);
-
-    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
     const handleAction = (customer: CustomerOutputDto, type: "lock" | "unlock" | "delete") => {
         setSelectedCustomer(customer);
@@ -176,7 +175,7 @@ export default function CustomersPage() {
                                             </div>
                                             <div>
                                                 <div className="font-bold">{c.name}</div>
-                                                <div className="text-[10px] text-muted-foreground-shadcn uppercase tracking-wider font-semibold">{c.memberCode || t("admin.customer_management.member_fallback")}</div>
+                                                <div className="text-[10px] text-muted-foreground-shadcn uppercase tracking-wider font-semibold">{c.profileQRUrl || t("admin.customer_management.member_fallback")}</div>
                                             </div>
                                         </div>
                                     </td>
@@ -216,41 +215,17 @@ export default function CustomersPage() {
                 </table>
             </div>
 
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-border-shadcn bg-card px-4 py-3 my-3">
-                <div className="text-sm text-muted-foreground-shadcn">
-                    {t("admin.customer_management.total_customers", { count: totalCount })}
-                </div>
-                <div className="flex items-center gap-2">
-                    <LTTSelect value={String(pageSize)} onValueChange={(value) => {
-                        setPage(1);
-                        setPageSize(Number(value));
-                    }}>
-                        <LTTSelectTrigger className="w-24">
-                            <LTTSelectValue />
-                        </LTTSelectTrigger>
-                        <LTTSelectContent>
-                            <LTTSelectItem value="10">10</LTTSelectItem>
-                            <LTTSelectItem value="20">20</LTTSelectItem>
-                            <LTTSelectItem value="50">50</LTTSelectItem>
-                        </LTTSelectContent>
-                    </LTTSelect>
-                    <LTTButton
-                        variant="outline"
-                        onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
-                        disabled={page === 1 || listMutation.isLoading}
-                    >
-                        {t("admin.customer_management.previous")}
-                    </LTTButton>
-                    <span className="text-sm">{t("admin.customer_management.page", { page, totalPages })}</span>
-                    <LTTButton
-                        variant="outline"
-                        onClick={() => setPage((currentPage) => currentPage + 1)}
-                        disabled={page >= totalPages || listMutation.isLoading}
-                    >
-                        {t("admin.customer_management.next")}
-                    </LTTButton>
-                </div>
-            </div>
+            <AdminTablePagination
+                totalCount={totalCount}
+                page={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(size) => {
+                    setPage(1);
+                    setPageSize(size);
+                }}
+                loading={listMutation.isLoading}
+            />
 
             <LTTDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
                 <LTTDialogContent className="sm:max-w-sm">

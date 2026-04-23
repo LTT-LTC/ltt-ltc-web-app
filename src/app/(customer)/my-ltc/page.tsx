@@ -8,9 +8,10 @@ import LTTCard from '@/src/@core/component/AntD/LTTCard';
 import LTTButton from '@/src/@core/component/AntD/LTTButton';
 import { customerMockData } from './_mock/data';
 import { getCookie } from '@/src/@core/utils/cookie';
-import { ACCESS_TOKEN_KEY } from '@/src/@core/const';
+import { CUSTOMER_ACCESS_TOKEN_KEY } from '@/src/@core/const';
 import { getUserInfoFromToken } from '@/src/@core/utils/jwt';
 import { useLocalization } from '@/src/@core/hooks/use-localization';
+import { customerProfileService } from '@/src/services/customer-service/profile/profile.service';
 
 export default function DashboardPage() {
     const { t } = useLocalization();
@@ -19,15 +20,35 @@ export default function DashboardPage() {
     const compactViewButtonClass = "bg-[#cc3434] text-white border-none rounded hover:bg-[#a52626] !h-8 !min-h-0 !px-4 !text-sm";
 
     const [displayName, setDisplayName] = useState(mockCustomer.fullName);
+    const [profileQrUrl, setProfileQrUrl] = useState<string | null>(null);
 
     useEffect(() => {
-        const token = getCookie(ACCESS_TOKEN_KEY);
+        const token = getCookie(CUSTOMER_ACCESS_TOKEN_KEY);
         if (token) {
             const userInfo = getUserInfoFromToken(token);
             if (userInfo?.fullName || userInfo?.userName) {
                 setDisplayName(userInfo.fullName || userInfo.userName || "");
             }
         }
+    }, []);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        customerProfileService
+            .getProfileAsync()
+            .then((profile) => {
+                if (!isMounted) return;
+                setProfileQrUrl(profile?.profileQRUrl || null);
+            })
+            .catch(() => {
+                if (!isMounted) return;
+                setProfileQrUrl(null);
+            });
+
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     const handleCardClick = (path: string) => {
@@ -61,15 +82,23 @@ export default function DashboardPage() {
 
                     <div className="flex flex-col items-center p-4 border border-gray-100 rounded-lg bg-white shadow-sm mt-4 lg:mt-0 cursor-pointer" onClick={() => handleCardClick('/my-ltc/membership-card')}>
                         <div className="w-32 h-32 bg-gray-200 mb-2 border">
-                            {/* Fake QR using text/emoji */}
-                            <div className="w-full h-full p-2 grid grid-cols-5 grid-rows-5 gap-1 bg-black">
-                                <div className="bg-white col-span-2 row-span-2"></div>
-                                <div className="bg-white col-span-1 row-span-1"></div>
-                                <div className="bg-white col-span-2 row-span-2 col-start-4"></div>
-                                <div className="bg-white col-span-1 row-span-3 col-start-3 row-start-2"></div>
-                                <div className="bg-white col-span-2 row-span-2 row-start-4"></div>
-                                <div className="bg-white col-span-2 row-span-2 col-start-4 row-start-4"></div>
-                            </div>
+                            {profileQrUrl ? (
+                                <img
+                                    src={profileQrUrl}
+                                    alt="Profile QR code"
+                                    className="w-full h-full object-contain bg-white"
+                                    loading="lazy"
+                                />
+                            ) : (
+                                <div className="w-full h-full p-2 grid grid-cols-5 grid-rows-5 gap-1 bg-black">
+                                    <div className="bg-white col-span-2 row-span-2"></div>
+                                    <div className="bg-white col-span-1 row-span-1"></div>
+                                    <div className="bg-white col-span-2 row-span-2 col-start-4"></div>
+                                    <div className="bg-white col-span-1 row-span-3 col-start-3 row-start-2"></div>
+                                    <div className="bg-white col-span-2 row-span-2 row-start-4"></div>
+                                    <div className="bg-white col-span-2 row-span-2 col-start-4 row-start-4"></div>
+                                </div>
+                            )}
                         </div>
                         <p className="text-xs text-center text-gray-500 tracking-wider">
                             {mockCustomer.memberId}

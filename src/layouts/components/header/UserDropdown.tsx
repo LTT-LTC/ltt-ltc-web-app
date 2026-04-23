@@ -7,13 +7,29 @@ import { DropdownItem } from "@/src/@core/component/LTTDropdown/DropdownItem";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { administrationService } from "@/src/services/administration-service/administration.service";
 import { customerService } from "@/src/services/customer-service/customer.service";
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, TENANT_KEY } from "@/src/@core/const";
+import {
+  ADMIN_ACCESS_TOKEN_KEY,
+  ADMIN_REFRESH_TOKEN_KEY,
+  CUSTOMER_ACCESS_TOKEN_KEY,
+  CUSTOMER_REFRESH_TOKEN_KEY,
+  TENANT_KEY
+} from "@/src/@core/const";
 import { getCookie, removeCookie } from "@/src/@core/utils/cookie";
 import { getUserInfoFromToken, UserClaims } from "@/src/@core/utils/jwt";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
-  const accessToken = getCookie(ACCESS_TOKEN_KEY);
+  const isAdminContext = typeof window !== 'undefined' && (
+    window.location.pathname.startsWith("/administration") ||
+    window.location.pathname.startsWith("/admin") ||
+    window.location.pathname.startsWith("/employee") ||
+    window.location.pathname.startsWith("/manager") ||
+    window.location.pathname.startsWith("/staff") ||
+    window.location.pathname.startsWith("/pos")
+  );
+  const accessToken = isAdminContext
+    ? getCookie(ADMIN_ACCESS_TOKEN_KEY)
+    : getCookie(CUSTOMER_ACCESS_TOKEN_KEY);
   const isLoggedIn = Boolean(accessToken);
   const userInfo: UserClaims | null = accessToken ? getUserInfoFromToken(accessToken) : null;
 
@@ -44,19 +60,17 @@ export default function UserDropdown() {
   });
 
   const handleLocalLogout = () => {
-    const isAdmin = typeof window !== 'undefined' && (
-      window.location.pathname.startsWith("/administration") ||
-      window.location.pathname.startsWith("/admin") ||
-      window.location.pathname.startsWith("/employee") ||
-      window.location.pathname.startsWith("/manager") ||
-      window.location.pathname.startsWith("/staff") ||
-      window.location.pathname.startsWith("/pos")
-    );
+    const isAdmin = isAdminContext;
 
-    localStorage.removeItem(TENANT_KEY);
-    removeCookie(ACCESS_TOKEN_KEY);
-    removeCookie(REFRESH_TOKEN_KEY);
-    removeCookie(TENANT_KEY);
+    if (isAdmin) {
+      localStorage.removeItem(TENANT_KEY);
+      removeCookie(ADMIN_ACCESS_TOKEN_KEY);
+      removeCookie(ADMIN_REFRESH_TOKEN_KEY);
+      removeCookie(TENANT_KEY);
+    } else {
+      removeCookie(CUSTOMER_ACCESS_TOKEN_KEY);
+      removeCookie(CUSTOMER_REFRESH_TOKEN_KEY);
+    }
 
     if (isAdmin) {
       window.location.href = "/administration-login";
