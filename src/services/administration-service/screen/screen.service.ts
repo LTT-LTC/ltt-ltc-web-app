@@ -7,33 +7,33 @@ import {
 } from "./models/input.model";
 import { ScreenOutputDto } from "./models/output.model";
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
-import { rootPath } from "../administration.service";
+import { getRoleScopedRootPath } from "../administration.service";
 
 const path = "/screens"
 const subPath = "/cinema";
 
 const getScreenListAsync = async (cinemaId: string, params: GetScreenListInputDto): Promise<PagedResultDto<ScreenOutputDto>> => {
-    const response = await http.get<ApiResult<PagedResultDto<ScreenOutputDto>>>(`${rootPath}${path}${subPath}/${cinemaId}`, { params });
+    const response = await http.get<ApiResult<PagedResultDto<ScreenOutputDto>>>(`${getRoleScopedRootPath()}${path}${subPath}/${cinemaId}`, { params });
     return response.data.data;
 };
 
 const getScreenByIdAsync = async (_cinemaId: string, id: string): Promise<ScreenOutputDto> => {
-    const response = await http.get<ApiResult<ScreenOutputDto>>(`${rootPath}${path}/${id}`);
+    const response = await http.get<ApiResult<ScreenOutputDto>>(`${getRoleScopedRootPath()}${path}/${id}`);
     return response.data.data;
 };
 
 const createScreenAsync = async (cinemaId: string, body: CreateScreenInputDto): Promise<ScreenOutputDto> => {
-    const response = await http.post<ApiResult<ScreenOutputDto>>(`${rootPath}${path}${subPath}/${cinemaId}`, body);
+    const response = await http.post<ApiResult<ScreenOutputDto>>(`${getRoleScopedRootPath()}${path}${subPath}/${cinemaId}`, body);
     return response.data.data;
 };
 
 const updateScreenAsync = async (_cinemaId: string, id: string, body: UpdateScreenInputDto): Promise<ScreenOutputDto> => {
-    const response = await http.put<ApiResult<ScreenOutputDto>>(`${rootPath}${path}/${id}`, body);
+    const response = await http.put<ApiResult<ScreenOutputDto>>(`${getRoleScopedRootPath()}${path}/${id}`, body);
     return response.data.data;
 };
 
 const deleteScreenAsync = async (_cinemaId: string, id: string): Promise<void> => {
-    await http.delete<ApiResult<void>>(`${rootPath}${path}/${id}`);
+    await http.delete<ApiResult<void>>(`${getRoleScopedRootPath()}${path}/${id}`);
 };
 
 export const screenService = {

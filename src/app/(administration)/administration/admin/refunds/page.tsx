@@ -29,6 +29,7 @@ import { RefundOutputDto } from "@/src/services/administration-service/masterdat
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { useEffect } from "react";
 import { cn } from "@/src/@core/utils/cn";
+import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 
 const statusColor: Record<string, string> = {
   pending: "bg-amber-100 text-amber-700 border-amber-200",
@@ -178,12 +179,10 @@ export default function RefundApprovalPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="py-12 text-center text-muted-foreground-shadcn">
-                  Không có yêu cầu hoàn tiền nào.
-                </td>
-              </tr>
+            {listMutation.isLoading ? (
+              <DomainTableStateRow colSpan={9} state="loading" loadingText="Đang tải yêu cầu hoàn tiền..." />
+            ) : filtered.length === 0 ? (
+              <DomainTableStateRow colSpan={9} state="empty" emptyText="Không có yêu cầu hoàn tiền nào." />
             ) : (
               filtered.map((item) => (
                 <tr

@@ -22,6 +22,7 @@ import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { memberTierService } from "@/src/services/administration-service/member-tier/member-tier.service";
 import { CreateMemberTierInputDto, UpdateMemberTierInputDto } from "@/src/services/administration-service/member-tier/models/input.model";
 import { MemberTierOutputDto } from "@/src/services/administration-service/member-tier/models/output.model";
+import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 
 type MemberTierFormState = {
     name: string;
@@ -221,17 +222,9 @@ export default function MemberTierListPage() {
                     </thead>
                     <tbody>
                         {loading && filteredItems.length === 0 ? (
-                            <tr>
-                                <td colSpan={5} className="py-12 text-center text-muted-foreground-shadcn">
-                                    Loading...
-                                </td>
-                            </tr>
+                            <DomainTableStateRow colSpan={5} state="loading" loadingText="Loading..." />
                         ) : filteredItems.length === 0 ? (
-                            <tr>
-                                <td colSpan={5} className="py-12 text-center text-muted-foreground-shadcn">
-                                    No member tiers found.
-                                </td>
-                            </tr>
+                            <DomainTableStateRow colSpan={5} state="empty" emptyText="No member tiers found." />
                         ) : (
                             filteredItems.map((item) => (
                                 <tr key={item.id} className="border-b border-border-shadcn hover:bg-muted-shadcn/30 transition-colors">

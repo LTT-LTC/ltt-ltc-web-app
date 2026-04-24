@@ -1,18 +1,10 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Plus, Pencil, Trash2, Search, Settings2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
-import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
 import LTTConfirmDialog from "@/src/@core/component/LTTConfirmDialog";
-import {
-    LTTDialog,
-    LTTDialogContent,
-    LTTDialogHeader,
-    LTTDialogTitle,
-    LTTDialogFooter
-} from "@/src/@core/component/LTTShadcnUI/LTTDialog";
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 import { toast } from "sonner";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
@@ -21,8 +13,10 @@ import { PricingRuleOutputDto } from "@/src/services/administration-service/pric
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import UpsertPricingRuleDialog from "./UpsertPricingRuleDialog";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
-
-const TEMP_CINEMA_ID = "00000000-0000-0000-0000-000000000000";
+import { cinemaService } from "@/src/services/administration-service/cinema/cinema.service";
+import AdminTablePagination from "@/src/app/(administration)/administration/admin/_components/AdminTablePagination";
+import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
+const MANAGER_CINEMA_STORAGE_KEY = "managerCinemaId";
 
 const dayLabels: Record<number, string> = {
     0: "Chủ nhật",
@@ -40,15 +34,24 @@ export default function PricingRulesPage() {
     const [search, setSearch] = useState("");
     const [upsertOpen, setUpsertOpen] = useState(false);
     const [editing, setEditing] = useState<PricingRuleOutputDto | null>(null);
+    const [cinemaId, setCinemaId] = useState("");
+    const [page, setPage] = useState(1);
+    const [fetch, setFetch] = useState(10);
+    const [totalCount, setTotalCount] = useState(0);
 
     const listMutation = useLTTMutation<PagedResultDto<PricingRuleOutputDto>, void>({
-        mutationFn: () => pricingRuleService.getPricingRuleListAsync(TEMP_CINEMA_ID),
-        onSuccess: (res) => { if (res && res.items) setItems(res.items); },
+        mutationFn: () => pricingRuleService.getPricingRuleListAsync(cinemaId, page, fetch),
+        onSuccess: (res) => {
+            if (res && res.items) {
+                setItems(res.items);
+                setTotalCount(res.totalCount);
+            }
+        },
         onError: (err) => toast.error(err.message || t("admin.pricing_rules.fetch_error"))
     });
 
     const deleteMutation = useLTTMutation<void, string>({
-        mutationFn: (id) => pricingRuleService.deletePricingRuleAsync(TEMP_CINEMA_ID, id),
+        mutationFn: (id) => pricingRuleService.deletePricingRuleAsync(cinemaId, id),
         onSuccess: () => {
             toast.success(t("admin.pricing_rules.delete_success"));
             listMutation.mutation();
@@ -57,8 +60,33 @@ export default function PricingRulesPage() {
     });
 
     useEffect(() => {
-        listMutation.mutation();
-    }, []);
+        const bootstrapCinema = async () => {
+            const fromStorage = typeof window !== "undefined" ? localStorage.getItem(MANAGER_CINEMA_STORAGE_KEY) : "";
+            if (fromStorage) {
+                setCinemaId(fromStorage);
+                return;
+            }
+
+            const cinemas = await cinemaService.getCinemaListAsync({ page: 1, fetch: 1 });
+            const firstCinemaId = cinemas?.items?.[0]?.id || "";
+            if (firstCinemaId) {
+                setCinemaId(firstCinemaId);
+                if (typeof window !== "undefined") {
+                    localStorage.setItem(MANAGER_CINEMA_STORAGE_KEY, firstCinemaId);
+                }
+            }
+        };
+
+        bootstrapCinema().catch(() => {
+            toast.error(t("admin.pricing_rules.fetch_error"));
+        });
+    }, [t]);
+
+    useEffect(() => {
+        if (cinemaId) {
+            listMutation.mutation();
+        }
+    }, [cinemaId, page, fetch]);
 
     const filtered = useMemo(() => {
         if (!search) return items;
@@ -101,6 +129,17 @@ export default function PricingRulesPage() {
                         className="pl-9"
                     />
                 </div>
+                <LTTButton
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => {
+                        setPage(1);
+                        listMutation.mutation();
+                    }}
+                    loading={listMutation.isLoading}
+                >
+                    <RefreshCw className="h-4 w-4" /> Làm mới
+                </LTTButton>
             </div>
 
             <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
@@ -117,12 +156,10 @@ export default function PricingRulesPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {filtered.length === 0 ? (
-                            <tr>
-                                <td colSpan={7} className="py-12 text-center text-muted-foreground-shadcn">
-                                    {listMutation.isLoading ? t("admin.common.loading") : t("admin.pricing_rules.empty")}
-                                </td>
-                            </tr>
+                        {listMutation.isLoading ? (
+                            <DomainTableStateRow colSpan={7} state="loading" loadingText={t("admin.common.loading")} />
+                        ) : filtered.length === 0 ? (
+                            <DomainTableStateRow colSpan={7} state="empty" emptyText={t("admin.pricing_rules.empty")} />
                         ) : (
                             filtered.map((item) => (
                                 <tr key={item.id} className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors">
@@ -171,13 +208,24 @@ export default function PricingRulesPage() {
                     </tbody>
                 </table>
             </div>
+            <AdminTablePagination
+                totalCount={totalCount}
+                page={page}
+                pageSize={fetch}
+                onPageChange={(nextPage) => setPage(nextPage)}
+                onPageSizeChange={(nextSize) => {
+                    setFetch(nextSize);
+                    setPage(1);
+                }}
+                loading={listMutation.isLoading}
+            />
 
             <UpsertPricingRuleDialog
                 open={upsertOpen}
                 onOpenChange={setUpsertOpen}
                 editingItem={editing}
                 onSuccess={() => listMutation.mutation()}
-                cinemaId={TEMP_CINEMA_ID}
+                cinemaId={cinemaId}
             />
         </div>
     );

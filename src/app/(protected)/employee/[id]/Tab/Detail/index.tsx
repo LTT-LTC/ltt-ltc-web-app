@@ -20,6 +20,7 @@ import { ActiveStatus } from "@/src/enums/administration-service/employee/Active
 
 const EmployeeDetailProfileTab = () => {
   const { employeeDetail, updateEmployee } = useEmployeeDetails();
+  const employeeAny = (employeeDetail.employee ?? {}) as any;
   const [form] = Form.useForm();
   const [isEdit, setIsEdit] = useState<boolean>(false);
 
@@ -75,17 +76,17 @@ const EmployeeDetailProfileTab = () => {
         fullName: employeeDetail.employee?.name,
         phoneNumber: employeeDetail.employee?.phoneNumber,
         code: employeeDetail.employee?.code,
-        dateOfBirth: employeeDetail.employee?.dateOfBirth
-          ? new Date(employeeDetail.employee.dateOfBirth)
+        dateOfBirth: employeeAny?.dateOfBirth
+          ? new Date(employeeAny.dateOfBirth)
           : undefined,
-        positionId: employeeDetail.employee?.positionId,
+        positionId: employeeAny?.positionId,
         status: employeeDetail.employee?.isActive
           ? ActiveStatus.Active
           : ActiveStatus.Deactive,
-        otherEmail: employeeDetail.employee?.otherEmail,
+        otherEmail: employeeAny?.otherEmail,
         organizationEmail: employeeDetail.employee?.email,
-        joinDate: employeeDetail.employee?.joinedDate
-          ? new Date(employeeDetail.employee.joinedDate)
+        joinDate: employeeAny?.joinedDate
+          ? new Date(employeeAny.joinedDate)
           : undefined,
         organizationUnitId: employeeDetail.employee?.organizationUnitId,
         avatarUrl: employeeDetail.employee?.avatarUrl,
@@ -142,7 +143,7 @@ const EmployeeDetailProfileTab = () => {
           <LTTInput label="Mã số nhân sự" />
         </LTTFormItem>
         <LTTFormItem
-          text={employeeDetail.employee?.dateOfBirth}
+          text={employeeAny?.dateOfBirth}
           rules={isEdit ? [rules.required] : []}
           isShowText={!isEdit}
           label="Ngày/tháng/năm sinh"
@@ -152,7 +153,7 @@ const EmployeeDetailProfileTab = () => {
         </LTTFormItem>
         <LTTFormItem
           // rules={isEdit ? [rules.required] : []}
-          text={employeeDetail.employee?.positionName ?? ""}
+          text={employeeAny?.positionName ?? ""}
           isShowText={!isEdit}
           label="Vai trò"
           name="positionId"
@@ -178,7 +179,7 @@ const EmployeeDetailProfileTab = () => {
         </LTTFormItem>
         <LTTFormItem
           rules={isEdit ? [rules.required] : []}
-          text={employeeDetail.employee?.otherEmail}
+          text={employeeAny?.otherEmail}
           isShowText={!isEdit}
           label="Email cá nhân"
           name="otherEmail"
@@ -196,7 +197,7 @@ const EmployeeDetailProfileTab = () => {
         </LTTFormItem>
         <LTTFormItem
           rules={isEdit ? [rules.required] : []}
-          text={employeeDetail.employee?.joinedDate}
+          text={employeeAny?.joinedDate}
           isShowText={!isEdit}
           label="Thời gian gia nhập"
           name="joinDate"

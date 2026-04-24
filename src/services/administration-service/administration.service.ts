@@ -42,6 +42,8 @@ export const authRootPath: string = get.rootPath("/administration-service");
 
 /** Role-scoped API base for authenticated administration resources. */
 export const rootPath: string = get.rootPath(`/administration-service${resolveRoleSegment()}`);
+export const getRoleScopedRootPath = (): string =>
+    get.rootPath(`/administration-service${resolveRoleSegment()}`);
 
 export const administrationService = {
     authService: authService,

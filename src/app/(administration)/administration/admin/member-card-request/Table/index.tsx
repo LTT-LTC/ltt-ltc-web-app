@@ -9,6 +9,7 @@ import AdminTablePagination from "../../_components/AdminTablePagination";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { memberCardRequestService } from "@/src/services/administration-service/member-card-request/member-card-request.service";
 import { MemberCardRequestOutputDto } from "@/src/services/administration-service/member-card-request/models/output.model";
+import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 
 export default function MemberCardRequestListPage() {
     const [items, setItems] = useState<MemberCardRequestOutputDto[]>([]);
@@ -76,12 +77,10 @@ export default function MemberCardRequestListPage() {
                     </tr>
                     </thead>
                     <tbody>
-                    {items.length === 0 ? (
-                        <tr>
-                            <td colSpan={5} className="py-12 text-center text-muted-foreground-shadcn">
-                                {listMutation.isLoading ? "Loading..." : "No request found."}
-                            </td>
-                        </tr>
+                    {listMutation.isLoading ? (
+                        <DomainTableStateRow colSpan={5} state="loading" loadingText="Loading..." />
+                    ) : items.length === 0 ? (
+                        <DomainTableStateRow colSpan={5} state="empty" emptyText="No request found." />
                     ) : (
                         items.map((item) => (
                             <tr key={item.id} className="border-b border-border-shadcn">

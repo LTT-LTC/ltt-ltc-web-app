@@ -29,6 +29,7 @@ import { SeatTypeOutputDto } from "@/src/services/administration-service/seat-ty
 import { GetSeatTypeListInputDto, CreateSeatTypeInputDto, UpdateSeatTypeInputDto } from "@/src/services/administration-service/seat-type/models/input.model";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
+import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 
 export default function SeatTypesAdminPage() {
   const { t } = useLocalization();
@@ -231,12 +232,10 @@ export default function SeatTypesAdminPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="py-12 text-center text-muted-foreground-shadcn">
-                  {t("admin.seat_type.empty")}
-                </td>
-              </tr>
+            {listMutation.isLoading ? (
+              <DomainTableStateRow colSpan={6} state="loading" loadingText={t("admin.common.loading")} />
+            ) : filtered.length === 0 ? (
+              <DomainTableStateRow colSpan={6} state="empty" emptyText={t("admin.seat_type.empty")} />
             ) : (
               filtered.map((item) => (
                 <tr

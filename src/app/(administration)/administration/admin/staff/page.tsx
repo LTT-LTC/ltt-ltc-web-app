@@ -33,6 +33,7 @@ import { useSearchParams } from "next/navigation";
 import LTTConfirmDialog from "@/src/@core/component/LTTConfirmDialog";
 import AdminTablePagination from "../_components/AdminTablePagination";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
+import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 
 const statusColor: Record<string, string> = {
   active: "bg-green-100 text-green-700 border-green-200",
@@ -47,10 +48,8 @@ type EmployeeFormState = {
   email: string;
   phoneNumber: string;
   code: string;
-  joinedDate: string;
-  dateOfBirth: string;
-  organizationUnitId: string;
-  positionId: string;
+  hireDate: string;
+  cinemaId: string;
   role: EmployeeRole;
   isActive: boolean;
 };
@@ -68,10 +67,8 @@ const emptyForm = (): EmployeeFormState => ({
   email: "",
   phoneNumber: "",
   code: `EMP-${Date.now()}`,
-  joinedDate: new Date().toISOString().split("T")[0],
-  dateOfBirth: "",
-  organizationUnitId: "",
-  positionId: "",
+  hireDate: new Date().toISOString().split("T")[0],
+  cinemaId: "",
   role: "Staff",
   isActive: true,
 });
@@ -112,7 +109,7 @@ export default function StaffPage() {
     onSuccess: (res) => { if (res && res.items) setCinemas(res.items); }
   });
 
-  const createMutation = useLTTMutation<string | undefined, CreateEmployeeInputDto>({
+  const createMutation = useLTTMutation<EmployeeOutputDto | undefined, CreateEmployeeInputDto>({
     mutationFn: (input) => employeeService.createEmployeeAsync(input),
     onSuccess: () => {
       toast.success(t("admin.staff.toast.create_success"));
@@ -124,7 +121,7 @@ export default function StaffPage() {
     onError: (err) => toast.error(err.message || t("admin.staff.toast.generic_error"))
   });
 
-  const updateMutation = useLTTMutation<boolean | undefined, { id: string; body: UpdateEmployeeInputDto }>({
+  const updateMutation = useLTTMutation<EmployeeOutputDto | undefined, { id: string; body: UpdateEmployeeInputDto }>({
     mutationFn: (input) => employeeService.updateEmployeeAsync(input.id, input.body),
     onSuccess: () => {
       toast.success(t("admin.staff.toast.update_success"));
@@ -168,16 +165,6 @@ export default function StaffPage() {
 
   const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || deleteMutation.isLoading;
 
-  const rolePositionIdMap = useMemo(() => {
-    const map = new Map<EmployeeRole, string>();
-    for (const item of items) {
-      if (item.positionId) {
-        map.set(normalizeRole(item), item.positionId);
-      }
-    }
-    return map;
-  }, [items]);
-
   const filtered = useMemo(() => {
     let list = items;
     if (roleFilter !== "all") {
@@ -213,10 +200,8 @@ export default function StaffPage() {
       email: s.email,
       phoneNumber: s.phoneNumber || "",
       code: s.code,
-      joinedDate: s.joinedDate ? s.joinedDate.split("T")[0] : "",
-      dateOfBirth: s.dateOfBirth ? s.dateOfBirth.split("T")[0] : "",
-      organizationUnitId: s.organizationUnitId || "",
-      positionId: s.positionId || "",
+      hireDate: s.hireDate ? s.hireDate.split("T")[0] : "",
+      cinemaId: s.cinemaId || s.organizationUnitId || "",
       role: normalizeRole(s),
       isActive: s.isActive ?? true,
     });
@@ -253,15 +238,19 @@ export default function StaffPage() {
       return;
     }
 
-    const resolvedPositionId =
-      rolePositionIdMap.get(form.role) ||
-      form.positionId ||
-      editing?.positionId ||
-      null;
+    if ((form.role === "Manager" || form.role === "Staff") && !form.cinemaId) {
+      toast.error(t("admin.staff.toast.validation_required"));
+      return;
+    }
 
     const payload = {
-      ...form,
-      positionId: resolvedPositionId,
+      name: form.name,
+      email: form.email,
+      phoneNumber: form.phoneNumber,
+      code: form.code,
+      hireDate: form.hireDate || undefined,
+      cinemaId: form.role === "Admin" ? null : (form.cinemaId || null),
+      isActive: form.isActive,
       role: form.role,
     };
 
@@ -367,23 +356,14 @@ export default function StaffPage() {
               <th className="px-4 py-3 text-left font-semibold">{t("admin.staff.table.role")}</th>
               <th className="px-4 py-3 text-left font-semibold">{t("admin.staff.table.cinema")}</th>
               <th className="px-4 py-3 text-left font-semibold">{t("admin.staff.table.status")}</th>
-              <th className="px-4 py-3 text-left font-semibold">{t("admin.staff.table.last_login")}</th>
               <th className="px-4 py-3 text-right font-semibold">{t("admin.staff.table.actions")}</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={9} className="py-12 text-center text-muted-foreground-shadcn">
-                  {t("admin.staff.loading")}
-                </td>
-              </tr>
+              <DomainTableStateRow colSpan={8} state="loading" loadingText={t("admin.staff.loading")} />
             ) : filtered.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="py-12 text-center text-muted-foreground-shadcn">
-                  {t("admin.staff.empty")}
-                </td>
-              </tr>
+              <DomainTableStateRow colSpan={8} state="empty" emptyText={t("admin.staff.empty")} />
             ) : (
               filtered.map((item) => (
                 <tr
@@ -405,16 +385,13 @@ export default function StaffPage() {
                       {t(`admin.staff.roles.${normalizeRole(item)}`)}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-xs">{item.organizationUnitName || t("admin.staff.table.dash")}</td>
+                  <td className="px-4 py-3 text-xs">{item.cinemaName || item.organizationUnitName || t("admin.staff.table.dash")}</td>
                   <td className="px-4 py-3">
                     <LTTBadge
                       className={cn("font-medium", item.isActive ? statusColor.active : statusColor.inactive)}
                     >
                       {item.isActive ? t("admin.staff.status.active") : t("admin.staff.status.inactive")}
                     </LTTBadge>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground-shadcn text-xs">
-                    {t("admin.staff.table.dash")}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
@@ -520,8 +497,8 @@ export default function StaffPage() {
             <div className="space-y-2">
               <LTTLabel>{t("admin.staff.form.cinema")}</LTTLabel>
               <LTTSelect
-                value={form.organizationUnitId}
-                onValueChange={(v) => { setIsDirty(true); setForm({ ...form, organizationUnitId: v }); }}
+                value={form.cinemaId}
+                onValueChange={(v) => { setIsDirty(true); setForm({ ...form, cinemaId: v }); }}
               >
                 <LTTSelectTrigger>
                   <LTTSelectValue placeholder={t("admin.staff.form.cinema_placeholder")} />
@@ -539,16 +516,8 @@ export default function StaffPage() {
               <LTTLabel>Ngày gia nhập</LTTLabel>
               <LTTInput
                 type="date"
-                value={form.joinedDate}
-                onChange={(e) => { setIsDirty(true); setForm({ ...form, joinedDate: e.target.value }); }}
-              />
-            </div>
-            <div className="space-y-2">
-              <LTTLabel>{t("admin.staff.form.birth_date")}</LTTLabel>
-              <LTTInput
-                type="date"
-                value={form.dateOfBirth}
-                onChange={(e) => { setIsDirty(true); setForm({ ...form, dateOfBirth: e.target.value }); }}
+                value={form.hireDate}
+                onChange={(e) => { setIsDirty(true); setForm({ ...form, hireDate: e.target.value }); }}
               />
             </div>
             <div className="space-y-2">

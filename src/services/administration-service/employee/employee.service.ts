@@ -19,7 +19,7 @@ const getEmployeeByIdAsync = async (id: string): Promise<EmployeeOutputDto> => {
     return response.data;
 };
 
-const createEmployeeAsync = async (body: CreateEmployeeInputDto): Promise<string> => {
+const createEmployeeAsync = async (body: CreateEmployeeInputDto): Promise<EmployeeOutputDto> => {
     const formData = new FormData();
     Object.entries(body).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
@@ -33,14 +33,14 @@ const createEmployeeAsync = async (body: CreateEmployeeInputDto): Promise<string
         }
     });
 
-    const response = await http.post<string>(`${rootPath}${employeePath}`, formData, {
+    const response = await http.post<EmployeeOutputDto>(`${rootPath}${employeePath}`, formData, {
         headers: { "Content-Type": "multipart/form-data" }
     });
     return response.data;
 };
 
-const updateEmployeeAsync = async (id: string, body: UpdateEmployeeInputDto): Promise<boolean> => {
-    const response = await http.put<boolean>(`${rootPath}${employeePath}/${id}`, body);
+const updateEmployeeAsync = async (id: string, body: UpdateEmployeeInputDto): Promise<EmployeeOutputDto> => {
+    const response = await http.put<EmployeeOutputDto>(`${rootPath}${employeePath}/${id}`, body);
     return response.data;
 };
 

@@ -27,6 +27,7 @@ import { useLocalization } from "@/src/@core/hooks/use-localization";
 import { GetCustomerListInputDto } from "@/src/services/administration-service/customer/models/input.model";
 import { CustomerOutputDto } from "@/src/services/administration-service/customer/models/output.model";
 import AdminTablePagination from "../_components/AdminTablePagination";
+import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 
 export default function CustomersPage() {
     const { t, currentLanguage } = useLocalization();
@@ -156,12 +157,10 @@ export default function CustomersPage() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border-shadcn">
-                        {items.length === 0 ? (
-                            <tr>
-                                <td colSpan={7} className="py-12 text-center text-muted-foreground-shadcn">
-                                    {listMutation.isLoading ? t("admin.customer_management.loading") : t("admin.customer_management.empty")}
-                                </td>
-                            </tr>
+                        {listMutation.isLoading ? (
+                            <DomainTableStateRow colSpan={7} state="loading" loadingText={t("admin.customer_management.loading")} />
+                        ) : items.length === 0 ? (
+                            <DomainTableStateRow colSpan={7} state="empty" emptyText={t("admin.customer_management.empty")} />
                         ) : (
                             items.map((c, idx) => (
                                 <tr key={c.id} className="hover:bg-muted-shadcn/30 transition-colors">

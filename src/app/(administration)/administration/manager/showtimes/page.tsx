@@ -10,6 +10,7 @@ import {
   List,
   ChevronLeft,
   ChevronRight,
+  RefreshCw,
 } from "lucide-react";
 
 import { toast } from "sonner";
@@ -52,6 +53,8 @@ import {
   LTTTabsList,
   LTTTabsTrigger,
 } from "@/src/@core/component/LTTShadcnUI/LTTTabs";
+import AdminTablePagination from "@/src/app/(administration)/administration/admin/_components/AdminTablePagination";
+import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 
 const statusColor: Record<string, string> = {
   scheduled: "bg-blue-100 text-blue-700 border-blue-200",
@@ -107,6 +110,19 @@ const MOVIE_COLORS = [
 ];
 
 export default function ShowtimeSchedulerPage() {
+  type ShowtimeFormState = {
+    movieId: string;
+    cinemaId: string;
+    screenId: string;
+    movieDistributionId: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    format?: string;
+    language?: string;
+    caption?: string;
+    basePrice?: string | number;
+  };
   const [items, setItems] = useState<ShowtimeOutputDto[]>([]);
   const [movies, setMovies] = useState<MovieOutputDto[]>([]);
   const [cinemas, setCinemas] = useState<CinemaOutputDto[]>([]);
@@ -120,8 +136,15 @@ export default function ShowtimeSchedulerPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState<ShowtimeOutputDto | null>(null);
   const [calendarWeek, setCalendarWeek] = useState(new Date());
+  const [selectedMovieId, setSelectedMovieId] = useState("");
+  const effectiveMovieId = selectedMovieId || movies[0]?.id || "";
+  const [page, setPage] = useState(1);
+  const [fetch, setFetch] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+  const [singleDeleteId, setSingleDeleteId] = useState("");
+  const [singleDeleteOpen, setSingleDeleteOpen] = useState(false);
 
-  const [form, setForm] = useState<any>({
+  const [form, setForm] = useState<ShowtimeFormState>({
     movieId: "",
     cinemaId: "",
     screenId: "",
@@ -131,18 +154,23 @@ export default function ShowtimeSchedulerPage() {
     endTime: "",
   });
 
-  const listMutation = useLTTMutation<PagedResultDto<ShowtimeOutputDto> | undefined, any>({
+  const listMutation = useLTTMutation<PagedResultDto<ShowtimeOutputDto> | undefined, { movieId: string; cinemaId: string; page: number; fetch: number }>({
     mutationFn: (params) => showtimeService.getShowtimeListAsync(params),
-    onSuccess: (res) => { if (res && res.items) setItems(res.items); },
+    onSuccess: (res) => {
+      if (res && res.items) {
+        setItems(res.items);
+        setTotalCount(res.totalCount);
+      }
+    },
     onError: (err) => toast.error(err.message || "Lỗi tải lịch chiếu")
   });
 
-  const movieMutation = useLTTMutation<PagedResultDto<MovieOutputDto> | undefined, any>({
+  const movieMutation = useLTTMutation<PagedResultDto<MovieOutputDto> | undefined, { page: number; fetch: number }>({
     mutationFn: (p) => movieService.getMovieListAsync(p),
     onSuccess: (res) => { if (res && res.items) setMovies(res.items); }
   });
 
-  const cinemaMutation = useLTTMutation<PagedResultDto<CinemaOutputDto> | undefined, any>({
+  const cinemaMutation = useLTTMutation<PagedResultDto<CinemaOutputDto> | undefined, { page: number; fetch: number }>({
     mutationFn: (p) => cinemaService.getCinemaListAsync(p),
     onSuccess: (res) => { if (res && res.items) setCinemas(res.items); }
   });
@@ -156,18 +184,30 @@ export default function ShowtimeSchedulerPage() {
     mutationFn: (body) => showtimeService.createShowtimeAsync(body),
     onSuccess: () => { toast.success("Tạo thành công"); fetchData(); setDialogOpen(false); }
   });
+  const deleteMutation = useLTTMutation<void, string>({
+    mutationFn: (id) => showtimeService.deleteShowtimeAsync(id),
+    onSuccess: () => {
+      toast.success("Đã xóa suất chiếu");
+      fetchData();
+    },
+    onError: (err) => toast.error(err.message || "Xóa suất chiếu thất bại"),
+  });
 
   const loading = listMutation.isLoading || createMutation.isLoading || movieMutation.isLoading || cinemaMutation.isLoading || screenMutation.isLoading;
 
   const fetchData = () => {
-    if (cinemaFilter !== "all") {
-      listMutation.mutation({ cinemaId: cinemaFilter, page: 1, fetch: 100 });
-    }
+    if (!effectiveMovieId) return;
+    listMutation.mutation({
+      movieId: effectiveMovieId,
+      cinemaId: cinemaFilter === "all" ? "" : cinemaFilter,
+      page,
+      fetch,
+    });
   };
 
   useEffect(() => {
     fetchData();
-  }, [cinemaFilter]);
+  }, [cinemaFilter, effectiveMovieId, page]);
 
   useEffect(() => {
     movieMutation.mutation({ page: 1, fetch: 100 });
@@ -246,7 +286,7 @@ export default function ShowtimeSchedulerPage() {
   };
 
   const save = () => {
-    if (!form.movieId || !form.cinemaId || !form.date || !form.startTime) {
+    if (!form.movieId || !form.cinemaId || !form.screenId || !form.movieDistributionId || !form.date || !form.startTime) {
       toast.error("Vui lòng điền đầy đủ thông tin");
       return;
     }
@@ -254,23 +294,30 @@ export default function ShowtimeSchedulerPage() {
     const start = `${form.date}T${form.startTime}:00Z`;
     const end = `${form.date}T${form.endTime || "23:59"}:00Z`;
 
+    const movieFormatJson = JSON.stringify({
+      movie_format: form.format || "2D",
+      movie_language: form.language || "Vietnamese",
+      movie_caption: form.caption || "Vietsub",
+    });
     createMutation.mutation({
       movieId: form.movieId,
       cinemaId: form.cinemaId,
       screenId: form.screenId,
-      distributionId: form.movieDistributionId || "00000000-0000-0000-0000-000000000000",
+      distributionId: form.movieDistributionId,
       showDate: form.date,
       startTime: start,
       endTime: end,
-      basePrice: 0,
+      basePrice: Number(form.basePrice || 0),
+      movieFormat: movieFormatJson,
     });
   };
 
   const bulkDelete = () => {
-    setItems((p) => p.filter((i) => !selected.has(i.id)));
-    toast.success(`Đã xóa ${selected.size} suất chiếu`);
-    setSelected(new Set());
-    setDeleteOpen(false);
+    Promise.allSettled(Array.from(selected).map((id) => deleteMutation.mutation(id))).then(() => {
+      setSelected(new Set());
+      setDeleteOpen(false);
+      fetchData();
+    });
   };
 
   const shiftWeek = (dir: number) => {
@@ -362,6 +409,19 @@ export default function ShowtimeSchedulerPage() {
             <Trash2 className="h-4 w-4" /> Xóa {selected.size}
           </LTTButton>
         )}
+        <LTTSelect value={effectiveMovieId} onValueChange={(v) => { setSelectedMovieId(v); setPage(1); }}>
+          <LTTSelectTrigger className="w-64">
+            <LTTSelectValue placeholder="Chọn phim để tải lịch" />
+          </LTTSelectTrigger>
+          <LTTSelectContent>
+            {movies.map((m) => (
+              <LTTSelectItem key={m.id} value={m.id}>{m.title}</LTTSelectItem>
+            ))}
+          </LTTSelectContent>
+        </LTTSelect>
+        <LTTButton variant="outline" className="gap-2" onClick={fetchData} loading={listMutation.isLoading}>
+          <RefreshCw className="h-4 w-4" /> Làm mới
+        </LTTButton>
       </div>
 
       {viewMode === "table" ? (
@@ -385,23 +445,9 @@ export default function ShowtimeSchedulerPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td
-                    colSpan={10}
-                    className="py-12 text-center text-muted-foreground-shadcn"
-                  >
-                    Đang tải dữ liệu lịch chiếu...
-                  </td>
-                </tr>
+                <DomainTableStateRow colSpan={10} state="loading" loadingText="Đang tải dữ liệu lịch chiếu..." />
               ) : filtered.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={10}
-                    className="py-12 text-center text-muted-foreground-shadcn"
-                  >
-                    Không có dữ liệu lịch chiếu.
-                  </td>
-                </tr>
+                <DomainTableStateRow colSpan={10} state="empty" emptyText="Không có dữ liệu lịch chiếu." />
               ) : (
                 filtered.map((item) => (
                   <tr
@@ -449,8 +495,8 @@ export default function ShowtimeSchedulerPage() {
                           size="icon"
                           className="h-8 w-8 text-destructive hover:text-destructive"
                           onClick={() => {
-                            setItems((p) => p.filter((i) => i.id !== item.id));
-                            toast.success("Đã xóa suất chiếu");
+                            setSingleDeleteId(item.id);
+                            setSingleDeleteOpen(true);
                           }}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -646,6 +692,33 @@ export default function ShowtimeSchedulerPage() {
           </div>
         </div>
       )}
+      {viewMode === "table" && (
+        <AdminTablePagination
+          totalCount={totalCount}
+          page={page}
+          pageSize={fetch}
+          onPageChange={(nextPage) => {
+            setPage(nextPage);
+            listMutation.mutation({
+              movieId: effectiveMovieId,
+              cinemaId: cinemaFilter === "all" ? "" : cinemaFilter,
+              page: nextPage,
+              fetch,
+            });
+          }}
+          onPageSizeChange={(nextSize) => {
+            setFetch(nextSize);
+            setPage(1);
+            listMutation.mutation({
+              movieId: effectiveMovieId,
+              cinemaId: cinemaFilter === "all" ? "" : cinemaFilter,
+              page: 1,
+              fetch: nextSize,
+            });
+          }}
+          loading={listMutation.isLoading}
+        />
+      )}
 
       {/* Create/Edit Dialog */}
       <LTTDialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -805,6 +878,20 @@ export default function ShowtimeSchedulerPage() {
             </LTTButton>
             <LTTButton variant="destructive" onClick={bulkDelete}>
               Xác nhận xóa
+            </LTTButton>
+          </LTTDialogFooter>
+        </LTTDialogContent>
+      </LTTDialog>
+      <LTTDialog open={singleDeleteOpen} onOpenChange={setSingleDeleteOpen}>
+        <LTTDialogContent className="sm:max-w-sm">
+          <LTTDialogHeader>
+            <LTTDialogTitle>Xác nhận xóa suất chiếu</LTTDialogTitle>
+          </LTTDialogHeader>
+          <div className="py-3 text-sm text-muted-foreground-shadcn">Bạn có chắc chắn muốn xóa suất chiếu này?</div>
+          <LTTDialogFooter>
+            <LTTButton variant="outline" onClick={() => setSingleDeleteOpen(false)}>Hủy</LTTButton>
+            <LTTButton variant="destructive" onClick={() => { deleteMutation.mutation(singleDeleteId); setSingleDeleteOpen(false); }}>
+              Xóa
             </LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
