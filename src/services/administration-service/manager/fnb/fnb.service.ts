@@ -18,7 +18,11 @@ const comboPath = "/combo";
 const categoryPath = "/category";
 
 const getProductListAsync = async (params: GetProductListInputDto): Promise<PagedResultDto<ProductOutputDto>> => {
-  const response = await http.get<ApiResult<PagedResultDto<ProductOutputDto>>>(`${productRootPath}${productPath}-all`, { params });
+  const safeParams: GetProductListInputDto = {
+    ...params,
+    keyword: params.keyword ?? "",
+  };
+  const response = await http.get<ApiResult<PagedResultDto<ProductOutputDto>>>(`${productRootPath}${productPath}-all`, { params: safeParams });
   return response.data.data;
 };
 

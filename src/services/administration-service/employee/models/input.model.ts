@@ -11,11 +11,9 @@ export interface UpdateEmployeeInputDto {
     email?: string;
     otherEmail?: string;
     phoneNumber?: string;
-    dateOfBirth?: string;
     code?: string;
-    joinedDate?: string;
-    positionId?: string | null;
-    organizationUnitId?: string | null;
+    hireDate?: string;
+    cinemaId?: string | null;
     isActive?: boolean;
     role?: "Admin" | "Manager" | "Staff" | "POS";
 }
@@ -26,10 +24,8 @@ export interface CreateEmployeeInputDto {
     email: string;
     otherEmail?: string;
     phoneNumber: string;
-    dateOfBirth: string;
     code: string;
-    joinedDate: string;
-    positionId?: string | null;
-    organizationUnitId?: string | null;
+    hireDate?: string;
+    cinemaId?: string | null;
     role: "Admin" | "Manager" | "Staff" | "POS";
 }

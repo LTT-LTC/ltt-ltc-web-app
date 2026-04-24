@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Plus,
   Trash2,
@@ -8,6 +8,7 @@ import {
   Eye,
   Pencil,
   ArrowLeft,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,17 +25,35 @@ import {
 
 import {
   type Screen,
-  mockScreens,
-  mockAdminCinemas,
 } from "@/src/@core/const/mock/adminMockData";
 import LTTScreenCreateWizard from "@/src/@core/component/LTTManager/LTTScreenCreateWizard";
 import LTTSeatMapViewer from "@/src/@core/component/LTTManager/LTTSeatMapViewer";
+import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
+import { screenService } from "@/src/services/administration-service/screen/screen.service";
+import { ScreenOutputDto } from "@/src/services/administration-service/screen/models/output.model";
+import { CinemaOutputDto, cinemaService } from "@/src/services/administration-service/cinema/cinema.service";
+import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
+import {
+  LTTSelect,
+  LTTSelectContent,
+  LTTSelectItem,
+  LTTSelectTrigger,
+  LTTSelectValue,
+} from "@/src/@core/component/LTTShadcnUI/LTTSelect";
+import AdminTablePagination from "@/src/app/(administration)/administration/admin/_components/AdminTablePagination";
+import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 
 
 export default function SeatMapPage() {
-  const [screens, setScreens] = useState<Screen[]>(mockScreens);
+  const [screens, setScreens] = useState<Screen[]>([]);
+  const [cinemas, setCinemas] = useState<CinemaOutputDto[]>([]);
+  const [selectedCinemaId, setSelectedCinemaId] = useState("");
+  const [page, setPage] = useState(1);
+  const [fetch, setFetch] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [viewLayout, setViewLayout] = useState<Screen | null>(null);
 
@@ -42,19 +61,95 @@ export default function SeatMapPage() {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingScreen, setEditingScreen] = useState<Screen | null>(null);
 
+  const mapToWizardScreen = (item: ScreenOutputDto): Screen => ({
+    id: item.id,
+    tenantId: "",
+    cinemaId: item.cinemaId,
+    screenNumber: item.screenNumber,
+    screenType: item.screenType || "2D",
+    seatLayout: item.seatLayout ? JSON.parse(item.seatLayout) : { rows: [] },
+    seatCount: item.seatCount,
+    createdAt: "",
+    updatedAt: "",
+  });
+
+  const cinemaMutation = useLTTMutation<PagedResultDto<CinemaOutputDto> | undefined, { page: number; fetch: number }>({
+    mutationFn: (p) => cinemaService.getCinemaListAsync(p),
+    onSuccess: (res) => {
+      if (!res?.items) return;
+      setCinemas(res.items);
+      if (!selectedCinemaId && res.items[0]?.id) {
+        setSelectedCinemaId(res.items[0].id);
+      }
+    },
+  });
+
+  const listMutation = useLTTMutation<PagedResultDto<ScreenOutputDto> | undefined, { cinemaId: string; page: number; fetch: number; keyword?: string }>({
+    mutationFn: ({ cinemaId, page, fetch, keyword }) => screenService.getScreenListAsync(cinemaId, { page, fetch, keyword }),
+    onSuccess: (res) => {
+      setScreens((res?.items || []).map(mapToWizardScreen));
+      setTotalCount(res?.totalCount || 0);
+    },
+    onError: (err) => toast.error(err.message || "Không thể tải dữ liệu sơ đồ ghế"),
+  });
+
+  const createMutation = useLTTMutation({
+    mutationFn: (payload: Screen) => screenService.createScreenAsync(payload.cinemaId, {
+      screenNumber: payload.screenNumber,
+      screenType: payload.screenType,
+      seatCount: payload.seatCount,
+      seatLayout: JSON.stringify(payload.seatLayout),
+      status: "active",
+    }),
+    onSuccess: () => {
+      toast.success("Tạo phòng chiếu thành công!");
+      setIsEditorOpen(false);
+      setEditingScreen(null);
+      fetchData();
+    },
+  });
+
+  const updateMutation = useLTTMutation({
+    mutationFn: (payload: Screen) => screenService.updateScreenAsync(payload.cinemaId, payload.id, {
+      screenNumber: payload.screenNumber,
+      screenType: payload.screenType,
+      seatCount: payload.seatCount,
+      seatLayout: JSON.stringify(payload.seatLayout),
+      status: "active",
+    }),
+    onSuccess: () => {
+      toast.success("Cập nhật phòng chiếu thành công!");
+      setIsEditorOpen(false);
+      setEditingScreen(null);
+      fetchData();
+    },
+  });
+
+  const deleteMutation = useLTTMutation({
+    mutationFn: (id: string) => screenService.deleteScreenAsync(selectedCinemaId, id),
+  });
+
+  const fetchData = (keyword?: string, pageNumber?: number) => {
+    if (!selectedCinemaId) return;
+    listMutation.mutation({ cinemaId: selectedCinemaId, page: pageNumber ?? page, fetch, keyword: keyword ?? debouncedSearch });
+  };
+
+  useEffect(() => {
+    cinemaMutation.mutation({ page: 1, fetch: 100 });
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (selectedCinemaId) fetchData(debouncedSearch, page);
+  }, [selectedCinemaId, page, fetch, debouncedSearch]);
+
   const filtered = useMemo(() => {
-    if (!searchQuery) return screens;
-    const q = searchQuery.toLowerCase();
-    return screens.filter((s) => {
-      const cinemaName =
-        mockAdminCinemas.find((c) => c.id === s.cinemaId)?.name ?? s.cinemaId;
-      return (
-        s.screenType.toLowerCase().includes(q) ||
-        String(s.screenNumber).includes(q) ||
-        cinemaName.toLowerCase().includes(q)
-      );
-    });
-  }, [screens, searchQuery]);
+    return screens;
+  }, [screens]);
 
   const allSelected =
     filtered.length > 0 && filtered.every((s) => selected.has(s.id));
@@ -72,31 +167,27 @@ export default function SeatMapPage() {
   };
 
   const handleDeleteSelected = () => {
-    setScreens((prev) => prev.filter((s) => !selected.has(s.id)));
-    toast.success(`Đã xóa ${selected.size} phòng chiếu`);
-    setSelected(new Set());
-    setDeleteDialogOpen(false);
+    Promise.allSettled(Array.from(selected).map((id) => deleteMutation.mutation(id))).then(() => {
+      toast.success(`Đã xóa ${selected.size} phòng chiếu`);
+      setSelected(new Set());
+      setDeleteDialogOpen(false);
+      fetchData();
+    });
   };
 
   const handleDeleteOne = (id: string) => {
-    setScreens((prev) => prev.filter((s) => s.id !== id));
-    selected.delete(id);
-    setSelected(new Set(selected));
-    toast.success("Đã xóa phòng chiếu");
+    deleteMutation.mutation(id).then(() => {
+      toast.success("Đã xóa phòng chiếu");
+      fetchData();
+    });
   };
 
   const handleScreenCreated = (screen: Screen) => {
-    setScreens((prev) => [...prev, screen]);
-    setIsEditorOpen(false);
-    setEditingScreen(null);
-    toast.success("Tạo phòng chiếu thành công!");
+    createMutation.mutation(screen);
   };
 
   const handleScreenUpdated = (screen: Screen) => {
-    setScreens((prev) => prev.map((s) => (s.id === screen.id ? screen : s)));
-    setIsEditorOpen(false);
-    setEditingScreen(null);
-    toast.success("Cập nhật phòng chiếu thành công!");
+    updateMutation.mutation(screen);
   };
 
   const handleOpenEditor = (screen?: Screen) => {
@@ -110,7 +201,7 @@ export default function SeatMapPage() {
   };
 
   const getCinemaName = (id: string) =>
-    mockAdminCinemas.find((c) => c.id === id)?.name || id;
+    cinemas.find((c) => c.id === id)?.name || id;
 
   // ── List view ──────────────────────────────────────────────────────────────
   return (
@@ -133,6 +224,35 @@ export default function SeatMapPage() {
             className="pl-9"
           />
         </div>
+        <LTTSelect
+          value={selectedCinemaId}
+          onValueChange={(v) => {
+            setSelectedCinemaId(v);
+            setPage(1);
+          }}
+        >
+          <LTTSelectTrigger className="w-56">
+            <LTTSelectValue placeholder="Chọn rạp" />
+          </LTTSelectTrigger>
+          <LTTSelectContent>
+            {cinemas.map((c) => (
+              <LTTSelectItem key={c.id} value={c.id}>
+                {c.name}
+              </LTTSelectItem>
+            ))}
+          </LTTSelectContent>
+        </LTTSelect>
+        <LTTButton
+          variant="outline"
+          className="gap-2"
+          onClick={() => {
+            setPage(1);
+            fetchData(searchQuery, 1);
+          }}
+          loading={listMutation.isLoading}
+        >
+          <RefreshCw className="h-4 w-4" /> Làm mới
+        </LTTButton>
 
         {selected.size > 0 && (
           <LTTButton
@@ -145,6 +265,21 @@ export default function SeatMapPage() {
           </LTTButton>
         )}
       </div>
+      <AdminTablePagination
+        totalCount={totalCount}
+        page={page}
+        pageSize={fetch}
+        onPageChange={(nextPage) => {
+          setPage(nextPage);
+          fetchData(debouncedSearch, nextPage);
+        }}
+        onPageSizeChange={(nextSize) => {
+          setFetch(nextSize);
+          setPage(1);
+          listMutation.mutation({ cinemaId: selectedCinemaId, page: 1, fetch: nextSize, keyword: debouncedSearch });
+        }}
+        loading={listMutation.isLoading}
+      />
 
       <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden">
         <table className="w-full text-sm">
@@ -164,15 +299,10 @@ export default function SeatMapPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={9}
-                  className="py-12 text-center text-muted-foreground-shadcn"
-                >
-                  Không có dữ liệu
-                </td>
-              </tr>
+            {listMutation.isLoading ? (
+              <DomainTableStateRow colSpan={9} state="loading" loadingText="Đang tải dữ liệu sơ đồ ghế..." />
+            ) : filtered.length === 0 ? (
+              <DomainTableStateRow colSpan={9} state="empty" emptyText="Không có dữ liệu" />
             ) : (
               filtered.map((item, idx) => (
                 <tr

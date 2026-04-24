@@ -32,6 +32,7 @@ import { CreateGiftCodeInputDto, UpdateGiftCodeInputDto } from "@/src/services/a
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import AdminTablePagination from "../../_components/AdminTablePagination";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
+import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 
 type GiftCodeFormState = {
     code: string;
@@ -306,17 +307,9 @@ export default function PromotionsListPage() {
                     </thead>
                     <tbody>
                         {loading && filteredItems.length === 0 ? (
-                            <tr>
-                                <td colSpan={6} className="py-12 text-center text-muted-foreground-shadcn">
-                                    {t("admin.promotions_giftcard.loading")}
-                                </td>
-                            </tr>
+                            <DomainTableStateRow colSpan={6} state="loading" loadingText={t("admin.promotions_giftcard.loading")} />
                         ) : filteredItems.length === 0 ? (
-                            <tr>
-                                <td colSpan={6} className="py-12 text-center text-muted-foreground-shadcn">
-                                    {t("admin.promotions_giftcard.empty")}
-                                </td>
-                            </tr>
+                            <DomainTableStateRow colSpan={6} state="empty" emptyText={t("admin.promotions_giftcard.empty")} />
                         ) : (
                             filteredItems.map((item) => (
                                 <tr key={item.id} className="border-b border-border-shadcn hover:bg-muted-shadcn/30 transition-colors">

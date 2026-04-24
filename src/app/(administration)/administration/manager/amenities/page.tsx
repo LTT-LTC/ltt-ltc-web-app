@@ -14,6 +14,7 @@ import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { cn } from "@/src/@core/utils/cn";
 import UpsertAmenityDialog from "./UpsertDialog";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
+import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 
 // For now, we assume a fixed cinema context or a way to select it.
 // In a manager context, the cinemaId might come from the user's profile/claims.
@@ -106,17 +107,9 @@ export default function CinemaAmenitiesPage() {
                     </thead>
                     <tbody>
                         {loading ? (
-                            <tr>
-                                <td colSpan={5} className="py-12 text-center text-muted-foreground-shadcn">
-                                    {t("admin.amenities.loading")}
-                                </td>
-                            </tr>
+                            <DomainTableStateRow colSpan={5} state="loading" loadingText={t("admin.amenities.loading")} />
                         ) : items.length === 0 ? (
-                            <tr>
-                                <td colSpan={5} className="py-12 text-center text-muted-foreground-shadcn">
-                                    {t("admin.amenities.empty")}
-                                </td>
-                            </tr>
+                            <DomainTableStateRow colSpan={5} state="empty" emptyText={t("admin.amenities.empty")} />
                         ) : (
                             items.map((item) => (
                                 <tr key={item.id} className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors">

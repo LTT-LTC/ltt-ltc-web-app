@@ -22,9 +22,6 @@ import { customerService } from "@/src/services/customer-service/customer.servic
 import qs from "qs";
 import { translate } from "../utils/localization";
 import { isAdminAuthPath, isAdminProtectedPath } from "../utils/admin-auth";
-import { resolveAdminRoleFromToken, toRoleValues } from "../utils/admin-auth";
-import { getUserInfoFromToken } from "../utils/jwt";
-import { AdminRole } from "../type/permission.types";
 import { toast } from "sonner";
 import { getDefaultTenant, normalizeTenantForHeader } from "../utils/tenant";
 
@@ -112,9 +109,11 @@ function extractErrorMessage(payload: unknown): string {
     ? (payloadRecord.error as Record<string, unknown>)
     : undefined;
 
+  // Prefer API nested error.message over generic wrapper message
+  // (e.g. wrapper "Not Success" vs useful domain message).
   const directMessage =
-    payloadRecord?.message ||
     payloadError?.message ||
+    payloadRecord?.message ||
     payloadRecord?.error_description ||
     payloadRecord?.title;
 
@@ -201,55 +200,6 @@ function shouldSkipAuthRefresh(failedRequestUrl?: string): boolean {
 function isSoftLogoutExemptCustomerRequest(failedRequestUrl?: string): boolean {
   const requestUrl = (failedRequestUrl ?? "").toLowerCase();
   return requestUrl.includes("/customer-service/customer/profile");
-}
-
-function extractPathname(input?: string): string {
-  if (!input) return "";
-  try {
-    if (input.startsWith("http://") || input.startsWith("https://")) {
-      return new URL(input).pathname.toLowerCase();
-    }
-  } catch {
-    // ignore invalid absolute URL
-  }
-  return input.toLowerCase();
-}
-
-function hasCustomerRole(token?: string | null): boolean {
-  if (!token) return false;
-  const userInfo = getUserInfoFromToken(token);
-  const roles = toRoleValues(userInfo?.role);
-  if (roles.some((role) => role.toLowerCase().includes("customer"))) {
-    return true;
-  }
-
-  // Customer JWTs may not include explicit role claims; treat a decodable
-  // token with a user subject as customer context for customer endpoints.
-  return Boolean(userInfo?.sub);
-}
-
-function isRoleAllowedForEndpoint(pathname: string, adminRole: AdminRole | null, isCustomer: boolean): boolean {
-  if (pathname.includes("/admin")) {
-    return adminRole === AdminRole.ADMIN;
-  }
-  if (pathname.includes("/manager")) {
-    return adminRole === AdminRole.ADMIN || adminRole === AdminRole.MANAGER;
-  }
-  if (pathname.includes("/staff")) {
-    return adminRole === AdminRole.ADMIN || adminRole === AdminRole.MANAGER || adminRole === AdminRole.STAFF;
-  }
-  if (pathname.includes("/pos")) {
-    return (
-      adminRole === AdminRole.ADMIN ||
-      adminRole === AdminRole.MANAGER ||
-      adminRole === AdminRole.STAFF ||
-      adminRole === AdminRole.POS
-    );
-  }
-  if (pathname.includes("/customer")) {
-    return isCustomer;
-  }
-  return true;
 }
 
 function startUnauthorizedRedirectCountdown(isCustomer: boolean) {
@@ -356,33 +306,17 @@ const onResponseInterceptor = async (error: AxiosError) => {
   if (error.response && error.response.status === HttpStatusCode.Unauthorized) {
     const requestConfig = error.config as RetryableRequestConfig | undefined;
     const requestUrl = requestConfig?.url;
-    const requestPathname = extractPathname(requestUrl);
     const isCustomerRequest = shouldUseCustomerAuthRefresh(requestUrl);
     const { accessTokenKey, refreshTokenKey } = getAuthCookieKeys(isCustomerRequest);
     const isSoftAuthFailureRequest = isSoftLogoutExemptCustomerRequest(requestUrl);
     const skipAuthRefresh = shouldSkipAuthRefresh(requestUrl);
     const hasRefreshToken = Boolean(getCookie(refreshTokenKey));
-    const accessToken = getCookie(accessTokenKey);
-    const adminRole = resolveAdminRoleFromToken(accessToken);
-    const isCustomer = hasCustomerRole(accessToken);
-    const isCustomerSelfEndpoint = requestPathname.includes("/customer-service/customer/");
-    const canAccessEndpoint =
-      isCustomerSelfEndpoint && isCustomerRequest
-        ? true
-        : isRoleAllowedForEndpoint(requestPathname, adminRole, isCustomer);
-    const isAdminLike = Boolean(adminRole);
-
     if (!requestConfig || requestConfig._retry || requestConfig._skipAuthRefresh || isAuthRefreshExcludedRequest(requestUrl) || skipAuthRefresh) {
       return Promise.reject(normalizeHttpError(error.response?.data));
     }
 
-    if (!canAccessEndpoint) {
-      startUnauthorizedRedirectCountdown(!isAdminLike);
-      return Promise.reject(normalizeHttpError(error.response?.data, "Unauthorized for current role."));
-    }
-
     if (!hasRefreshToken) {
-      startUnauthorizedRedirectCountdown(!isAdminLike);
+      startUnauthorizedRedirectCountdown(isCustomerRequest);
       return Promise.reject(normalizeHttpError(error.response?.data, "Session expired. Please login again."));
     }
 
@@ -395,6 +329,12 @@ const onResponseInterceptor = async (error: AxiosError) => {
       let newToken: unknown;
       try {
         newToken = await refreshPromise;
+      } catch (refreshError) {
+        if (!isSoftAuthFailureRequest) {
+          http.defaults.headers.common[AUTHORIZATION_KEY] = "";
+          startUnauthorizedRedirectCountdown(isCustomerRequest);
+        }
+        return Promise.reject(normalizeHttpError((refreshError as AxiosError)?.response?.data ?? error.response?.data));
       } finally {
         refreshPromise = null;
         isRefreshing = false;

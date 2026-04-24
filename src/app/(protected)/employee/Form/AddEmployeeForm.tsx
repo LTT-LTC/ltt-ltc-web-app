@@ -42,7 +42,7 @@ interface AddEmployeeFormProps {
 const AddEmployeeForm = ({ open, onClose, onSuccess }: AddEmployeeFormProps) => {
     const [form] = Form.useForm();
 
-    const { mutation, isLoading } = useLTTMutation<string, CreateEmployeeInputDto>({
+    const { mutation, isLoading } = useLTTMutation<EmployeeOutputDto, CreateEmployeeInputDto>({
         mutationFn: (formData) =>
             administrationService.employeeService.createEmployeeAsync(formData as any),
         onSuccess: () => {
@@ -61,10 +61,8 @@ const AddEmployeeForm = ({ open, onClose, onSuccess }: AddEmployeeFormProps) => 
             role: "Staff",
             otherEmail: values.otherEmail,
             phoneNumber: values.phone,
-            dateOfBirth: values.dateOfBirth ? dayjs(values.dateOfBirth).toISOString() : "",
-            joinedDate: values.joinDate ? dayjs(values.joinDate).toISOString() : "",
-            positionId: values.positionId || null,
-            organizationUnitId: values.organizationUnitId || null,
+            hireDate: values.joinDate ? dayjs(values.joinDate).toISOString() : undefined,
+            cinemaId: values.organizationUnitId || null,
         });
     };
 

@@ -32,6 +32,7 @@ import { GetCinemaAmenityListInputDto, CreateCinemaAmenityInputDto, UpdateCinema
 import { CinemaOutputDto } from "@/src/services/administration-service/cinema/models/output.model";
 import { GetCinemaListInputDto } from "@/src/services/administration-service/cinema/models/input.model";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
+import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-100 text-green-700 border-green-200",
@@ -281,23 +282,11 @@ export default function CinemaAmenitiesAdminPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={5} className="py-12 text-center text-muted-foreground-shadcn">
-                  Đang tải dữ liệu tiện ích...
-                </td>
-              </tr>
+              <DomainTableStateRow colSpan={5} state="loading" loadingText="Đang tải dữ liệu tiện ích..." />
             ) : !selectedCinemaId ? (
-              <tr>
-                <td colSpan={5} className="py-12 text-center text-muted-foreground-shadcn">
-                  Vui lòng chọn rạp để xem tiện ích.
-                </td>
-              </tr>
+              <DomainTableStateRow colSpan={5} state="empty" emptyText="Vui lòng chọn rạp để xem tiện ích." />
             ) : filtered.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="py-12 text-center text-muted-foreground-shadcn">
-                  Không có dữ liệu tiện ích nào.
-                </td>
-              </tr>
+              <DomainTableStateRow colSpan={5} state="empty" emptyText="Không có dữ liệu tiện ích nào." />
             ) : (
               filtered.map((item) => (
                 <tr

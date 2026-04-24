@@ -9,11 +9,12 @@ export interface EmployeeOutputDto {
     email: string;
     otherEmail?: string;
     phoneNumber?: string;
-    dateOfBirth?: string;
     code: string;
-    joinedDate?: string;
-    positionId?: string | null;
+    hireDate?: string;
+    cinemaId?: string | null;
+    cinemaName?: string | null;
     positionName?: string | null;
+    // Backward compatibility
     organizationUnitId?: string | null;
     organizationUnitName?: string | null;
     role?: "Admin" | "Manager" | "Staff" | "POS" | string;

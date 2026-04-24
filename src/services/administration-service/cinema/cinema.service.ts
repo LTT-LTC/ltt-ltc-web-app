@@ -1,6 +1,6 @@
 import http from "@/src/@core/http";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
-import { rootPath } from "../administration.service";
+import { getRoleScopedRootPath } from "../administration.service";
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
 import { GetCinemaListInputDto, CreateCinemaInputDto, UpdateCinemaInputDto } from "./models/input.model";
 import { CinemaOutputDto } from "./models/output.model";
@@ -8,27 +8,27 @@ import { CinemaOutputDto } from "./models/output.model";
 const path = "/cinema";
 
 const getCinemaListAsync = async (params: GetCinemaListInputDto) => {
-    const { data } = await http.get<ApiResult<PagedResultDto<CinemaOutputDto>>>(`${rootPath}${path}`, { params });
+    const { data } = await http.get<ApiResult<PagedResultDto<CinemaOutputDto>>>(`${getRoleScopedRootPath()}${path}`, { params });
     return data.data;
 }
 
 const getCinemaByIdAsync = async (id: string) => {
-    const { data } = await http.get<ApiResult<CinemaOutputDto>>(`${rootPath}${path}/${id}`);
+    const { data } = await http.get<ApiResult<CinemaOutputDto>>(`${getRoleScopedRootPath()}${path}/${id}`);
     return data.data;
 }
 
 const createCinemaAsync = async (body: CreateCinemaInputDto) => {
-    const { data } = await http.post<ApiResult<CinemaOutputDto>>(`${rootPath}${path}`, body);
+    const { data } = await http.post<ApiResult<CinemaOutputDto>>(`${getRoleScopedRootPath()}${path}`, body);
     return data.data;
 }
 
 const updateCinemaAsync = async (id: string, body: UpdateCinemaInputDto) => {
-    const { data } = await http.put<ApiResult<CinemaOutputDto>>(`${rootPath}${path}/${id}`, body);
+    const { data } = await http.put<ApiResult<CinemaOutputDto>>(`${getRoleScopedRootPath()}${path}/${id}`, body);
     return data.data;
 }
 
 const deleteCinemaAsync = async (id: string) => {
-    const { data } = await http.delete<ApiResult<void>>(`${rootPath}${path}/${id}`);
+    const { data } = await http.delete<ApiResult<void>>(`${getRoleScopedRootPath()}${path}/${id}`);
     return data.data;
 }
 

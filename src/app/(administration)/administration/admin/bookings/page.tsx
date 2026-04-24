@@ -17,6 +17,7 @@ import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { bookingService, PaymentOutputDto } from "@/src/services/administration-service/booking/booking.service";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { cn } from "@/src/@core/utils/cn";
+import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 
 export default function BookingManagementPage() {
   const [items, setItems] = useState<PaymentOutputDto[]>([]);
@@ -102,17 +103,9 @@ export default function BookingManagementPage() {
           </thead>
           <tbody>
             {listMutation.isLoading ? (
-              <tr>
-                <td colSpan={7} className="py-12 text-center text-muted-foreground-shadcn">
-                  Đang tải lịch sử đặt vé...
-                </td>
-              </tr>
+              <DomainTableStateRow colSpan={7} state="loading" loadingText="Đang tải lịch sử đặt vé..." />
             ) : items.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="py-12 text-center text-muted-foreground-shadcn">
-                  Không tìm thấy lịch sử giao dịch.
-                </td>
-              </tr>
+              <DomainTableStateRow colSpan={7} state="empty" emptyText="Không tìm thấy lịch sử giao dịch." />
             ) : (
               items.map((item) => (
                 <tr

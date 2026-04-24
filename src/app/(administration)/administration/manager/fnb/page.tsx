@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Pencil, Trash2, Search, Coffee } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Coffee, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
@@ -37,6 +37,8 @@ import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { useEffect } from "react";
 import { cn } from "@/src/@core/utils/cn";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
+import AdminTablePagination from "@/src/app/(administration)/administration/admin/_components/AdminTablePagination";
+import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 
 const catLabel: Record<string, string> = {
   popcorn: "Bắp rang",
@@ -69,6 +71,11 @@ export default function FnBPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState<ProductOutputDto | null>(null);
+  const [singleDeleteId, setSingleDeleteId] = useState("");
+  const [singleDeleteOpen, setSingleDeleteOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [fetch, setFetch] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
   const [form, setForm] = useState({
     name: "",
     categoryId: "",
@@ -78,7 +85,12 @@ export default function FnBPage() {
 
   const listMutation = useLTTMutation<PagedResultDto<ProductOutputDto> | undefined, GetProductListInputDto>({
     mutationFn: (input) => productService.getProductListAsync(input),
-    onSuccess: (res) => { if (res && res.items) setItems(res.items); },
+    onSuccess: (res) => {
+      if (res && res.items) {
+        setItems(res.items);
+        setTotalCount(res.totalCount);
+      }
+    },
     onError: (err) => toast.error(err.message || t("admin.fnb.fetch_error"))
   });
 
@@ -109,8 +121,8 @@ export default function FnBPage() {
 
   const fetchData = () => {
     listMutation.mutation({
-      page: 1,
-      fetch: 100,
+      page,
+      fetch,
       keyword: debouncedSearch,
       categoryId: catFilter === "all" ? undefined : catFilter
     });
@@ -123,7 +135,7 @@ export default function FnBPage() {
 
   useEffect(() => {
     fetchData();
-  }, [debouncedSearch, catFilter]);
+  }, [debouncedSearch, catFilter, page]);
 
   useEffect(() => {
     catMutation.mutation();
@@ -180,10 +192,12 @@ export default function FnBPage() {
   };
 
   const bulkDelete = () => {
-    setItems((p) => p.filter((i) => !selected.has(i.id)));
-    toast.success(t("admin.fnb.bulk_delete_success", { count: selected.size }));
-    setSelected(new Set());
-    setDeleteOpen(false);
+    Promise.allSettled(Array.from(selected).map((id) => productService.deleteProductAsync(id))).then(() => {
+      toast.success(t("admin.fnb.bulk_delete_success", { count: selected.size }));
+      setSelected(new Set());
+      setDeleteOpen(false);
+      fetchData();
+    });
   };
 
   return (
@@ -195,7 +209,7 @@ export default function FnBPage() {
         </LTTButton>
       </div>
 
-      <LTTTabs value={catFilter} onValueChange={setCatFilter}>
+      <LTTTabs value={catFilter} onValueChange={(v) => { setCatFilter(v); setPage(1); }}>
         <LTTTabsList className="bg-muted-shadcn/50">
           <LTTTabsTrigger value="all">
             {t("admin.fnb.tabs.all", { count: items.length })}
@@ -214,7 +228,10 @@ export default function FnBPage() {
           <LTTInput
             placeholder={t("admin.fnb.search_placeholder")}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="pl-9"
           />
         </div>
@@ -228,6 +245,22 @@ export default function FnBPage() {
             <Trash2 className="h-4 w-4" /> {t("admin.common.delete_confirm.ok")} {selected.size}
           </LTTButton>
         )}
+        <LTTButton
+          variant="outline"
+          className="gap-2"
+          onClick={() => {
+            setPage(1);
+            listMutation.mutation({
+              page: 1,
+              fetch,
+              keyword: search ?? "",
+              categoryId: catFilter === "all" ? undefined : catFilter,
+            });
+          }}
+          loading={listMutation.isLoading}
+        >
+          <RefreshCw className="h-4 w-4" /> Làm mới
+        </LTTButton>
       </div>
 
       <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
@@ -246,12 +279,10 @@ export default function FnBPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="py-12 text-center text-muted-foreground-shadcn">
-                  {t("admin.fnb.empty")}
-                </td>
-              </tr>
+            {loading ? (
+              <DomainTableStateRow colSpan={9} state="loading" loadingText={t("admin.fnb.loading")} />
+            ) : filtered.length === 0 ? (
+              <DomainTableStateRow colSpan={9} state="empty" emptyText={t("admin.fnb.empty")} />
             ) : (
               filtered.map((item, idx) => (
                 <tr
@@ -293,8 +324,8 @@ export default function FnBPage() {
                         size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={() => {
-                          setItems((p) => p.filter((i) => i.id !== item.id));
-                          toast.success(t("admin.fnb.delete_single_success", { name: item.name }));
+                          setSingleDeleteId(item.id);
+                          setSingleDeleteOpen(true);
                         }}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -307,6 +338,19 @@ export default function FnBPage() {
           </tbody>
         </table>
       </div>
+      <AdminTablePagination
+        totalCount={totalCount}
+        page={page}
+        pageSize={fetch}
+        onPageChange={(nextPage) => {
+          setPage(nextPage);
+        }}
+        onPageSizeChange={(nextSize) => {
+          setFetch(nextSize);
+          setPage(1);
+        }}
+        loading={listMutation.isLoading}
+      />
 
       <LTTDialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <LTTDialogContent className="sm:max-w-lg">
@@ -327,7 +371,7 @@ export default function FnBPage() {
               <LTTLabel>{t("admin.fnb.form.category")}</LTTLabel>
               <LTTSelect
                 value={form.categoryId}
-                onValueChange={(v: any) => setForm({ ...form, categoryId: v })}
+                onValueChange={(v: string) => setForm({ ...form, categoryId: v })}
               >
                 <LTTSelectTrigger>
                   <LTTSelectValue placeholder={t("admin.fnb.form.category_placeholder")} />
@@ -386,6 +430,30 @@ export default function FnBPage() {
             </LTTButton>
             <LTTButton variant="destructive" onClick={bulkDelete}>
               {t("admin.fnb.delete_confirm.confirm")}
+            </LTTButton>
+          </LTTDialogFooter>
+        </LTTDialogContent>
+      </LTTDialog>
+      <LTTDialog open={singleDeleteOpen} onOpenChange={setSingleDeleteOpen}>
+        <LTTDialogContent className="sm:max-w-sm">
+          <LTTDialogHeader>
+            <LTTDialogTitle>{t("admin.common.delete_confirm.title")}</LTTDialogTitle>
+          </LTTDialogHeader>
+          <div className="py-3 text-sm text-muted-foreground-shadcn">{t("admin.fnb.delete_confirm.message", { count: 1 })}</div>
+          <LTTDialogFooter>
+            <LTTButton variant="outline" onClick={() => setSingleDeleteOpen(false)}>
+              {t("admin.common.delete_confirm.cancel")}
+            </LTTButton>
+            <LTTButton
+              variant="destructive"
+              onClick={async () => {
+                await productService.deleteProductAsync(singleDeleteId);
+                toast.success(t("admin.fnb.delete_single_success", { name: "" }));
+                setSingleDeleteOpen(false);
+                fetchData();
+              }}
+            >
+              {t("admin.common.delete_confirm.ok")}
             </LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
@@ -29,6 +29,8 @@ import { ScreenOutputDto } from "@/src/services/administration-service/screen/mo
 import { GetScreenListInputDto, CreateScreenInputDto, UpdateScreenInputDto } from "@/src/services/administration-service/screen/models/input.model";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { CinemaOutputDto, cinemaService } from "@/src/services/administration-service/cinema/cinema.service";
+import AdminTablePagination from "@/src/app/(administration)/administration/admin/_components/AdminTablePagination";
+import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-100 text-green-700 border-green-200",
@@ -42,7 +44,12 @@ export default function ScreensConfigPage() {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [singleDeleteOpen, setSingleDeleteOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string>("");
   const [editing, setEditing] = useState<ScreenOutputDto | null>(null);
+  const [page, setPage] = useState(1);
+  const [fetch, setFetch] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
 
   const [cinemas, setCinemas] = useState<CinemaOutputDto[]>([]);
   const [selectedCinemaId, setSelectedCinemaId] = useState<string>("");
@@ -55,7 +62,7 @@ export default function ScreensConfigPage() {
     status: "active",
   });
 
-  const cinemaMutation = useLTTMutation<PagedResultDto<CinemaOutputDto> | undefined, any>({
+  const cinemaMutation = useLTTMutation<PagedResultDto<CinemaOutputDto> | undefined, { page: number; fetch: number }>({
     mutationFn: (p) => cinemaService.getCinemaListAsync(p),
     onSuccess: (res) => {
       if (res && res.items) {
@@ -70,7 +77,10 @@ export default function ScreensConfigPage() {
   const listMutation = useLTTMutation<PagedResultDto<ScreenOutputDto> | undefined, { cinemaId: string; params: GetScreenListInputDto }>({
     mutationFn: (input) => screenService.getScreenListAsync(input.cinemaId, input.params),
     onSuccess: (res) => {
-      if (res && res.items) setItems(res.items);
+      if (res && res.items) {
+        setItems(res.items);
+        setTotalCount(res.totalCount);
+      }
     },
     onError: (err) => toast.error(err.message || "Lỗi tải danh sách phòng chiếu")
   });
@@ -109,20 +119,30 @@ export default function ScreensConfigPage() {
 
   const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || removeMutation.isLoading;
 
-  const fetchData = (keyword?: string) => {
+  const fetchData = (keyword?: string, pageNumber?: number) => {
     if (!selectedCinemaId) return;
-    const effectiveKeyword = keyword ?? debouncedSearch;
-    listMutation.mutation({ cinemaId: selectedCinemaId, params: { page: 1, fetch: 100, keyword: effectiveKeyword } });
+    const effectiveKeyword = keyword ?? search;
+    const effectivePage = pageNumber ?? page;
+    listMutation.mutation({ cinemaId: selectedCinemaId, params: { page: effectivePage, fetch, keyword: effectiveKeyword } });
   };
 
   useEffect(() => {
     cinemaMutation.mutation({ page: 1, fetch: 100 });
   }, []);
 
+  useEffect(() => {
+    if (selectedCinemaId) {
+      fetchData(search, page);
+    }
+  }, [selectedCinemaId, page, fetch]);
+
   const debouncedSearch = useDebouncedListQuery(
     search,
-    (keyword) => fetchData(keyword),
-    [selectedCinemaId]
+    (keyword) => {
+      setPage(1);
+      fetchData(keyword, 1);
+    },
+    [selectedCinemaId, fetch]
   );
 
   const filtered = useMemo(() => {
@@ -201,6 +221,14 @@ export default function ScreensConfigPage() {
     fetchData(debouncedSearch);
   };
 
+  const confirmDeleteOne = async () => {
+    if (!deleteTargetId) return;
+    await removeMutation.mutation(deleteTargetId);
+    setSingleDeleteOpen(false);
+    setDeleteTargetId("");
+    fetchData(debouncedSearch);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -223,7 +251,10 @@ export default function ScreensConfigPage() {
 
         <LTTSelect
           value={selectedCinemaId}
-          onValueChange={(v) => setSelectedCinemaId(v)}
+          onValueChange={(v) => {
+            setSelectedCinemaId(v);
+            setPage(1);
+          }}
         >
           <LTTSelectTrigger className="w-56">
             <LTTSelectValue placeholder="Chọn rạp" />
@@ -246,6 +277,17 @@ export default function ScreensConfigPage() {
             <Trash2 className="h-4 w-4" /> Xóa {selected.size}
           </LTTButton>
         )}
+        <LTTButton
+          variant="outline"
+          className="gap-2"
+          onClick={() => {
+            setPage(1);
+            fetchData(search, 1);
+          }}
+          loading={listMutation.isLoading}
+        >
+          <RefreshCw className="h-4 w-4" /> Làm mới
+        </LTTButton>
       </div>
 
       <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
@@ -265,17 +307,9 @@ export default function ScreensConfigPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={7} className="py-12 text-center text-muted-foreground-shadcn">
-                  Đang tải dữ liệu phòng chiếu...
-                </td>
-              </tr>
+              <DomainTableStateRow colSpan={7} state="loading" loadingText="Đang tải dữ liệu phòng chiếu..." />
             ) : filtered.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="py-12 text-center text-muted-foreground-shadcn">
-                  Không có dữ liệu phòng chiếu nào.
-                </td>
-              </tr>
+              <DomainTableStateRow colSpan={7} state="empty" emptyText="Không có dữ liệu phòng chiếu nào." />
             ) : (
               filtered.map((item) => (
                 <tr
@@ -308,9 +342,9 @@ export default function ScreensConfigPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={async () => {
-                          await removeMutation.mutation(item.id);
-                          fetchData();
+                        onClick={() => {
+                          setDeleteTargetId(item.id);
+                          setSingleDeleteOpen(true);
                         }}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -323,6 +357,21 @@ export default function ScreensConfigPage() {
           </tbody>
         </table>
       </div>
+      <AdminTablePagination
+        totalCount={totalCount}
+        page={page}
+        pageSize={fetch}
+        onPageChange={(nextPage) => {
+          setPage(nextPage);
+          fetchData(debouncedSearch, nextPage);
+        }}
+        onPageSizeChange={(nextSize) => {
+          setFetch(nextSize);
+          setPage(1);
+          listMutation.mutation({ cinemaId: selectedCinemaId, params: { page: 1, fetch: nextSize, keyword: debouncedSearch } });
+        }}
+        loading={listMutation.isLoading}
+      />
 
       <LTTDialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <LTTDialogContent className="sm:max-w-lg">
@@ -340,7 +389,7 @@ export default function ScreensConfigPage() {
             </div>
             <div className="space-y-2">
               <LTTLabel>Loại màn hình *</LTTLabel>
-              <LTTSelect value={form.screenType} onValueChange={(v: any) => setForm({ ...form, screenType: v })}>
+              <LTTSelect value={form.screenType} onValueChange={(v: string) => setForm({ ...form, screenType: v })}>
                 <LTTSelectTrigger><LTTSelectValue /></LTTSelectTrigger>
                 <LTTSelectContent>
                   <LTTSelectItem value="2D">2D</LTTSelectItem>
@@ -359,7 +408,7 @@ export default function ScreensConfigPage() {
             </div>
             <div className="space-y-2">
               <LTTLabel>Trạng thái</LTTLabel>
-              <LTTSelect value={form.status} onValueChange={(v: any) => setForm({ ...form, status: v })}>
+              <LTTSelect value={form.status} onValueChange={(v: string) => setForm({ ...form, status: v })}>
                 <LTTSelectTrigger><LTTSelectValue /></LTTSelectTrigger>
                 <LTTSelectContent>
                   <LTTSelectItem value="active">Hoạt động</LTTSelectItem>
@@ -396,6 +445,20 @@ export default function ScreensConfigPage() {
           <LTTDialogFooter>
             <LTTButton variant="outline" onClick={() => setDeleteOpen(false)}>Hủy</LTTButton>
             <LTTButton variant="destructive" onClick={bulkDelete}>Xác nhận xóa</LTTButton>
+          </LTTDialogFooter>
+        </LTTDialogContent>
+      </LTTDialog>
+      <LTTDialog open={singleDeleteOpen} onOpenChange={setSingleDeleteOpen}>
+        <LTTDialogContent className="sm:max-w-sm">
+          <LTTDialogHeader>
+            <LTTDialogTitle>Xác nhận xóa phòng chiếu</LTTDialogTitle>
+          </LTTDialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground-shadcn">Bạn có chắc chắn muốn xóa phòng chiếu này?</p>
+          </div>
+          <LTTDialogFooter>
+            <LTTButton variant="outline" onClick={() => setSingleDeleteOpen(false)}>Hủy</LTTButton>
+            <LTTButton variant="destructive" onClick={confirmDeleteOne}>Xóa</LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
       </LTTDialog>

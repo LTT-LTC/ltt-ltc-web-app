@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Search, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
@@ -12,6 +12,7 @@ import { SeatTypeOutputDto } from "@/src/services/administration-service/seat-ty
 import { GetSeatTypeListInputDto } from "@/src/services/administration-service/seat-type/models/input.model";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
+import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 
 export default function SeatTypesManagerPage() {
   const { t } = useLocalization();
@@ -34,6 +35,10 @@ export default function SeatTypesManagerPage() {
   };
 
   const debouncedSearch = useDebouncedListQuery(search, (keyword) => fetchData(keyword));
+
+  useEffect(() => {
+    fetchData("");
+  }, []);
 
   const filtered = useMemo(() => {
     if (!search) return items;
@@ -78,12 +83,10 @@ export default function SeatTypesManagerPage() {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="py-12 text-center text-muted-foreground-shadcn">
-                  {t("admin.seat_type.empty")}
-                </td>
-              </tr>
+            {loading ? (
+              <DomainTableStateRow colSpan={4} state="loading" loadingText={t("admin.common.loading")} />
+            ) : filtered.length === 0 ? (
+              <DomainTableStateRow colSpan={4} state="empty" emptyText={t("admin.seat_type.empty")} />
             ) : (
               filtered.map((item) => (
                 <tr

@@ -32,6 +32,7 @@ import { Select } from "antd";
 import vnCityDistricts from "@/src/@core/const/location/vn-city-districts.json";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 import AdminTablePagination from "../_components/AdminTablePagination";
+import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-100 text-green-700 border-green-200",
@@ -294,17 +295,9 @@ export default function CinemaConfigPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan={9} className="py-12 text-center text-muted-foreground-shadcn">
-                  {t("admin.cinema_configuration.loading")}
-                </td>
-              </tr>
+              <DomainTableStateRow colSpan={9} state="loading" loadingText={t("admin.cinema_configuration.loading")} />
             ) : items.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="py-12 text-center text-muted-foreground-shadcn">
-                  {t("admin.cinema_configuration.empty")}
-                </td>
-              </tr>
+              <DomainTableStateRow colSpan={9} state="empty" emptyText={t("admin.cinema_configuration.empty")} />
             ) : (
               items.map((item, idx) => (
                 <tr
