@@ -18,11 +18,7 @@ const comboPath = "/combo";
 const categoryPath = "/category";
 
 const getProductListAsync = async (params: GetProductListInputDto): Promise<PagedResultDto<ProductOutputDto>> => {
-  const safeParams: GetProductListInputDto = {
-    ...params,
-    keyword: params.keyword ?? "",
-  };
-  const response = await http.get<ApiResult<PagedResultDto<ProductOutputDto>>>(`${productRootPath}${productPath}-all`, { params: safeParams });
+  const response = await http.get<ApiResult<PagedResultDto<ProductOutputDto>>>(`${productRootPath}${productPath}-all`, { params });
   return response.data.data;
 };
 
@@ -40,8 +36,8 @@ const deleteProductAsync = async (id: string): Promise<void> => {
   await http.delete<ApiResult<void>>(`${productRootPath}${productPath}/${id}`);
 };
 
-const getCategoryListAsync = async (): Promise<PagedResultDto<CategoryOutputDto>> => {
-  const response = await http.get<ApiResult<PagedResultDto<CategoryOutputDto>>>(`${categoryRootPath}${categoryPath}-all`);
+const getCategoryListAsync = async (params?: { page?: number; fetch?: number; keyword?: string }): Promise<PagedResultDto<CategoryOutputDto>> => {
+  const response = await http.get<ApiResult<PagedResultDto<CategoryOutputDto>>>(`${categoryRootPath}${categoryPath}-all`, { params });
   return response.data.data;
 };
 
@@ -59,8 +55,8 @@ const deleteCategoryAsync = async (id: string): Promise<void> => {
   await http.delete<ApiResult<void>>(`${categoryRootPath}${categoryPath}/${id}`);
 };
 
-const getComboListAsync = async (): Promise<PagedResultDto<ComboOutputDto>> => {
-  const response = await http.get<ApiResult<PagedResultDto<ComboOutputDto>>>(`${comboRootPath}${comboPath}-all`);
+const getComboListAsync = async (params?: { page?: number; fetch?: number; keyword?: string }): Promise<PagedResultDto<ComboOutputDto>> => {
+  const response = await http.get<ApiResult<PagedResultDto<ComboOutputDto>>>(`${comboRootPath}${comboPath}-all`, { params });
   return response.data.data;
 };
 

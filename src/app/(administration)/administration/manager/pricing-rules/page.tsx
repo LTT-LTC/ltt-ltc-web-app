@@ -18,14 +18,15 @@ import AdminTablePagination from "@/src/app/(administration)/administration/admi
 import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 const MANAGER_CINEMA_STORAGE_KEY = "managerCinemaId";
 
-const dayLabels: Record<number, string> = {
-    0: "Chủ nhật",
-    1: "Thứ 2",
-    2: "Thứ 3",
-    3: "Thứ 4",
-    4: "Thứ 5",
-    5: "Thứ 6",
-    6: "Thứ 7",
+const dayLabels: Record<string, string> = {
+    MON: "Thứ 2",
+    TUE: "Thứ 3",
+    WED: "Thứ 4",
+    THU: "Thứ 5",
+    FRI: "Thứ 6",
+    SAT: "Thứ 7",
+    SUN: "Chủ nhật",
+    ALL: "Tất cả ngày",
 };
 
 export default function PricingRulesPage() {
@@ -133,7 +134,10 @@ export default function PricingRulesPage() {
                     variant="outline"
                     className="gap-2"
                     onClick={() => {
-                        setPage(1);
+                        if (page !== 1) {
+                            setPage(1);
+                            return;
+                        }
                         listMutation.mutation();
                     }}
                     loading={listMutation.isLoading}
@@ -173,8 +177,14 @@ export default function PricingRulesPage() {
                                         x{item.multiplier}
                                     </td>
                                     <td className="px-4 py-3 text-xs text-muted-foreground-shadcn">
-                                        {item.dayOfWeek !== undefined ? dayLabels[item.dayOfWeek] : t("admin.pricing_rules.every_day")}
+                                        {(item.daysOfWeek ?? []).length > 0
+                                            ? item.daysOfWeek.map((token) => dayLabels[token] ?? token).join(", ")
+                                            : t("admin.pricing_rules.every_day")}
                                         {item.startTime && item.endTime && ` (${item.startTime} - ${item.endTime})`}
+                                        {(item.validFrom || item.validUntil) &&
+                                            ` | ${item.validFrom ? new Date(item.validFrom).toLocaleDateString("vi-VN") : "-"} - ${
+                                                item.validUntil ? new Date(item.validUntil).toLocaleDateString("vi-VN") : "-"
+                                            }`}
                                     </td>
                                     <td className="px-4 py-3">{item.priority}</td>
                                     <td className="px-4 py-3">

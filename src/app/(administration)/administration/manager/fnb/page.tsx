@@ -95,7 +95,7 @@ export default function FnBPage() {
   });
 
   const catMutation = useLTTMutation<PagedResultDto<CategoryOutputDto> | undefined, void>({
-    mutationFn: () => productService.getCategoryListAsync(),
+    mutationFn: () => productService.getCategoryListAsync({ page: 1, fetch: 100 }),
     onSuccess: (res) => { if (res && res.items) setCategories(res.items); }
   });
 
@@ -123,7 +123,7 @@ export default function FnBPage() {
     listMutation.mutation({
       page,
       fetch,
-      keyword: debouncedSearch,
+      keyword: debouncedSearch || undefined,
       categoryId: catFilter === "all" ? undefined : catFilter
     });
   };
@@ -253,7 +253,7 @@ export default function FnBPage() {
             listMutation.mutation({
               page: 1,
               fetch,
-              keyword: search ?? "",
+              keyword: debouncedSearch || undefined,
               categoryId: catFilter === "all" ? undefined : catFilter,
             });
           }}

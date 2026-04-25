@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Plus, Pencil, Trash2, Search, Coffee } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Coffee, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
@@ -15,6 +15,7 @@ import { cn } from "@/src/@core/utils/cn";
 import UpsertAmenityDialog from "./UpsertDialog";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
+import AdminTablePagination from "@/src/app/(administration)/administration/admin/_components/AdminTablePagination";
 
 // For now, we assume a fixed cinema context or a way to select it.
 // In a manager context, the cinemaId might come from the user's profile/claims.
@@ -27,11 +28,17 @@ export default function CinemaAmenitiesPage() {
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<CinemaAmenityOutputDto | null>(null);
+    const [page, setPage] = useState(1);
+    const [fetch, setFetch] = useState(10);
+    const [totalCount, setTotalCount] = useState(0);
 
     const listMutation = useLTTMutation<PagedResultDto<CinemaAmenityOutputDto> | null, { cinemaId: string, params?: any }>({
         mutationFn: (input) => cinemaAmenityService.getCinemaAmenityListAsync(input.cinemaId, input.params),
         onSuccess: (res) => {
-            if (res && res.items) setItems(res.items);
+            if (res && res.items) {
+                setItems(res.items);
+                setTotalCount(res.totalCount);
+            }
         },
         onError: (err) => toast.error(err.message || t("admin.amenities.fetch_error"))
     });
@@ -50,7 +57,7 @@ export default function CinemaAmenitiesPage() {
     const fetchData = () => {
         listMutation.mutation({
             cinemaId: TEMP_CINEMA_ID,
-            params: { page: 1, fetch: 100, keyword: debouncedSearch }
+            params: { page, fetch, keyword: debouncedSearch || undefined }
         });
     };
 
@@ -61,7 +68,7 @@ export default function CinemaAmenitiesPage() {
 
     useEffect(() => {
         fetchData();
-    }, [debouncedSearch]);
+    }, [debouncedSearch, page, fetch]);
 
     const handleEdit = (item: CinemaAmenityOutputDto) => {
         setEditingItem(item);
@@ -88,10 +95,21 @@ export default function CinemaAmenitiesPage() {
                     <LTTInput
                         placeholder={t("admin.amenities.search_placeholder")}
                         value={search}
-                        onChange={e => setSearch(e.target.value)}
+                        onChange={e => {
+                            setSearch(e.target.value);
+                            setPage(1);
+                        }}
                         className="pl-9"
                     />
                 </div>
+                <LTTButton
+                    variant="outline"
+                    className="gap-2"
+                    onClick={fetchData}
+                    loading={listMutation.isLoading}
+                >
+                    <RefreshCw className="h-4 w-4" /> {t("admin.amenities.refresh")}
+                </LTTButton>
             </div>
 
             <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
@@ -152,6 +170,17 @@ export default function CinemaAmenitiesPage() {
                     </tbody>
                 </table>
             </div>
+            <AdminTablePagination
+                totalCount={totalCount}
+                page={page}
+                pageSize={fetch}
+                onPageChange={(nextPage) => setPage(nextPage)}
+                onPageSizeChange={(nextSize) => {
+                    setFetch(nextSize);
+                    setPage(1);
+                }}
+                loading={listMutation.isLoading}
+            />
 
             <UpsertAmenityDialog
                 open={dialogOpen}

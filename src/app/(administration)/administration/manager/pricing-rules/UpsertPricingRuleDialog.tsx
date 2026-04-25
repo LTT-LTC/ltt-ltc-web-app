@@ -11,6 +11,7 @@ import {
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
+import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
 import {
     LTTSelect,
     LTTSelectContent,
@@ -37,6 +38,16 @@ interface Props {
     cinemaId: string;
 }
 
+const DAY_OPTIONS = [
+    { token: "MON", label: "Thứ 2" },
+    { token: "TUE", label: "Thứ 3" },
+    { token: "WED", label: "Thứ 4" },
+    { token: "THU", label: "Thứ 5" },
+    { token: "FRI", label: "Thứ 6" },
+    { token: "SAT", label: "Thứ 7" },
+    { token: "SUN", label: "Chủ nhật" },
+];
+
 export default function UpsertPricingRuleDialog({ open, onOpenChange, editingItem, onSuccess, cinemaId }: Props) {
     const { t } = useLocalization();
     const [seatTypes, setSeatTypes] = useState<SeatTypeOutputDto[]>([]);
@@ -47,7 +58,9 @@ export default function UpsertPricingRuleDialog({ open, onOpenChange, editingIte
             multiplier: 1.0,
             priority: 0,
             isActive: true,
-            dayOfWeek: undefined
+            daysOfWeek: ["ALL"],
+            validFrom: undefined,
+            validUntil: undefined
         }
     });
 
@@ -57,7 +70,12 @@ export default function UpsertPricingRuleDialog({ open, onOpenChange, editingIte
     });
 
     const upsertMutation = useLTTMutation<any, CreatePricingRuleInputDto>({
-        mutationFn: (body) => pricingRuleService.createPricingRuleAsync(cinemaId, body),
+        mutationFn: (body) => {
+            if (editingItem?.id) {
+                return pricingRuleService.updatePricingRuleAsync(cinemaId, editingItem.id, body);
+            }
+            return pricingRuleService.createPricingRuleAsync(cinemaId, body);
+        },
         onSuccess: () => {
             toast.success(editingItem ? t("admin.pricing_rules.update_success") : t("admin.pricing_rules.create_success"));
             onSuccess();
@@ -78,8 +96,10 @@ export default function UpsertPricingRuleDialog({ open, onOpenChange, editingIte
                     multiplier: editingItem.multiplier,
                     startTime: editingItem.startTime || undefined,
                     endTime: editingItem.endTime || undefined,
-                    dayOfWeek: editingItem.dayOfWeek,
+                    daysOfWeek: editingItem.daysOfWeek?.length ? editingItem.daysOfWeek : ["ALL"],
                     priority: editingItem.priority,
+                    validFrom: editingItem.validFrom ? editingItem.validFrom.slice(0, 10) : undefined,
+                    validUntil: editingItem.validUntil ? editingItem.validUntil.slice(0, 10) : undefined,
                     isActive: editingItem.isActive
                 });
             } else {
@@ -88,14 +108,41 @@ export default function UpsertPricingRuleDialog({ open, onOpenChange, editingIte
                     multiplier: 1.0,
                     priority: 0,
                     isActive: true,
-                    dayOfWeek: undefined
+                    daysOfWeek: ["ALL"],
+                    validFrom: undefined,
+                    validUntil: undefined
                 });
             }
         }
     }, [open, editingItem, reset, seatTypes.length]);
 
     const onSubmit = (data: CreatePricingRuleInputDto) => {
+        if (!data.daysOfWeek || data.daysOfWeek.length === 0) {
+            toast.error("Vui lòng chọn ít nhất một ngày áp dụng");
+            return;
+        }
+        if (data.validFrom && data.validUntil && data.validFrom > data.validUntil) {
+            toast.error("Ngày bắt đầu không được sau ngày kết thúc");
+            return;
+        }
         upsertMutation.mutation(data);
+    };
+
+    const selectedDays = watch("daysOfWeek") || [];
+    const isAllDays = selectedDays.includes("ALL");
+
+    const toggleAllDays = (checked: boolean) => {
+        setValue("daysOfWeek", checked ? ["ALL"] : []);
+    };
+
+    const toggleSingleDay = (token: string, checked: boolean) => {
+        const current = new Set((watch("daysOfWeek") || []).filter((x) => x !== "ALL"));
+        if (checked) {
+            current.add(token);
+        } else {
+            current.delete(token);
+        }
+        setValue("daysOfWeek", Array.from(current));
     };
 
     return (
@@ -155,26 +202,26 @@ export default function UpsertPricingRuleDialog({ open, onOpenChange, editingIte
                             />
                         </div>
 
-                        <div className="space-y-2">
+                        <div className="space-y-2 sm:col-span-2">
                             <LTTLabel>{t("admin.pricing_rules.form.day_of_week")}</LTTLabel>
-                            <LTTSelect
-                                value={watch("dayOfWeek")?.toString() || "any"}
-                                onValueChange={(v) => setValue("dayOfWeek", v === "any" ? undefined : parseInt(v))}
-                            >
-                                <LTTSelectTrigger>
-                                    <LTTSelectValue placeholder={t("admin.pricing_rules.every_day")} />
-                                </LTTSelectTrigger>
-                                <LTTSelectContent>
-                                    <LTTSelectItem value="any">{t("admin.pricing_rules.every_day")}</LTTSelectItem>
-                                    <LTTSelectItem value="1">{t("admin.pricing_rules.day.1")}</LTTSelectItem>
-                                    <LTTSelectItem value="2">{t("admin.pricing_rules.day.2")}</LTTSelectItem>
-                                    <LTTSelectItem value="3">{t("admin.pricing_rules.day.3")}</LTTSelectItem>
-                                    <LTTSelectItem value="4">{t("admin.pricing_rules.day.4")}</LTTSelectItem>
-                                    <LTTSelectItem value="5">{t("admin.pricing_rules.day.5")}</LTTSelectItem>
-                                    <LTTSelectItem value="6">{t("admin.pricing_rules.day.6")}</LTTSelectItem>
-                                    <LTTSelectItem value="0">{t("admin.pricing_rules.day.0")}</LTTSelectItem>
-                                </LTTSelectContent>
-                            </LTTSelect>
+                            <div className="space-y-3 rounded-md border border-border-shadcn p-3">
+                                <label className="flex items-center gap-2 text-sm">
+                                    <LTTCheckbox checked={isAllDays} onCheckedChange={(v) => toggleAllDays(Boolean(v))} />
+                                    <span>Tất cả các ngày (ALL)</span>
+                                </label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {DAY_OPTIONS.map((day) => (
+                                        <label key={day.token} className="flex items-center gap-2 text-sm">
+                                            <LTTCheckbox
+                                                checked={!isAllDays && selectedDays.includes(day.token)}
+                                                disabled={isAllDays}
+                                                onCheckedChange={(v) => toggleSingleDay(day.token, Boolean(v))}
+                                            />
+                                            <span>{day.label}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                         <div className="space-y-2">
                             <LTTLabel>{t("admin.pricing_rules.form.status")}</LTTLabel>
@@ -194,6 +241,14 @@ export default function UpsertPricingRuleDialog({ open, onOpenChange, editingIte
                         <div className="space-y-2">
                             <LTTLabel>{t("admin.pricing_rules.form.end_time")}</LTTLabel>
                             <LTTInput type="time" {...register("endTime")} />
+                        </div>
+                        <div className="space-y-2">
+                            <LTTLabel>Valid from</LTTLabel>
+                            <LTTInput type="date" {...register("validFrom")} />
+                        </div>
+                        <div className="space-y-2">
+                            <LTTLabel>Valid until</LTTLabel>
+                            <LTTInput type="date" {...register("validUntil")} />
                         </div>
                     </div>
                 </form>

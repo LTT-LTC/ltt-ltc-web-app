@@ -187,6 +187,11 @@ export default function ScreensConfigPage() {
   };
 
   const save = async () => {
+    if (!selectedCinemaId) {
+      toast.error("Vui lòng chọn rạp trước khi tạo hoặc cập nhật phòng chiếu");
+      return;
+    }
+
     if (form.screenNumber <= 0) {
       toast.error("Số phòng chiếu không hợp lệ");
       return;
@@ -233,7 +238,7 @@ export default function ScreensConfigPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="font-heading text-2xl font-bold">Quản lý Phòng Chiếu</h1>
-        <LTTButton onClick={openCreate} className="gap-2">
+        <LTTButton onClick={openCreate} className="gap-2" disabled={!selectedCinemaId || cinemaMutation.isLoading}>
           <Plus className="h-4 w-4" /> Thêm phòng chiếu
         </LTTButton>
       </div>
@@ -427,7 +432,9 @@ export default function ScreensConfigPage() {
           </div>
           <LTTDialogFooter>
             <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>Hủy</LTTButton>
-            <LTTButton onClick={save}>{editing ? "Lưu" : "Tạo mới"}</LTTButton>
+            <LTTButton onClick={save} disabled={!selectedCinemaId || createMutation.isLoading || updateMutation.isLoading}>
+              {editing ? "Lưu" : "Tạo mới"}
+            </LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
       </LTTDialog>
