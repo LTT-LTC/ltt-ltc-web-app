@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Plus, Pencil, Trash2, Search, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
@@ -26,6 +26,10 @@ import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { screenService } from "@/src/services/administration-service/screen/screen.service";
 import { ScreenOutputDto } from "@/src/services/administration-service/screen/models/output.model";
 import { GetScreenListInputDto, CreateScreenInputDto, UpdateScreenInputDto } from "@/src/services/administration-service/screen/models/input.model";
+import { seatMapService } from "@/src/services/administration-service/seat-map/seat-map.service";
+import { SeatMapOutputDto } from "@/src/services/administration-service/seat-map/models/output.model";
+import { managerSeatTypeService } from "@/src/services/administration-service/manager/seat-type/seat-type.service";
+import { SeatTypeOutputDto } from "@/src/services/administration-service/seat-type/models/output.model";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import AdminTablePagination from "@/src/app/(administration)/administration/admin/_components/AdminTablePagination";
 import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
@@ -33,6 +37,9 @@ import { getCookie } from "@/src/@core/utils/cookie";
 import { ADMIN_ACCESS_TOKEN_KEY } from "@/src/@core/const";
 import { getUserInfoFromToken } from "@/src/@core/utils/jwt";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
+import LTTScreenCreateWizard from "@/src/@core/component/LTTManager/LTTScreenCreateWizard";
+import { Screen, SeatType } from "@/src/@core/const/mock/adminMockData";
+import LTTSeatMapViewer from "@/src/@core/component/LTTManager/LTTSeatMapViewer";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-100 text-green-700 border-green-200",
@@ -57,12 +64,16 @@ export default function ScreensConfigPage() {
   const [selectedCinemaId, setSelectedCinemaId] = useState<string>("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [cinemaMissing, setCinemaMissing] = useState(false);
+  const [seatMaps, setSeatMaps] = useState<SeatMapOutputDto[]>([]);
+  const [seatTypes, setSeatTypes] = useState<SeatType[]>([]);
+  const [designDialogOpen, setDesignDialogOpen] = useState(false);
+  const [createdSeatMapId, setCreatedSeatMapId] = useState<string>("");
 
   const [form, setForm] = useState({
     screenNumber: 1,
     screenType: "2D",
-    seatCount: 100,
-    seatLayout: "Standard",
+    seatCount: 0,
+    seatMapId: "",
     status: "active",
   });
 
@@ -110,6 +121,49 @@ export default function ScreensConfigPage() {
   });
 
   const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || removeMutation.isLoading;
+  const saveLoading = createMutation.isLoading || updateMutation.isLoading;
+  const selectedSeatMap = seatMaps.find((x) => x.id === form.seatMapId);
+  const parsedSelectedSeatLayout = useMemo(() => {
+    if (!selectedSeatMap?.seatLayout) return null;
+    try {
+      return JSON.parse(selectedSeatMap.seatLayout) as { rows?: unknown[] };
+    } catch {
+      return null;
+    }
+  }, [selectedSeatMap]);
+
+  const seatMapListMutation = useLTTMutation<PagedResultDto<SeatMapOutputDto> | undefined, { cinemaId: string; page: number; fetch: number; keyword?: string }>({
+    mutationFn: ({ cinemaId, page, fetch, keyword }) => seatMapService.getSeatMapListAsync(cinemaId, { page, fetch, keyword }),
+    onSuccess: (res) => setSeatMaps(res?.items || []),
+    onError: (err) => toast.error(err.message || t("admin.seatmap.fetch_error"))
+  });
+
+  const seatTypeListMutation = useLTTMutation<PagedResultDto<SeatTypeOutputDto> | undefined, { page: number; fetch: number; keyword?: string }>({
+    mutationFn: (params) => managerSeatTypeService.getSeatTypeListAsync(params),
+    onSuccess: (res) => {
+      const mapped = (res?.items || []).map((item, idx) => {
+        const direction = (item.displayDirection || "").toLowerCase();
+        const orientation: SeatType["orientation"] =
+          direction.includes("horizontal")
+            ? "horizontal"
+            : direction.includes("vertical")
+              ? "vertical"
+              : "square";
+        return {
+          id: idx + 1,
+          name: item.name,
+          description: item.description || "",
+          priceMultiplier: item.priceMultiplier,
+          seatOccupied: item.numberOfSeat > 0 ? item.numberOfSeat : 1,
+          orientation,
+          createdAt: "",
+          updatedAt: item.updatedAt || "",
+        };
+      });
+      setSeatTypes(mapped);
+    },
+    onError: (err) => toast.error(err.message || "Không thể tải danh sách seat type.")
+  });
 
   const fetchData = (keyword?: string, pageNumber?: number) => {
     if (!selectedCinemaId) return;
@@ -155,11 +209,15 @@ export default function ScreensConfigPage() {
     setForm({
       screenNumber: 1,
       screenType: "2D",
-      seatCount: 100,
-      seatLayout: "Standard",
+      seatCount: 0,
+      seatMapId: "",
       status: "active",
     });
+    setCreatedSeatMapId("");
     setDialogOpen(true);
+    if (selectedCinemaId) {
+      seatMapListMutation.mutation({ cinemaId: selectedCinemaId, page: 1, fetch: 200 });
+    }
   };
 
   const openEdit = (item: ScreenOutputDto) => {
@@ -167,11 +225,15 @@ export default function ScreensConfigPage() {
     setForm({
       screenNumber: item.screenNumber,
       screenType: item.screenType || "2D",
-      seatCount: item.seatCount,
-      seatLayout: item.seatLayout || "Standard",
+      seatCount: item.seatCount || 0,
+      seatMapId: item.seatMapId || "",
       status: item.status || "active",
     });
+    setCreatedSeatMapId(item.seatMapId || "");
     setDialogOpen(true);
+    if (selectedCinemaId) {
+      seatMapListMutation.mutation({ cinemaId: selectedCinemaId, page: 1, fetch: 200 });
+    }
   };
 
   const save = async () => {
@@ -185,11 +247,42 @@ export default function ScreensConfigPage() {
       return;
     }
 
-    if (editing) {
-      updateMutation.mutation({ cinemaId: selectedCinemaId, id: editing.id, body: form });
-    } else {
-      createMutation.mutation({ cinemaId: selectedCinemaId, body: form });
+    if (!form.seatMapId) {
+      toast.error("Vui lòng chọn sơ đồ ghế.");
+      return;
     }
+    const linkedSeatCount = selectedSeatMap?.seatCount || 0;
+    if (linkedSeatCount <= 0) {
+      toast.error("Sơ đồ ghế đã chọn không hợp lệ (SeatCount <= 0).");
+      return;
+    }
+
+    if (editing) {
+      updateMutation.mutation({ cinemaId: selectedCinemaId, id: editing.id, body: { ...form, seatCount: linkedSeatCount } });
+    } else {
+      createMutation.mutation({ cinemaId: selectedCinemaId, body: { ...form, seatCount: linkedSeatCount } });
+    }
+  };
+
+  const handleSeatMapDesigned = async (payload: Screen) => {
+    if (!selectedCinemaId) return;
+    const created = await seatMapService.createSeatMapAsync(selectedCinemaId, {
+      name: payload.name || `Seat map ${Date.now()}`,
+      description: payload.description,
+      seatLayout: JSON.stringify(payload.seatLayout),
+      seatCount: payload.seatCount,
+    });
+    setCreatedSeatMapId(created.id);
+    setForm((prev) => ({ ...prev, seatMapId: created.id }));
+    setDesignDialogOpen(false);
+    if (selectedCinemaId) {
+      seatMapListMutation.mutation({ cinemaId: selectedCinemaId, page: 1, fetch: 200 });
+    }
+  };
+
+  const handleOpenDesignDialog = () => {
+    seatTypeListMutation.mutation({ page: 1, fetch: 200 });
+    setDesignDialogOpen(true);
   };
 
   const bulkDelete = async () => {
@@ -305,7 +398,7 @@ export default function ScreensConfigPage() {
                   <td className="px-4 py-3 font-medium">Phòng {item.screenNumber}</td>
                   <td className="px-4 py-3">{item.screenType}</td>
                   <td className="px-4 py-3">{item.seatCount}</td>
-                  <td className="px-4 py-3">{item.seatLayout}</td>
+                  <td className="px-4 py-3">{item.seatMapName || "—"}</td>
                   <td className="px-4 py-3">
                     <LTTBadge
                       className={`font-medium ${statusColors[item.status || "active"] || statusColors.active}`}
@@ -354,7 +447,7 @@ export default function ScreensConfigPage() {
           <LTTDialogHeader>
             <LTTDialogTitle>{editing ? "Chỉnh sửa phòng chiếu" : "Thêm phòng chiếu mới"}</LTTDialogTitle>
           </LTTDialogHeader>
-          <div className="grid gap-4 py-2 sm:grid-cols-2">
+          <div className="grid max-h-[70vh] gap-4 overflow-y-auto py-2 pr-1 sm:grid-cols-2">
             <div className="space-y-2">
               <LTTLabel>Phòng chiếu số *</LTTLabel>
               <LTTInput
@@ -375,14 +468,6 @@ export default function ScreensConfigPage() {
               </LTTSelect>
             </div>
             <div className="space-y-2">
-              <LTTLabel>Số lượng ghế *</LTTLabel>
-              <LTTInput
-                type="number"
-                value={form.seatCount}
-                onChange={(e) => setForm({ ...form, seatCount: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-            <div className="space-y-2">
               <LTTLabel>Trạng thái</LTTLabel>
               <LTTSelect value={form.status} onValueChange={(v: string) => setForm({ ...form, status: v })}>
                 <LTTSelectTrigger><LTTSelectValue /></LTTSelectTrigger>
@@ -394,21 +479,86 @@ export default function ScreensConfigPage() {
               </LTTSelect>
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <LTTLabel>Bố trí ghế (Tên sơ đồ)</LTTLabel>
-              <LTTInput
-                value={form.seatLayout}
-                onChange={(e) => setForm({ ...form, seatLayout: e.target.value })}
-              />
+              <LTTLabel>Sơ đồ ghế *</LTTLabel>
+              <div className="flex gap-2">
+                <LTTSelect value={form.seatMapId} onValueChange={(v: string) => setForm({ ...form, seatMapId: v })}>
+                  <LTTSelectTrigger><LTTSelectValue placeholder="Chọn sơ đồ ghế" /></LTTSelectTrigger>
+                  <LTTSelectContent>
+                    {seatMaps.map((map) => (
+                      <LTTSelectItem key={map.id} value={map.id}>{map.name}</LTTSelectItem>
+                    ))}
+                  </LTTSelectContent>
+                </LTTSelect>
+                <LTTButton variant="outline" onClick={handleOpenDesignDialog}>
+                  Thiết kế mới
+                </LTTButton>
+                <LTTButton
+                  variant="outline"
+                  onClick={() => seatTypeListMutation.mutation({ page: 1, fetch: 200 })}
+                  loading={seatTypeListMutation.isLoading}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </LTTButton>
+                <LTTButton
+                  variant="outline"
+                  onClick={() => {
+                    if (!selectedCinemaId) return;
+                    seatMapListMutation.mutation({
+                      cinemaId: selectedCinemaId,
+                      page: 1,
+                      fetch: 200,
+                    });
+                  }}
+                  loading={seatMapListMutation.isLoading}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </LTTButton>
+              </div>
+              {createdSeatMapId && <p className="text-xs text-muted-foreground-shadcn">Đã tạo sơ đồ mới và chọn sẵn.</p>}
             </div>
+            {selectedSeatMap && (
+              <div className="space-y-2 sm:col-span-2 rounded-md border border-border-shadcn p-3">
+                <div className="flex items-center justify-between">
+                  <LTTLabel>Xem trước sơ đồ ghế đã chọn</LTTLabel>
+                  <span className="text-xs text-muted-foreground-shadcn">
+                    {selectedSeatMap.name}
+                  </span>
+                </div>
+                {parsedSelectedSeatLayout ? (
+                  <div className="max-h-[360px] overflow-auto">
+                    <LTTSeatMapViewer
+                      seatLayout={parsedSelectedSeatLayout as any}
+                      readOnly
+                      showScreen
+                      showLegend
+                    />
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground-shadcn">
+                    Không thể hiển thị xem trước sơ đồ ghế.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
           <LTTDialogFooter>
             <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>Hủy</LTTButton>
-            <LTTButton onClick={save} disabled={!selectedCinemaId || createMutation.isLoading || updateMutation.isLoading}>
+            <LTTButton onClick={save} loading={saveLoading} disabled={!selectedCinemaId || saveLoading}>
               {editing ? "Lưu" : "Tạo mới"}
             </LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
       </LTTDialog>
+      {designDialogOpen && (
+        <LTTScreenCreateWizard
+          onClose={() => setDesignDialogOpen(false)}
+          onCreated={handleSeatMapDesigned}
+          fixedCinemaId={selectedCinemaId}
+          entityType="seatmap"
+          isSubmitting={false}
+          seatTypes={seatTypes}
+        />
+      )}
 
       <LTTDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <LTTDialogContent className="sm:max-w-sm">
