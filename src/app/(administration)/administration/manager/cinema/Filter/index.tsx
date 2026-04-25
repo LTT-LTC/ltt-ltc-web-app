@@ -1,16 +1,18 @@
 import LTTFilter, { FilterProps } from "@/src/@core/component/LTTFilter";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 const CinemaFilter = () => {
+  const { t } = useLocalization();
   const filterItems = [
     {
       key: "keyword",
-      title: "Tim kiem rap",
+      title: t("admin.cinema_configuration.filter.keyword"),
       type: "keyword",
       className: "w-[380px] py-3!",
     },
     {
       key: "status",
-      title: "Trang thai",
+      title: t("admin.cinema_configuration.filter.status"),
       type: "multiSelect",
       className: "w-[230px]",
       options: [],

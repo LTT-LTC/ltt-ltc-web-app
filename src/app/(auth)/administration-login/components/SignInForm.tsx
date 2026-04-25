@@ -22,8 +22,13 @@ import { showNotificationSuccess, showNotificationError } from "@/src/@core/util
 import { getAdminHomePathByRole, resolveAdminRoleFromToken } from "@/src/@core/utils/admin-auth";
 import {
     getOrCreateTenantOnClient,
+    getTenantOptions,
+    setTenantOnClient,
     syncTenantCookieFromLocalStorage,
 } from "@/src/@core/utils/tenant";
+import LTTSelect from "@/src/@core/component/AntD/LTTSelect";
+import { TENANT_KEY } from "@/src/@core/const";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 interface LoginValidationError {
     members?: string[];
@@ -36,23 +41,29 @@ interface LoginBackendError {
 }
 
 interface LoginErrorShape {
+    message?: string;
     response?: {
         data?: {
             error?: LoginBackendError;
         };
     };
+    validationErrors?: LoginValidationError[];
     error?: LoginBackendError;
 }
 
 
 
 const FormDetail = () => {
+    const { t } = useLocalization();
     const [showPassword, setShowPassword] = useState(false);
     const [form] = Form.useForm();
     const [isRedirecting, setIsRedirecting] = useState(false);
+    const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
 
     useEffect(() => {
-        getOrCreateTenantOnClient();
+        const tenant = getOrCreateTenantOnClient();
+        setSelectedTenant(tenant);
+        form.setFieldValue("tenant", tenant);
 
         const accessToken = getCookie(ACCESS_TOKEN_KEY);
         if (accessToken) {
@@ -82,11 +93,11 @@ const FormDetail = () => {
                 if (!role) {
                     removeCookie(ACCESS_TOKEN_KEY);
                     removeCookie(REFRESH_TOKEN_KEY);
-                    showNotificationError("Tài khoản không có quyền truy cập trang quản trị.");
+                    showNotificationError(t("admin.auth.login.errors.no_admin_access", "This account does not have access to the administration portal."));
                     return;
                 }
 
-                showNotificationSuccess("Đăng nhập thành công.");
+                showNotificationSuccess(t("admin.auth.login.messages.login_success", "Login successful."));
                 setCookie(ACCESS_TOKEN_KEY, res.accessToken);
                 setCookie(REFRESH_TOKEN_KEY, res.refreshToken);
                 setIsRedirecting(true);
@@ -96,25 +107,27 @@ const FormDetail = () => {
             }
         },
         onError: (err: unknown) => {
-            // Handle error from backend
             const error = err as LoginErrorShape;
-            const backendError = error.response?.data?.error || error.error;
-            if (backendError && backendError.validationErrors && backendError.validationErrors.length > 0) {
-                const validationErrors = backendError.validationErrors;
+            const validationErrors = error.validationErrors || error.error?.validationErrors || error.response?.data?.error?.validationErrors;
+            const backendErrorMessage =
+                error.message ||
+                error.error?.message ||
+                error.response?.data?.error?.message;
+
+            if (validationErrors && validationErrors.length > 0) {
                 const formErrors = validationErrors.map((errItem: LoginValidationError) => ({
                     name: errItem.members && errItem.members.length > 0 ? errItem.members[0].toLowerCase() : "username",
-                    errors: [errItem.message || "Dữ liệu không hợp lệ"]
+                    errors: [errItem.message || t("admin.auth.login.errors.invalid_data", "Invalid data")]
                 }));
                 form.setFields(formErrors);
-            } else if (backendError && backendError.message) {
-                // Return generic/push notification error for backend error
-                showNotificationError(backendError.message);
+            } else if (backendErrorMessage) {
+                showNotificationError(backendErrorMessage);
                 form.setFields([
                     { name: "username", errors: [] },
                     { name: "password", errors: [] }
                 ]);
             } else {
-                showNotificationError("Có lỗi xảy ra, vui lòng thử lại sau.");
+                showNotificationError(t("admin.auth.login.errors.generic", "An error occurred, please try again later."));
                 form.setFields([
                     { name: "username", errors: [] },
                     { name: "password", errors: [] }
@@ -139,25 +152,40 @@ const FormDetail = () => {
         <div>
             <LTTForm form={form} onFinish={onSubmit}>
                 <div className="space-y-6">
+                    <LTTFormItem
+                        label={t("admin.auth.login.form.branch_label", "Branch")}
+                        name="tenant"
+                        rules={[rules.required]}
+                        className="mb-3"
+                    >
+                        <LTTSelect
+                            options={getTenantOptions()}
+                            onChange={(value) => {
+                                setTenantOnClient(value);
+                                setSelectedTenant(value);
+                            }}
+                            placeholder={t("admin.auth.login.form.branch_placeholder", "Select branch")}
+                        />
+                    </LTTFormItem>
 
 
                     <LTTFormItem
-                        label="Tài khoản"
+                        label={t("admin.auth.login.form.username_label", "Username")}
                         name="username"
                         rules={[rules.required]}
                         className="mb-3"
                     >
-                        <LTTInput label="Tài khoản" showCount={false} allowClear={false} />
+                        <LTTInput label={t("admin.auth.login.form.username_label", "Username")} showCount={false} allowClear={false} />
                     </LTTFormItem>
 
                     <LTTFormItem
-                        label="Mật khẩu"
+                        label={t("admin.auth.login.form.password_label", "Password")}
                         name="password"
                         rules={[rules.required]}
                         className="mb-3"
                     >
                         <LTTInput
-                            label="Mật khẩu"
+                            label={t("admin.auth.login.form.password_label", "Password")}
                             showCount={false}
                             allowClear={false}
                             type={showPassword ? "text" : "password"}
@@ -183,9 +211,9 @@ const FormDetail = () => {
                     <div className="flex items-center justify-between mt-5">
                         <Link
                             href="/administration-reset-password"
-                            className="text-sm text-brand-600 hover:text-brand-600 focus:text-brand-600 dark:!text-brand-400"
+                            className="text-sm text-brand-600 hover:text-brand-600 focus:text-brand-600 dark:text-brand-400!"
                         >
-                            Quên mật khẩu?
+                            {t("admin.auth.login.form.forgot_password", "Forgot password?")}
                         </Link>
                     </div>
                     <div className="mt-2">
@@ -195,7 +223,7 @@ const FormDetail = () => {
                             className="w-full"
                             size="sm"
                         >
-                            Đăng nhập
+                            {t("admin.auth.login.form.submit", "Sign in")}
                         </LTTButton>
                     </div>
                 </div>

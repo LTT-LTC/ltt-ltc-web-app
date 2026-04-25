@@ -13,14 +13,19 @@ import {
 } from "lucide-react";
 
 import { toast } from "sonner";
-
+import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
+import { showtimeService } from "@/src/services/administration-service/showtime/showtime.service";
+import { movieService } from "@/src/services/administration-service/movie/movie.service";
+import { cinemaService } from "@/src/services/administration-service/cinema/cinema.service";
+import { screenService } from "@/src/services/administration-service/screen/screen.service";
+import { CreateShowtimeInputDto } from "@/src/services/administration-service/showtime/models/input.model";
+import { ShowtimeOutputDto } from "@/src/services/administration-service/showtime/models/output.model";
+import { MovieOutputDto } from "@/src/services/administration-service/movie/models/output.model";
+import { CinemaOutputDto } from "@/src/services/administration-service/cinema/models/output.model";
+import { ScreenOutputDto } from "@/src/services/administration-service/screen/models/output.model";
+import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
+import { useEffect } from "react";
 import { cn } from "@/src/@core/utils/cn";
-import {
-  AdminShowtime,
-  mockAdminCinemas,
-  mockAdminMovies,
-  mockAdminShowtimes,
-} from "@/src/@core/const/mock/adminMockData";
 
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
@@ -102,43 +107,78 @@ const MOVIE_COLORS = [
 ];
 
 export default function ShowtimeSchedulerPage() {
-  const [items, setItems] = useState<AdminShowtime[]>(mockAdminShowtimes);
+  const [items, setItems] = useState<ShowtimeOutputDto[]>([]);
+  const [movies, setMovies] = useState<MovieOutputDto[]>([]);
+  const [cinemas, setCinemas] = useState<CinemaOutputDto[]>([]);
+  const [screens, setScreens] = useState<ScreenOutputDto[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [cinemaFilter, setCinemaFilter] = useState("all");
-
   const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
-
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [editing, setEditing] = useState<AdminShowtime | null>(null);
+  const [editing, setEditing] = useState<ShowtimeOutputDto | null>(null);
+  const [calendarWeek, setCalendarWeek] = useState(new Date());
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<any>({
     movieId: "",
     cinemaId: "",
-    screenNumber: "1",
+    screenId: "",
+    movieDistributionId: "",
     date: "",
     startTime: "",
     endTime: "",
-    format: "2D Phụ Đề Việt",
-    basePrice: "105000",
-    status: "scheduled" as AdminShowtime["status"],
   });
 
-  // Calendar state (week navigation)
-  const [calendarWeek, setCalendarWeek] = useState(new Date());
+  const listMutation = useLTTMutation<PagedResultDto<ShowtimeOutputDto> | undefined, any>({
+    mutationFn: (params) => showtimeService.getShowtimeListAsync(params),
+    onSuccess: (res) => { if (res && res.items) setItems(res.items); },
+    onError: (err) => toast.error(err.message || "Lỗi tải lịch chiếu")
+  });
 
-  const filtered = useMemo(() => {
-    let list = items;
-    if (dateFilter) list = list.filter((s) => s.date === dateFilter);
-    if (cinemaFilter !== "all") list = list.filter((s) => s.cinemaId === cinemaFilter);
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter((s) => s.movieTitle.toLowerCase().includes(q));
+  const movieMutation = useLTTMutation<PagedResultDto<MovieOutputDto> | undefined, any>({
+    mutationFn: (p) => movieService.getMovieListAsync(p),
+    onSuccess: (res) => { if (res && res.items) setMovies(res.items); }
+  });
+
+  const cinemaMutation = useLTTMutation<PagedResultDto<CinemaOutputDto> | undefined, any>({
+    mutationFn: (p) => cinemaService.getCinemaListAsync(p),
+    onSuccess: (res) => { if (res && res.items) setCinemas(res.items); }
+  });
+
+  const screenMutation = useLTTMutation<PagedResultDto<ScreenOutputDto> | undefined, string>({
+    mutationFn: (cid) => screenService.getScreenListAsync(cid, { page: 1, fetch: 100 }),
+    onSuccess: (res) => { if (res && res.items) setScreens(res.items); }
+  });
+
+  const createMutation = useLTTMutation<ShowtimeOutputDto | undefined, CreateShowtimeInputDto>({
+    mutationFn: (body) => showtimeService.createShowtimeAsync(body),
+    onSuccess: () => { toast.success("Tạo thành công"); fetchData(); setDialogOpen(false); }
+  });
+
+  const loading = listMutation.isLoading || createMutation.isLoading || movieMutation.isLoading || cinemaMutation.isLoading || screenMutation.isLoading;
+
+  const fetchData = () => {
+    if (cinemaFilter !== "all") {
+      listMutation.mutation({ cinemaId: cinemaFilter, page: 1, fetch: 100 });
     }
-    return list;
-  }, [items, search, dateFilter, cinemaFilter]);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [cinemaFilter]);
+
+  useEffect(() => {
+    movieMutation.mutation({ page: 1, fetch: 100 });
+    cinemaMutation.mutation({ page: 1, fetch: 100 });
+  }, []);
+
+  useEffect(() => {
+    if (form.cinemaId) screenMutation.mutation(form.cinemaId);
+  }, [form.cinemaId]);
+
+  const filtered = items; // Backend handled filter ideally, or we can filter locally if needed.
 
   const weekDates = useMemo(
     () => getWeekDates(calendarWeek),
@@ -159,10 +199,10 @@ export default function ShowtimeSchedulerPage() {
     if (cinemaFilter !== "all") list = list.filter((s) => s.cinemaId === cinemaFilter);
     if (search) {
       const q = search.toLowerCase();
-      list = list.filter((s) => s.movieTitle.toLowerCase().includes(q));
+      list = list.filter((s) => s.movieTitle?.toLowerCase().includes(q));
     }
     const weekKeys = weekDates.map(formatDateKey);
-    return list.filter((s) => weekKeys.includes(s.date));
+    return list.filter((s) => s.date && weekKeys.includes(s.date));
   }, [items, cinemaFilter, search, weekDates]);
 
   const allSel =
@@ -181,30 +221,26 @@ export default function ShowtimeSchedulerPage() {
     setEditing(null);
     setForm({
       movieId: "",
-      cinemaId: "",
-      screenNumber: "1",
+      cinemaId: cinemaFilter === "all" ? "" : cinemaFilter,
+      screenId: "",
+      movieDistributionId: "",
       date: prefillDate || "",
       startTime: prefillTime || "",
       endTime: "",
-      format: "2D Phụ Đề Việt",
-      basePrice: "105000",
-      status: "scheduled",
     });
     setDialogOpen(true);
   };
 
-  const openEdit = (s: AdminShowtime) => {
+  const openEdit = (s: ShowtimeOutputDto) => {
     setEditing(s);
     setForm({
       movieId: s.movieId,
-      cinemaId: s.cinemaId,
-      screenNumber: String(s.screenNumber),
-      date: s.date,
-      startTime: s.startTime,
-      endTime: s.endTime,
-      format: s.format,
-      basePrice: String(s.basePrice),
-      status: s.status,
+      cinemaId: cinemaFilter,
+      screenId: s.screenId,
+      movieDistributionId: "",
+      date: s.startTime.split("T")[0],
+      startTime: s.startTime.split("T")[1].substring(0, 5),
+      endTime: s.endTime.split("T")[1].substring(0, 5),
     });
     setDialogOpen(true);
   };
@@ -215,41 +251,16 @@ export default function ShowtimeSchedulerPage() {
       return;
     }
 
-    const movie = mockAdminMovies.find((m) => m.id === form.movieId);
-    const cinema = mockAdminCinemas.find((c) => c.id === form.cinemaId);
+    const start = `${form.date}T${form.startTime}:00Z`;
+    const end = `${form.date}T${form.endTime || "23:59"}:00Z`;
 
-    if (editing) {
-      setItems((p) =>
-        p.map((i) =>
-          i.id === editing.id
-            ? {
-                ...i,
-                ...form,
-                screenNumber: parseInt(form.screenNumber),
-                basePrice: parseInt(form.basePrice),
-                movieTitle: movie?.title || "",
-                cinemaName: cinema?.name || "",
-              }
-            : i
-        )
-      );
-      toast.success("Cập nhật thành công");
-    } else {
-      setItems((p) => [
-        ...p,
-        {
-          id: `st-${Date.now()}`,
-          ...form,
-          screenNumber: parseInt(form.screenNumber),
-          basePrice: parseInt(form.basePrice),
-          movieTitle: movie?.title || "",
-          cinemaName: cinema?.name || "",
-        },
-      ]);
-      toast.success("Tạo mới thành công");
-    }
-
-    setDialogOpen(false);
+    createMutation.mutation({
+      movieId: form.movieId,
+      screenId: form.screenId,
+      movieDistributionId: form.movieDistributionId || "00000000-0000-0000-0000-000000000000",
+      startTime: start,
+      endTime: end
+    });
   };
 
   const bulkDelete = () => {
@@ -326,11 +337,11 @@ export default function ShowtimeSchedulerPage() {
           onValueChange={(v) => setCinemaFilter(v)}
         >
           <LTTSelectTrigger className="w-56">
-            <LTTSelectValue placeholder="Tất cả rạp" />
+            <LTTSelectValue placeholder="Chọn rạp" />
           </LTTSelectTrigger>
           <LTTSelectContent>
             <LTTSelectItem value="all">Tất cả rạp</LTTSelectItem>
-            {mockAdminCinemas.map((c) => (
+            {cinemas.map((c) => (
               <LTTSelectItem key={c.id} value={c.id}>
                 {c.name}
               </LTTSelectItem>
@@ -370,7 +381,16 @@ export default function ShowtimeSchedulerPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td
+                    colSpan={10}
+                    className="py-12 text-center text-muted-foreground-shadcn"
+                  >
+                    Đang tải dữ liệu lịch chiếu...
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
                 <tr>
                   <td
                     colSpan={10}
@@ -392,23 +412,23 @@ export default function ShowtimeSchedulerPage() {
                       />
                     </td>
                     <td className="px-4 py-3 font-medium">{item.movieTitle}</td>
-                    <td className="px-4 py-3 text-xs">{item.cinemaName}</td>
+                    <td className="px-4 py-3 text-xs">—</td>
                     <td className="px-4 py-3 text-xs">
-                      Phòng {item.screenNumber}
+                      {item.screenName}
                     </td>
-                    <td className="px-4 py-3 text-xs">{item.date}</td>
+                    <td className="px-4 py-3 text-xs">{item.startTime?.split("T")[0]}</td>
                     <td className="px-4 py-3 text-xs font-semibold">
-                      {item.startTime} - {item.endTime}
+                      {item.startTime?.split("T")[1].substring(0, 5)} - {item.endTime?.split("T")[1].substring(0, 5)}
                     </td>
                     <td className="px-4 py-3 text-xs">{item.format}</td>
                     <td className="px-4 py-3 text-xs">
-                      {formatPrice(item.basePrice)}
+                      {formatPrice(item.basePrice ?? 0)}
                     </td>
                     <td className="px-4 py-3">
                       <LTTBadge
-                        className={cn("font-medium", statusColor[item.status])}
+                        className={cn("font-medium", statusColor[item.status || "active"])}
                       >
-                        {statusLabel[item.status]}
+                        {statusLabel[item.status || "active"]}
                       </LTTBadge>
                     </td>
                     <td className="px-4 py-3">
@@ -490,14 +510,13 @@ export default function ShowtimeSchedulerPage() {
           {/* Movie legend */}
           <div className="flex flex-wrap gap-2">
             {[...new Set(calendarItems.map((i) => i.movieId))].map((mid) => {
-              const movie = mockAdminMovies.find((m) => m.id === mid);
+              const movie = movies.find((m) => m.id === mid);
               return (
                 <span
                   key={mid}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
-                    movieColorMap[mid] ||
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${movieColorMap[mid] ||
                     "bg-muted-shadcn/20 text-muted-foreground-shadcn"
-                  }`}
+                    }`}
                 >
                   {movie?.title || mid}
                 </span>
@@ -520,17 +539,15 @@ export default function ShowtimeSchedulerPage() {
                     return (
                       <div
                         key={i}
-                        className={`px-2 py-2 text-center border-l border-border-shadcn ${
-                          isToday ? "bg-primary-shadcn/10" : ""
-                        }`}
+                        className={`px-2 py-2 text-center border-l border-border-shadcn ${isToday ? "bg-primary-shadcn/10" : ""
+                          }`}
                       >
                         <div className="text-xs text-muted-foreground-shadcn">
                           {DAYS_VI[(i + 1) % 7 === 0 ? 0 : (i + 1) % 7]}
                         </div>
                         <div
-                          className={`text-sm font-semibold ${
-                            isToday ? "text-primary-shadcn" : ""
-                          }`}
+                          className={`text-sm font-semibold ${isToday ? "text-primary-shadcn" : ""
+                            }`}
                         >
                           {d.getDate()}/{d.getMonth() + 1}
                         </div>
@@ -564,9 +581,8 @@ export default function ShowtimeSchedulerPage() {
                         return (
                           <div
                             key={di}
-                            className={`relative border-l border-border-shadcn min-h-[52px] cursor-pointer hover:bg-muted-shadcn/20 transition-colors ${
-                              isToday ? "bg-primary-shadcn/5" : ""
-                            }`}
+                            className={`relative border-l border-border-shadcn min-h-[52px] cursor-pointer hover:bg-muted-shadcn/20 transition-colors ${isToday ? "bg-primary-shadcn/5" : ""
+                              }`}
                             onClick={() =>
                               openCreate(
                                 dateKey,
@@ -587,14 +603,12 @@ export default function ShowtimeSchedulerPage() {
                               return (
                                 <div
                                   key={st.id}
-                                  className={`absolute left-0.5 right-0.5 rounded border px-1 py-0.5 overflow-hidden cursor-pointer z-10 ${
-                                    movieColorMap[st.movieId] ||
+                                  className={`absolute left-0.5 right-0.5 rounded border px-1 py-0.5 overflow-hidden cursor-pointer z-10 ${movieColorMap[st.movieId] ||
                                     "bg-muted-shadcn/20 text-muted-foreground-shadcn"
-                                  } ${
-                                    st.status === "cancelled"
+                                    } ${st.status === "cancelled"
                                       ? "opacity-40 line-through"
                                       : ""
-                                  }`}
+                                    }`}
                                   style={{
                                     top: `${topOffset}%`,
                                     height: `${Math.max(
@@ -607,13 +621,13 @@ export default function ShowtimeSchedulerPage() {
                                     e.stopPropagation();
                                     openEdit(st);
                                   }}
-                                  title={`${st.movieTitle}\n${st.startTime} - ${st.endTime}\nPhòng ${st.screenNumber} • ${st.cinemaName}`}
+                                  title={`${st.movieTitle}\n${st.startTime} - ${st.endTime}\nPhòng ${st.screenName} • ${st.cinemaName}`}
                                 >
                                   <div className="text-[10px] font-bold leading-tight truncate">
                                     {st.movieTitle}
                                   </div>
                                   <div className="text-[9px] opacity-90 leading-tight">
-                                    {st.startTime}-{st.endTime} • P{st.screenNumber}
+                                    {st.startTime}-{st.endTime} • P{st.screenName}
                                   </div>
                                 </div>
                               );
@@ -652,7 +666,7 @@ export default function ShowtimeSchedulerPage() {
                   <LTTSelectValue placeholder="Chọn phim" />
                 </LTTSelectTrigger>
                 <LTTSelectContent>
-                  {mockAdminMovies.map((m) => (
+                  {movies.map((m) => (
                     <LTTSelectItem key={m.id} value={m.id}>
                       {m.title}
                     </LTTSelectItem>
@@ -673,7 +687,7 @@ export default function ShowtimeSchedulerPage() {
                   <LTTSelectValue placeholder="Chọn rạp" />
                 </LTTSelectTrigger>
                 <LTTSelectContent>
-                  {mockAdminCinemas.map((c) => (
+                  {cinemas.map((c) => (
                     <LTTSelectItem key={c.id} value={c.id}>
                       {c.name}
                     </LTTSelectItem>
@@ -683,14 +697,24 @@ export default function ShowtimeSchedulerPage() {
             </div>
 
             <div className="space-y-2">
-              <LTTLabel>Phòng chiếu (số)</LTTLabel>
-              <LTTInput
-                type="number"
-                value={form.screenNumber}
-                onChange={(e) =>
-                  setForm({ ...form, screenNumber: e.target.value })
+              <LTTLabel>Phòng chiếu *</LTTLabel>
+              <LTTSelect
+                value={form.screenId}
+                onValueChange={(v) =>
+                  setForm({ ...form, screenId: v })
                 }
-              />
+              >
+                <LTTSelectTrigger>
+                  <LTTSelectValue placeholder="Chọn phòng" />
+                </LTTSelectTrigger>
+                <LTTSelectContent>
+                  {screens.map((s) => (
+                    <LTTSelectItem key={s.id} value={s.id}>
+                      {s.screenNumber}
+                    </LTTSelectItem>
+                  ))}
+                </LTTSelectContent>
+              </LTTSelect>
             </div>
 
             <div className="space-y-2">

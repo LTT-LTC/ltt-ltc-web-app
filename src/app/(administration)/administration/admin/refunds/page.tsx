@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, CheckCircle2, XCircle, Eye, Clock } from "lucide-react";
+import { Search, CheckCircle2, XCircle, Eye, Clock, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import {
@@ -22,7 +22,12 @@ import { LTTTextarea } from "@/src/@core/component/LTTShadcnUI/LTTTextarea";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 import { toast } from "sonner";
-import { RefundRequest, mockRefunds } from "@/src/@core/const/mock/adminMockData";
+import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
+import LTTConfirmDialog from "@/src/@core/component/LTTConfirmDialog";
+import { refundService } from "@/src/services/administration-service/refund/refund.service";
+import { RefundOutputDto } from "@/src/services/administration-service/masterdata/models/refund.model";
+import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
+import { useEffect } from "react";
 import { cn } from "@/src/@core/utils/cn";
 
 const statusColor: Record<string, string> = {
@@ -38,71 +43,69 @@ const statusLabel: Record<string, string> = {
 const formatVND = (n: number) => n.toLocaleString("vi-VN") + "đ";
 
 export default function RefundApprovalPage() {
-  const [items, setItems] = useState<RefundRequest[]>(mockRefunds);
+  const [items, setItems] = useState<RefundOutputDto[]>([]);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [viewItem, setViewItem] = useState<RefundRequest | null>(null);
+  const [viewItem, setViewItem] = useState<RefundOutputDto | null>(null);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectId, setRejectId] = useState("");
   const [rejectReason, setRejectReason] = useState("");
 
-  const filtered = useMemo(() => {
-    let list = items;
-    if (statusFilter !== "all")
-      list = list.filter((i) => i.status === statusFilter);
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (i) =>
-          i.customerName.toLowerCase().includes(q) ||
-          i.id.toLowerCase().includes(q) ||
-          i.movieTitle.toLowerCase().includes(q)
-      );
-    }
-    return list;
-  }, [items, search, statusFilter]);
+  const listMutation = useLTTMutation<PagedResultDto<RefundOutputDto> | undefined, any>({
+    mutationFn: (params) => refundService.getRefundListAsync(params),
+    onSuccess: (res) => { if (res && res.items) setItems(res.items); },
+    onError: (err) => toast.error(err.message || "Lỗi tải danh sách hoàn tiền")
+  });
+
+  const approveMutation = useLTTMutation<void, string>({
+    mutationFn: (id) => refundService.approveRefundAsync(id),
+    onSuccess: () => { toast.success("Đã duyệt hoàn tiền"); fetchData(); },
+    onError: (err) => toast.error(err.message || "Lỗi")
+  });
+
+  const rejectMutation = useLTTMutation<void, { id: string; reason: string }>({
+    mutationFn: (data) => refundService.rejectRefundAsync(data.id, data.reason),
+    onSuccess: () => {
+      toast.success("Đã từ chối hoàn tiền");
+      setRejectOpen(false);
+      setRejectReason("");
+      fetchData();
+    },
+    onError: (err) => toast.error(err.message || "Lỗi")
+  });
+
+  const fetchData = () => {
+    listMutation.mutation({
+      page: 1,
+      fetch: 100,
+      keyword: debouncedSearch,
+      status: statusFilter === "all" ? undefined : statusFilter
+    });
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    fetchData();
+  }, [debouncedSearch, statusFilter]);
+
+  const filtered = items;
 
   const handleApprove = (id: string) => {
-    const now = new Date()
-      .toLocaleString("sv-SE")
-      .slice(0, 16)
-      .replace("T", " ");
-    setItems((p) =>
-      p.map((i) =>
-        i.id === id
-          ? {
-              ...i,
-              status: "approved" as const,
-              processedAt: now,
-              processedBy: "Dương Thành Long",
-            }
-          : i
-      )
-    );
-    toast.success("Đã duyệt hoàn tiền");
+    approveMutation.mutation(id);
     if (viewItem?.id === id) setViewItem(null);
   };
 
   const handleReject = () => {
-    const now = new Date()
-      .toLocaleString("sv-SE")
-      .slice(0, 16)
-      .replace("T", " ");
-    setItems((p) =>
-      p.map((i) =>
-        i.id === rejectId
-          ? {
-              ...i,
-              status: "rejected" as const,
-              processedAt: now,
-              processedBy: "Dương Thành Long",
-            }
-          : i
-      )
-    );
-    toast.success("Đã từ chối hoàn tiền");
-    setRejectOpen(false);
-    setRejectReason("");
+    if (!rejectReason.trim()) {
+      toast.error("Vui lòng nhập lý do");
+      return;
+    }
+    rejectMutation.mutation({ id: rejectId, reason: rejectReason });
     if (viewItem?.id === rejectId) setViewItem(null);
   };
 
@@ -149,6 +152,14 @@ export default function RefundApprovalPage() {
             ))}
           </LTTSelectContent>
         </LTTSelect>
+        <LTTButton
+          variant="outline"
+          className="gap-2"
+          onClick={fetchData}
+          loading={listMutation.isLoading}
+        >
+          <RefreshCw className="h-4 w-4" /> Làm mới
+        </LTTButton>
       </div>
 
       <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
@@ -211,14 +222,23 @@ export default function RefundApprovalPage() {
                       </LTTButton>
                       {item.status === "pending" && (
                         <>
-                          <LTTButton
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-green-600 hover:text-green-700"
-                            onClick={() => handleApprove(item.id)}
-                          >
-                            <CheckCircle2 className="h-4 w-4" />
-                          </LTTButton>
+                          <LTTConfirmDialog
+                            title="Xác nhận duyệt"
+                            description="Bạn có chắc chắn muốn duyệt yêu cầu hoàn tiền này?"
+                            confirmText="Duyệt"
+                            cancelText="Hủy"
+                            onConfirm={() => handleApprove(item.id)}
+                            loading={approveMutation.isLoading}
+                            trigger={
+                              <LTTButton
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-green-600 hover:text-green-700"
+                              >
+                                <CheckCircle2 className="h-4 w-4" />
+                              </LTTButton>
+                            }
+                          />
                           <LTTButton
                             variant="ghost"
                             size="icon"
@@ -299,15 +319,23 @@ export default function RefundApprovalPage() {
                         setViewItem(null);
                       }}
                       className="gap-2 text-destructive border-red-200"
+                      loading={rejectMutation.isLoading}
                     >
                       <XCircle className="h-4 w-4" /> Từ chối
                     </LTTButton>
-                    <LTTButton
-                      onClick={() => handleApprove(viewItem.id)}
-                      className="gap-2"
-                    >
-                      <CheckCircle2 className="h-4 w-4" /> Duyệt hoàn tiền
-                    </LTTButton>
+                    <LTTConfirmDialog
+                      title="Xác nhận duyệt"
+                      description="Bạn có chắc chắn muốn duyệt yêu cầu hoàn tiền này?"
+                      confirmText="Duyệt"
+                      cancelText="Hủy"
+                      onConfirm={() => handleApprove(viewItem.id)}
+                      loading={approveMutation.isLoading}
+                      trigger={
+                        <LTTButton className="gap-2">
+                          <CheckCircle2 className="h-4 w-4" /> Duyệt hoàn tiền
+                        </LTTButton>
+                      }
+                    />
                   </div>
                 )}
               </div>
@@ -340,7 +368,7 @@ export default function RefundApprovalPage() {
             <LTTButton variant="outline" onClick={() => setRejectOpen(false)}>
               Hủy
             </LTTButton>
-            <LTTButton variant="destructive" onClick={handleReject}>
+            <LTTButton variant="destructive" onClick={handleReject} loading={rejectMutation.isLoading}>
               Xác nhận từ chối
             </LTTButton>
           </LTTDialogFooter>

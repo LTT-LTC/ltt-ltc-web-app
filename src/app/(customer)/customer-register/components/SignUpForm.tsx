@@ -16,6 +16,7 @@ import { CustomerRegisterInputDto } from "@/src/services/customer-service/auth/m
 import { customerService } from "@/src/services/customer-service/customer.service";
 import { getCookie, setCookie } from "@/src/@core/utils/cookie";
 import { showNotificationSuccess, showNotificationError } from "@/src/@core/utils/message";
+import { getOrCreateTenantOnClient } from "@/src/@core/utils/tenant";
 import LTTSelect from "@/src/@core/component/AntD/LTTSelect";
 import LTTDatePicker from "@/src/@core/component/AntD/LTTDatePicker";
 import dayjs from "dayjs";
@@ -45,6 +46,7 @@ const SignUpForm = () => {
     const [isRedirecting, setIsRedirecting] = useState(false);
 
     useEffect(() => {
+        getOrCreateTenantOnClient();
         const accessToken = getCookie(ACCESS_TOKEN_KEY);
         if (accessToken) {
             window.location.href = "/";

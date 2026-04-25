@@ -6,9 +6,8 @@ import {
   Trash2,
   Search,
   Eye,
-  Footprints,
-  AlertTriangle,
-  DoorOpen,
+  Pencil,
+  ArrowLeft,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -22,45 +21,33 @@ import {
   LTTDialogTitle,
   LTTDialogFooter,
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
-import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 
 import {
-  Screen,
-  SeatType,
+  type Screen,
   mockScreens,
-  mockSeatTypes,
   mockAdminCinemas,
-  type SeatLayoutSeat,
 } from "@/src/@core/const/mock/adminMockData";
 import LTTScreenCreateWizard from "@/src/@core/component/LTTManager/LTTScreenCreateWizard";
+import LTTSeatMapViewer from "@/src/@core/component/LTTManager/LTTSeatMapViewer";
 
-const SEAT_TYPE_COLORS: Record<number, string> = {
-  1: "bg-blue-500",
-  2: "bg-amber-500",
-  3: "bg-pink-500",
-  4: "bg-purple-500",
-  5: "bg-green-500",
-};
-
-type CellType = "seat" | "empty" | "walkway" | "emergency_exit" | "door";
-
-function getCellType(seat: SeatLayoutSeat): CellType {
-  return (seat.type ?? "seat") as CellType;
-}
 
 export default function SeatMapPage() {
   const [screens, setScreens] = useState<Screen[]>(mockScreens);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [wizardOpen, setWizardOpen] = useState(false);
   const [viewLayout, setViewLayout] = useState<Screen | null>(null);
+
+  // Master-detail view state
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [editingScreen, setEditingScreen] = useState<Screen | null>(null);
 
   const filtered = useMemo(() => {
     if (!searchQuery) return screens;
     const q = searchQuery.toLowerCase();
     return screens.filter((s) => {
-      const cinemaName = mockAdminCinemas.find((c) => c.id === s.cinemaId)?.name ?? s.cinemaId;
+      const cinemaName =
+        mockAdminCinemas.find((c) => c.id === s.cinemaId)?.name ?? s.cinemaId;
       return (
         s.screenType.toLowerCase().includes(q) ||
         String(s.screenNumber).includes(q) ||
@@ -100,103 +87,38 @@ export default function SeatMapPage() {
 
   const handleScreenCreated = (screen: Screen) => {
     setScreens((prev) => [...prev, screen]);
-    setWizardOpen(false);
+    setIsEditorOpen(false);
+    setEditingScreen(null);
     toast.success("Tạo phòng chiếu thành công!");
+  };
+
+  const handleScreenUpdated = (screen: Screen) => {
+    setScreens((prev) => prev.map((s) => (s.id === screen.id ? screen : s)));
+    setIsEditorOpen(false);
+    setEditingScreen(null);
+    toast.success("Cập nhật phòng chiếu thành công!");
+  };
+
+  const handleOpenEditor = (screen?: Screen) => {
+    setEditingScreen(screen ?? null);
+    setIsEditorOpen(true);
+  };
+
+  const handleCloseEditor = () => {
+    setIsEditorOpen(false);
+    setEditingScreen(null);
   };
 
   const getCinemaName = (id: string) =>
     mockAdminCinemas.find((c) => c.id === id)?.name || id;
 
-  const renderSeatCell = (seat: SeatLayoutSeat) => {
-    const cellType = getCellType(seat);
-
-    if (cellType === "walkway") {
-      return (
-        <Footprints className="h-3 w-3 text-muted-foreground-shadcn" />
-      );
-    }
-    if (cellType === "emergency_exit") {
-      return (
-        <AlertTriangle className="h-3 w-3 text-orange-500" />
-      );
-    }
-    if (cellType === "door") {
-      return <DoorOpen className="h-3 w-3 text-green-600" />;
-    }
-    if (cellType === "empty") {
-      return null;
-    }
-
-    // Seat (default)
-    return (
-      <span className="text-[9px] font-medium text-primary">
-        {seat.seatCode.slice(1)}
-      </span>
-    );
-  };
-
-  const getCellBg = (seat: SeatLayoutSeat) => {
-    const cellType = getCellType(seat);
-    if (cellType === "seat") {
-      // Match the source "View Layout" styling: all seats share the same background
-      return "bg-primary/20 text-primary";
-    }
-    if (cellType === "empty")
-      return "bg-muted-shadcn/50 border border-dashed border-border-shadcn";
-    if (cellType === "walkway") return "bg-muted-shadcn";
-    if (cellType === "emergency_exit") return "bg-orange-100";
-    if (cellType === "door") return "bg-green-100";
-    return "bg-muted-shadcn";
-  };
-
-  const totalSeatsInLayout = (layout: Screen) =>
-    layout.seatLayout.rows.reduce((sum, row) => {
-      return (
-        sum +
-        row.seats.filter((s) => {
-          const t = getCellType(s);
-          // `seat_continuation` is stored as a "seat" without a seatCode,
-          // so we only count origin seats (non-empty seatCode).
-          return t === "seat" && Boolean(s.seatCode && s.seatCode.trim());
-        }).length
-      );
-    }, 0);
-
-  const renderViewLegend = (seatTypes: SeatType[]) => (
-    <div className="flex flex-wrap items-center justify-center gap-4 rounded-xl border border-border-shadcn bg-muted-shadcn/20 px-6 py-3 text-xs">
-      <div className="flex items-center gap-2">
-        <div className="h-2.5 w-2.5 rounded-full bg-muted-shadcn/50 border border-dashed border-border-shadcn" />
-        <span className="text-muted-foreground-shadcn">Trống</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <Footprints className="h-3 w-3 text-muted-foreground-shadcn" />
-        <span className="text-muted-foreground-shadcn">Lối đi</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <AlertTriangle className="h-3 w-3 text-orange-500" />
-        <span className="text-muted-foreground-shadcn">Thoát hiểm</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <DoorOpen className="h-3 w-3 text-green-600" />
-        <span className="text-muted-foreground-shadcn">Cửa</span>
-      </div>
-
-      <div className="h-4 w-px bg-border-shadcn mx-2" />
-
-      {seatTypes.map((st) => (
-        <div key={st.id} className="flex items-center gap-2">
-          <div className={`h-2.5 w-2.5 rounded-sm ${SEAT_TYPE_COLORS[st.id] || "bg-blue-500"}`} />
-          <span className="text-muted-foreground-shadcn">{st.name}</span>
-        </div>
-      ))}
-    </div>
-  );
-
+  // ── List view ──────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-4">
+    <>
+      <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="font-heading text-2xl font-bold">Quản lý phòng chiếu</h1>
-        <LTTButton onClick={() => setWizardOpen(true)} className="gap-2">
+        <LTTButton onClick={() => handleOpenEditor()} className="gap-2">
           <Plus className="h-4 w-4" /> Thêm phòng chiếu
         </LTTButton>
       </div>
@@ -269,9 +191,7 @@ export default function SeatMapPage() {
                   <td className="px-4 py-3 font-medium">
                     {getCinemaName(item.cinemaId)}
                   </td>
-                  <td className="px-4 py-3">
-                    Phòng {item.screenNumber}
-                  </td>
+                  <td className="px-4 py-3">Phòng {item.screenNumber}</td>
                   <td className="px-4 py-3">
                     <span className="inline-flex rounded-full bg-accent-shadcn px-2.5 py-0.5 text-xs font-medium text-accent-shadcn-foreground">
                       {item.screenType}
@@ -290,6 +210,7 @@ export default function SeatMapPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
+                        title="Xem sơ đồ"
                         onClick={() => setViewLayout(item)}
                       >
                         <Eye className="h-4 w-4" />
@@ -297,7 +218,17 @@ export default function SeatMapPage() {
                       <LTTButton
                         variant="ghost"
                         size="icon"
+                        className="h-8 w-8"
+                        title="Chỉnh sửa"
+                        onClick={() => handleOpenEditor(item)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </LTTButton>
+                      <LTTButton
+                        variant="ghost"
+                        size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
+                        title="Xóa"
                         onClick={() => handleDeleteOne(item.id)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -311,7 +242,7 @@ export default function SeatMapPage() {
         </table>
       </div>
 
-      {/* Bulk Delete */}
+      {/* Bulk Delete Dialog */}
       <LTTDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <LTTDialogContent className="sm:max-w-sm">
           <LTTDialogHeader>
@@ -336,115 +267,44 @@ export default function SeatMapPage() {
         </LTTDialogContent>
       </LTTDialog>
 
-      {/* View Layout */}
+      {/* View Layout Dialog */}
       <LTTDialog
         open={!!viewLayout}
         onOpenChange={() => setViewLayout(null)}
       >
-        <LTTDialogContent className="sm:max-w-2xl">
+        <LTTDialogContent className="sm:max-w-3xl">
           <LTTDialogHeader>
             <LTTDialogTitle>
-              Sơ đồ ghế - Phòng {viewLayout?.screenNumber} ({viewLayout?.screenType})
+              Sơ đồ ghế — Phòng {viewLayout?.screenNumber} ({viewLayout?.screenType})
             </LTTDialogTitle>
           </LTTDialogHeader>
 
           {viewLayout && (
-            <div className="space-y-4">
-              <div className="mx-auto w-48 h-2 rounded-full bg-primary-shadcn mb-6 shadow-sm shadow-primary-shadcn/20" />
-              <p className="text-center text-xs text-muted-foreground mb-1">
-                MÀN HÌNH
-              </p>
+            <div className="space-y-6 py-2 overflow-y-auto max-h-[75vh]">
+              <LTTSeatMapViewer
+                seatLayout={viewLayout.seatLayout}
+                readOnly
+                showScreen
+                showLegend
+              />
               <p className="text-center text-xs text-muted-foreground">
-                Tổng ghế: <strong>{totalSeatsInLayout(viewLayout)}</strong>
+                Tổng ghế: <strong>{viewLayout.seatCount}</strong>
               </p>
-
-              <div className="flex flex-col items-center gap-1">
-                {viewLayout.seatLayout.rows.map((row, rowIdx, allRows) => {
-                  const isTopOrBottom = rowIdx === 0 || rowIdx === allRows.length - 1;
-                  const isInternalRow = !isTopOrBottom && row.seats.length >= 3;
-                  const leftBorder = isInternalRow ? row.seats[0] : null;
-                  const rightBorder = isInternalRow ? row.seats[row.seats.length - 1] : null;
-                  const innerSeats = isInternalRow ? row.seats.slice(1, row.seats.length - 1) : row.seats;
-
-                  const innerIsWalkwayRow =
-                    isInternalRow && innerSeats.length > 0
-                      ? innerSeats.every((s) => getCellType(s) === "walkway")
-                      : false;
-
-                  const rowLabel = isInternalRow ? (innerIsWalkwayRow ? "—" : row.row) : row.row;
-
-                  return (
-                    <div
-                      key={rowLabel || `row-${rowIdx}`}
-                      className="flex items-center gap-1"
-                    >
-                      {!isTopOrBottom && leftBorder ? (
-                        <div
-                          key={`left-${rowIdx}`}
-                          className={[
-                            "h-6 w-6 rounded flex items-center justify-center",
-                            getCellBg(leftBorder),
-                          ].join(" ")}
-                          title={leftBorder.seatCode}
-                        >
-                          {renderSeatCell(leftBorder)}
-                        </div>
-                      ) : null}
-
-                      <span className="w-6 text-xs font-medium text-muted-foreground-shadcn">
-                        {rowLabel}
-                      </span>
-
-                      {innerSeats.map((seat, seatIdx) => {
-                        const cellType = getCellType(seat);
-                        return (
-                          <div
-                            key={seat.seatCode || `${rowIdx}-${seatIdx}`}
-                            className={[
-                              "h-6 w-6 rounded flex items-center justify-center",
-                              getCellBg(seat),
-                            ].join(" ")}
-                            title={seat.seatCode}
-                          >
-                            {renderSeatCell(seat)}
-                            {cellType === "seat" && (
-                              <span className="sr-only">{seat.seatCode}</span>
-                            )}
-                          </div>
-                        );
-                      })}
-
-                      {!isTopOrBottom && rightBorder ? (
-                        <div
-                          key={`right-${rowIdx}`}
-                          className={[
-                            "h-6 w-6 rounded flex items-center justify-center",
-                            getCellBg(rightBorder),
-                          ].join(" ")}
-                          title={rightBorder.seatCode}
-                        >
-                          {renderSeatCell(rightBorder)}
-                        </div>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {renderViewLegend(mockSeatTypes)}
             </div>
           )}
         </LTTDialogContent>
       </LTTDialog>
-
-      {/* Create Wizard */}
-      {wizardOpen && (
-        <LTTScreenCreateWizard
-          onClose={() => setWizardOpen(false)}
-          onCreated={handleScreenCreated}
-        />
-      )}
     </div>
+    
+    {isEditorOpen && (
+      <LTTScreenCreateWizard
+        key={editingScreen?.id ?? "new"}
+        onClose={handleCloseEditor}
+        onCreated={handleScreenCreated}
+        onUpdate={handleScreenUpdated}
+        initialData={editingScreen ?? undefined}
+      />
+    )}
+  </>
   );
 }
-

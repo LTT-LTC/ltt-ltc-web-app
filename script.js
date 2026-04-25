@@ -1,7 +1,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const base_dir = 'd:/LTT/ltc/FE/ltt-tlc-web-app/src/app';
+const base_dir = 'd:/LTT/ltc/FE/ltt-ltc-web-app/src/app';
 
 function create_dir(p) {
     if (!fs.existsSync(p)) {

@@ -11,6 +11,8 @@ import {
   Gift,
   HeadphonesIcon,
   RotateCcw,
+  Ticket as BookingIcon,
+  History,
 } from "lucide-react";
 
 /** Navigation items for System Admin sub-domain */
@@ -30,11 +32,39 @@ export const adminNavItems: NavItemConfig[] = [
     permissionKey: "admin:cinema",
   },
   {
+    key: "amenities",
+    label: "Cinema Amenities",
+    path: "/administration/admin/amenities",
+    icon: Building2,
+    permissionKey: "admin:amenities",
+  },
+  {
+    key: "seat-types",
+    label: "Seat Type",
+    path: "/administration/admin/seat-types",
+    icon: Grid3X3,
+    permissionKey: "admin:seat-types",
+  },
+  {
     key: "movies",
     label: "Movie Distribution",
     path: "/administration/admin/movies",
     icon: Film,
     permissionKey: "admin:movies",
+  },
+  {
+    key: "movie-metadata",
+    label: "Movie Metadata",
+    path: "/administration/admin/movie-metadata",
+    icon: Grid3X3,
+    permissionKey: "admin:movies",
+  },
+  {
+    key: "customers",
+    label: "Customer Management",
+    path: "/administration/admin/customers",
+    icon: Users,
+    permissionKey: "admin:staff",
   },
   {
     key: "staff",
@@ -44,11 +74,25 @@ export const adminNavItems: NavItemConfig[] = [
     permissionKey: "admin:staff",
   },
   {
+    key: "promotions",
+    label: "Promotion & Giftcard",
+    path: "/administration/admin/promotions",
+    icon: Gift,
+    permissionKey: "admin:promotions",
+  },
+  {
     key: "reports",
     label: "Revenue Report",
     path: "/administration/admin/reports",
     icon: BarChart3,
     permissionKey: "admin:reports",
+  },
+  {
+    key: "bookings",
+    label: "Booking Management",
+    path: "/administration/admin/bookings",
+    icon: BookingIcon,
+    permissionKey: "admin:bookings",
   },
 ];
 
@@ -60,6 +104,13 @@ export const managerNavItems: NavItemConfig[] = [
     path: "/administration/manager/showtimes",
     icon: CalendarClock,
     permissionKey: "manager:showtimes",
+  },
+  {
+    key: "screens",
+    label: "Screens",
+    path: "/administration/manager/screens",
+    icon: Building2,
+    permissionKey: "manager:screens",
   },
   {
     key: "seatmap",
@@ -83,6 +134,13 @@ export const managerNavItems: NavItemConfig[] = [
     permissionKey: "manager:fnb",
   },
   {
+    key: "news-and-offers",
+    label: "News & Offers",
+    path: "/administration/manager/news-and-offers",
+    icon: Gift,
+    permissionKey: "manager:news-and-offers",
+  },
+  {
     key: "reports",
     label: "Revenue Report",
     path: "/administration/manager/reports",
@@ -95,6 +153,13 @@ export const managerNavItems: NavItemConfig[] = [
     path: "/administration/manager/promotions",
     icon: Gift,
     permissionKey: "manager:promotions",
+  },
+  {
+    key: "pricing-rules",
+    label: "Pricing Rules",
+    path: "/administration/manager/pricing-rules",
+    icon: Building2,
+    permissionKey: "manager:screens",
   },
   {
     key: "crm",
@@ -110,10 +175,41 @@ export const managerNavItems: NavItemConfig[] = [
     icon: RotateCcw,
     permissionKey: "manager:refunds",
   },
+  {
+    key: "bookings",
+    label: "Booking Management",
+    path: "/administration/manager/bookings",
+    icon: BookingIcon,
+    permissionKey: "manager:bookings",
+  },
 ];
 
 /** Navigation items for Cinema Staff sub-domain (Currently unused, merged into Manager/Admin) */
-export const staffNavItems: NavItemConfig[] = [];
+export const staffNavItems: NavItemConfig[] = [
+  {
+    key: "dashboard",
+    label: "Staff Dashboard",
+    path: "/administration/staff/dashboard",
+    icon: LayoutDashboard,
+    permissionKey: "staff:dashboard",
+  },
+  {
+    key: "booking-history",
+    label: "Booking History",
+    path: "/administration/staff/booking-history",
+    icon: History,
+    permissionKey: "staff:dashboard",
+  }
+];
 
 /** Navigation items for POS Machine sub-domain (Currently unused, merged into Manager/Admin) */
-export const posNavItems: NavItemConfig[] = [];
+export const posNavItems: NavItemConfig[] = [
+  {
+    key: "dashboard",
+    label: "POS",
+    path: "/administration/pos/dashboard",
+    icon: LayoutDashboard,
+    permissionKey: "pos:dashboard",
+  }
+];
+

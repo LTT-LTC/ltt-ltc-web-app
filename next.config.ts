@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
     /* config options here */
     output: "standalone",
-    reactStrictMode: true,
+    reactStrictMode: false,
     trailingSlash: true,
     images: {
         unoptimized: true

@@ -2,15 +2,15 @@ import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 
 export interface EmployeeOutputDto {
     id: string;
-    avatarUrl: string;
+    avatarUrl?: string;
     avatarFileId?: string | null;
     name: string;
     email: string;
-    otherEmail: string;
-    phoneNumber: string;
-    dateOfBirth: string;
+    otherEmail?: string;
+    phoneNumber?: string;
+    dateOfBirth?: string;
     code: string;
-    joinedDate: string;
+    joinedDate?: string;
     positionId?: string | null;
     positionName?: string | null;
     organizationUnitId?: string | null;

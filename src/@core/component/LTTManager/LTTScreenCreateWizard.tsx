@@ -31,7 +31,7 @@ import {
   type SeatType,
 } from "@/src/@core/const/mock/adminMockData";
 
-const LOCAL_STORAGE_KEY = "admin_screen_wizard_draft";
+const SESSION_STORAGE_KEY = "admin_screen_wizard_draft";
 
 type LayoutType = "rectangle" | "square" | "curve";
 
@@ -68,11 +68,18 @@ const SEAT_TYPE_COLORS: Record<number, string> = {
 interface Props {
   onClose: () => void;
   onCreated: (screen: Screen) => void;
+  onUpdate?: (screen: Screen) => void;
+  initialData?: Screen;
+  /** When true, renders as a page-level card instead of a modal dialog */
+  inline?: boolean;
 }
 
-export default function LTTScreenCreateWizard({ onClose, onCreated }: Props) {
+export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, initialData, inline = false }: Props) {
+  const isEditMode = !!initialData;
   const [step, setStep] = useState(1);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
 
   const SEAT_TYPES_STORAGE_KEY = "ltt_admin_mock_seat_types";
   const [seatTypes, setSeatTypes] = useState<SeatType[]>(mockSeatTypes);
@@ -170,28 +177,53 @@ export default function LTTScreenCreateWizard({ onClose, onCreated }: Props) {
       }
     }
 
-    // Column numbers (compressed; skip walkway columns and continuation-only columns)
-    let colNumIdx = 0;
-    const colNumbers: number[] = [];
-    for (let c = 0; c < numCols; c++) {
-      if (walkwayColIndices.has(c) || !originSeatColIndices.has(c)) colNumbers[c] = 0;
-      else {
-        colNumIdx++;
-        colNumbers[c] = colNumIdx;
+    // Compute sequential column numbers per row
+    const gridColIds: number[][] = Array.from({ length: numRows }, () => []);
+    for (let r = 0; r < numRows; r++) {
+      let colCounter = 0;
+      for (let c = 0; c < numCols; c++) {
+        const cell = g[r][c];
+        if (cell.type === "seat") {
+          colCounter++;
+          gridColIds[r][c] = colCounter;
+        } else if (
+          cell.type === "seat_continuation" &&
+          cell.originRow !== undefined &&
+          cell.originCol !== undefined
+        ) {
+          gridColIds[r][c] = gridColIds[cell.originRow]?.[cell.originCol] || 0;
+        } else {
+          gridColIds[r][c] = 0;
+        }
       }
     }
 
     const result = g.map((row, rIdx) =>
       row.map((cell, cIdx) => {
         const updated: GridCell = { ...cell };
-        updated.row = rowLabels[rIdx] || "";
-        updated.col = colNumbers[cIdx] || 0;
 
-        if (cell.type === "seat") {
-          const rl = rowLabels[rIdx];
-          const cn = colNumbers[cIdx];
+        let targetR = rIdx;
+        let targetC = cIdx;
+
+        // For continuation cells, inherit the row/col numbering from the origin
+        if (
+          cell.type === "seat_continuation" &&
+          cell.originRow !== undefined &&
+          cell.originCol !== undefined
+        ) {
+          targetR = cell.originRow;
+          targetC = cell.originCol;
+        }
+
+        updated.row = rowLabels[targetR] || "";
+        updated.col = gridColIds[rIdx][cIdx] || 0;
+
+        if (cell.type === "seat" || cell.type === "seat_continuation") {
+          const rl = rowLabels[targetR];
+          const cn = updated.col;
           updated.seatCode = rl && cn ? `${rl}${cn}` : "";
         } else {
+          // walkways, doors, empty, etc.
           updated.seatCode = "";
         }
 
@@ -259,11 +291,104 @@ export default function LTTScreenCreateWizard({ onClose, onCreated }: Props) {
     }
   };
 
-  // Load draft
+  // Load draft or initial data
   useEffect(() => {
     try {
       if (typeof window === "undefined") return;
-      const draft = localStorage.getItem(LOCAL_STORAGE_KEY);
+
+      // If editing an existing screen, load from its data directly (skip session draft)
+      if (initialData) {
+        setTenantId(initialData.tenantId || "tenant-001");
+        setCinemaId(initialData.cinemaId);
+        setScreenNumber(String(initialData.screenNumber));
+        setScreenType(initialData.screenType);
+        setSeatCount(String(initialData.seatCount));
+
+        // Reverse-map the SeatLayout back to grid + borders
+        const layout = initialData.seatLayout;
+        const outerRows = layout.rows;
+        if (outerRows.length >= 3) {
+          const topRow = outerRows[0];
+          const bottomRow = outerRows[outerRows.length - 1];
+          const internalRows = outerRows.slice(1, outerRows.length - 1);
+
+          // borderTop & borderBottom (full width: includes corners)
+          const parseBorderType = (seat: { seatCode: string; type?: string }): BorderCellType => {
+            if (seat.type === "door") return "door";
+            if (seat.type === "emergency_exit") return "emergency_exit";
+            return "empty";
+          };
+          setBorderTop(topRow.seats.map(parseBorderType));
+          setBorderBottom(bottomRow.seats.map(parseBorderType));
+
+          // borderLeft & borderRight
+          const newBorderLeft: BorderCellType[] = [];
+          const newBorderRight: BorderCellType[] = [];
+          const newGrid: GridCell[][] = [];
+
+          internalRows.forEach((row, rIdx) => {
+            const leftSeat = row.seats[0];
+            const rightSeat = row.seats[row.seats.length - 1];
+            newBorderLeft.push(parseBorderType(leftSeat));
+            newBorderRight.push(parseBorderType(rightSeat));
+
+            const innerSeats = row.seats.slice(1, row.seats.length - 1);
+            const gridRow: GridCell[] = innerSeats.map((seat, cIdx) => {
+              const seatType = (seat.type ?? "seat") as CellType;
+              const isContinuation = seatType === "seat" && !seat.seatCode;
+              const cellType: CellType = isContinuation ? "seat_continuation" : seatType;
+              return {
+                row: row.row,
+                col: cIdx + 1,
+                type: cellType,
+                seatTypeId: seat.seatTypeId || 0,
+                seatCode: seat.seatCode || "",
+              };
+            });
+            newGrid.push(gridRow);
+          });
+
+          // Fix up seat_continuation origin references
+          for (let r = 0; r < newGrid.length; r++) {
+            for (let c = 0; c < newGrid[r].length; c++) {
+              const cell = newGrid[r][c];
+              if (cell.type === "seat_continuation") {
+                // Look for origin to the left (horizontal) or above (vertical)
+                let found = false;
+                if (c > 0 && newGrid[r][c - 1].type === "seat" && newGrid[r][c - 1].seatTypeId === cell.seatTypeId) {
+                  cell.originRow = r;
+                  cell.originCol = c - 1;
+                  found = true;
+                } else if (r > 0 && newGrid[r - 1][c].type === "seat" && newGrid[r - 1][c].seatTypeId === cell.seatTypeId) {
+                  cell.originRow = r - 1;
+                  cell.originCol = c;
+                  found = true;
+                }
+                // If we couldn't find an adjacent seat origin, try looking further left
+                if (!found) {
+                  for (let lc = c - 1; lc >= 0; lc--) {
+                    if (newGrid[r][lc].type === "seat") {
+                      cell.originRow = r;
+                      cell.originCol = lc;
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+          setBorderLeft(newBorderLeft);
+          setBorderRight(newBorderRight);
+          setRows(newGrid.length);
+          setCols(newGrid[0]?.length ?? 12);
+          setGrid(newGrid);
+        }
+        return;
+      }
+
+      // Otherwise load from session draft
+      const draft = sessionStorage.getItem(SESSION_STORAGE_KEY);
       if (draft) {
         const parsed = JSON.parse(draft);
         if (parsed.step) setStep(parsed.step);
@@ -286,15 +411,15 @@ export default function LTTScreenCreateWizard({ onClose, onCreated }: Props) {
     } catch {}
 
     initGrid(8, 12, "rectangle");
-  }, [initGrid]);
+  }, [initGrid, initialData]);
 
-  // Auto-save draft
+  // Auto-save draft & track dirtiness
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
         if (typeof window === "undefined") return;
-        localStorage.setItem(
-          LOCAL_STORAGE_KEY,
+        sessionStorage.setItem(
+          SESSION_STORAGE_KEY,
           JSON.stringify({
             step,
             tenantId,
@@ -333,6 +458,38 @@ export default function LTTScreenCreateWizard({ onClose, onCreated }: Props) {
     borderLeft,
     borderRight,
   ]);
+
+  // isDirty tracking (simplified: any change to key fields sets dirty)
+  useEffect(() => {
+    if (tenantId !== "tenant-001" || cinemaId !== "" || screenNumber !== "" || screenType !== "" || grid.length > 0) {
+      if (!isDirty && grid.length > 0) setIsDirty(true);
+    }
+  }, [tenantId, cinemaId, screenNumber, screenType, grid]);
+
+  // Beforeunload guard
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
+  const handleSafeClose = () => {
+    if (isDirty) {
+      setExitConfirmOpen(true);
+    } else {
+      onClose();
+    }
+  };
+
+  const handleConfirmExit = () => {
+    sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    onClose();
+  };
 
   const actualSeatCount = grid.flat().filter((c) => c.type === "seat").length;
 
@@ -602,9 +759,9 @@ export default function LTTScreenCreateWizard({ onClose, onCreated }: Props) {
   };
 
   const getBorderCellBgClass = (type: BorderCellType) => {
-    if (type === "door") return "bg-accent/50 border-dashed border-primary/50";
-    if (type === "emergency_exit") return "bg-orange-100/60 border-dashed border-primary/50";
-    return "bg-muted-shadcn/20 border-dashed border-border-shadcn/50";
+    if (type === "door") return "bg-green-100 border-green-300 shadow-sm";
+    if (type === "emergency_exit") return "bg-orange-100 border-orange-300 shadow-sm";
+    return "bg-muted-shadcn/40 border-dashed border-border-shadcn/60 hover:bg-muted-shadcn/60";
   };
 
   const getSeatCellBgClass = (cell: GridCell) => {
@@ -624,14 +781,9 @@ export default function LTTScreenCreateWizard({ onClose, onCreated }: Props) {
     if (cell.type === "emergency_exit") return <AlertTriangle className="h-3 w-3 text-orange-500" />;
     if (cell.type === "door") return <DoorOpen className="h-3 w-3 text-green-600" />;
 
-    if (cell.type === "seat_continuation") {
-      // show merged visuals in background; no number on continuation.
-      return null;
-    }
-
-    // seat origin: show compressed seat number
+    // seat & continuation: show compressed seat number
     return (
-      <span className="text-[8px] font-medium text-white">
+      <span className="text-[8px] font-bold text-white">
         {cell.col || ""}
       </span>
     );
@@ -721,19 +873,24 @@ export default function LTTScreenCreateWizard({ onClose, onCreated }: Props) {
       .replace("T", " ");
 
     const screen: Screen = {
-      id: `scr-${Date.now()}`,
+      id: initialData?.id ?? `scr-${Date.now()}`,
       tenantId,
       cinemaId,
       screenNumber: parseInt(screenNumber),
       screenType,
       seatLayout: buildSeatLayout(),
       seatCount: actualSeatCount,
-      createdAt: now,
+      createdAt: initialData?.createdAt ?? now,
       updatedAt: now,
     };
 
-    if (typeof window !== "undefined") localStorage.removeItem(LOCAL_STORAGE_KEY);
-    onCreated(screen);
+    if (typeof window !== "undefined") sessionStorage.removeItem(SESSION_STORAGE_KEY);
+
+    if (isEditMode && onUpdate) {
+      onUpdate(screen);
+    } else {
+      onCreated(screen);
+    }
     setConfirmOpen(false);
   };
 
@@ -764,33 +921,23 @@ export default function LTTScreenCreateWizard({ onClose, onCreated }: Props) {
     </div>
   );
 
-  return (
-    <>
-      <LTTDialog open onOpenChange={onClose}>
-        <LTTDialogContent className="sm:max-w-6xl max-h-[92vh] flex flex-col p-0 overflow-hidden">
-          <LTTDialogHeader className="px-6 py-4 border-b border-border-shadcn">
-            <LTTDialogTitle>
-              {step === 1
-                ? "Bước 1: Thông tin phòng chiếu"
-                : "Bước 2: Thiết kế sơ đồ ghế"}
-            </LTTDialogTitle>
-          </LTTDialogHeader>
-
-          <div className="flex-1 overflow-y-auto p-6">
-            {/* Progress */}
-            <div className="flex items-center gap-2 mb-6">
-              <div
-                className={cn(
-                  "h-2 flex-1 rounded-full",
-                  step >= 1 ? "bg-primary-shadcn" : "bg-muted-shadcn"
-                )}
-              />
-              <div
-                className={cn(
-                  "h-2 flex-1 rounded-full",
-                  step >= 2 ? "bg-primary-shadcn" : "bg-muted-shadcn"
-                )}
-              />
+  const wizardContent = (
+    <div className={cn(
+      "flex flex-col",
+      inline ? "" : "flex-1 overflow-y-auto p-6"
+    )}>
+            {/* Progress Bar */}
+            <div className="mb-8 space-y-2">
+              <div className="h-2 w-full bg-muted-shadcn rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary-shadcn transition-all duration-500 ease-out"
+                  style={{ width: `${(step / 2) * 100}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground-shadcn px-1">
+                <span className={cn(step >= 1 ? "text-primary-shadcn" : "text-muted-foreground-shadcn")}>1. Thông tin rạp</span>
+                <span className={cn(step >= 2 ? "text-primary-shadcn" : "text-muted-foreground-shadcn")}>2. Thiết kế sơ đồ</span>
+              </div>
             </div>
 
             {step === 1 && (
@@ -859,11 +1006,19 @@ export default function LTTScreenCreateWizard({ onClose, onCreated }: Props) {
               <div className="flex flex-col lg:flex-row gap-6">
                 {/* Main Screen Area */}
                 <div className="flex-1 space-y-6 min-w-0">
-                  <div className="space-y-4">
-                    <div className="mx-auto w-3/4 h-3 rounded-full bg-primary-shadcn shadow-lg shadow-primary-shadcn/20" />
-                    <p className="text-center text-[10px] font-bold tracking-[0.4em] text-muted-foreground-shadcn uppercase">
-                      Màn hình hiển thị
-                    </p>
+                  <div className="space-y-4 px-10">
+                    <div
+                      className="relative mx-auto h-8 flex items-center justify-center rounded-md"
+                      style={{
+                        background: "linear-gradient(180deg, oklch(0.6 0.18 20 / 0.9) 0%, oklch(0.6 0.18 20 / 0.4) 100%)",
+                        clipPath: "polygon(5% 0%, 95% 0%, 100% 100%, 0% 100%)",
+                        maxWidth: "80%",
+                      }}
+                    >
+                      <span className="text-[10px] font-bold tracking-[0.4em] text-white uppercase">
+                        Màn hình hiển thị
+                      </span>
+                    </div>
                   </div>
 
                   {/* Grid with outer border */}
@@ -875,6 +1030,8 @@ export default function LTTScreenCreateWizard({ onClose, onCreated }: Props) {
                   >
                     {/* Top border row */}
                     <div className="flex items-center gap-0.5 mb-0.5">
+                      {/* Spacer: aligns with w-8 row label */}
+                      <div className="w-8 shrink-0" />
                       {borderTop.map((bt, i) => (
                         <div
                           key={`bt-${i}`}
@@ -898,6 +1055,11 @@ export default function LTTScreenCreateWizard({ onClose, onCreated }: Props) {
                           key={rIdx}
                           className="flex items-center gap-0.5 mb-0.5"
                         >
+                          {/* Row label */}
+                          <span className="w-8 text-[11px] font-bold text-muted-foreground-shadcn text-right pr-2">
+                            {isWalkwayRow ? "—" : row[0]?.row || ""}
+                          </span>
+
                           {/* Left border */}
                           <div
                             className={cn(
@@ -908,11 +1070,6 @@ export default function LTTScreenCreateWizard({ onClose, onCreated }: Props) {
                           >
                             {getBorderCellContent(borderLeft[rIdx] ?? "empty")}
                           </div>
-
-                          {/* Row label */}
-                          <span className="w-6 text-[11px] font-bold text-muted-foreground-shadcn text-right">
-                            {isWalkwayRow ? "—" : row[0]?.row || ""}
-                          </span>
 
                           {/* Cells */}
                           <div className="flex items-center gap-0.5">
@@ -980,6 +1137,8 @@ export default function LTTScreenCreateWizard({ onClose, onCreated }: Props) {
 
                     {/* Bottom border row */}
                     <div className="flex items-center gap-0.5 mt-0.5">
+                      {/* Spacer: aligns with w-8 row label */}
+                      <div className="w-8 shrink-0" />
                       {borderBottom.map((bt, i) => (
                         <div
                           key={`bb-${i}`}
@@ -988,6 +1147,7 @@ export default function LTTScreenCreateWizard({ onClose, onCreated }: Props) {
                             getBorderCellBgClass(bt)
                           )}
                           onClick={() => handleBorderClick("bottom", i)}
+                          title={bt === "empty" ? "" : bt}
                         >
                           {getBorderCellContent(bt)}
                         </div>
@@ -1192,10 +1352,12 @@ export default function LTTScreenCreateWizard({ onClose, onCreated }: Props) {
                 </div>
               </div>
             )}
-          </div>
+    </div>
+  );
 
-          <LTTDialogFooter className="px-6 py-4 border-t border-border-shadcn bg-muted-shadcn/10 gap-3">
-            {step === 2 && (
+  const wizardFooter = (
+    <>
+      {step === 2 && (
               <LTTButton
                 variant="outline"
                 onClick={() => setStep(1)}
@@ -1205,7 +1367,7 @@ export default function LTTScreenCreateWizard({ onClose, onCreated }: Props) {
               </LTTButton>
             )}
 
-            <LTTButton variant="ghost" onClick={onClose}>
+            <LTTButton variant="ghost" onClick={handleSafeClose}>
               Hủy bỏ
             </LTTButton>
 
@@ -1215,22 +1377,127 @@ export default function LTTScreenCreateWizard({ onClose, onCreated }: Props) {
               </LTTButton>
             )}
 
-            {step === 2 && (
-              <LTTButton
-                onClick={() => setConfirmOpen(true)}
-                className="gap-2 px-8"
-              >
-                <Check className="h-4 w-4" /> Hoàn tất lưu sơ đồ
+      {step === 2 && (
+        <LTTButton
+          onClick={() => setConfirmOpen(true)}
+          className="gap-2 px-8"
+        >
+          <Check className="h-4 w-4" />
+          {isEditMode ? "Cập nhật sơ đồ" : "Hoàn tất lưu sơ đồ"}
+        </LTTButton>
+      )}
+    </>
+  );
+
+  if (inline) {
+    return (
+      <>
+        <div className="rounded-xl border border-border-shadcn bg-white shadow-sm overflow-hidden flex flex-col">
+          {/* Header */}
+          <div className="px-6 py-4 border-b border-border-shadcn">
+            <h2 className="font-semibold text-base">
+              {step === 1
+                ? isEditMode ? "Bước 1: Chỉnh thông tin phòng chiếu" : "Bước 1: Thông tin phòng chiếu"
+                : isEditMode ? "Bước 2: Chỉnh sửa sơ đồ ghế" : "Bước 2: Thiết kế sơ đồ ghế"}
+            </h2>
+          </div>
+          <div className="flex-1 overflow-y-auto px-6 py-6">{wizardContent}</div>
+          <div className="px-6 py-4 border-t border-border-shadcn bg-muted-shadcn/10 flex items-center gap-3">
+            {wizardFooter}
+          </div>
+        </div>
+
+        {/* Confirm dialog */}
+        <LTTDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <LTTDialogContent className="sm:max-w-sm bg-white">
+            <LTTDialogHeader>
+              <LTTDialogTitle>
+                {isEditMode ? "Xác nhận cập nhật phòng chiếu" : "Xác nhận tạo phòng chiếu"}
+              </LTTDialogTitle>
+            </LTTDialogHeader>
+            <div className="space-y-3 py-4 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground-shadcn">Rạp:</span>
+                <span className="font-bold">
+                  {mockAdminCinemas.find((c) => c.id === cinemaId)?.name}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground-shadcn">Số phòng:</span>
+                <span className="font-bold">{screenNumber}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground-shadcn">Loại phòng:</span>
+                <span className="font-bold">{screenType}</span>
+              </div>
+              <div className="flex justify-between border-t border-border-shadcn pt-2 mt-2">
+                <span className="text-muted-foreground-shadcn font-bold">Tổng số ghế:</span>
+                <span className="font-bold text-primary-shadcn text-lg">{actualSeatCount}</span>
+              </div>
+            </div>
+            <LTTDialogFooter>
+              <LTTButton variant="outline" onClick={() => setConfirmOpen(false)}>Hủy</LTTButton>
+              <LTTButton onClick={handleConfirmCreate}>
+                {isEditMode ? "Xác nhận & Cập nhật" : "Xác nhận & Lưu"}
               </LTTButton>
-            )}
+            </LTTDialogFooter>
+          </LTTDialogContent>
+        </LTTDialog>
+
+        {/* Exit confirm dialog */}
+        <LTTDialog open={exitConfirmOpen} onOpenChange={setExitConfirmOpen}>
+          <LTTDialogContent className="sm:max-w-sm bg-white">
+            <LTTDialogHeader>
+              <LTTDialogTitle>Bạn có thay đổi chưa lưu</LTTDialogTitle>
+            </LTTDialogHeader>
+            <div className="py-2 text-sm text-muted-foreground-shadcn leading-relaxed">
+              Bạn có thay đổi chưa hoàn tất. Thoát sẽ{" "}
+              <strong className="text-destructive">xóa toàn bộ bản nháp</strong>{" "}
+              hiện tại. Bạn có chắc chắn muốn thoát?
+            </div>
+            <LTTDialogFooter className="gap-2">
+              <LTTButton variant="outline" onClick={() => setExitConfirmOpen(false)} className="flex-1">
+                Ở lại chỉnh sửa
+              </LTTButton>
+              <LTTButton variant="destructive" onClick={handleConfirmExit} className="flex-1">
+                Thoát & Xóa nháp
+              </LTTButton>
+            </LTTDialogFooter>
+          </LTTDialogContent>
+        </LTTDialog>
+      </>
+    );
+  }
+
+  // Default: dialog mode
+  return (
+    <>
+      <LTTDialog open onOpenChange={handleSafeClose}>
+        <LTTDialogContent className="sm:max-w-6xl max-h-[92vh] flex flex-col p-0 overflow-hidden bg-white">
+          <LTTDialogHeader className="px-6 py-4 border-b border-border-shadcn">
+            <LTTDialogTitle>
+              {step === 1
+                ? isEditMode ? "Bước 1: Chỉnh thông tin phòng chiếu" : "Bước 1: Thông tin phòng chiếu"
+                : isEditMode ? "Bước 2: Chỉnh sửa sơ đồ ghế" : "Bước 2: Thiết kế sơ đồ ghế"}
+            </LTTDialogTitle>
+          </LTTDialogHeader>
+
+          <div className="flex-1 overflow-y-auto p-6">
+            {wizardContent}
+          </div>
+
+          <LTTDialogFooter className="px-6 py-4 border-t border-border-shadcn bg-muted-shadcn/10 gap-3">
+            {wizardFooter}
           </LTTDialogFooter>
         </LTTDialogContent>
       </LTTDialog>
 
       <LTTDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <LTTDialogContent className="sm:max-w-sm">
+        <LTTDialogContent className="sm:max-w-sm bg-white">
           <LTTDialogHeader>
-            <LTTDialogTitle>Xác nhận tạo phòng chiếu</LTTDialogTitle>
+            <LTTDialogTitle>
+              {isEditMode ? "Xác nhận cập nhật phòng chiếu" : "Xác nhận tạo phòng chiếu"}
+            </LTTDialogTitle>
           </LTTDialogHeader>
           <div className="space-y-3 py-4 text-sm">
             <div className="flex justify-between">
@@ -1248,23 +1515,39 @@ export default function LTTScreenCreateWizard({ onClose, onCreated }: Props) {
               <span className="font-bold">{screenType}</span>
             </div>
             <div className="flex justify-between border-t border-border-shadcn pt-2 mt-2">
-              <span className="text-muted-foreground-shadcn font-bold">
-                Tổng số ghế:
-              </span>
-              <span className="font-bold text-primary-shadcn text-lg">
-                {actualSeatCount}
-              </span>
+              <span className="text-muted-foreground-shadcn font-bold">Tổng số ghế:</span>
+              <span className="font-bold text-primary-shadcn text-lg">{actualSeatCount}</span>
             </div>
           </div>
           <LTTDialogFooter>
-            <LTTButton variant="outline" onClick={() => setConfirmOpen(false)}>
-              Hủy
+            <LTTButton variant="outline" onClick={() => setConfirmOpen(false)}>Hủy</LTTButton>
+            <LTTButton onClick={handleConfirmCreate}>
+              {isEditMode ? "Xác nhận & Cập nhật" : "Xác nhận & Lưu"}
             </LTTButton>
-            <LTTButton onClick={handleConfirmCreate}>Xác nhận & Lưu</LTTButton>
+          </LTTDialogFooter>
+        </LTTDialogContent>
+      </LTTDialog>
+
+      <LTTDialog open={exitConfirmOpen} onOpenChange={setExitConfirmOpen}>
+        <LTTDialogContent className="sm:max-w-sm bg-white">
+          <LTTDialogHeader>
+            <LTTDialogTitle>Bạn có thay đổi chưa lưu</LTTDialogTitle>
+          </LTTDialogHeader>
+          <div className="py-2 text-sm text-muted-foreground-shadcn leading-relaxed">
+            Bạn có thay đổi chưa hoàn tất trong bản thiết kế này. Thoát sẽ{" "}
+            <strong className="text-destructive">xóa toàn bộ bản nháp</strong>{" "}
+            hiện tại. Bạn có chắc chắn muốn thoát?
+          </div>
+          <LTTDialogFooter className="gap-2">
+            <LTTButton variant="outline" onClick={() => setExitConfirmOpen(false)} className="flex-1">
+              Ở lại chỉnh sửa
+            </LTTButton>
+            <LTTButton variant="destructive" onClick={handleConfirmExit} className="flex-1">
+              Thoát & Xóa nháp
+            </LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
       </LTTDialog>
     </>
   );
 }
-

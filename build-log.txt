@@ -1,0 +1,108 @@
+
+> ltt-ltc-web-app@0.1.0 build
+> rimraf .next && next build --webpack
+
+ΓÜá Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of D:\LTT\ltc\FE\yarn.lock as the root directory.
+ To silence this warning, set `outputFileTracingRoot` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/output#caveats for more information.
+ Detected additional lockfiles: 
+   * D:\LTT\ltc\FE\ltt-ltc-web-app\pnpm-workspace.yaml
+
+Γû▓ Next.js 16.2.1 (webpack)
+- Environments: .env.local, .env
+
+ΓÜá The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+Found 1 warning while optimizing generated CSS:
+
+Γöé   }
+Γöé }
+Γöé @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Open+Sans:wght@400;500;600&display=swap');
+Γöå        ^-- @import rules must precede all rules aside from @charset and @layer statements
+Γöå
+Γöé @layer base {
+Γöé   :root {
+
+Γ£ô Compiled successfully in 42s
+  Running TypeScript ...
+  Finished TypeScript in 12.1s ...
+  Collecting page data using 15 workers ...
+  Generating static pages using 15 workers (0/61) ...
+  Generating static pages using 15 workers (15/61) 
+  Generating static pages using 15 workers (30/61) 
+  Generating static pages using 15 workers (45/61) 
+Γ£ô Generating static pages using 15 workers (61/61) in 1564ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+Γöî Γùï /
+Γö£ Γùï /_not-found
+Γö£ Γùï /administration-login
+Γö£ Γùï /administration-reset-password
+Γö£ Γùï /administration/admin
+Γö£ Γùï /administration/admin/amenities
+Γö£ Γùï /administration/admin/bookings
+Γö£ Γùï /administration/admin/cinema
+Γö£ Γùï /administration/admin/crm
+Γö£ Γùï /administration/admin/customers
+Γö£ Γùï /administration/admin/dashboard
+Γö£ Γùï /administration/admin/fnb
+Γö£ Γùï /administration/admin/incident
+Γö£ Γùï /administration/admin/movie-metadata
+Γö£ Γùï /administration/admin/movies
+Γö£ Γùï /administration/admin/promotions
+Γö£ Γùï /administration/admin/refunds
+Γö£ Γùï /administration/admin/reports
+Γö£ Γùï /administration/admin/seat-types
+Γö£ Γùï /administration/admin/seatmap
+Γö£ Γùï /administration/admin/service-packages
+Γö£ Γùï /administration/admin/settings
+Γö£ Γùï /administration/admin/showtimes
+Γö£ Γùï /administration/admin/staff
+Γö£ Γùï /administration/admin/tenants
+Γö£ Γùï /administration/manager
+Γö£ Γùï /administration/manager/amenities
+Γö£ Γùï /administration/manager/bookings
+Γö£ Γùï /administration/manager/cinema
+Γö£ Γùï /administration/manager/crm
+Γö£ Γùï /administration/manager/dashboard
+Γö£ Γùï /administration/manager/fnb
+Γö£ Γùï /administration/manager/movies
+Γö£ Γùï /administration/manager/news-and-offers
+Γö£ Γùï /administration/manager/pricing-rules
+Γö£ Γùï /administration/manager/promotions
+Γö£ Γùï /administration/manager/refunds
+Γö£ Γùï /administration/manager/reports
+Γö£ Γùï /administration/manager/screens
+Γö£ Γùï /administration/manager/seat-types
+Γö£ Γùï /administration/manager/seatmap
+Γö£ Γùï /administration/manager/showtimes
+Γö£ Γùï /administration/manager/staff
+Γö£ Γùï /administration/pos/dashboard
+Γö£ Γùï /administration/staff/booking-history
+Γö£ Γùï /administration/staff/dashboard
+Γö£ Γùï /coming-soon
+Γö£ Γùï /customer-login
+Γö£ Γùï /customer-register
+Γö£ Γùï /customer-reset-password
+Γö£ Γùï /employee
+Γö£ ╞Æ /employee/[id]
+Γö£ Γùï /homepage
+Γö£ ╞Æ /movie/[id]
+Γö£ Γùï /my-ltc
+Γö£ Γùï /my-ltc/account-details
+Γö£ Γùï /my-ltc/membership-card
+Γö£ Γùï /my-ltc/points
+Γö£ Γùï /my-ltc/transaction-history
+Γö£ Γùï /my-ltc/vouchers
+Γö£ Γùï /now-showing
+Γöö Γùï /theaters/all-cinemas
+
+
+╞Æ Proxy (Middleware)
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+

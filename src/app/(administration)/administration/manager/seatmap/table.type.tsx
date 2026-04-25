@@ -1,7 +1,8 @@
 import { ColumnsType } from 'antd/es/table';
-import { Button, Popconfirm, Space } from 'antd';
+import { Button, Space } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { SeatType } from './_mock/data';
+import LTTConfirmDialog from '@/src/@core/component/LTTConfirmDialog';
 
 export const columns = (onEdit: (record: SeatType) => void, onDelete: (id: number) => void): ColumnsType<SeatType> => [
   { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
@@ -17,9 +18,14 @@ export const columns = (onEdit: (record: SeatType) => void, onDelete: (id: numbe
     render: (_, record) => (
       <Space>
         <Button icon={<EditOutlined />} onClick={() => onEdit(record)} />
-        <Popconfirm title="Bạn có chắc là muốn xoá?" onConfirm={() => onDelete(record.id)}>
-          <Button danger icon={<DeleteOutlined />} />
-        </Popconfirm>
+        <LTTConfirmDialog
+          title="Xác nhận xóa"
+          description="Bạn có chắc chắn muốn xóa loại ghế này?"
+          confirmText="Xóa"
+          cancelText="Hủy"
+          onConfirm={() => onDelete(record.id)}
+          trigger={<Button danger icon={<DeleteOutlined />} />}
+        />
       </Space>
     ),
   },

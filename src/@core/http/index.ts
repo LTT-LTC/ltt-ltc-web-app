@@ -1,6 +1,7 @@
 import axios, {
   AxiosError,
   AxiosInstance,
+  AxiosResponse,
   HttpStatusCode,
   InternalAxiosRequestConfig,
 } from "axios";
@@ -17,33 +18,146 @@ import { RefreshLoginInputDto } from "@/src/services/administration-service/auth
 import { administrationService } from "@/src/services/administration-service/administration.service";
 import { customerService } from "@/src/services/customer-service/customer.service";
 import qs from "qs";
-import { showNotificationError } from "../utils/message";
-import i18n from "i18next";
+import { translate } from "../utils/localization";
 
 let isRefreshing = false;
 let refreshPromise: Promise<any> | null = null;
+let isRedirectingToLogin = false;
+
+type RetryableRequestConfig = InternalAxiosRequestConfig & {
+  _retry?: boolean;
+  _skipAuthRefresh?: boolean;
+};
+
+const isRefreshLoginRequest = (url?: string) =>
+  url?.includes("/auth/refresh-login") ?? false;
+
+const isAuthRefreshExcludedRequest = (url?: string) => {
+  if (!url) {
+    return false;
+  }
+
+  const normalizedUrl = url.toLowerCase();
+  return (
+    isRefreshLoginRequest(normalizedUrl) ||
+    normalizedUrl.includes("/auth/logout") ||
+    normalizedUrl.includes("/auth/request-password-recovery") ||
+    normalizedUrl.includes("/auth/reset-password") ||
+    normalizedUrl.includes("/auth/register") ||
+    /\/auth(?:\?|$)/.test(normalizedUrl)
+  );
+};
+
+function isObjectLike(value: unknown): value is Record<string, any> {
+  return typeof value === "object" && value !== null;
+}
+
+function isApiEnvelope(value: unknown): value is { data: any } {
+  if (!isObjectLike(value)) {
+    return false;
+  }
+
+  const hasDataField = Object.prototype.hasOwnProperty.call(value, "data");
+  const hasMetaField =
+    Object.prototype.hasOwnProperty.call(value, "statusCode") ||
+    Object.prototype.hasOwnProperty.call(value, "status") ||
+    Object.prototype.hasOwnProperty.call(value, "error") ||
+    Object.prototype.hasOwnProperty.call(value, "systemName");
+
+  return hasDataField && hasMetaField;
+}
+
+function normalizeResponseData<T>(response: AxiosResponse<T>) {
+  const payload = response.data as unknown;
+
+  if (isApiEnvelope(payload)) {
+    response.data = payload.data as T;
+    return response;
+  }
+
+  if (isObjectLike(payload) && !Object.prototype.hasOwnProperty.call(payload, "data")) {
+    try {
+      Object.defineProperty(payload, "data", {
+        value: payload,
+        writable: false,
+        enumerable: false,
+        configurable: true,
+      });
+    } catch {
+      // Ignore defineProperty failures for sealed/frozen payloads.
+    }
+  }
+
+  return response;
+}
+
+function extractErrorMessage(payload: any): string {
+  if (typeof payload === "string" && payload.trim()) {
+    return payload;
+  }
+
+  const directMessage =
+    payload?.message ||
+    payload?.error?.message ||
+    payload?.error_description ||
+    payload?.title;
+
+  if (typeof directMessage === "string" && directMessage.trim()) {
+    return directMessage;
+  }
+
+  return translate("http.unknown_error", "Lỗi không xác định, vui lòng liên hệ quản trị viên.");
+}
+
+function normalizeHttpError(payload: any, fallbackMessage?: string) {
+  const message = fallbackMessage || extractErrorMessage(payload);
+  if (!isObjectLike(payload)) {
+    return { message };
+  }
+
+  return {
+    ...(payload as Record<string, any>),
+    message,
+    error: (payload as Record<string, any>).error,
+  };
+}
 
 // Xử lý refresh token
 async function refreshTokenAsync(url?: string) {
+  const isCustomerRequest = url?.includes("/customer-service/");
+  const refreshToken = getCookie(REFRESH_TOKEN_KEY) ?? "";
+  const accessToken = getCookie(ACCESS_TOKEN_KEY) ?? "";
+
+  if (!refreshToken) {
+    const missingTokenError = new Error("Missing refresh token");
+    http.defaults.headers.common[AUTHORIZATION_KEY] = "";
+    removeCookie(ACCESS_TOKEN_KEY);
+    removeCookie(REFRESH_TOKEN_KEY);
+    if (!isRedirectingToLogin) {
+      isRedirectingToLogin = true;
+      window.location.href = isCustomerRequest ? `/customer-login` : `/administration-login`;
+    }
+    throw missingTokenError;
+  }
+
   const requestLogin: RefreshLoginInputDto = {
-    refreshToken: getCookie(REFRESH_TOKEN_KEY) ?? "",
-    accessToken: getCookie(ACCESS_TOKEN_KEY) ?? "",
+    refreshToken,
+    accessToken,
   };
   try {
-    const isCustomerRequest = url?.includes("/customer-service/");
     const response = isCustomerRequest
       ? await customerService.authService.refreshTokenAsync(requestLogin)
       : await administrationService.authService.refreshTokenAsync(requestLogin);
     return response;
   } catch (error: any) {
-    if (error.statusCode === HttpStatusCode.Unauthorized || error.status === HttpStatusCode.Unauthorized) {
-      http.defaults.headers.common[AUTHORIZATION_KEY] = "";
-      removeCookie(ACCESS_TOKEN_KEY);
-      removeCookie(REFRESH_TOKEN_KEY);
-
-      const isCustomerRequest = url?.includes("/customer-service/");
+    http.defaults.headers.common[AUTHORIZATION_KEY] = "";
+    removeCookie(ACCESS_TOKEN_KEY);
+    removeCookie(REFRESH_TOKEN_KEY);
+    if (!isRedirectingToLogin) {
+      isRedirectingToLogin = true;
       window.location.href = isCustomerRequest ? `/customer-login` : `/administration-login`;
     }
+    throw error;
   }
 }
 
@@ -72,6 +186,11 @@ const onRequestInterceptor = (config: InternalAxiosRequestConfig) => {
   }
   config.headers["Accept-Language"] = selectedLanguage;
 
+  // Refresh endpoint should only rely on refresh-token payload, not an expired bearer token.
+  if (isRefreshLoginRequest(config.url)) {
+    delete config.headers[AUTHORIZATION_KEY];
+  }
+
   if (accessToken) {
     config.headers[AUTHORIZATION_KEY] = `${TOKEN_TYPE_KEY} ${accessToken}`;
   }
@@ -87,40 +206,52 @@ const onRequestInterceptor = (config: InternalAxiosRequestConfig) => {
 // Xử lý response lỗi sau khi nhận được
 const onResponseInterceptor = async (error: AxiosError) => {
   if (error.code == "ERR_NETWORK") {
-    showNotificationError(i18n?.t("http.network_error") || "Lỗi kết nối đến máy chủ, vui lòng thử lại sau.");
-    return Promise.reject({});
+    return Promise.reject(normalizeHttpError(undefined, translate("http.network_error", "Lỗi kết nối đến máy chủ, vui lòng thử lại sau.")));
   }
 
   // 401 => Unauthorized, token hết hạn hoặc không hợp lệ => refresh token
   if (error.response && error.response.status === HttpStatusCode.Unauthorized) {
+    const requestConfig = error.config as RetryableRequestConfig | undefined;
+    const requestUrl = requestConfig?.url;
+
+    if (!requestConfig || requestConfig._retry || requestConfig._skipAuthRefresh || isAuthRefreshExcludedRequest(requestUrl)) {
+      return Promise.reject(normalizeHttpError(error.response?.data));
+    }
+
     if (!isRefreshing) {
       isRefreshing = true;
-      refreshPromise = refreshTokenAsync(error.config?.url);
+      refreshPromise = refreshTokenAsync(requestUrl);
     }
+
     if (refreshPromise) {
-      const newToken = await refreshPromise;
-      refreshPromise = null;
-      isRefreshing = false;
+      let newToken: any;
+      try {
+        newToken = await refreshPromise;
+      } finally {
+        refreshPromise = null;
+        isRefreshing = false;
+      }
+
+      if (!newToken?.accessToken || !newToken?.refreshToken) {
+        return Promise.reject(normalizeHttpError(error.response?.data));
+      }
 
       http.defaults.headers.common[AUTHORIZATION_KEY] =
         `${TOKEN_TYPE_KEY} ${newToken.accessToken}`;
       setCookie(ACCESS_TOKEN_KEY, newToken.accessToken);
       setCookie(REFRESH_TOKEN_KEY, newToken.refreshToken);
 
-      return http(error.config as InternalAxiosRequestConfig);
+      requestConfig._retry = true;
+      requestConfig.headers = requestConfig.headers ?? {};
+      requestConfig.headers[AUTHORIZATION_KEY] = `${TOKEN_TYPE_KEY} ${newToken.accessToken}`;
+      return http(requestConfig);
     }
   }
 
   const _response = error.response?.data as any;
   // 400 => Bad Request, lỗi từ phía client => hiển thị thông báo lỗi
   if (error.response && error.response.status === HttpStatusCode.BadRequest) {
-    const isAuthRequest = error.config?.url?.includes("/auth");
-    if (!isAuthRequest) {
-      showNotificationError(
-        `${_response?.error.message ?? (i18n?.t("http.unknown_error") || "Lỗi không xác định, vui lòng liên hệ quản trị viên.")}`,
-      );
-    }
-    return Promise.reject(error.response.data);
+    return Promise.reject(normalizeHttpError(_response));
   }
 
   // 403 => Forbidden, không có quyền truy cập => chuyển hướng đến trang 403
@@ -129,7 +260,7 @@ const onResponseInterceptor = async (error: AxiosError) => {
     if (!isAuthRequest) {
       window.location.href = `/403`;
     }
-    return Promise.reject(error.response.data);
+    return Promise.reject(normalizeHttpError(_response));
   }
 
   // 404 => Not Found, không tìm thấy tài nguyên => chuyển hướng đến trang 404
@@ -143,15 +274,18 @@ const onResponseInterceptor = async (error: AxiosError) => {
     error.response &&
     error.response.status === HttpStatusCode.InternalServerError
   ) {
-    window.location.href = `/500`;
-    return Promise.reject(error.response.data);
+    return Promise.reject(normalizeHttpError(_response));
   }
 
-  // Hiển thị thông báo lỗi cho các lỗi khác
-  showNotificationError(
-    `${_response?.error.message ?? (i18n?.t("http.unknown_error") || "Lỗi không xác định, vui lòng liên hệ quản trị viên.")}`,
-  );
-  return Promise.reject(_response);
+  // 503 => Service Unavailable, dịch vụ tạm thời không khả dụng
+  if (
+    error.response &&
+    error.response.status === 503
+  ) {
+    return Promise.reject(normalizeHttpError(_response, translate("http.service_unavailable", "Dịch vụ tạm thời không khả dụng. Vui lòng thử lại sau.")));
+  }
+
+  return Promise.reject(normalizeHttpError(_response));
 };
 
 const http = axios.create({
@@ -168,7 +302,7 @@ const handleInterceptor = (http: AxiosInstance) => {
   http.interceptors.request.use(onRequestInterceptor, (error) =>
     Promise.reject(error),
   );
-  http.interceptors.response.use((response) => response, onResponseInterceptor);
+  http.interceptors.response.use((response) => normalizeResponseData(response), onResponseInterceptor);
 };
 
 handleInterceptor(http);

@@ -43,6 +43,30 @@ export const getOrCreateTenantOnClient = (): string => {
     return tenant;
 };
 
+export const setTenantOnClient = (tenantId: string): void => {
+    if (typeof window === "undefined") {
+        return;
+    }
+
+    const normalizedTenantId = tenantId.trim();
+    localStorage.setItem(TENANT_KEY, normalizedTenantId);
+    setCookie(TENANT_KEY, normalizedTenantId);
+};
+
+export const getTenantOptions = (): { value: string; label: string }[] => {
+    const tenantOptions = process.env.NEXT_PUBLIC_TENANTS;
+    if (!tenantOptions) {
+        return [];
+    }
+
+    try {
+        const parsedTenants = JSON.parse(tenantOptions);
+        return Array.isArray(parsedTenants) ? parsedTenants : [];
+    } catch {
+        return [];
+    }
+};
+
 export const syncTenantCookieFromLocalStorage = (): void => {
     if (typeof window === "undefined") {
         return;

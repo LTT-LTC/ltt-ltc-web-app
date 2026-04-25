@@ -15,6 +15,7 @@ const LTTModal = ({ children, loading = false, ...props }: LTTModalProps) => {
         open={props?.open}
         onOk={props?.onOk}
         onCancel={props?.onCancel}
+        maskTransitionName="ant-fade"
       >
         {children}
       </Modal>

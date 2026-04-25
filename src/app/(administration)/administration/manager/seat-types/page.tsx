@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
-import { toast } from "sonner";
 
+import { useState, useMemo } from "react";
+import { Plus, Pencil, Trash2, Search, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
+import LTTConfirmDialog from "@/src/@core/component/LTTConfirmDialog";
 import {
   LTTDialog,
   LTTDialogContent,
@@ -15,7 +15,6 @@ import {
   LTTDialogFooter,
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
-import { LTTTextarea } from "@/src/@core/component/LTTShadcnUI/LTTTextarea";
 import {
   LTTSelect,
   LTTSelectContent,
@@ -23,178 +22,170 @@ import {
   LTTSelectTrigger,
   LTTSelectValue,
 } from "@/src/@core/component/LTTShadcnUI/LTTSelect";
+import { toast } from "sonner";
+import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
+import useDebouncedListQuery from "@/src/@core/hooks/useDebouncedListQuery";
+import { seatTypeService } from "@/src/services/administration-service/seat-type/seat-type.service";
+import { SeatTypeOutputDto } from "@/src/services/administration-service/seat-type/models/output.model";
+import { GetSeatTypeListInputDto, CreateSeatTypeInputDto, UpdateSeatTypeInputDto } from "@/src/services/administration-service/seat-type/models/input.model";
+import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
-import {
-  SeatType,
-  mockSeatTypes,
-} from "@/src/@core/const/mock/adminMockData";
-
-const SEAT_TYPES_STORAGE_KEY = "ltt_admin_mock_seat_types";
-
-function orientationLabel(o: SeatType["orientation"]) {
-  if (o === "horizontal") return "Ngang";
-  if (o === "vertical") return "Dọc";
-  return "Vuông";
-}
-
-type SeatOrientation = SeatType["orientation"];
-
-export default function SeatTypesPage() {
-  const [seatTypes, setSeatTypes] = useState<SeatType[]>(mockSeatTypes);
-  const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [searchQuery, setSearchQuery] = useState("");
-
+export default function SeatTypesManagerPage() {
+  const { t } = useLocalization();
+  const [items, setItems] = useState<SeatTypeOutputDto[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<SeatType | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [editing, setEditing] = useState<SeatTypeOutputDto | null>(null);
 
   const [form, setForm] = useState({
     name: "",
     description: "",
-    priceMultiplier: "1.0",
-    seatOccupied: "1",
-    orientation: "square" as SeatOrientation,
+    numberOfSeat: 1,
+    displayDirection: "HORIZONTAL",
+    priceMultiplier: 1.0,
   });
 
-  const filtered = useMemo(() => {
-    if (!searchQuery) return seatTypes;
-    const q = searchQuery.toLowerCase();
-    return seatTypes.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) ||
-        s.description.toLowerCase().includes(q)
-    );
-  }, [seatTypes, searchQuery]);
+  const listMutation = useLTTMutation<PagedResultDto<SeatTypeOutputDto> | undefined, GetSeatTypeListInputDto>({
+    mutationFn: (input) => seatTypeService.getSeatTypeListAsync(input),
+    onSuccess: (res) => {
+      if (res && res.items) setItems(res.items);
+    },
+    onError: (err) => toast.error(err.message || t("admin.seat_type.fetch_error"))
+  });
 
-  // Persist seat type CRUD to localStorage so the seat-map wizard can use it.
-  useEffect(() => {
-    try {
-      if (typeof window === "undefined") return;
-      const raw = localStorage.getItem(SEAT_TYPES_STORAGE_KEY);
-      if (raw) setSeatTypes(JSON.parse(raw) as SeatType[]);
-    } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const createMutation = useLTTMutation<SeatTypeOutputDto | undefined, CreateSeatTypeInputDto>({
+    mutationFn: (input) => seatTypeService.createSeatTypeAsync(input),
+    onSuccess: () => {
+      toast.success(t("admin.seat_type.create_success"));
+      fetchData();
+      setDialogOpen(false);
+    },
+    onError: (err) => toast.error(err.message || t("admin.seat_type.generic_error"))
+  });
 
-  useEffect(() => {
-    try {
-      if (typeof window === "undefined") return;
-      localStorage.setItem(SEAT_TYPES_STORAGE_KEY, JSON.stringify(seatTypes));
-    } catch {}
-  }, [seatTypes]);
+  const updateMutation = useLTTMutation<SeatTypeOutputDto | undefined, { id: string; body: UpdateSeatTypeInputDto }>({
+    mutationFn: (input) => seatTypeService.updateSeatTypeAsync(input.id, input.body),
+    onSuccess: () => {
+      toast.success(t("admin.seat_type.update_success"));
+      fetchData();
+      setDialogOpen(false);
+    },
+    onError: (err) => toast.error(err.message || t("admin.seat_type.generic_error"))
+  });
 
-  const allSelected =
-    filtered.length > 0 && filtered.every((s) => selected.has(s.id));
+  const removeMutation = useLTTMutation<boolean, string>({
+    mutationFn: async (id) => { await seatTypeService.deleteSeatTypeAsync(id); return true; },
+    onSuccess: () => {
+      toast.success(t("admin.seat_type.delete_success"));
+    },
+    onError: (err) => toast.error(err.message || t("admin.seat_type.generic_error"))
+  });
 
-  const toggleAll = () => {
-    if (allSelected) setSelected(new Set());
-    else setSelected(new Set(filtered.map((s) => s.id)));
+  const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || removeMutation.isLoading;
+
+  const fetchData = (keyword?: string) => {
+    const effectiveKeyword = keyword ?? debouncedSearch;
+    listMutation.mutation({ page: 1, fetch: 100, keyword: effectiveKeyword });
   };
 
-  const toggleOne = (id: number) => {
-    const next = new Set(selected);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setSelected(next);
+  const debouncedSearch = useDebouncedListQuery(search, (keyword) => fetchData(keyword));
+
+  const filtered = useMemo(() => {
+    if (!search) return items;
+    const q = search.toLowerCase();
+    return items.filter((c) => c.name.toLowerCase().includes(q));
+  }, [items, search]);
+
+  const allSel = filtered.length > 0 && filtered.every((i) => selected.has(i.id));
+  const toggleAll = () =>
+    allSel ? setSelected(new Set()) : setSelected(new Set(items.map((i) => i.id)));
+  const toggle = (id: string) => {
+    const n = new Set(selected);
+    n.has(id) ? n.delete(id) : n.add(id);
+    setSelected(n);
   };
 
   const openCreate = () => {
-    setEditingItem(null);
+    setEditing(null);
     setForm({
       name: "",
       description: "",
-      priceMultiplier: "1.0",
-      seatOccupied: "1",
-      orientation: "square",
+      numberOfSeat: 1,
+      displayDirection: "HORIZONTAL",
+      priceMultiplier: 1.0,
     });
     setDialogOpen(true);
   };
 
-  const openEdit = (item: SeatType) => {
-    setEditingItem(item);
+  const openEdit = (item: SeatTypeOutputDto) => {
+    setEditing(item);
     setForm({
       name: item.name,
-      description: item.description,
-      priceMultiplier: String(item.priceMultiplier),
-      seatOccupied: String(item.seatOccupied),
-      orientation: item.orientation,
+      description: item.description || "",
+      numberOfSeat: item.numberOfSeat,
+      displayDirection: item.displayDirection || "HORIZONTAL",
+      priceMultiplier: item.priceMultiplier,
     });
     setDialogOpen(true);
   };
 
-  const handleSave = () => {
+  const save = async () => {
     if (!form.name.trim()) {
-      toast.error("Tên loại ghế không được để trống");
+      toast.error(t("admin.seat_type.validation.name_required"));
       return;
     }
 
-    const now = new Date()
-      .toLocaleString("sv-SE")
-      .slice(0, 16)
-      .replace("T", " ");
-
-    const priceMultiplier = parseFloat(form.priceMultiplier) || 1;
-    const seatOccupied = parseInt(form.seatOccupied) || 1;
-    const orientation = form.orientation;
-
-    if (editingItem) {
-      setSeatTypes((prev) =>
-        prev.map((s) =>
-          s.id === editingItem.id
-            ? {
-                ...s,
-                name: form.name,
-                description: form.description,
-                priceMultiplier,
-                seatOccupied,
-                orientation,
-                updatedAt: now,
-              }
-            : s
-        )
-      );
-      toast.success("Cập nhật thành công");
-    } else {
-      const newId = Math.max(...seatTypes.map((s) => s.id), 0) + 1;
-      setSeatTypes((prev) => [
-        ...prev,
-        {
-          id: newId,
-          name: form.name,
-          description: form.description,
-          priceMultiplier,
-          seatOccupied,
-          orientation,
-          createdAt: now,
-          updatedAt: now,
-        },
-      ]);
-      toast.success("Tạo mới thành công");
+    if (form.priceMultiplier < 0.5) {
+      toast.error(t("admin.seat_type.validation.price_min"));
+      return;
     }
 
-    setDialogOpen(false);
+    if (form.numberOfSeat < 1) {
+      toast.error(t("admin.seat_type.validation.seat_min"));
+      return;
+    }
+
+    if (!["HORIZONTAL", "VERTICAL"].includes(form.displayDirection)) {
+      toast.error(t("admin.seat_type.validation.direction_invalid"));
+      return;
+    }
+
+    if (editing) {
+      updateMutation.mutation({ id: editing.id, body: form });
+    } else {
+      createMutation.mutation(form);
+    }
   };
 
-  const handleDeleteSelected = () => {
-    setSeatTypes((prev) => prev.filter((s) => !selected.has(s.id)));
+  const bulkDelete = async () => {
+    const ids = Array.from(selected);
+    if (ids.length === 0) {
+      return;
+    }
+
+    const results = await Promise.allSettled(ids.map((id) => seatTypeService.deleteSeatTypeAsync(id)));
+    const failed = results.filter((r) => r.status === "rejected").length;
+
+    if (failed === 0) {
+      toast.success(t("admin.seat_type.bulk_delete_success", { count: ids.length }));
+    } else {
+      toast.error(t("admin.seat_type.bulk_delete_partial", { successCount: ids.length - failed, count: ids.length }));
+    }
+
     setSelected(new Set());
-    setDeleteDialogOpen(false);
-    toast.success(`Đã xóa ${selected.size} loại ghế`);
-  };
-
-  const handleDeleteOne = (id: number) => {
-    setSeatTypes((prev) => prev.filter((s) => s.id !== id));
-    selected.delete(id);
-    setSelected(new Set(selected));
-    toast.success("Đã xóa loại ghế");
+    setDeleteOpen(false);
+    fetchData(debouncedSearch);
   };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl font-bold">Quản lý loại ghế</h1>
+        <h1 className="font-heading text-2xl font-bold">{t("admin.seat_type.title")}</h1>
         <LTTButton onClick={openCreate} className="gap-2">
-          <Plus className="h-4 w-4" /> Thêm loại ghế
+          <Plus className="h-4 w-4" /> {t("admin.seat_type.add")}
         </LTTButton>
       </div>
 
@@ -202,20 +193,28 @@ export default function SeatTypesPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
           <LTTInput
-            placeholder="Tìm kiếm loại ghế..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t("admin.seat_type.search_placeholder")}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
           />
         </div>
+        <LTTButton
+          variant="outline"
+          className="gap-2"
+          onClick={() => fetchData()}
+          loading={listMutation.isLoading}
+        >
+          <RefreshCw className="h-4 w-4" /> {t("admin.seat_type.refresh")}
+        </LTTButton>
         {selected.size > 0 && (
           <LTTButton
             variant="destructive"
             size="sm"
             className="gap-2"
-            onClick={() => setDeleteDialogOpen(true)}
+            onClick={() => setDeleteOpen(true)}
           >
-            <Trash2 className="h-4 w-4" /> Xóa {selected.size} mục
+            <Trash2 className="h-4 w-4" /> {t("admin.common.delete_confirm.ok")} {selected.size}
           </LTTButton>
         )}
       </div>
@@ -225,32 +224,24 @@ export default function SeatTypesPage() {
           <thead>
             <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
               <th className="w-10 px-3 py-3">
-                <LTTCheckbox checked={allSelected} onCheckedChange={toggleAll} />
+                <LTTCheckbox checked={allSel} onCheckedChange={toggleAll} />
               </th>
-              <th className="px-4 py-3 text-left font-semibold">STT</th>
-              <th className="px-4 py-3 text-left font-semibold">Tên</th>
-              <th className="px-4 py-3 text-left font-semibold">Mô tả</th>
-              <th className="px-4 py-3 text-left font-semibold">Hệ số giá</th>
-              <th className="px-4 py-3 text-left font-semibold">
-                Số ô chiếm
-              </th>
-              <th className="px-4 py-3 text-left font-semibold">Hướng</th>
-              <th className="px-4 py-3 text-left font-semibold">Ngày tạo</th>
-              <th className="px-4 py-3 text-left font-semibold">Cập nhật</th>
-              <th className="px-4 py-3 text-right font-semibold">
-                Thao tác
-              </th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.seat_type.table.name")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.seat_type.table.description")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.seat_type.table.number_of_seat")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.seat_type.table.price_multiplier")}</th>
+              <th className="px-4 py-3 text-right font-semibold">{t("admin.seat_type.table.actions")}</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={10} className="py-12 text-center text-muted-foreground-shadcn">
-                  Không có dữ liệu
+                <td colSpan={6} className="py-12 text-center text-muted-foreground-shadcn">
+                  {t("admin.seat_type.empty")}
                 </td>
               </tr>
             ) : (
-              filtered.map((item, idx) => (
+              filtered.map((item) => (
                 <tr
                   key={item.id}
                   className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors"
@@ -258,51 +249,38 @@ export default function SeatTypesPage() {
                   <td className="px-3 py-3">
                     <LTTCheckbox
                       checked={selected.has(item.id)}
-                      onCheckedChange={() => toggleOne(item.id)}
+                      onCheckedChange={() => toggle(item.id)}
                     />
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground-shadcn">
-                    {idx + 1}
-                  </td>
                   <td className="px-4 py-3 font-medium">{item.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground-shadcn max-w-xs truncate">
-                    {item.description}
-                  </td>
+                  <td className="px-4 py-3 text-muted-foreground-shadcn">{item.description}</td>
+                  <td className="px-4 py-3">{item.numberOfSeat}</td>
+                  <td className="px-4 py-3 font-semibold text-brand-600">x{item.priceMultiplier}</td>
                   <td className="px-4 py-3">
-                    <span className="inline-flex items-center rounded-full bg-accent-shadcn px-2.5 py-0.5 text-xs font-medium text-accent-shadcn-foreground border border-red-200">
-                      x{item.priceMultiplier}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center rounded-full bg-accent-shadcn px-2.5 py-0.5 text-xs font-medium text-accent-shadcn-foreground border border-red-200">
-                      {item.seatOccupied} ô
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-xs">{orientationLabel(item.orientation)}</td>
-                  <td className="px-4 py-3 text-muted-foreground-shadcn text-xs">
-                    {item.createdAt}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground-shadcn text-xs">
-                    {item.updatedAt}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <LTTButton
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => openEdit(item)}
-                      >
+                    <div className="flex justify-end gap-1">
+                      <LTTButton variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
                         <Pencil className="h-4 w-4" />
                       </LTTButton>
-                      <LTTButton
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => handleDeleteOne(item.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </LTTButton>
+                      <LTTConfirmDialog
+                        title="Xác nhận xóa"
+                        description="Bạn có chắc chắn muốn xóa loại ghế này?"
+                        confirmText="Xóa"
+                        cancelText="Hủy"
+                        onConfirm={async () => {
+                          await removeMutation.mutation(item.id);
+                          fetchData();
+                        }}
+                        loading={removeMutation.isLoading}
+                        trigger={
+                          <LTTButton
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </LTTButton>
+                        }
+                      />
                     </div>
                   </td>
                 </tr>
@@ -313,117 +291,83 @@ export default function SeatTypesPage() {
       </div>
 
       <LTTDialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <LTTDialogContent className="sm:max-w-md">
+        <LTTDialogContent className="sm:max-w-lg">
           <LTTDialogHeader>
-            <LTTDialogTitle>
-              {editingItem ? "Chỉnh sửa loại ghế" : "Thêm loại ghế mới"}
-            </LTTDialogTitle>
+            <LTTDialogTitle>{editing ? t("admin.seat_type.form.edit_title") : t("admin.seat_type.form.create_title")}</LTTDialogTitle>
           </LTTDialogHeader>
-
-          <div className="space-y-4 py-2">
+          <div className="grid gap-4 py-2 sm:grid-cols-2">
             <div className="space-y-2">
-              <LTTLabel>Tên loại ghế *</LTTLabel>
+              <LTTLabel>{t("admin.seat_type.form.name")}</LTTLabel>
               <LTTInput
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="VD: VIP, Standard..."
               />
             </div>
-
             <div className="space-y-2">
-              <LTTLabel>Mô tả</LTTLabel>
-              <LTTTextarea
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="Mô tả ngắn về loại ghế..."
-                rows={3}
+              <LTTLabel>{t("admin.seat_type.form.price_multiplier")}</LTTLabel>
+              <LTTInput
+                type="number"
+                step="0.1"
+                min="0.5"
+                value={form.priceMultiplier}
+                onChange={(e) => setForm({ ...form, priceMultiplier: parseFloat(e.target.value) || 0.5 })}
               />
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <LTTLabel>Hệ số giá</LTTLabel>
-                <LTTInput
-                  type="number"
-                  step="0.1"
-                  min="0.1"
-                  value={form.priceMultiplier}
-                  onChange={(e) => setForm({ ...form, priceMultiplier: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <LTTLabel>Số ô chiếm</LTTLabel>
-                <LTTInput
-                  type="number"
-                  min="1"
-                  max="4"
-                  value={form.seatOccupied}
-                  onChange={(e) => setForm({ ...form, seatOccupied: e.target.value })}
-                />
-              </div>
-            </div>
-
             <div className="space-y-2">
-              <LTTLabel>Hướng hiển thị</LTTLabel>
+              <LTTLabel>{t("admin.seat_type.form.number_of_seat")}</LTTLabel>
+              <LTTInput
+                type="number"
+                min="1"
+                value={form.numberOfSeat}
+                onChange={(e) => setForm({ ...form, numberOfSeat: parseInt(e.target.value) || 1 })}
+              />
+            </div>
+            <div className="space-y-2">
+              <LTTLabel>{t("admin.seat_type.form.display_direction")}</LTTLabel>
               <LTTSelect
-                value={form.orientation}
-                onValueChange={(v) => setForm({ ...form, orientation: v as SeatOrientation })}
+                value={form.displayDirection}
+                onValueChange={(v: "HORIZONTAL" | "VERTICAL") => setForm({ ...form, displayDirection: v })}
               >
                 <LTTSelectTrigger>
                   <LTTSelectValue />
                 </LTTSelectTrigger>
                 <LTTSelectContent>
-                  <LTTSelectItem value="square">Vuông (1x1)</LTTSelectItem>
-                  <LTTSelectItem value="horizontal">Ngang (chiếm theo hàng)</LTTSelectItem>
-                  <LTTSelectItem value="vertical">Dọc (chiếm theo cột)</LTTSelectItem>
+                  <LTTSelectItem value="HORIZONTAL">{t("admin.seat_type.form.horizontal")}</LTTSelectItem>
+                  <LTTSelectItem value="VERTICAL">{t("admin.seat_type.form.vertical")}</LTTSelectItem>
                 </LTTSelectContent>
               </LTTSelect>
-              <p className="text-[11px] text-muted-foreground-shadcn">
-                {form.orientation === "square"
-                  ? "Ghế vuông chiếm 1 ô duy nhất"
-                  : form.orientation === "horizontal"
-                  ? `Ghế sẽ chiếm ${form.seatOccupied} ô liên tiếp theo chiều ngang`
-                  : `Ghế sẽ chiếm ${form.seatOccupied} ô liên tiếp theo chiều dọc`}
-              </p>
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <LTTLabel>{t("admin.seat_type.form.description")}</LTTLabel>
+              <LTTInput
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+              />
             </div>
           </div>
-
           <LTTDialogFooter>
-            <LTTButton
-              variant="outline"
-              onClick={() => setDialogOpen(false)}
-            >
-              Hủy
-            </LTTButton>
-            <LTTButton onClick={handleSave}>
-              {editingItem ? "Lưu" : "Tạo mới"}
-            </LTTButton>
+            <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>{t("admin.seat_type.form.cancel")}</LTTButton>
+            <LTTButton onClick={save}>{editing ? t("admin.seat_type.form.save") : t("admin.seat_type.form.create")}</LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
       </LTTDialog>
 
-      <LTTDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <LTTDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <LTTDialogContent className="sm:max-w-sm">
           <LTTDialogHeader>
-            <LTTDialogTitle>Xác nhận xóa</LTTDialogTitle>
+            <LTTDialogTitle>{t("admin.seat_type.delete_confirm.title")}</LTTDialogTitle>
           </LTTDialogHeader>
-          <p className="text-sm text-muted-foreground-shadcn">
-            Bạn có chắc chắn muốn xóa <strong>{selected.size}</strong> loại ghế đã chọn? Hành động này không thể hoàn tác.
-          </p>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground-shadcn">
+              {t("admin.seat_type.delete_confirm.message", { count: selected.size })}
+            </p>
+          </div>
           <LTTDialogFooter>
-            <LTTButton
-              variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
-            >
-              Hủy
-            </LTTButton>
-            <LTTButton variant="destructive" onClick={handleDeleteSelected}>
-              Xóa
-            </LTTButton>
+            <LTTButton variant="outline" onClick={() => setDeleteOpen(false)}>{t("admin.seat_type.delete_confirm.cancel")}</LTTButton>
+            <LTTButton variant="destructive" onClick={bulkDelete}>{t("admin.seat_type.delete_confirm.confirm")}</LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
       </LTTDialog>
     </div>
   );
 }
-

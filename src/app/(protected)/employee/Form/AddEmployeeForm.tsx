@@ -43,7 +43,7 @@ const AddEmployeeForm = ({ open, onClose, onSuccess }: AddEmployeeFormProps) => 
 
     const { mutation, isLoading } = useLTTMutation<string, FormData>({
         mutationFn: (formData) =>
-            administrationService.employeeService.createEmployeeAsync(formData),
+            administrationService.employeeService.createEmployeeAsync(formData as any),
         onSuccess: () => {
             showNotificationSuccess("Thêm thành viên mới thành công.");
             form.resetFields();

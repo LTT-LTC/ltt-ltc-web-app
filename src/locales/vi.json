@@ -1,9 +1,31 @@
 {
   "http": {
     "network_error": "Lỗi kết nối đến máy chủ, vui lòng thử lại sau.",
-    "unknown_error": "Lỗi không xác định, vui lòng liên hệ quản trị viên."
+    "unknown_error": "Lỗi không xác định, vui lòng liên hệ quản trị viên.",
+    "service_unavailable": "Dịch vụ tạm thời không khả dụng. Vui lòng thử lại sau."
+  },
+  "toast": {
+    "error_default": "Lỗi xảy ra trong quá trình xử lý, vui lòng liên hệ admin.",
+    "success_default": "Xử lý thành công."
   },
   "admin": {
+    "common": {
+      "unsaved_changes_dialog": {
+        "title": "Bạn có thay đổi chưa lưu",
+        "message_before": "Bạn có thay đổi chưa hoàn tất. Thoát sẽ",
+        "message_highlight": "xóa toàn bộ nội dung đang nhập",
+        "message_after": "Bạn có chắc chắn muốn thoát?",
+        "stay": "Ở lại chỉnh sửa",
+        "exit": "Thoát"
+      },
+      "delete_confirm": {
+        "title": "Xác nhận xóa",
+        "message": "Bạn có chắc chắn muốn xóa mục này? Hành động này không thể hoàn tác.",
+        "bulk_message": "Bạn có chắc chắn muốn xóa {{count}} mục đã chọn? Hành động này không thể hoàn tác.",
+        "ok": "Xóa",
+        "cancel": "Hủy"
+      }
+    },
     "menu": {
       "dashboard": "Bảng Điều Khiển",
       "tenant_management": "Quản Lý Đối Tác (Tenant)",
@@ -37,6 +59,498 @@
       "my_transactions": "Giao Dịch Của Tôi",
       "shift_report": "Báo Cáo Ca Bán",
       "notification": "Thông báo"
+    },
+    "auth": {
+      "login": {
+        "page_title": "Đăng nhập",
+        "back_to_home": "Trở lại trang chủ",
+        "welcome_title": "Chào mừng Quản trị viên",
+        "welcome_subtitle": "Vui lòng đăng nhập để tiếp tục quản lý.",
+        "messages": {
+          "login_success": "Đăng nhập thành công."
+        },
+        "errors": {
+          "no_admin_access": "Tài khoản không có quyền truy cập trang quản trị.",
+          "invalid_data": "Dữ liệu không hợp lệ",
+          "generic": "Có lỗi xảy ra, vui lòng thử lại sau."
+        },
+        "form": {
+          "branch_label": "Chi nhánh",
+          "branch_placeholder": "Chọn chi nhánh",
+          "username_label": "Tài khoản",
+          "password_label": "Mật khẩu",
+          "forgot_password": "Quên mật khẩu?",
+          "submit": "Đăng nhập"
+        }
+      },
+      "reset_password": {
+        "page_title": "Khôi phục mật khẩu",
+        "back_to_home": "Trở lại trang chủ",
+        "heading": "Khôi phục mật khẩu",
+        "subtitle": "Nhập thông tin của bạn để đặt lại mật khẩu.",
+        "form_title": "Khôi phục mật khẩu",
+        "form_subtitle": "Nhập mật khẩu mới và xác minh để tài khoản của bạn có thể sử dụng lại.",
+        "new_password_placeholder": "Nhập mật khẩu mới",
+        "confirm_password_placeholder": "Nhập lại mật khẩu mới",
+        "submit": "Khôi phục mật khẩu",
+        "requirements": {
+          "intro": "Mật khẩu mới phải có từ 8 đến 32 ký tự.",
+          "uppercase": "1 ký tự viết hoa (A-Z).",
+          "number": "1 ký tự số (0-9).",
+          "special": "1 ký tự đặc biệt (ví dụ: !, @, #, $, %, etc.)."
+        },
+        "validation": {
+          "new_password_required": "Vui lòng nhập mật khẩu mới",
+          "new_password_too_short": "Mật khẩu quá ngắn",
+          "new_password_too_long": "Mật khẩu quá dài",
+          "new_password_invalid": "Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 số và 1 ký tự đặc biệt",
+          "confirm_password_required": "Vui lòng nhập lại mật khẩu",
+          "confirm_password_mismatch": "Mật khẩu không khớp"
+        },
+        "request_link": {
+          "back_to_login": "Quay lại đăng nhập",
+          "title": "Nhập email",
+          "subtitle": "Nhập email của bạn. Chúng tôi sẽ gửi một liên kết khôi phục mật khẩu tới email của bạn.",
+          "tenant_label": "Tenant",
+          "tenant_required": "Vui lòng chọn Tenant",
+          "tenant_placeholder": "Chọn Tenant",
+          "email_required": "Vui lòng nhập email",
+          "email_invalid": "Sai email hoặc email không tồn tại trong hệ thống",
+          "email_placeholder": "Nhập email",
+          "submit": "Xác minh tài khoản"
+        },
+        "success": {
+          "title": "Thành công!",
+          "subtitle": "Mật khẩu của bạn đã được cập nhật thành công.",
+          "login_now": "Đăng nhập ngay"
+        }
+      }
+    },
+    "movies": {
+      "distribution": {
+        "section_title": "Giấy phép Phân phối",
+        "section_description": "Quản lý thời hạn bản quyền và quyền phân phối phim.",
+        "refresh": "Làm mới",
+        "add": "Thêm giấy phép phân phối",
+        "movie_name": "Tên phim",
+        "start_date": "Ngày bắt đầu",
+        "end_date": "Ngày kết thúc",
+        "exclusive": "Độc quyền",
+        "actions": "Thao tác",
+        "retry": "Thử lại",
+        "loading": "Đang tải dữ liệu...",
+        "empty": "Chưa có bản ghi phân phối nào.",
+        "exclusive_badge": "Độc quyền",
+        "standard_badge": "Phổ thông",
+        "total_records": "Tổng: {{count}} bản ghi",
+        "previous": "Trước",
+        "next": "Sau",
+        "page": "Trang {{page}} / {{totalPages}}",
+        "create_title": "Thêm giấy phép mới",
+        "edit_title": "Sửa giấy phép",
+        "movie_label": "Chọn phim *",
+        "load_movie_list": "Tải danh sách phim",
+        "movie_placeholder": "Chọn phim từ danh sách",
+        "movie_loading": "Đang tải danh sách phim...",
+        "movie_empty": "Trống phim",
+        "license_start_date": "Ngày bắt đầu",
+        "license_end_date": "Ngày kết thúc",
+        "exclusive_toggle": "Phân phối độc quyền",
+        "cancel": "Hủy",
+        "save": "Lưu thay đổi",
+        "grant": "Cấp phép",
+        "select_movie_required": "Vui lòng chọn phim",
+        "fetch_distribution_error": "Lỗi tải danh sách phân phối",
+        "fetch_movie_error": "Lỗi tải danh sách phim",
+        "create_success": "Đã thêm bản ghi phân phối",
+        "create_error": "Lỗi khi thêm",
+        "update_success": "Cập nhật thành công",
+        "update_error": "Lỗi khi cập nhật",
+        "delete_success": "Đã xóa",
+        "delete_error": "Lỗi khi xóa"
+      }
+    },
+    "movie_metadata": {
+      "title": "Quản lý Metadata Phim",
+      "tabs": {
+        "genres": "Thể loại",
+        "actors": "Diễn viên",
+        "roles": "Vai trò",
+        "studios": "Hãng phim",
+        "formats": "Định dạng",
+        "ratings": "Phân loại tuổi"
+      },
+      "common": {
+        "refresh": "Làm mới",
+        "actions": "Thao tác",
+        "cancel": "Hủy",
+        "save": "Lưu",
+        "create": "Tạo mới",
+        "name_required": "Vui lòng nhập tên",
+        "add_success": "Thêm thành công",
+        "update_success": "Cập nhật thành công",
+        "delete_success": "Đã xóa",
+        "add_error": "Lỗi khi thêm",
+        "update_error": "Lỗi khi cập nhật",
+        "delete_error": "Lỗi khi xóa"
+      },
+      "genres": {
+        "add": "Thêm thể loại",
+        "name": "Tên thể loại",
+        "loading": "Đang tải dữ liệu thể loại...",
+        "empty": "Không có dữ liệu thể loại.",
+        "edit_title": "Sửa thể loại",
+        "create_title": "Thêm thể loại mới",
+        "name_label": "Tên thể loại *",
+        "fetch_error": "Lỗi tải danh sách thể loại"
+      },
+      "actors": {
+        "add": "Thêm diễn viên",
+        "name": "Họ tên",
+        "loading": "Đang tải dữ liệu diễn viên...",
+        "empty": "Không có dữ liệu diễn viên.",
+        "edit_title": "Sửa diễn viên",
+        "create_title": "Thêm diễn viên mới",
+        "name_label": "Họ tên *",
+        "fetch_error": "Lỗi tải danh sách diễn viên"
+      },
+      "roles": {
+        "add": "Thêm vai trò",
+        "name": "Tên vai trò (Đạo diễn, Diễn viên chính...)",
+        "loading": "Đang tải dữ liệu vai trò...",
+        "empty": "Không có dữ liệu vai trò.",
+        "edit_title": "Sửa vai trò",
+        "create_title": "Thêm vai trò mới",
+        "name_label": "Tên vai trò *",
+        "fetch_error": "Lỗi tải danh sách vai trò"
+      },
+      "studios": {
+        "add": "Thêm hãng phim",
+        "name": "Tên hãng phim",
+        "loading": "Đang tải dữ liệu hãng phim...",
+        "empty": "Không có dữ liệu hãng phim.",
+        "edit_title": "Sửa hãng phim",
+        "create_title": "Thêm hãng phim mới",
+        "name_label": "Tên hãng phim *",
+        "fetch_error": "Lỗi tải danh sách hãng phim"
+      },
+      "formats": {
+        "add": "Thêm định dạng",
+        "name": "Tên định dạng (2D, 3D, IMAX...)",
+        "loading": "Đang tải dữ liệu định dạng...",
+        "empty": "Không có dữ liệu định dạng.",
+        "edit_title": "Sửa định dạng",
+        "create_title": "Thêm định dạng mới",
+        "name_label": "Tên định dạng *",
+        "fetch_error": "Lỗi tải danh sách định dạng"
+      },
+      "ratings": {
+        "add": "Thêm phân loại",
+        "code": "Mã",
+        "name": "Tên phân loại (P, T13, T16, T18...)",
+        "description": "Mô tả",
+        "loading": "Đang tải dữ liệu phân loại tuổi...",
+        "empty": "Không có dữ liệu phân loại.",
+        "edit_title": "Sửa phân loại",
+        "create_title": "Thêm phân loại mới",
+        "code_label": "Mã (VD: T18) *",
+        "display_name_label": "Tên hiển thị *",
+        "description_label": "Mô tả (Dành cho khán giả từ...)",
+        "code_name_required": "Vui lòng nhập mã và tên",
+        "fetch_error": "Lỗi tải danh sách phân loại tuổi"
+      }
+    },
+    "manager_movies": {
+      "title": "Quản lý phim",
+      "add_movie": "Thêm phim",
+      "refresh": "Làm mới",
+      "fetch_error": "Lỗi tải danh sách phim",
+      "create_success": "Thêm phim thành công",
+      "update_success": "Cập nhật phim thành công",
+      "delete_success": "Xóa phim thành công",
+      "generic_error": "Có lỗi xảy ra",
+      "retry": "Thử lại",
+      "loading": "Đang tải dữ liệu...",
+      "empty": "Không tìm thấy phim nào phù hợp.",
+      "empty_item": "Trống {{label}}",
+      "duration_minutes": "{{minutes}} phút",
+      "total_movies": "Tổng: {{count}} phim",
+      "previous": "Trước",
+      "next": "Sau",
+      "page": "Trang {{page}} / {{totalPages}}",
+      "close": "Đóng",
+      "delete": "Xóa",
+      "search_placeholder": "Tìm phim...",
+      "loading_studios": "Đang tải studio...",
+      "loading_ratings": "Đang tải rating...",
+      "loading_genres": "Đang tải genre...",
+      "loading_actors": "Đang tải diễn viên...",
+      "loading_roles": "Đang tải vai diễn...",
+      "entities": {
+        "studio": "studio",
+        "rating": "rating",
+        "genre": "genre",
+        "actor": "diễn viên",
+        "role": "vai diễn"
+      },
+      "tabs": {
+        "all": "Tất cả ({{count}})",
+        "now_showing": "Đang chiếu ({{count}})",
+        "coming_soon": "Sắp chiếu ({{count}})",
+        "ended": "Đã kết thúc ({{count}})"
+      },
+      "status": {
+        "now_showing": "Đang chiếu",
+        "coming_soon": "Sắp chiếu",
+        "ended": "Đã kết thúc"
+      },
+      "table": {
+        "index": "STT",
+        "movie_name": "Tên phim",
+        "genre": "Thể loại",
+        "duration": "Thời lượng",
+        "rating": "Giới hạn độ tuổi",
+        "premiere": "Ngày công chiếu",
+        "status": "Trạng thái",
+        "actions": "Thao tác"
+      },
+      "details": {
+        "title": "Thông tin phim",
+        "studio": "Studio"
+      },
+      "validation": {
+        "title_required": "Tên phim không được để trống",
+        "studio_name_required": "Tên studio không được để trống",
+        "studio_required": "Vui lòng chọn studio",
+        "rating_required": "Vui lòng chọn rating"
+      },
+      "form": {
+        "edit_title": "Chỉnh sửa phim",
+        "create_title": "Thêm phim mới",
+        "movie_name": "Tên phim",
+        "movie_name_required": "Tên phim *",
+        "original_title": "Tên gốc (Tiếng Anh/Gốc)",
+        "studio_required": "Hãng sản xuất (Studio) *",
+        "studio_mode_existing": "Chọn studio có sẵn",
+        "studio_mode_new": "Nhập studio mới",
+        "select_studio_placeholder": "Chọn Studio",
+        "new_studio_placeholder": "Nhập tên studio mới",
+        "duration_minutes": "Thời lượng (phút)",
+        "imdb_rating": "IMDb Rating (0.0 - 10.0)",
+        "rating": "Rating",
+        "rating_required": "Rating *",
+        "select_rating_placeholder": "Chọn Rating",
+        "status": "Trạng thái",
+        "genre": "Genre",
+        "description": "Mô tả phim",
+        "cast_and_roles": "Diễn viên và vai diễn",
+        "add_actor": "Thêm diễn viên",
+        "actor": "Diễn viên",
+        "role": "Vai diễn",
+        "select_existing": "Chọn có sẵn",
+        "input_new": "Nhập mới",
+        "select_actor_placeholder": "Chọn diễn viên",
+        "new_actor_placeholder": "Tên diễn viên mới",
+        "select_role_placeholder": "Chọn vai diễn",
+        "new_role_placeholder": "Vai diễn mới",
+        "poster_url": "Poster phim",
+        "poster_upload_click_or_drag": "Click hoặc kéo ảnh vào đây",
+        "poster_upload_hint": "PNG, JPG (tối đa 5MB)",
+        "trailer_url": "Trailer URL",
+        "trailer_url_hint": "Trailer URL (Youtube/Vimeo)",
+        "release_date": "Ngày khởi chiếu",
+        "premiere_date": "Ngày công chiếu",
+        "premiere_date_hint": "Ngày công chiếu (Premiere)",
+        "cancel": "Hủy",
+        "save_changes": "Lưu thay đổi",
+        "create_movie": "Tạo mới phim"
+      },
+      "exit_confirm": {
+        "title": "Bạn có thay đổi chưa lưu",
+        "message_before": "Bạn có thay đổi chưa hoàn tất. Thoát sẽ",
+        "message_highlight": "xóa toàn bộ nội dung đang nhập",
+        "message_after": "Bạn có chắc chắn muốn thoát?",
+        "stay": "Ở lại chỉnh sửa",
+        "exit": "Thoát"
+      }
+    },
+    "cinema_configuration": {
+      "title": "Cấu hình rạp chiếu",
+      "add": "Thêm rạp",
+      "search_placeholder": "Tìm kiếm rạp...",
+      "refresh": "Làm mới",
+      "loading": "Đang tải dữ liệu rạp...",
+      "empty": "Không có dữ liệu rạp chiếu nào phù hợp.",
+      "fetch_error": "Lỗi tải danh sách rạp",
+      "create_success": "Tạo rạp thành công",
+      "update_success": "Cập nhật rạp thành công",
+      "delete_success": "Xóa rạp thành công",
+      "generic_error": "Có lỗi xảy ra",
+      "name_required": "Tên rạp không được để trống",
+      "bulk_delete_success": "Xóa {{count}} rạp thành công",
+      "bulk_delete_partial": "Xóa thành công {{successCount}}/{{count}} rạp",
+      "total": "Tổng: {{count}} rạp",
+      "previous": "Trước",
+      "next": "Sau",
+      "page": "Trang {{page}}",
+      "status": {
+        "active": "Hoạt động",
+        "maintenance": "Bảo trì",
+        "closed": "Đóng cửa"
+      },
+      "table": {
+        "index": "STT",
+        "name": "Tên rạp",
+        "city": "Thành phố",
+        "address": "Địa chỉ",
+        "screens": "Phòng chiếu",
+        "status": "Trạng thái",
+        "updated": "Cập nhật",
+        "actions": "Thao tác"
+      },
+      "form": {
+        "edit_title": "Chỉnh sửa rạp",
+        "create_title": "Thêm rạp mới",
+        "name": "Tên rạp *",
+        "city": "Thành phố",
+        "ward": "Xã/Phường",
+        "status": "Trạng thái",
+        "address": "Địa chỉ",
+        "phone": "Điện thoại",
+        "city_placeholder": "Chọn hoặc tìm thành phố",
+        "ward_placeholder": "Chọn hoặc tìm xã/phường",
+        "ward_placeholder_disabled": "Vui lòng chọn thành phố trước",
+        "cancel": "Hủy",
+        "save": "Lưu",
+        "create": "Tạo mới"
+      },
+      "delete_confirm": {
+        "single_title": "Xác nhận xóa",
+        "single_message": "Bạn có chắc chắn muốn xóa rạp này? Hành động này không thể hoàn tác.",
+        "bulk_title": "Xác nhận xóa",
+        "bulk_message": "Bạn có chắc chắn muốn xóa {{count}} rạp đã chọn? Hành động này không thể hoàn tác.",
+        "confirm": "Xác nhận xóa",
+        "cancel": "Hủy",
+        "ok": "Xóa"
+      },
+      "filter": {
+        "keyword": "Tìm kiếm rạp",
+        "status": "Trạng thái",
+        "region": "Khu vực"
+      }
+    },
+    "executive_dashboard": {
+      "title": "Dashboard điều hành",
+      "export_report": "Xuất báo cáo",
+      "summary_title": "Tổng quan hoạt động",
+      "search_placeholder": "Nhập tìm kiếm",
+      "time_range_placeholder": "Chọn khoảng thời gian",
+      "period": {
+        "today": "Hôm nay",
+        "week": "Tuần này",
+        "month": "Tháng này",
+        "quarter": "Quý này"
+      },
+      "tabs": {
+        "overview": "Tổng quan",
+        "detail": "Chi tiết"
+      },
+      "table": {
+        "index": "STT",
+        "metric": "Chỉ số",
+        "current_value": "Giá trị hiện tại",
+        "change": "Thay đổi",
+        "trend": "Xu hướng"
+      },
+      "empty_title": "Hiện tại chưa có dữ liệu đồng bộ",
+      "empty_description": "Các chỉ số vận hành sẽ được cập nhật tự động sau khi rạp chính thức hoạt động trong khung giờ đã chọn.",
+      "detail_title": "Thông tin chi tiết đang được chuẩn bị",
+      "detail_description": "Vui lòng quay lại sau khi dữ liệu hệ thống được làm sạch."
+    },
+    "seat_type": {
+      "title": "Quản lý Cấu hình Loại Ghế",
+      "add": "Thêm loại ghế",
+      "search_placeholder": "Tìm kiếm loại ghế...",
+      "refresh": "Làm mới",
+      "loading": "Đang tải dữ liệu loại ghế...",
+      "empty": "Không có dữ liệu loại ghế.",
+      "fetch_error": "Lỗi tải danh sách loại ghế",
+      "create_success": "Thêm loại ghế thành công",
+      "update_success": "Cập nhật loại ghế thành công",
+      "delete_success": "Xóa loại ghế thành công",
+      "generic_error": "Có lỗi xảy ra",
+      "validation": {
+        "name_required": "Tên loại ghế không được để trống",
+        "price_min": "Hệ số giá phải lớn hơn hoặc bằng 0.5",
+        "seat_min": "Số chỗ ngồi phải lớn hơn hoặc bằng 1",
+        "direction_invalid": "Hướng xếp ghế chỉ cho phép Horizontal hoặc Vertical"
+      },
+      "bulk_delete_success": "Xóa {{count}} loại ghế thành công",
+      "bulk_delete_partial": "Xóa thành công {{successCount}}/{{count}} loại ghế",
+      "table": {
+        "name": "Tên loại ghế",
+        "description": "Mô tả",
+        "number_of_seat": "Số chỗ ngồi",
+        "price_multiplier": "Hệ số giá",
+        "actions": "Thao tác"
+      },
+      "form": {
+        "edit_title": "Chỉnh sửa loại ghế",
+        "create_title": "Thêm loại ghế mới",
+        "name": "Tên loại ghế *",
+        "price_multiplier": "Hệ số giá (VD: 1.5) *",
+        "number_of_seat": "Số chỗ ngồi *",
+        "display_direction": "Hướng xếp ghế *",
+        "description": "Mô tả",
+        "horizontal": "Horizontal",
+        "vertical": "Vertical",
+        "cancel": "Hủy",
+        "save": "Lưu",
+        "create": "Tạo mới"
+      },
+      "delete_confirm": {
+        "title": "Xác nhận xóa",
+        "message": "Bạn có chắc chắn muốn xóa {{count}} loại ghế đã chọn? Hành động này không thể hoàn tác.",
+        "cancel": "Hủy",
+        "confirm": "Xác nhận xóa"
+      }
+    },
+    "customer_management": {
+      "title": "Quản lý khách hàng",
+      "subtitle": "Quản lý danh sách thành viên và trạng thái tài khoản.",
+      "search_placeholder": "Tìm theo tên, email, SĐT...",
+      "refresh": "Làm mới",
+      "fetch_error": "Lỗi tải danh sách khách hàng",
+      "loading": "Đang tải dữ liệu...",
+      "empty": "Không tìm thấy khách hàng nào.",
+      "member_fallback": "Member",
+      "status": {
+        "locked": "Đã khóa",
+        "active": "Hoạt động"
+      },
+      "action_success": {
+        "lock": "Đã khóa tài khoản khách hàng",
+        "unlock": "Đã mở khóa tài khoản khách hàng",
+        "delete": "Đã xóa tài khoản khách hàng"
+      },
+      "table": {
+        "customer": "Khách hàng",
+        "contact": "Liên hệ",
+        "birthday": "Ngày sinh",
+        "gender": "Giới tính",
+        "status": "Trạng thái",
+        "actions": "Thao tác"
+      },
+      "confirm": {
+        "title_lock": "Xác nhận khóa",
+        "title_unlock": "Xác nhận mở khóa",
+        "title_delete": "Xác nhận xóa",
+        "message_lock": "Bạn có chắc chắn muốn khóa khách hàng {{name}}?",
+        "message_unlock": "Bạn có chắc chắn muốn mở khóa khách hàng {{name}}?",
+        "message_delete": "Bạn có chắc chắn muốn xóa vĩnh viễn khách hàng {{name}}?",
+        "cancel": "Hủy",
+        "confirm": "Xác nhận"
+      }
     }
   },
   "customer": {
@@ -82,6 +596,68 @@
       "coming_soon": "SẮP CHIẾU",
       "special_screening": "SUẤT ĐẶC BIỆT",
       "view_details": "XEM CHI TIẾT"
+    },
+    "my_ltc": {
+      "title": "My LTC",
+      "nav": {
+        "dashboard": "Dashboard",
+        "account_details": "Thông tin tài khoản",
+        "membership_card": "Thẻ thành viên",
+        "points": "Điểm thưởng",
+        "vouchers": "Voucher & Giftcode",
+        "transaction_history": "Lịch sử giao dịch"
+      },
+      "dashboard": {
+        "general_information": "Thông tin tổng quan",
+        "hello": "Xin chào {{name}},",
+        "manage_subtitle": "Quản lý toàn bộ thông tin tài khoản của bạn.",
+        "edit": "Chỉnh sửa",
+        "view": "Xem",
+        "membership_tier": "Hạng thành viên",
+        "total_spent": "Tổng chi tiêu",
+        "points": "Điểm LTC",
+        "voucher": "Voucher"
+      },
+      "account_details": {
+        "title": "Thông tin tài khoản",
+        "edit": "Thay đổi",
+        "cancel_text": "Hủy bỏ",
+        "cancel": "Hủy",
+        "save": "Lưu thay đổi",
+        "loading": "Đang tải thông tin tài khoản...",
+        "not_updated": "Chưa cập nhật",
+        "success": "Cập nhật thông tin thành công.",
+        "fetch_error": "Không thể tải thông tin tài khoản.",
+        "update_error": "Cập nhật thất bại, vui lòng thử lại.",
+        "fields": {
+          "name": "Họ và tên",
+          "phone": "Số điện thoại",
+          "gender": "Giới tính",
+          "dob": "Ngày sinh",
+          "email": "Email",
+          "address": "Địa chỉ chi tiết",
+          "member_code": "Mã thành viên"
+        },
+        "placeholders": {
+          "name": "Nhập họ và tên đầy đủ",
+          "phone": "Nhập số điện thoại",
+          "email": "example@email.com",
+          "gender": "Chọn giới tính",
+          "dob": "DD/MM/YYYY",
+          "address": "Nhập địa chỉ nhà, tên đường, quận/huyện, tỉnh/thành phố..."
+        },
+        "gender_options": {
+          "male": "Nam",
+          "female": "Nữ",
+          "other": "Khác"
+        },
+        "validation": {
+          "name_required": "Vui lòng nhập họ tên",
+          "phone_required": "Vui lòng nhập số điện thoại",
+          "email_required": "Vui lòng nhập email",
+          "email_invalid": "Email không hợp lệ"
+        }
+      }
     }
   },
   "NewsAndOffers": "Tin Tức & Ưu Đãi",

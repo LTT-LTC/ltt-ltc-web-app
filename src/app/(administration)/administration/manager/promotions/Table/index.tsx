@@ -14,6 +14,7 @@ import LTTModal from "@/src/@core/component/AntD/LTTModal";
 import LTTSelect from "@/src/@core/component/AntD/LTTSelect";
 import LTTTable from "@/src/@core/component/AntD/LTTTable";
 import { Promotion, mockPromotions } from "../_mock/data";
+import LTTConfirmDialog from "@/src/@core/component/LTTConfirmDialog";
 
 const typeLabel: Record<Promotion["type"], string> = {
   percentage: "Giảm %",
@@ -132,9 +133,14 @@ const PromotionsListPage = () => {
           <LTTButton variant="outline" onClick={() => openEdit(record)}>
             Sửa
           </LTTButton>
-          <LTTButton variant="outline" danger onClick={() => handleDeleteOne(record.id)}>
-            Xóa
-          </LTTButton>
+          <LTTConfirmDialog
+            title="Xác nhận xóa"
+            description="Bạn có chắc chắn muốn xóa khuyến mãi này?"
+            confirmText="Xóa"
+            cancelText="Hủy"
+            onConfirm={() => handleDeleteOne(record.id)}
+            trigger={<LTTButton variant="outline" danger>Xóa</LTTButton>}
+          />
         </div>
       ),
     },
@@ -191,9 +197,9 @@ const PromotionsListPage = () => {
           prev.map((item) =>
             item.id === editingItem.id
               ? {
-                  ...item,
-                  ...payload,
-                }
+                ...item,
+                ...payload,
+              }
               : item,
           ),
         );
@@ -267,14 +273,14 @@ const PromotionsListPage = () => {
       >
         <Form form={form} layout="vertical" className="grid grid-cols-2 gap-x-4">
           <div className="col-span-2">
-            <LTTFormItem name="name" label="Tên" rules={[{ required: true, message: "Tên không được để trống" }]}> 
+            <LTTFormItem name="name" label="Tên" rules={[{ required: true, message: "Tên không được để trống" }]}>
               <LTTInput />
             </LTTFormItem>
           </div>
-          <LTTFormItem name="code" label="Mã" rules={[{ required: true, message: "Mã không được để trống" }]}> 
+          <LTTFormItem name="code" label="Mã" rules={[{ required: true, message: "Mã không được để trống" }]}>
             <LTTInput />
           </LTTFormItem>
-          <LTTFormItem name="type" label="Loại" rules={[{ required: true }]}> 
+          <LTTFormItem name="type" label="Loại" rules={[{ required: true }]}>
             <LTTSelect
               options={[
                 { label: "Giảm %", value: "percentage" },
@@ -284,28 +290,28 @@ const PromotionsListPage = () => {
               ]}
             />
           </LTTFormItem>
-          <LTTFormItem name="value" label="Giá trị"> 
+          <LTTFormItem name="value" label="Giá trị">
             <LTTInput type="number" />
           </LTTFormItem>
-          <LTTFormItem name="usageLimit" label="Giới hạn sử dụng"> 
+          <LTTFormItem name="usageLimit" label="Giới hạn sử dụng">
             <LTTInput type="number" />
           </LTTFormItem>
-          <LTTFormItem name="minOrderValue" label="Đơn tối thiểu"> 
+          <LTTFormItem name="minOrderValue" label="Đơn tối thiểu">
             <LTTInput type="number" />
           </LTTFormItem>
-          <LTTFormItem name="maxDiscount" label="Giảm tối đa"> 
+          <LTTFormItem name="maxDiscount" label="Giảm tối đa">
             <LTTInput type="number" />
           </LTTFormItem>
-          <LTTFormItem name="startDate" label="Ngày bắt đầu"> 
+          <LTTFormItem name="startDate" label="Ngày bắt đầu">
             <LTTInput type="date" />
           </LTTFormItem>
-          <LTTFormItem name="endDate" label="Ngày kết thúc"> 
+          <LTTFormItem name="endDate" label="Ngày kết thúc">
             <LTTInput type="date" />
           </LTTFormItem>
-          <LTTFormItem name="applicableTo" label="Áp dụng cho" className="col-span-2"> 
+          <LTTFormItem name="applicableTo" label="Áp dụng cho" className="col-span-2">
             <LTTInput />
           </LTTFormItem>
-          <LTTFormItem name="status" label="Trạng thái"> 
+          <LTTFormItem name="status" label="Trạng thái">
             <LTTSelect
               options={[
                 { label: "Bản nháp", value: "draft" },
