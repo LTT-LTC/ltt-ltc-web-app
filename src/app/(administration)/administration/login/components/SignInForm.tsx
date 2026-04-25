@@ -153,7 +153,7 @@ const FormDetail = () => {
                 </div>
                 <div className="relative flex justify-center text-sm">
                     <span className="p-2 text-gray-400 bg-white dark:bg-gray-900 sm:px-5 sm:py-2">
-                        Hoặc
+                        {t("common.or")}
                     </span>
                 </div>
             </div>
@@ -162,22 +162,22 @@ const FormDetail = () => {
 
 
                     <LTTFormItem
-                        label="Tài khoản"
+                        label={t("admin.auth.login.form.username_label")}
                         name="username"
                         rules={[rules.required]}
                         className="mb-3"
                     >
-                        <LTTInput label="Tài khoản" showCount={false} allowClear={false} />
+                        <LTTInput label={t("admin.auth.login.form.username_label")} showCount={false} allowClear={false} />
                     </LTTFormItem>
 
                     <LTTFormItem
-                        label="Mật khẩu"
+                        label={t("admin.auth.login.form.password_label")}
                         name="password"
                         rules={[rules.required]}
                         className="mb-3"
                     >
                         <LTTInput
-                            label="Mật khẩu"
+                            label={t("admin.auth.login.form.password_label")}
                             showCount={false}
                             allowClear={false}
                             type={showPassword ? "text" : "password"}
@@ -205,7 +205,7 @@ const FormDetail = () => {
                             href="/administration-reset-password"
                             className="text-sm text-brand-600 hover:text-brand-600 focus:text-brand-600 dark:!text-brand-400"
                         >
-                            Quên mật khẩu?
+                            {t("admin.auth.login.form.forgot_password")}
                         </Link>
                     </div>
                     <div className="mt-2">
@@ -215,7 +215,7 @@ const FormDetail = () => {
                             className="w-full"
                             size="sm"
                         >
-                            Đăng nhập
+                            {t("admin.auth.login.form.submit")}
                         </LTTButton>
                     </div>
                 </div>

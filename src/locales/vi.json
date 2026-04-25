@@ -1,4 +1,10 @@
 {
+  "common": {
+    "or": "Hoặc",
+    "logout": "Đăng xuất",
+    "user": "Người dùng",
+    "all": "Tất cả"
+  },
   "http": {
     "network_error": "Lỗi kết nối đến máy chủ, vui lòng thử lại sau.",
     "unknown_error": "Lỗi không xác định, vui lòng liên hệ quản trị viên.",
@@ -13,6 +19,7 @@
       "loading": "Đang tải...",
       "active": "Hoạt động",
       "inactive": "Tạm dừng",
+      "all": "Tất cả",
       "unsaved_changes_dialog": {
         "title": "Bạn có thay đổi chưa lưu",
         "message_before": "Bạn có thay đổi chưa hoàn tất. Thoát sẽ",
@@ -42,7 +49,8 @@
       "update_success": "Cập nhật thành công",
       "update_error": "Lỗi khi cập nhật",
       "validation": {
-        "title_required": "Vui lòng nhập tiêu đề"
+        "title_required": "Vui lòng nhập tiêu đề",
+        "content_required": "Vui lòng nhập nội dung"
       },
       "status": {
         "active": "Hoạt động",
@@ -171,6 +179,7 @@
       "title": "Tiện ích rạp (Amenities)",
       "add": "Thêm tiện ích",
       "search_placeholder": "Tìm kiếm tiện ích...",
+      "refresh": "Làm mới",
       "loading": "Đang tải dữ liệu tiện ích...",
       "empty": "Chưa có tiện ích nào được tạo.",
       "fetch_error": "Lỗi tải danh sách tiện ích",
@@ -207,6 +216,78 @@
         "save": "Lưu thay đổi",
         "create": "Tạo mới"
       }
+    },
+    "showtimes": {
+      "title": "Lịch chiếu phim",
+      "add": "Thêm suất chiếu",
+      "add_title": "Thêm suất chiếu mới",
+      "edit_title": "Chỉnh sửa suất chiếu",
+      "search_placeholder": "Tìm theo tên phim...",
+      "fetch_error": "Lỗi tải lịch chiếu",
+      "distribution_fetch_error": "Không thể tải dữ liệu phát hành phim",
+      "create_success": "Tạo thành công",
+      "toast": {
+        "create_success": "Tạo thành công",
+        "update_success": "Cập nhật thành công",
+        "delete_success": "Xóa thành công"
+      },
+      "table": {
+        "format": "Định dạng",
+        "price": "Giá",
+        "status": "Trạng thái",
+        "actions": "Thao tác"
+      },
+      "actions": {
+        "edit": "Sửa"
+      },
+      "status": {
+        "scheduled": "Đã lên lịch",
+        "completed": "Đã chiếu",
+        "cancelled": "Đã hủy"
+      },
+      "delete_error": "Xóa suất chiếu thất bại",
+      "bulk_delete_success": "Đã xóa {{count}} suất chiếu",
+      "bulk_delete_partial": "Xóa thành công {{success}}/{{total}} suất chiếu",
+      "cinema_claim_missing": "Không tìm thấy cinemaId trong phiên đăng nhập. Vui lòng đăng nhập lại.",
+      "view": {
+        "table": "Bảng",
+        "calendar": "Lịch"
+      },
+      "form": {
+        "movie": "Phim *",
+        "movie_placeholder": "Chọn phim",
+        "screen": "Phòng chiếu *",
+        "screen_placeholder": "Chọn phòng"
+      }
+    },
+    "screens": {
+      "title": "Quản lý phòng chiếu",
+      "add": "Thêm phòng chiếu",
+      "search_placeholder": "Tìm kiếm phòng chiếu...",
+      "refresh": "Làm mới",
+      "fetch_error": "Lỗi tải danh sách phòng chiếu",
+      "create_success": "Thêm phòng chiếu thành công",
+      "update_success": "Cập nhật phòng chiếu thành công",
+      "delete_success": "Xóa phòng chiếu thành công",
+      "generic_error": "Có lỗi xảy ra",
+      "cinema_claim_missing": "Không tìm thấy cinemaId trong phiên đăng nhập. Vui lòng đăng nhập lại.",
+      "bulk_delete_success": "Xóa {{count}} phòng chiếu thành công",
+      "bulk_delete_partial": "Xóa thành công {{success}}/{{total}} phòng chiếu",
+      "validation": {
+        "cinema_required": "Vui lòng chọn rạp trước khi tạo hoặc cập nhật phòng chiếu",
+        "screen_number_invalid": "Số phòng chiếu không hợp lệ"
+      }
+    },
+    "seatmap": {
+      "title": "Quản lý phòng chiếu",
+      "add": "Thêm phòng chiếu",
+      "search_placeholder": "Tìm kiếm phòng chiếu...",
+      "refresh": "Làm mới",
+      "fetch_error": "Không thể tải dữ liệu sơ đồ ghế",
+      "create_success": "Tạo phòng chiếu thành công!",
+      "update_success": "Cập nhật phòng chiếu thành công!",
+      "delete_success": "Đã xóa phòng chiếu",
+      "bulk_delete_success": "Đã xóa {{count}} phòng chiếu"
     },
     "menu": {
       "dashboard": "Bảng Điều Khiển",
@@ -880,6 +961,17 @@
     }
   },
   "customer": {
+    "auth": {
+      "login_or_register": "Đăng nhập / Đăng ký",
+      "login": {
+        "identifier": "Email / Số điện thoại",
+        "password": "Mật khẩu",
+        "forgot_password": "Quên mật khẩu?",
+        "submit": "Đăng nhập",
+        "no_account": "Chưa có tài khoản?",
+        "register_now": "Đăng ký ngay"
+      }
+    },
     "nav": {
       "movies": "PHIM",
       "now_showing": "Phim Đang Chiếu",

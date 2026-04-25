@@ -42,9 +42,11 @@ import {
 } from "@/src/@core/component/LTTShadcnUI/LTTSelect";
 import AdminTablePagination from "@/src/app/(administration)/administration/admin/_components/AdminTablePagination";
 import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 
 export default function SeatMapPage() {
+  const { t } = useLocalization();
   const [screens, setScreens] = useState<Screen[]>([]);
   const [cinemas, setCinemas] = useState<CinemaOutputDto[]>([]);
   const [selectedCinemaId, setSelectedCinemaId] = useState("");
@@ -90,7 +92,7 @@ export default function SeatMapPage() {
       setScreens((res?.items || []).map(mapToWizardScreen));
       setTotalCount(res?.totalCount || 0);
     },
-    onError: (err) => toast.error(err.message || "Không thể tải dữ liệu sơ đồ ghế"),
+    onError: (err) => toast.error(err.message || t("admin.seatmap.fetch_error")),
   });
 
   const createMutation = useLTTMutation({
@@ -102,7 +104,7 @@ export default function SeatMapPage() {
       status: "active",
     }),
     onSuccess: () => {
-      toast.success("Tạo phòng chiếu thành công!");
+      toast.success(t("admin.seatmap.create_success"));
       setIsEditorOpen(false);
       setEditingScreen(null);
       fetchData();
@@ -118,7 +120,7 @@ export default function SeatMapPage() {
       status: "active",
     }),
     onSuccess: () => {
-      toast.success("Cập nhật phòng chiếu thành công!");
+      toast.success(t("admin.seatmap.update_success"));
       setIsEditorOpen(false);
       setEditingScreen(null);
       fetchData();
@@ -168,7 +170,7 @@ export default function SeatMapPage() {
 
   const handleDeleteSelected = () => {
     Promise.allSettled(Array.from(selected).map((id) => deleteMutation.mutation(id))).then(() => {
-      toast.success(`Đã xóa ${selected.size} phòng chiếu`);
+      toast.success(t("admin.seatmap.bulk_delete_success", { count: selected.size }));
       setSelected(new Set());
       setDeleteDialogOpen(false);
       fetchData();
@@ -177,7 +179,7 @@ export default function SeatMapPage() {
 
   const handleDeleteOne = (id: string) => {
     deleteMutation.mutation(id).then(() => {
-      toast.success("Đã xóa phòng chiếu");
+      toast.success(t("admin.seatmap.delete_success"));
       fetchData();
     });
   };
@@ -208,9 +210,9 @@ export default function SeatMapPage() {
     <>
       <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl font-bold">Quản lý phòng chiếu</h1>
+        <h1 className="font-heading text-2xl font-bold">{t("admin.seatmap.title")}</h1>
         <LTTButton onClick={() => handleOpenEditor()} className="gap-2">
-          <Plus className="h-4 w-4" /> Thêm phòng chiếu
+          <Plus className="h-4 w-4" /> {t("admin.seatmap.add")}
         </LTTButton>
       </div>
 
@@ -218,7 +220,7 @@ export default function SeatMapPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
           <LTTInput
-            placeholder="Tìm kiếm phòng chiếu..."
+            placeholder={t("admin.seatmap.search_placeholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
@@ -246,12 +248,15 @@ export default function SeatMapPage() {
           variant="outline"
           className="gap-2"
           onClick={() => {
-            setPage(1);
-            fetchData(searchQuery, 1);
+            if (page !== 1) {
+              setPage(1);
+              return;
+            }
+            fetchData(debouncedSearch, 1);
           }}
           loading={listMutation.isLoading}
         >
-          <RefreshCw className="h-4 w-4" /> Làm mới
+          <RefreshCw className="h-4 w-4" /> {t("admin.seatmap.refresh")}
         </LTTButton>
 
         {selected.size > 0 && (
@@ -269,14 +274,10 @@ export default function SeatMapPage() {
         totalCount={totalCount}
         page={page}
         pageSize={fetch}
-        onPageChange={(nextPage) => {
-          setPage(nextPage);
-          fetchData(debouncedSearch, nextPage);
-        }}
+        onPageChange={(nextPage) => setPage(nextPage)}
         onPageSizeChange={(nextSize) => {
           setFetch(nextSize);
           setPage(1);
-          listMutation.mutation({ cinemaId: selectedCinemaId, page: 1, fetch: nextSize, keyword: debouncedSearch });
         }}
         loading={listMutation.isLoading}
       />

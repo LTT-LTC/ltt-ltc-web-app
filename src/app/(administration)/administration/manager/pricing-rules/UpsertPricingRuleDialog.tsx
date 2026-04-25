@@ -19,7 +19,6 @@ import {
     LTTSelectTrigger,
     LTTSelectValue
 } from "@/src/@core/component/LTTShadcnUI/LTTSelect";
-import LTTSwitch from "@/src/@core/component/AntD/LTTSwitch";
 import { useForm } from "react-hook-form";
 import { managerPricingRulesService as pricingRuleService } from "@/src/services/administration-service/manager/pricing-rules/pricing-rules.service";
 import { managerSeatTypeService as seatTypeService } from "@/src/services/administration-service/manager/seat-type/seat-type.service";
@@ -47,6 +46,18 @@ const DAY_OPTIONS = [
     { token: "SAT", label: "Thứ 7" },
     { token: "SUN", label: "Chủ nhật" },
 ];
+
+const extractDetailedError = (error: unknown): string => {
+    const fallback = "Đã xảy ra lỗi, vui lòng thử lại sau";
+    if (!error || typeof error !== "object") return fallback;
+    const e = error as Record<string, any>;
+    return (
+        e?.message ||
+        e?.response?.data?.error?.message ||
+        e?.response?.data?.message ||
+        fallback
+    );
+};
 
 export default function UpsertPricingRuleDialog({ open, onOpenChange, editingItem, onSuccess, cinemaId }: Props) {
     const { t } = useLocalization();
@@ -81,7 +92,7 @@ export default function UpsertPricingRuleDialog({ open, onOpenChange, editingIte
             onSuccess();
             onOpenChange(false);
         },
-        onError: (err) => toast.error(err.message || t("admin.pricing_rules.generic_error"))
+        onError: (err) => toast.error(extractDetailedError(err))
     });
 
     useEffect(() => {
@@ -151,7 +162,7 @@ export default function UpsertPricingRuleDialog({ open, onOpenChange, editingIte
                 <LTTDialogHeader>
                     <LTTDialogTitle>{editingItem ? t("admin.pricing_rules.form.edit_title") : t("admin.pricing_rules.form.create_title")}</LTTDialogTitle>
                 </LTTDialogHeader>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
+                <form onSubmit={handleSubmit(onSubmit)} className="max-h-[70vh] space-y-4 overflow-y-auto py-2 pr-1">
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-2">
                             <LTTLabel>{t("admin.pricing_rules.form.seat_type")}</LTTLabel>
@@ -224,17 +235,6 @@ export default function UpsertPricingRuleDialog({ open, onOpenChange, editingIte
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <LTTLabel>{t("admin.pricing_rules.form.status")}</LTTLabel>
-                            <div className="flex items-center gap-2 pt-2">
-                                <LTTSwitch
-                                    checked={watch("isActive")}
-                                    onChange={(v) => setValue("isActive", v)}
-                                />
-                                <span className="text-sm">{watch("isActive") ? t("admin.common.active") : t("admin.common.inactive")}</span>
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
                             <LTTLabel>{t("admin.pricing_rules.form.start_time")}</LTTLabel>
                             <LTTInput type="time" {...register("startTime")} />
                         </div>
@@ -249,6 +249,21 @@ export default function UpsertPricingRuleDialog({ open, onOpenChange, editingIte
                         <div className="space-y-2">
                             <LTTLabel>Valid until</LTTLabel>
                             <LTTInput type="date" {...register("validUntil")} />
+                        </div>
+                        <div className="space-y-2 sm:col-span-2">
+                            <LTTLabel>{t("admin.pricing_rules.form.status")}</LTTLabel>
+                            <LTTSelect
+                                value={watch("isActive") ? "active" : "inactive"}
+                                onValueChange={(v) => setValue("isActive", v === "active")}
+                            >
+                                <LTTSelectTrigger>
+                                    <LTTSelectValue />
+                                </LTTSelectTrigger>
+                                <LTTSelectContent>
+                                    <LTTSelectItem value="active">{t("admin.common.active")}</LTTSelectItem>
+                                    <LTTSelectItem value="inactive">{t("admin.common.inactive")}</LTTSelectItem>
+                                </LTTSelectContent>
+                            </LTTSelect>
                         </div>
                     </div>
                 </form>

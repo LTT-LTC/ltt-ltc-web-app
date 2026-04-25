@@ -1,4 +1,10 @@
 {
+  "common": {
+    "or": "Or",
+    "logout": "Log out",
+    "user": "User",
+    "all": "All"
+  },
   "http": {
     "network_error": "Network error, please try again later.",
     "unknown_error": "Unknown error, please contact administrators.",
@@ -13,6 +19,7 @@
       "loading": "Loading...",
       "active": "Active",
       "inactive": "Inactive",
+      "all": "All",
       "unsaved_changes_dialog": {
         "title": "You Have Unsaved Changes",
         "message_before": "You have unfinished changes. Exiting will",
@@ -42,7 +49,8 @@
       "update_success": "Updated successfully",
       "update_error": "Update failed",
       "validation": {
-        "title_required": "Please enter a title"
+        "title_required": "Please enter a title",
+        "content_required": "Please enter content"
       },
       "status": {
         "active": "Active",
@@ -171,6 +179,7 @@
       "title": "Cinema Amenities",
       "add": "Add amenity",
       "search_placeholder": "Search amenities...",
+      "refresh": "Refresh",
       "loading": "Loading amenity data...",
       "empty": "No amenities created yet.",
       "fetch_error": "Failed to load amenities",
@@ -207,6 +216,78 @@
         "save": "Save changes",
         "create": "Create"
       }
+    },
+    "showtimes": {
+      "title": "Showtime Scheduler",
+      "add": "Add showtime",
+      "add_title": "Add new showtime",
+      "edit_title": "Edit showtime",
+      "search_placeholder": "Search by movie title...",
+      "fetch_error": "Failed to load showtimes",
+      "distribution_fetch_error": "Cannot load movie distribution data",
+      "create_success": "Created successfully",
+      "toast": {
+        "create_success": "Created successfully",
+        "update_success": "Updated successfully",
+        "delete_success": "Deleted successfully"
+      },
+      "table": {
+        "format": "Format",
+        "price": "Price",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "actions": {
+        "edit": "Edit"
+      },
+      "status": {
+        "scheduled": "Scheduled",
+        "completed": "Completed",
+        "cancelled": "Cancelled"
+      },
+      "delete_error": "Delete showtime failed",
+      "bulk_delete_success": "Deleted {{count}} showtimes",
+      "bulk_delete_partial": "Deleted {{success}}/{{total}} showtimes",
+      "cinema_claim_missing": "CinemaId claim is missing in your login session. Please sign in again.",
+      "view": {
+        "table": "Table",
+        "calendar": "Calendar"
+      },
+      "form": {
+        "movie": "Movie *",
+        "movie_placeholder": "Select movie",
+        "screen": "Screen *",
+        "screen_placeholder": "Select screen"
+      }
+    },
+    "screens": {
+      "title": "Screen Management",
+      "add": "Add screen",
+      "search_placeholder": "Search screens...",
+      "refresh": "Refresh",
+      "fetch_error": "Failed to load screens",
+      "create_success": "Screen created successfully",
+      "update_success": "Screen updated successfully",
+      "delete_success": "Screen deleted successfully",
+      "generic_error": "Something went wrong",
+      "cinema_claim_missing": "CinemaId claim is missing in your login session. Please sign in again.",
+      "bulk_delete_success": "Deleted {{count}} screens",
+      "bulk_delete_partial": "Deleted {{success}}/{{total}} screens",
+      "validation": {
+        "cinema_required": "Please select cinema before creating or updating a screen",
+        "screen_number_invalid": "Invalid screen number"
+      }
+    },
+    "seatmap": {
+      "title": "Screen Management",
+      "add": "Add screen",
+      "search_placeholder": "Search screens...",
+      "refresh": "Refresh",
+      "fetch_error": "Unable to load seat map data",
+      "create_success": "Screen created successfully!",
+      "update_success": "Screen updated successfully!",
+      "delete_success": "Screen deleted",
+      "bulk_delete_success": "Deleted {{count}} screens"
     },
     "menu": {
       "dashboard": "Dashboard",
@@ -880,6 +961,17 @@
     }
   },
   "customer": {
+    "auth": {
+      "login_or_register": "Login / Register",
+      "login": {
+        "identifier": "Email / Phone number",
+        "password": "Password",
+        "forgot_password": "Forgot password?",
+        "submit": "Sign in",
+        "no_account": "No account yet?",
+        "register_now": "Register now"
+      }
+    },
     "nav": {
       "movies": "MOVIES",
       "now_showing": "Now Showing",

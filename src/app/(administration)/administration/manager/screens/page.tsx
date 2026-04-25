@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Pencil, Trash2, Search, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
@@ -23,14 +23,16 @@ import {
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 import { toast } from "sonner";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
-import useDebouncedListQuery from "@/src/@core/hooks/useDebouncedListQuery";
 import { screenService } from "@/src/services/administration-service/screen/screen.service";
 import { ScreenOutputDto } from "@/src/services/administration-service/screen/models/output.model";
 import { GetScreenListInputDto, CreateScreenInputDto, UpdateScreenInputDto } from "@/src/services/administration-service/screen/models/input.model";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
-import { CinemaOutputDto, cinemaService } from "@/src/services/administration-service/cinema/cinema.service";
 import AdminTablePagination from "@/src/app/(administration)/administration/admin/_components/AdminTablePagination";
 import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
+import { getCookie } from "@/src/@core/utils/cookie";
+import { ADMIN_ACCESS_TOKEN_KEY } from "@/src/@core/const";
+import { getUserInfoFromToken } from "@/src/@core/utils/jwt";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-100 text-green-700 border-green-200",
@@ -39,6 +41,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function ScreensConfigPage() {
+  const { t } = useLocalization();
   const [items, setItems] = useState<ScreenOutputDto[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
@@ -51,8 +54,9 @@ export default function ScreensConfigPage() {
   const [fetch, setFetch] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
 
-  const [cinemas, setCinemas] = useState<CinemaOutputDto[]>([]);
   const [selectedCinemaId, setSelectedCinemaId] = useState<string>("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [cinemaMissing, setCinemaMissing] = useState(false);
 
   const [form, setForm] = useState({
     screenNumber: 1,
@@ -60,18 +64,6 @@ export default function ScreensConfigPage() {
     seatCount: 100,
     seatLayout: "Standard",
     status: "active",
-  });
-
-  const cinemaMutation = useLTTMutation<PagedResultDto<CinemaOutputDto> | undefined, { page: number; fetch: number }>({
-    mutationFn: (p) => cinemaService.getCinemaListAsync(p),
-    onSuccess: (res) => {
-      if (res && res.items) {
-        setCinemas(res.items);
-        if (res.items.length > 0 && !selectedCinemaId) {
-          setSelectedCinemaId(res.items[0].id);
-        }
-      }
-    }
   });
 
   const listMutation = useLTTMutation<PagedResultDto<ScreenOutputDto> | undefined, { cinemaId: string; params: GetScreenListInputDto }>({
@@ -82,27 +74,27 @@ export default function ScreensConfigPage() {
         setTotalCount(res.totalCount);
       }
     },
-    onError: (err) => toast.error(err.message || "Lỗi tải danh sách phòng chiếu")
+    onError: (err) => toast.error(err.message || t("admin.screens.fetch_error"))
   });
 
   const createMutation = useLTTMutation<ScreenOutputDto | undefined, { cinemaId: string; body: CreateScreenInputDto }>({
     mutationFn: (input) => screenService.createScreenAsync(input.cinemaId, input.body),
     onSuccess: () => {
-      toast.success("Thêm phòng chiếu thành công");
+      toast.success(t("admin.screens.create_success"));
       fetchData();
       setDialogOpen(false);
     },
-    onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
+    onError: (err) => toast.error(err.message || t("admin.screens.generic_error"))
   });
 
   const updateMutation = useLTTMutation<ScreenOutputDto | undefined, { cinemaId: string; id: string; body: UpdateScreenInputDto }>({
     mutationFn: (input) => screenService.updateScreenAsync(input.cinemaId, input.id, input.body),
     onSuccess: () => {
-      toast.success("Cập nhật phòng chiếu thành công");
+      toast.success(t("admin.screens.update_success"));
       fetchData();
       setDialogOpen(false);
     },
-    onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
+    onError: (err) => toast.error(err.message || t("admin.screens.generic_error"))
   });
 
   const removeMutation = useLTTMutation<boolean, string>({
@@ -112,48 +104,44 @@ export default function ScreensConfigPage() {
       return true;
     },
     onSuccess: () => {
-      toast.success("Xóa phòng chiếu thành công");
+      toast.success(t("admin.screens.delete_success"));
     },
-    onError: (err) => toast.error(err.message || "Có lỗi xảy ra")
+    onError: (err) => toast.error(err.message || t("admin.screens.generic_error"))
   });
 
   const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || removeMutation.isLoading;
 
   const fetchData = (keyword?: string, pageNumber?: number) => {
     if (!selectedCinemaId) return;
-    const effectiveKeyword = keyword ?? search;
+    const effectiveKeyword = keyword ?? debouncedSearch;
     const effectivePage = pageNumber ?? page;
     listMutation.mutation({ cinemaId: selectedCinemaId, params: { page: effectivePage, fetch, keyword: effectiveKeyword } });
   };
 
   useEffect(() => {
-    cinemaMutation.mutation({ page: 1, fetch: 100 });
+    const accessToken = getCookie(ADMIN_ACCESS_TOKEN_KEY);
+    const userInfo = accessToken ? getUserInfoFromToken(accessToken) : null;
+    const cinemaId = userInfo?.cinemaId?.trim() || "";
+    if (!cinemaId) {
+      setCinemaMissing(true);
+      toast.error(t("admin.screens.cinema_claim_missing"));
+      return;
+    }
+    setSelectedCinemaId(cinemaId);
   }, []);
 
   useEffect(() => {
     if (selectedCinemaId) {
-      fetchData(search, page);
+      fetchData(debouncedSearch, page);
     }
-  }, [selectedCinemaId, page, fetch]);
+  }, [selectedCinemaId, page, fetch, debouncedSearch]);
 
-  const debouncedSearch = useDebouncedListQuery(
-    search,
-    (keyword) => {
-      setPage(1);
-      fetchData(keyword, 1);
-    },
-    [selectedCinemaId, fetch]
-  );
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
-  const filtered = useMemo(() => {
-    if (!search) return items;
-    const q = search.toLowerCase();
-    return items.filter(
-      (c) => c.screenNumber.toString().includes(q) || c.screenType?.toLowerCase().includes(q)
-    );
-  }, [items, search]);
-
-  const allSel = filtered.length > 0 && filtered.every((i) => selected.has(i.id));
+  const allSel = items.length > 0 && items.every((i) => selected.has(i.id));
   const toggleAll = () =>
     allSel ? setSelected(new Set()) : setSelected(new Set(items.map((i) => i.id)));
   const toggle = (id: string) => {
@@ -188,12 +176,12 @@ export default function ScreensConfigPage() {
 
   const save = async () => {
     if (!selectedCinemaId) {
-      toast.error("Vui lòng chọn rạp trước khi tạo hoặc cập nhật phòng chiếu");
+      toast.error(t("admin.screens.validation.cinema_required"));
       return;
     }
 
     if (form.screenNumber <= 0) {
-      toast.error("Số phòng chiếu không hợp lệ");
+      toast.error(t("admin.screens.validation.screen_number_invalid"));
       return;
     }
 
@@ -216,9 +204,9 @@ export default function ScreensConfigPage() {
     const failed = results.filter((r) => r.status === "rejected").length;
 
     if (failed === 0) {
-      toast.success(`Xóa ${ids.length} phòng chiếu thành công`);
+      toast.success(t("admin.screens.bulk_delete_success", { count: ids.length }));
     } else {
-      toast.error(`Xóa thành công ${ids.length - failed}/${ids.length} phòng chiếu`);
+      toast.error(t("admin.screens.bulk_delete_partial", { success: ids.length - failed, total: ids.length }));
     }
 
     setSelected(new Set());
@@ -237,9 +225,9 @@ export default function ScreensConfigPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl font-bold">Quản lý Phòng Chiếu</h1>
-        <LTTButton onClick={openCreate} className="gap-2" disabled={!selectedCinemaId || cinemaMutation.isLoading}>
-          <Plus className="h-4 w-4" /> Thêm phòng chiếu
+        <h1 className="font-heading text-2xl font-bold">{t("admin.screens.title")}</h1>
+        <LTTButton onClick={openCreate} className="gap-2" disabled={!selectedCinemaId || cinemaMissing}>
+          <Plus className="h-4 w-4" /> {t("admin.screens.add")}
         </LTTButton>
       </div>
 
@@ -247,31 +235,15 @@ export default function ScreensConfigPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
           <LTTInput
-            placeholder="Tìm kiếm phòng chiếu..."
+            placeholder={t("admin.screens.search_placeholder")}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="pl-9"
           />
         </div>
-
-        <LTTSelect
-          value={selectedCinemaId}
-          onValueChange={(v) => {
-            setSelectedCinemaId(v);
-            setPage(1);
-          }}
-        >
-          <LTTSelectTrigger className="w-56">
-            <LTTSelectValue placeholder="Chọn rạp" />
-          </LTTSelectTrigger>
-          <LTTSelectContent>
-            {cinemas.map((c) => (
-              <LTTSelectItem key={c.id} value={c.id}>
-                {c.name}
-              </LTTSelectItem>
-            ))}
-          </LTTSelectContent>
-        </LTTSelect>
         {selected.size > 0 && (
           <LTTButton
             variant="destructive"
@@ -286,12 +258,15 @@ export default function ScreensConfigPage() {
           variant="outline"
           className="gap-2"
           onClick={() => {
-            setPage(1);
-            fetchData(search, 1);
+            if (page !== 1) {
+              setPage(1);
+              return;
+            }
+            fetchData(debouncedSearch, 1);
           }}
           loading={listMutation.isLoading}
         >
-          <RefreshCw className="h-4 w-4" /> Làm mới
+          <RefreshCw className="h-4 w-4" /> {t("admin.screens.refresh")}
         </LTTButton>
       </div>
 
@@ -313,10 +288,10 @@ export default function ScreensConfigPage() {
           <tbody>
             {loading ? (
               <DomainTableStateRow colSpan={7} state="loading" loadingText="Đang tải dữ liệu phòng chiếu..." />
-            ) : filtered.length === 0 ? (
+            ) : items.length === 0 ? (
               <DomainTableStateRow colSpan={7} state="empty" emptyText="Không có dữ liệu phòng chiếu nào." />
             ) : (
-              filtered.map((item) => (
+              items.map((item) => (
                 <tr
                   key={item.id}
                   className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors"
@@ -366,14 +341,10 @@ export default function ScreensConfigPage() {
         totalCount={totalCount}
         page={page}
         pageSize={fetch}
-        onPageChange={(nextPage) => {
-          setPage(nextPage);
-          fetchData(debouncedSearch, nextPage);
-        }}
+        onPageChange={(nextPage) => setPage(nextPage)}
         onPageSizeChange={(nextSize) => {
           setFetch(nextSize);
           setPage(1);
-          listMutation.mutation({ cinemaId: selectedCinemaId, params: { page: 1, fetch: nextSize, keyword: debouncedSearch } });
         }}
         loading={listMutation.isLoading}
       />

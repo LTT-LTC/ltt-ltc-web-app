@@ -3,12 +3,14 @@ import { useEffect, useState } from "react";
 import LTTInput from "@/src/@core/component/AntD/LTTInput";
 import LTTSelect from "@/src/@core/component/AntD/LTTSelect";
 import { staffRoles } from "../_mock/data";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 interface StaffFilterProps {
   onFilterChange: (filters: { roleId?: string; search?: string }) => void;
 }
 
 const StaffFilter = ({ onFilterChange }: StaffFilterProps) => {
+  const { t } = useLocalization();
   const [roleFilter, setRoleFilter] = useState("all");
   const [search, setSearch] = useState("");
 
@@ -22,7 +24,7 @@ const StaffFilter = ({ onFilterChange }: StaffFilterProps) => {
   return (
     <div className="flex items-center gap-3">
       <LTTInput
-        placeholder="Tìm nhân viên..."
+        placeholder={t("admin.staff.search_placeholder")}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         style={{ width: 250 }}
@@ -32,7 +34,7 @@ const StaffFilter = ({ onFilterChange }: StaffFilterProps) => {
         onChange={setRoleFilter}
         style={{ width: 200 }}
         options={[
-          { label: "Tất cả vai trò", value: "all" },
+          { label: t("admin.staff.filters.all_roles"), value: "all" },
           ...staffRoles.map((r) => ({ label: r, value: r })),
         ]}
       />

@@ -135,22 +135,22 @@ const FormDetail = () => {
             <LTTForm form={form} onFinish={onSubmit}>
                 <div className="space-y-6">
                     <LTTFormItem
-                        label="Email / Số điện thoại"
+                        label={t("customer.auth.login.identifier")}
                         name="identifier"
                         rules={[rules.required]}
                         className="mb-3"
                     >
-                        <LTTInput label="Email / Số điện thoại" showCount={false} allowClear={false} />
+                        <LTTInput label={t("customer.auth.login.identifier")} showCount={false} allowClear={false} />
                     </LTTFormItem>
 
                     <LTTFormItem
-                        label="Mật khẩu"
+                        label={t("customer.auth.login.password")}
                         name="password"
                         rules={[rules.required]}
                         className="mb-3"
                     >
                         <LTTInput
-                            label="Mật khẩu"
+                            label={t("customer.auth.login.password")}
                             showCount={false}
                             allowClear={false}
                             type={showPassword ? "text" : "password"}
@@ -178,7 +178,7 @@ const FormDetail = () => {
                             href="/customer-reset-password"
                             className="text-sm text-brand-600 hover:text-brand-600 focus:text-brand-600 dark:!text-brand-400"
                         >
-                            Quên mật khẩu?
+                            {t("customer.auth.login.forgot_password")}
                         </Link>
                     </div>
                     <div className="mt-2">
@@ -188,19 +188,19 @@ const FormDetail = () => {
                             className="w-full"
                             size="sm"
                         >
-                            Đăng nhập
+                            {t("customer.auth.login.submit")}
                         </LTTButton>
                     </div>
                 </div>
             </LTTForm>
 
             <div className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                Chưa có tài khoản?{" "}
+                {t("customer.auth.login.no_account")}{" "}
                 <Link
                     href="/customer-register"
                     className="font-medium text-brand-600 hover:text-brand-500 dark:text-brand-400 dark:hover:text-brand-300"
                 >
-                    Đăng ký ngay
+                    {t("customer.auth.login.register_now")}
                 </Link>
             </div>
         </div>
