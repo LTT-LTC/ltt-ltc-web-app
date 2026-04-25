@@ -1,22 +1,28 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { newsAndOffersService } from "@/src/services/administration-service/news-and-offers/news-and-offers.service";
 
-const defaultBanners = [
-    "/images/banners/980x448-kitkat_1.png",
-    "/images/banners/980x448_132.png",
-    "/images/banners/980x448_8__3.png",
-    "/images/banners/980wx448h_16__3.jpg",
-    "/images/banners/980_x_448_1__3.jpg",
-    "/images/banners/b_n_sao_c_a_980x448_1__1.png",
-    "/images/banners/lny_980_x_448_1.jpg",
-    "/images/banners/pnj_980x448_1.jpg",
+interface HeroBannerItem {
+    image: string;
+    newsOfferId?: string;
+}
+
+const defaultBanners: HeroBannerItem[] = [
+    { image: "/images/banners/980x448-kitkat_1.png" },
+    { image: "/images/banners/980x448_132.png" },
+    { image: "/images/banners/980x448_8__3.png" },
+    { image: "/images/banners/980wx448h_16__3.jpg" },
+    { image: "/images/banners/980_x_448_1__3.jpg" },
+    { image: "/images/banners/b_n_sao_c_a_980x448_1__1.png" },
+    { image: "/images/banners/lny_980_x_448_1.jpg" },
+    { image: "/images/banners/pnj_980x448_1.jpg" },
 ];
-const bannerPlaceholder = defaultBanners[0];
+const bannerPlaceholder = defaultBanners[0].image;
 
 const Hero: React.FC = () => {
-    const [banners, setBanners] = useState<string[]>(defaultBanners);
+    const [banners, setBanners] = useState<HeroBannerItem[]>(defaultBanners);
     const [current, setCurrent] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -45,15 +51,16 @@ const Hero: React.FC = () => {
         const fetchBanners = async () => {
             try {
                 setIsLoading(true);
-                const res = await newsAndOffersService.getCustomerNewsAndOffersListAsync({
+                const res = await newsAndOffersService.getCustomerActiveNewsAndOffersListAsync({
                     page: 1,
                     fetch: 100,
                     keyword: "",
                 });
                 const items = res?.items || [];
-                const posterBanners = items.map((item) =>
-                    item.posterUrl && item.posterUrl.trim().length > 0 ? item.posterUrl : bannerPlaceholder,
-                );
+                const posterBanners: HeroBannerItem[] = items.map((item) => ({
+                    image: item.posterUrl && item.posterUrl.trim().length > 0 ? item.posterUrl : bannerPlaceholder,
+                    newsOfferId: item.id,
+                }));
                 setBanners(posterBanners.length > 0 ? posterBanners : defaultBanners);
             } catch {
                 setBanners(defaultBanners);
@@ -89,15 +96,27 @@ const Hero: React.FC = () => {
                     className="flex transition-transform duration-700 ease-in-out"
                     style={{ transform: `translateX(-${banners.length > 0 ? current * 100 : 0}%)` }}
                 >
-                    {banners.map((src, index) => (
+                    {banners.map((banner, index) => (
                         <div key={index} className="w-full flex-shrink-0 relative aspect-[980/448]">
-                            <Image
-                                src={src}
-                                alt={`Banner ${index + 1}`}
-                                fill
-                                className="object-cover"
-                                priority={index === 0}
-                            />
+                            {banner.newsOfferId ? (
+                                <Link href={`/news-offers/${banner.newsOfferId}`} className="block w-full h-full">
+                                    <Image
+                                        src={banner.image}
+                                        alt={`Banner ${index + 1}`}
+                                        fill
+                                        className="object-cover"
+                                        priority={index === 0}
+                                    />
+                                </Link>
+                            ) : (
+                                <Image
+                                    src={banner.image}
+                                    alt={`Banner ${index + 1}`}
+                                    fill
+                                    className="object-cover"
+                                    priority={index === 0}
+                                />
+                            )}
                         </div>
                     ))}
                 </div>

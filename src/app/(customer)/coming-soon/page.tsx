@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import TopBar from "../_components/TopBar";
 import Header from "../_components/Header";
 import Footer from "../_components/Footer";
+import PaginationControls from "../_components/PaginationControls";
 import LTTMovieCard from "@/src/@core/component/LTTMovieCard";
 import LTTModal from "@/src/@core/component/AntD/LTTModal";
 import { buildMovieCardItem, MOVIE_PAGE_SIZE, useMovieCatalog } from "../_components/movieCatalog";
@@ -111,29 +112,18 @@ export default function ComingSoonPage() {
                                     />
                                 ))}
                             </div>
-
-                            {totalPages > 1 && (
-                                <div className="mt-8 flex items-center justify-center gap-3">
-                                    <button
-                                        onClick={() => setPage((current) => Math.max(0, current - 1))}
-                                        disabled={currentPage === 0}
-                                        className="size-9 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-inherit disabled:hover:border-slate-200"
-                                    >
-                                        <span className="material-symbols-outlined text-lg">chevron_left</span>
-                                    </button>
-                                    <span className="text-xs text-slate-500 min-w-16 text-center">
-                                        {currentPage + 1} / {totalPages}
-                                    </span>
-                                    <button
-                                        onClick={() => setPage((current) => Math.min(totalPages - 1, current + 1))}
-                                        disabled={currentPage >= totalPages - 1}
-                                        className="size-9 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-inherit disabled:hover:border-slate-200"
-                                    >
-                                        <span className="material-symbols-outlined text-lg">chevron_right</span>
-                                    </button>
-                                </div>
-                            )}
                         </>
+                    )}
+
+                    {!isLoading && !error && (
+                        <div className="mt-8 flex items-center justify-center">
+                            <PaginationControls
+                                currentPage={currentPage + 1}
+                                totalPages={totalPages}
+                                onPrevious={() => setPage((current) => Math.max(0, current - 1))}
+                                onNext={() => setPage((current) => Math.min(totalPages - 1, current + 1))}
+                            />
+                        </div>
                     )}
                 </div>
             </main>

@@ -3,6 +3,7 @@ import { PaginationWithSearchRequestDto} from "@/src/@core/http/models/Paginatio
 export interface GetListNewsAndOffersInputDto extends PaginationWithSearchRequestDto {
     isActive?: boolean;
     cinemaId?: string;
+    status?: string;
 }
 
 export interface UpdateNewsAndOffersInputDto {

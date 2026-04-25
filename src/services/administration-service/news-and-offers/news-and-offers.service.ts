@@ -31,6 +31,28 @@ const getCustomerNewsAndOffersListAsync = async (params: GetListNewsAndOffersInp
     return data.data;
 };
 
+const getCustomerNewsAndOffersByIdAsync = async (id: string) => {
+    const { data } = await http.get<ApiResult<NewsAndOffersOutputDto>>(
+        `${customerRootPath}${path}/${id}`,
+    );
+    return data.data;
+};
+
+const getCustomerActiveNewsAndOffersListAsync = async (params?: Pick<GetListNewsAndOffersInputDto, "page" | "fetch" | "keyword">) => {
+    const { data } = await http.get<ApiResult<PagedResultNewsAndOffersOutputDto>>(
+        `${customerRootPath}${path}`,
+        {
+            params: {
+                page: params?.page ?? 1,
+                fetch: params?.fetch ?? 1000,
+                keyword: params?.keyword ?? "",
+                status: "active",
+            } as GetListNewsAndOffersInputDto,
+        },
+    );
+    return data.data;
+};
+
 const getNewsAndOffersByIdAsync = async (id: string) => {
     const { data } = await http.get<ApiResult<NewsAndOffersOutputDto>>(
         `${rootPath}${path}/${id}`,
@@ -64,6 +86,8 @@ const deleteNewsAndOffersAsync = async (id: string) => {
 export const newsAndOffersService = {
     getNewsAndOffersListAsync,
     getCustomerNewsAndOffersListAsync,
+    getCustomerNewsAndOffersByIdAsync,
+    getCustomerActiveNewsAndOffersListAsync,
     getNewsAndOffersByIdAsync,
     createNewsAndOffersAsync,
     updateNewsAndOffersAsync,
