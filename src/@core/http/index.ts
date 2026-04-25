@@ -190,6 +190,7 @@ function shouldSkipAuthRefresh(failedRequestUrl?: string): boolean {
   return (
     requestUrl.includes("/movie-service/") ||
     requestUrl.includes("/product-service/") ||
+    requestUrl.includes("/administration-service/customer/news-and-offers") ||
     requestUrl.includes("/customer-service/movie") ||
     requestUrl.includes("/customer-service/cinema") ||
     requestUrl.includes("/customer-service/showtime") ||

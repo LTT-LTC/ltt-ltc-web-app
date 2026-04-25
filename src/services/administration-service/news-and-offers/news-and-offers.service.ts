@@ -10,12 +10,22 @@ import {
     NewsAndOffersOutputDto,
     PagedResultNewsAndOffersOutputDto
 } from "./models/output.model";
+import { get } from "@/src/@core/utils/get";
 
 const path = "/news-and-offers";
+const customerRootPath = get.rootPath("/administration-service/customer");
 
 const getNewsAndOffersListAsync = async (params: GetListNewsAndOffersInputDto) => {
     const { data } = await http.get<ApiResult<PagedResultNewsAndOffersOutputDto>>(
         `${rootPath}${path}`,
+        { params },
+    );
+    return data.data;
+};
+
+const getCustomerNewsAndOffersListAsync = async (params: GetListNewsAndOffersInputDto) => {
+    const { data } = await http.get<ApiResult<PagedResultNewsAndOffersOutputDto>>(
+        `${customerRootPath}${path}`,
         { params },
     );
     return data.data;
@@ -53,6 +63,7 @@ const deleteNewsAndOffersAsync = async (id: string) => {
 
 export const newsAndOffersService = {
     getNewsAndOffersListAsync,
+    getCustomerNewsAndOffersListAsync,
     getNewsAndOffersByIdAsync,
     createNewsAndOffersAsync,
     updateNewsAndOffersAsync,

@@ -1,8 +1,9 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
+import { newsAndOffersService } from "@/src/services/administration-service/news-and-offers/news-and-offers.service";
 
-const banners = [
+const defaultBanners = [
     "/images/banners/980x448-kitkat_1.png",
     "/images/banners/980x448_132.png",
     "/images/banners/980x448_8__3.png",
@@ -12,24 +13,62 @@ const banners = [
     "/images/banners/lny_980_x_448_1.jpg",
     "/images/banners/pnj_980x448_1.jpg",
 ];
+const bannerPlaceholder = defaultBanners[0];
 
 const Hero: React.FC = () => {
+    const [banners, setBanners] = useState<string[]>(defaultBanners);
     const [current, setCurrent] = useState(0);
     const [isHovered, setIsHovered] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     const next = useCallback(() => {
-        setCurrent((prev) => (prev + 1) % banners.length);
-    }, []);
+        setCurrent((prev) => {
+            if (banners.length === 0) return 0;
+            return (prev + 1) % banners.length;
+        });
+    }, [banners.length]);
 
     const prev = useCallback(() => {
-        setCurrent((prev) => (prev - 1 + banners.length) % banners.length);
+        setCurrent((prev) => {
+            if (banners.length === 0) return 0;
+            return (prev - 1 + banners.length) % banners.length;
+        });
+    }, [banners.length]);
+
+    useEffect(() => {
+        if (isHovered || banners.length <= 1) return;
+        const timer = setInterval(next, 4000);
+        return () => clearInterval(timer);
+    }, [isHovered, next, banners.length]);
+
+    useEffect(() => {
+        const fetchBanners = async () => {
+            try {
+                setIsLoading(true);
+                const res = await newsAndOffersService.getCustomerNewsAndOffersListAsync({
+                    page: 1,
+                    fetch: 100,
+                    keyword: "",
+                });
+                const items = res?.items || [];
+                const posterBanners = items.map((item) =>
+                    item.posterUrl && item.posterUrl.trim().length > 0 ? item.posterUrl : bannerPlaceholder,
+                );
+                setBanners(posterBanners.length > 0 ? posterBanners : defaultBanners);
+            } catch {
+                setBanners(defaultBanners);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchBanners();
     }, []);
 
     useEffect(() => {
-        if (isHovered) return;
-        const timer = setInterval(next, 4000);
-        return () => clearInterval(timer);
-    }, [isHovered, next]);
+        if (current >= banners.length) {
+            setCurrent(0);
+        }
+    }, [banners.length, current]);
 
     return (
         <section className="w-full flex justify-center px-4 lg:px-0 py-4 sm:py-6 bg-background-light dark:bg-background-dark">
@@ -38,10 +77,17 @@ const Hero: React.FC = () => {
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
             >
+                {isLoading && (
+                    <div className="absolute inset-0 z-20 animate-pulse bg-white/70 dark:bg-black/40 flex items-center justify-center">
+                        <span className="material-symbols-outlined animate-spin text-3xl text-primary">
+                            progress_activity
+                        </span>
+                    </div>
+                )}
                 {/* Slides */}
                 <div
                     className="flex transition-transform duration-700 ease-in-out"
-                    style={{ transform: `translateX(-${current * 100}%)` }}
+                    style={{ transform: `translateX(-${banners.length > 0 ? current * 100 : 0}%)` }}
                 >
                     {banners.map((src, index) => (
                         <div key={index} className="w-full flex-shrink-0 relative aspect-[980/448]">
