@@ -6,7 +6,9 @@ export interface PricingRuleOutputDto {
     multiplier: number;
     startTime?: string;
     endTime?: string;
-    dayOfWeek?: number;
+    daysOfWeek: string[];
     priority: number;
+    validFrom?: string;
+    validUntil?: string;
     isActive: boolean;
 }

@@ -59,14 +59,17 @@ export default function NewsAndOffersTable({ search, onEdit }: Props) {
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearch(search);
-            setPage(1);
         }, 300);
         return () => clearTimeout(timer);
     }, [search]);
 
     useEffect(() => {
+        setPage(1);
+    }, [debouncedSearch]);
+
+    useEffect(() => {
         fetchData();
-    }, [debouncedSearch, page]);
+    }, [debouncedSearch, page, fetch]);
 
     return (
         <div className="space-y-3">

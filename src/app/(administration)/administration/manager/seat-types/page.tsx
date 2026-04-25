@@ -13,16 +13,23 @@ import { GetSeatTypeListInputDto } from "@/src/services/administration-service/s
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
+import AdminTablePagination from "@/src/app/(administration)/administration/admin/_components/AdminTablePagination";
 
 export default function SeatTypesManagerPage() {
   const { t } = useLocalization();
   const [items, setItems] = useState<SeatTypeOutputDto[]>([]);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [fetch, setFetch] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
 
   const listMutation = useLTTMutation<PagedResultDto<SeatTypeOutputDto> | undefined, GetSeatTypeListInputDto>({
     mutationFn: (input) => seatTypeService.getSeatTypeListAsync(input),
     onSuccess: (res) => {
-      if (res && res.items) setItems(res.items);
+      if (res && res.items) {
+        setItems(res.items);
+        setTotalCount(res.totalCount);
+      }
     },
     onError: (err) => toast.error(err.message || t("admin.seat_type.fetch_error"))
   });
@@ -31,7 +38,7 @@ export default function SeatTypesManagerPage() {
 
   const fetchData = (keyword?: string) => {
     const effectiveKeyword = keyword ?? debouncedSearch;
-    listMutation.mutation({ page: 1, fetch: 100, keyword: effectiveKeyword });
+    listMutation.mutation({ page, fetch, keyword: effectiveKeyword || undefined });
   };
 
   const debouncedSearch = useDebouncedListQuery(search, (keyword) => fetchData(keyword));
@@ -39,6 +46,10 @@ export default function SeatTypesManagerPage() {
   useEffect(() => {
     fetchData("");
   }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [page, fetch]);
 
   const filtered = useMemo(() => {
     if (!search) return items;
@@ -58,7 +69,10 @@ export default function SeatTypesManagerPage() {
           <LTTInput
             placeholder={t("admin.seat_type.search_placeholder")}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             className="pl-9"
           />
         </div>
@@ -103,6 +117,17 @@ export default function SeatTypesManagerPage() {
           </tbody>
         </table>
       </div>
+      <AdminTablePagination
+        totalCount={totalCount}
+        page={page}
+        pageSize={fetch}
+        onPageChange={(nextPage) => setPage(nextPage)}
+        onPageSizeChange={(nextSize) => {
+          setFetch(nextSize);
+          setPage(1);
+        }}
+        loading={listMutation.isLoading}
+      />
     </div>
   );
 }
