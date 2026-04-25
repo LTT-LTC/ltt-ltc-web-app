@@ -14,6 +14,7 @@ import {
     useMovieCatalog,
 } from "./movieCatalog";
 import { extractYoutubeVideoId } from "./movieTrailer";
+import PaginationControls from "./PaginationControls";
 
 const emptyPageState: Record<MovieSectionStatus, number> = {
     now_showing: 0,
@@ -61,8 +62,6 @@ const MovieSelection: React.FC = () => {
         }));
     };
 
-    const activeCount = activeMovies.length;
-
     const openTrailerModal = (title: string, url?: string) => {
         if (!url) {
             return;
@@ -100,29 +99,12 @@ const MovieSelection: React.FC = () => {
                         ))}
                     </div>
 
-                    {totalPages > 1 && (
-                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                            <button
-                                onClick={handlePrevious}
-                                disabled={activePage === 0}
-                                className="size-9 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-inherit disabled:hover:border-slate-200"
-                                aria-label="Previous page"
-                            >
-                                <span className="material-symbols-outlined text-lg">chevron_left</span>
-                            </button>
-                            <span className="text-xs text-slate-500 min-w-16 text-center">
-                                {activePage + 1} / {totalPages}
-                            </span>
-                            <button
-                                onClick={handleNext}
-                                disabled={activePage >= totalPages - 1}
-                                className="size-9 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-inherit disabled:hover:border-slate-200"
-                                aria-label="Next page"
-                            >
-                                <span className="material-symbols-outlined text-lg">chevron_right</span>
-                            </button>
-                        </div>
-                    )}
+                    <PaginationControls
+                        currentPage={activePage + 1}
+                        totalPages={totalPages}
+                        onPrevious={handlePrevious}
+                        onNext={handleNext}
+                    />
                 </div>
             </div>
 
@@ -182,11 +164,6 @@ const MovieSelection: React.FC = () => {
                     </div>
                 )}
 
-                {!isLoading && !error && activeCount > 0 && activeCount <= MOVIE_PAGE_SIZE && (
-                    <div className="mt-4 text-center text-xs text-slate-500 dark:text-slate-400">
-                        Showing {activeCount} movie{activeCount === 1 ? "" : "s"} on one page.
-                    </div>
-                )}
             </div>
 
             <LTTModal

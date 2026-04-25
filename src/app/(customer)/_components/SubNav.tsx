@@ -32,13 +32,13 @@ const SubNav: React.FC = () => {
                     </div>
                     <span className="text-[10px] sm:text-xs font-bold uppercase tracking-tight text-slate-500 text-center">{t("customer.nav.now_showing") || "Now Showing"}</span>
                 </Link>
-                <Link href="#" className="flex flex-col items-center gap-2 group shrink-0 min-w-[80px]">
+                <Link href="/news-offers" className="flex flex-col items-center gap-2 group shrink-0 min-w-[80px]">
                     <div className="size-10 sm:size-12 rounded-full bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
                         <span className="material-symbols-outlined text-xl sm:text-2xl">group</span>
                     </div>
                     <span className="text-[10px] sm:text-xs font-bold uppercase tracking-tight text-slate-500 text-center">{t("customer.nav.group_tickets") || "Group Tickets"}</span>
                 </Link>
-                <Link href="#" className="flex flex-col items-center gap-2 group shrink-0 min-w-[80px]">
+                <Link href="/news-offers" className="flex flex-col items-center gap-2 group shrink-0 min-w-[80px]">
                     <div className="size-10 sm:size-12 rounded-full bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
                         <span className="material-symbols-outlined text-xl sm:text-2xl">card_giftcard</span>
                     </div>
