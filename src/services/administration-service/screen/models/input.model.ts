@@ -8,16 +8,16 @@ export interface GetScreenListInputDto {
 export interface CreateScreenInputDto {
     screenNumber: number;
     screenType?: string;
-    seatLayout?: string;
     seatCount: number;
+    seatMapId: string;
     status?: string;
 }
 
 export interface UpdateScreenInputDto {
     screenNumber: number;
     screenType?: string;
-    seatLayout?: string;
     seatCount: number;
+    seatMapId: string;
     status?: string;
 }
 

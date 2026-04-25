@@ -29,25 +29,25 @@ import {
 import LTTScreenCreateWizard from "@/src/@core/component/LTTManager/LTTScreenCreateWizard";
 import LTTSeatMapViewer from "@/src/@core/component/LTTManager/LTTSeatMapViewer";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
-import { screenService } from "@/src/services/administration-service/screen/screen.service";
-import { ScreenOutputDto } from "@/src/services/administration-service/screen/models/output.model";
-import { CinemaOutputDto, cinemaService } from "@/src/services/administration-service/cinema/cinema.service";
+import { seatMapService } from "@/src/services/administration-service/seat-map/seat-map.service";
+import { SeatMapOutputDto } from "@/src/services/administration-service/seat-map/models/output.model";
+import { managerSeatTypeService } from "@/src/services/administration-service/manager/seat-type/seat-type.service";
+import { SeatTypeOutputDto } from "@/src/services/administration-service/seat-type/models/output.model";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
-import {
-  LTTSelect,
-  LTTSelectContent,
-  LTTSelectItem,
-  LTTSelectTrigger,
-  LTTSelectValue,
-} from "@/src/@core/component/LTTShadcnUI/LTTSelect";
 import AdminTablePagination from "@/src/app/(administration)/administration/admin/_components/AdminTablePagination";
 import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
+import { getCookie } from "@/src/@core/utils/cookie";
+import { ADMIN_ACCESS_TOKEN_KEY } from "@/src/@core/const";
+import { getUserInfoFromToken } from "@/src/@core/utils/jwt";
+import { SeatType } from "@/src/@core/const/mock/adminMockData";
 
 
 export default function SeatMapPage() {
+  const { t } = useLocalization();
   const [screens, setScreens] = useState<Screen[]>([]);
-  const [cinemas, setCinemas] = useState<CinemaOutputDto[]>([]);
   const [selectedCinemaId, setSelectedCinemaId] = useState("");
+  const [cinemaMissing, setCinemaMissing] = useState(false);
   const [page, setPage] = useState(1);
   const [fetch, setFetch] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
@@ -56,53 +56,45 @@ export default function SeatMapPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [viewLayout, setViewLayout] = useState<Screen | null>(null);
+  const [seatTypes, setSeatTypes] = useState<SeatType[]>([]);
 
   // Master-detail view state
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingScreen, setEditingScreen] = useState<Screen | null>(null);
 
-  const mapToWizardScreen = (item: ScreenOutputDto): Screen => ({
+  const mapToWizardScreen = (item: SeatMapOutputDto): Screen => ({
     id: item.id,
     tenantId: "",
     cinemaId: item.cinemaId,
-    screenNumber: item.screenNumber,
-    screenType: item.screenType || "2D",
+    seatMapId: item.id,
+    name: item.name,
+    description: item.description,
+    screenNumber: 0,
+    screenType: "2D",
     seatLayout: item.seatLayout ? JSON.parse(item.seatLayout) : { rows: [] },
     seatCount: item.seatCount,
-    createdAt: "",
-    updatedAt: "",
+    createdAt: item.createdAt || "",
+    updatedAt: item.updatedAt || "",
   });
 
-  const cinemaMutation = useLTTMutation<PagedResultDto<CinemaOutputDto> | undefined, { page: number; fetch: number }>({
-    mutationFn: (p) => cinemaService.getCinemaListAsync(p),
-    onSuccess: (res) => {
-      if (!res?.items) return;
-      setCinemas(res.items);
-      if (!selectedCinemaId && res.items[0]?.id) {
-        setSelectedCinemaId(res.items[0].id);
-      }
-    },
-  });
-
-  const listMutation = useLTTMutation<PagedResultDto<ScreenOutputDto> | undefined, { cinemaId: string; page: number; fetch: number; keyword?: string }>({
-    mutationFn: ({ cinemaId, page, fetch, keyword }) => screenService.getScreenListAsync(cinemaId, { page, fetch, keyword }),
+  const listMutation = useLTTMutation<PagedResultDto<SeatMapOutputDto> | undefined, { cinemaId: string; page: number; fetch: number; keyword?: string }>({
+    mutationFn: ({ cinemaId, page, fetch, keyword }) => seatMapService.getSeatMapListAsync(cinemaId, { page, fetch, keyword }),
     onSuccess: (res) => {
       setScreens((res?.items || []).map(mapToWizardScreen));
       setTotalCount(res?.totalCount || 0);
     },
-    onError: (err) => toast.error(err.message || "Không thể tải dữ liệu sơ đồ ghế"),
+    onError: (err) => toast.error(err.message || t("admin.seatmap.fetch_error")),
   });
 
   const createMutation = useLTTMutation({
-    mutationFn: (payload: Screen) => screenService.createScreenAsync(payload.cinemaId, {
-      screenNumber: payload.screenNumber,
-      screenType: payload.screenType,
+    mutationFn: (payload: Screen) => seatMapService.createSeatMapAsync(payload.cinemaId, {
+      name: payload.name || "",
+      description: payload.description,
       seatCount: payload.seatCount,
       seatLayout: JSON.stringify(payload.seatLayout),
-      status: "active",
     }),
     onSuccess: () => {
-      toast.success("Tạo phòng chiếu thành công!");
+      toast.success(t("admin.seatmap.create_success"));
       setIsEditorOpen(false);
       setEditingScreen(null);
       fetchData();
@@ -110,15 +102,14 @@ export default function SeatMapPage() {
   });
 
   const updateMutation = useLTTMutation({
-    mutationFn: (payload: Screen) => screenService.updateScreenAsync(payload.cinemaId, payload.id, {
-      screenNumber: payload.screenNumber,
-      screenType: payload.screenType,
+    mutationFn: (payload: Screen) => seatMapService.updateSeatMapAsync(payload.id, {
+      name: payload.name || "",
+      description: payload.description,
       seatCount: payload.seatCount,
       seatLayout: JSON.stringify(payload.seatLayout),
-      status: "active",
     }),
     onSuccess: () => {
-      toast.success("Cập nhật phòng chiếu thành công!");
+      toast.success(t("admin.seatmap.update_success"));
       setIsEditorOpen(false);
       setEditingScreen(null);
       fetchData();
@@ -126,7 +117,34 @@ export default function SeatMapPage() {
   });
 
   const deleteMutation = useLTTMutation({
-    mutationFn: (id: string) => screenService.deleteScreenAsync(selectedCinemaId, id),
+    mutationFn: (id: string) => seatMapService.deleteSeatMapAsync(id),
+  });
+
+  const seatTypeMutation = useLTTMutation<PagedResultDto<SeatTypeOutputDto> | undefined, { page: number; fetch: number; keyword?: string }>({
+    mutationFn: (params) => managerSeatTypeService.getSeatTypeListAsync(params),
+    onSuccess: (res) => {
+      const mapped = (res?.items || []).map((item, idx) => {
+        const direction = (item.displayDirection || "").toLowerCase();
+        const orientation: SeatType["orientation"] =
+          direction.includes("horizontal")
+            ? "horizontal"
+            : direction.includes("vertical")
+              ? "vertical"
+              : "square";
+        return {
+          id: idx + 1,
+          name: item.name,
+          description: item.description || "",
+          priceMultiplier: item.priceMultiplier,
+          seatOccupied: item.numberOfSeat > 0 ? item.numberOfSeat : 1,
+          orientation,
+          createdAt: "",
+          updatedAt: item.updatedAt || "",
+        };
+      });
+      setSeatTypes(mapped);
+    },
+    onError: (err) => toast.error(err.message || "Không thể tải danh sách seat type."),
   });
 
   const fetchData = (keyword?: string, pageNumber?: number) => {
@@ -135,7 +153,15 @@ export default function SeatMapPage() {
   };
 
   useEffect(() => {
-    cinemaMutation.mutation({ page: 1, fetch: 100 });
+    const accessToken = getCookie(ADMIN_ACCESS_TOKEN_KEY);
+    const userInfo = accessToken ? getUserInfoFromToken(accessToken) : null;
+    const cinemaId = userInfo?.cinemaId?.trim() || "";
+    if (!cinemaId) {
+      setCinemaMissing(true);
+      toast.error(t("admin.seatmap.cinema_claim_missing"));
+      return;
+    }
+    setSelectedCinemaId(cinemaId);
   }, []);
 
   useEffect(() => {
@@ -168,7 +194,7 @@ export default function SeatMapPage() {
 
   const handleDeleteSelected = () => {
     Promise.allSettled(Array.from(selected).map((id) => deleteMutation.mutation(id))).then(() => {
-      toast.success(`Đã xóa ${selected.size} phòng chiếu`);
+      toast.success(t("admin.seatmap.bulk_delete_success", { count: selected.size }));
       setSelected(new Set());
       setDeleteDialogOpen(false);
       fetchData();
@@ -177,7 +203,7 @@ export default function SeatMapPage() {
 
   const handleDeleteOne = (id: string) => {
     deleteMutation.mutation(id).then(() => {
-      toast.success("Đã xóa phòng chiếu");
+      toast.success(t("admin.seatmap.delete_success"));
       fetchData();
     });
   };
@@ -191,6 +217,7 @@ export default function SeatMapPage() {
   };
 
   const handleOpenEditor = (screen?: Screen) => {
+    seatTypeMutation.mutation({ page: 1, fetch: 200 });
     setEditingScreen(screen ?? null);
     setIsEditorOpen(true);
   };
@@ -200,17 +227,14 @@ export default function SeatMapPage() {
     setEditingScreen(null);
   };
 
-  const getCinemaName = (id: string) =>
-    cinemas.find((c) => c.id === id)?.name || id;
-
   // ── List view ──────────────────────────────────────────────────────────────
   return (
     <>
       <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl font-bold">Quản lý phòng chiếu</h1>
-        <LTTButton onClick={() => handleOpenEditor()} className="gap-2">
-          <Plus className="h-4 w-4" /> Thêm phòng chiếu
+        <h1 className="font-heading text-2xl font-bold">{t("admin.seatmap.title")}</h1>
+        <LTTButton onClick={() => handleOpenEditor()} className="gap-2" disabled={!selectedCinemaId || cinemaMissing}>
+          <Plus className="h-4 w-4" /> {t("admin.seatmap.add")}
         </LTTButton>
       </div>
 
@@ -218,40 +242,25 @@ export default function SeatMapPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
           <LTTInput
-            placeholder="Tìm kiếm phòng chiếu..."
+            placeholder={t("admin.seatmap.search_placeholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-9"
           />
         </div>
-        <LTTSelect
-          value={selectedCinemaId}
-          onValueChange={(v) => {
-            setSelectedCinemaId(v);
-            setPage(1);
-          }}
-        >
-          <LTTSelectTrigger className="w-56">
-            <LTTSelectValue placeholder="Chọn rạp" />
-          </LTTSelectTrigger>
-          <LTTSelectContent>
-            {cinemas.map((c) => (
-              <LTTSelectItem key={c.id} value={c.id}>
-                {c.name}
-              </LTTSelectItem>
-            ))}
-          </LTTSelectContent>
-        </LTTSelect>
         <LTTButton
           variant="outline"
           className="gap-2"
           onClick={() => {
-            setPage(1);
-            fetchData(searchQuery, 1);
+            if (page !== 1) {
+              setPage(1);
+              return;
+            }
+            fetchData(debouncedSearch, 1);
           }}
           loading={listMutation.isLoading}
         >
-          <RefreshCw className="h-4 w-4" /> Làm mới
+          <RefreshCw className="h-4 w-4" /> {t("admin.seatmap.refresh")}
         </LTTButton>
 
         {selected.size > 0 && (
@@ -265,23 +274,7 @@ export default function SeatMapPage() {
           </LTTButton>
         )}
       </div>
-      <AdminTablePagination
-        totalCount={totalCount}
-        page={page}
-        pageSize={fetch}
-        onPageChange={(nextPage) => {
-          setPage(nextPage);
-          fetchData(debouncedSearch, nextPage);
-        }}
-        onPageSizeChange={(nextSize) => {
-          setFetch(nextSize);
-          setPage(1);
-          listMutation.mutation({ cinemaId: selectedCinemaId, page: 1, fetch: nextSize, keyword: debouncedSearch });
-        }}
-        loading={listMutation.isLoading}
-      />
-
-      <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden">
+      <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden my-3">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
@@ -289,9 +282,8 @@ export default function SeatMapPage() {
                 <LTTCheckbox checked={allSelected} onCheckedChange={toggleAll} />
               </th>
               <th className="px-4 py-3 text-left font-semibold">STT</th>
-              <th className="px-4 py-3 text-left font-semibold">Rạp</th>
-              <th className="px-4 py-3 text-left font-semibold">Phòng số</th>
-              <th className="px-4 py-3 text-left font-semibold">Loại phòng</th>
+              <th className="px-4 py-3 text-left font-semibold">Tên sơ đồ</th>
+              <th className="px-4 py-3 text-left font-semibold">Mô tả</th>
               <th className="px-4 py-3 text-left font-semibold">Số ghế</th>
               <th className="px-4 py-3 text-left font-semibold">Ngày tạo</th>
               <th className="px-4 py-3 text-left font-semibold">Cập nhật</th>
@@ -318,15 +310,8 @@ export default function SeatMapPage() {
                   <td className="px-4 py-3 text-muted-foreground-shadcn">
                     {idx + 1}
                   </td>
-                  <td className="px-4 py-3 font-medium">
-                    {getCinemaName(item.cinemaId)}
-                  </td>
-                  <td className="px-4 py-3">Phòng {item.screenNumber}</td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex rounded-full bg-accent-shadcn px-2.5 py-0.5 text-xs font-medium text-accent-shadcn-foreground">
-                      {item.screenType}
-                    </span>
-                  </td>
+                  <td className="px-4 py-3 font-medium">{item.name || "—"}</td>
+                  <td className="px-4 py-3">{item.description || "—"}</td>
                   <td className="px-4 py-3">{item.seatCount}</td>
                   <td className="px-4 py-3 text-muted-foreground-shadcn text-xs">
                     {item.createdAt}
@@ -371,6 +356,17 @@ export default function SeatMapPage() {
           </tbody>
         </table>
       </div>
+          <AdminTablePagination
+              totalCount={totalCount}
+              page={page}
+              pageSize={fetch}
+              onPageChange={(nextPage) => setPage(nextPage)}
+              onPageSizeChange={(nextSize) => {
+                  setFetch(nextSize);
+                  setPage(1);
+              }}
+              loading={listMutation.isLoading}
+          />
 
       {/* Bulk Delete Dialog */}
       <LTTDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -405,7 +401,7 @@ export default function SeatMapPage() {
         <LTTDialogContent className="sm:max-w-3xl">
           <LTTDialogHeader>
             <LTTDialogTitle>
-              Sơ đồ ghế — Phòng {viewLayout?.screenNumber} ({viewLayout?.screenType})
+              Sơ đồ ghế — {viewLayout?.name || "Seat map"}
             </LTTDialogTitle>
           </LTTDialogHeader>
 
@@ -433,6 +429,10 @@ export default function SeatMapPage() {
         onCreated={handleScreenCreated}
         onUpdate={handleScreenUpdated}
         initialData={editingScreen ?? undefined}
+        fixedCinemaId={selectedCinemaId}
+        entityType="seatmap"
+        isSubmitting={createMutation.isLoading || updateMutation.isLoading}
+        seatTypes={seatTypes}
       />
     )}
   </>

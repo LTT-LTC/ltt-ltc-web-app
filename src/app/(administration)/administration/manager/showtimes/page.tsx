@@ -17,16 +17,18 @@ import { toast } from "sonner";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { showtimeService } from "@/src/services/administration-service/showtime/showtime.service";
 import { movieService } from "@/src/services/administration-service/movie/movie.service";
-import { cinemaService } from "@/src/services/administration-service/cinema/cinema.service";
 import { screenService } from "@/src/services/administration-service/screen/screen.service";
 import { CreateShowtimeInputDto } from "@/src/services/administration-service/showtime/models/input.model";
 import { ShowtimeOutputDto } from "@/src/services/administration-service/showtime/models/output.model";
-import { MovieOutputDto } from "@/src/services/administration-service/movie/models/output.model";
-import { CinemaOutputDto } from "@/src/services/administration-service/cinema/models/output.model";
+import { MovieDistributionOutputDto, MovieOutputDto } from "@/src/services/administration-service/movie/models/output.model";
 import { ScreenOutputDto } from "@/src/services/administration-service/screen/models/output.model";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { useEffect } from "react";
 import { cn } from "@/src/@core/utils/cn";
+import { getCookie } from "@/src/@core/utils/cookie";
+import { ADMIN_ACCESS_TOKEN_KEY } from "@/src/@core/const";
+import { getUserInfoFromToken } from "@/src/@core/utils/jwt";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
@@ -110,6 +112,7 @@ const MOVIE_COLORS = [
 ];
 
 export default function ShowtimeSchedulerPage() {
+  const { t } = useLocalization();
   type ShowtimeFormState = {
     movieId: string;
     cinemaId: string;
@@ -125,24 +128,62 @@ export default function ShowtimeSchedulerPage() {
   };
   const [items, setItems] = useState<ShowtimeOutputDto[]>([]);
   const [movies, setMovies] = useState<MovieOutputDto[]>([]);
-  const [cinemas, setCinemas] = useState<CinemaOutputDto[]>([]);
+  const [distributions, setDistributions] = useState<MovieDistributionOutputDto[]>([]);
   const [screens, setScreens] = useState<ScreenOutputDto[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("");
-  const [cinemaFilter, setCinemaFilter] = useState("all");
+  const [managerCinemaId, setManagerCinemaId] = useState("");
+  const [cinemaMissing, setCinemaMissing] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState<ShowtimeOutputDto | null>(null);
   const [calendarWeek, setCalendarWeek] = useState(new Date());
   const [selectedMovieId, setSelectedMovieId] = useState("");
-  const effectiveMovieId = selectedMovieId || movies[0]?.id || "";
   const [page, setPage] = useState(1);
   const [fetch, setFetch] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
   const [singleDeleteId, setSingleDeleteId] = useState("");
   const [singleDeleteOpen, setSingleDeleteOpen] = useState(false);
+
+  const normalizeMovieStatus = (status?: string) => (status || "").trim().toLowerCase();
+  const allowedMovieStatuses = new Set(["now_showing", "coming_soon", "comming_soon"]);
+  const now = new Date();
+  const nowTime = now.getTime();
+
+  const isDistributionValidNow = (distribution: MovieDistributionOutputDto) => {
+    const startTime = distribution.licenseStartDate ? new Date(distribution.licenseStartDate).getTime() : Number.NEGATIVE_INFINITY;
+    const endTime = distribution.licenseEndDate ? new Date(distribution.licenseEndDate).getTime() : Number.POSITIVE_INFINITY;
+    return nowTime >= startTime && nowTime <= endTime;
+  };
+
+  const activeDistributions = useMemo(
+    () => distributions.filter(isDistributionValidNow),
+    [distributions]
+  );
+
+  const activeDistributionMap = useMemo(() => {
+    const map = new Map<string, MovieDistributionOutputDto>();
+    for (const distribution of activeDistributions) {
+      if (!map.has(distribution.movieId)) {
+        map.set(distribution.movieId, distribution);
+      }
+    }
+    return map;
+  }, [activeDistributions]);
+
+  const eligibleMovies = useMemo(
+    () =>
+      movies.filter(
+        (movie) =>
+          allowedMovieStatuses.has(normalizeMovieStatus(movie.status)) &&
+          activeDistributionMap.has(movie.id)
+      ),
+    [movies, activeDistributionMap]
+  );
+
+  const effectiveMovieId = selectedMovieId || eligibleMovies[0]?.id || "";
 
   const [form, setForm] = useState<ShowtimeFormState>({
     movieId: "",
@@ -162,61 +203,82 @@ export default function ShowtimeSchedulerPage() {
         setTotalCount(res.totalCount);
       }
     },
-    onError: (err) => toast.error(err.message || "Lỗi tải lịch chiếu")
+    onError: (err) => toast.error(err.message || t("admin.showtimes.fetch_error"))
   });
 
   const movieMutation = useLTTMutation<PagedResultDto<MovieOutputDto> | undefined, { page: number; fetch: number }>({
     mutationFn: (p) => movieService.getMovieListAsync(p),
     onSuccess: (res) => { if (res && res.items) setMovies(res.items); }
   });
-
-  const cinemaMutation = useLTTMutation<PagedResultDto<CinemaOutputDto> | undefined, { page: number; fetch: number }>({
-    mutationFn: (p) => cinemaService.getCinemaListAsync(p),
-    onSuccess: (res) => { if (res && res.items) setCinemas(res.items); }
+  const distributionMutation = useLTTMutation<PagedResultDto<MovieDistributionOutputDto> | undefined, void>({
+    mutationFn: () => movieService.getDistributionsAsync({ skipCount: 0, maxResultCount: 1000 }),
+    onSuccess: (res) => { if (res?.items) setDistributions(res.items); },
+    onError: (err) => toast.error(err.message || t("admin.showtimes.distribution_fetch_error"))
   });
 
-  const screenMutation = useLTTMutation<PagedResultDto<ScreenOutputDto> | undefined, string>({
-    mutationFn: (cid) => screenService.getScreenListAsync(cid, { page: 1, fetch: 100 }),
+  const screenMutation = useLTTMutation<PagedResultDto<ScreenOutputDto> | undefined, void>({
+    mutationFn: () => screenService.getScreenListAsync(managerCinemaId, { page: 1, fetch: 100 }),
     onSuccess: (res) => { if (res && res.items) setScreens(res.items); }
   });
 
   const createMutation = useLTTMutation<ShowtimeOutputDto | undefined, CreateShowtimeInputDto>({
     mutationFn: (body) => showtimeService.createShowtimeAsync(body),
-    onSuccess: () => { toast.success("Tạo thành công"); fetchData(); setDialogOpen(false); }
+    onSuccess: () => { toast.success(t("admin.showtimes.create_success")); fetchData(); setDialogOpen(false); }
   });
   const deleteMutation = useLTTMutation<void, string>({
     mutationFn: (id) => showtimeService.deleteShowtimeAsync(id),
-    onSuccess: () => {
-      toast.success("Đã xóa suất chiếu");
-      fetchData();
-    },
-    onError: (err) => toast.error(err.message || "Xóa suất chiếu thất bại"),
+    onError: (err) => toast.error(err.message || t("admin.showtimes.delete_error")),
   });
 
-  const loading = listMutation.isLoading || createMutation.isLoading || movieMutation.isLoading || cinemaMutation.isLoading || screenMutation.isLoading;
+  const loading =
+    listMutation.isLoading ||
+    createMutation.isLoading ||
+    movieMutation.isLoading ||
+    distributionMutation.isLoading ||
+    screenMutation.isLoading;
 
   const fetchData = () => {
     if (!effectiveMovieId) return;
     listMutation.mutation({
       movieId: effectiveMovieId,
-      cinemaId: cinemaFilter === "all" ? "" : cinemaFilter,
+      cinemaId: managerCinemaId,
       page,
       fetch,
     });
   };
 
   useEffect(() => {
-    fetchData();
-  }, [cinemaFilter, effectiveMovieId, page]);
-
-  useEffect(() => {
-    movieMutation.mutation({ page: 1, fetch: 100 });
-    cinemaMutation.mutation({ page: 1, fetch: 100 });
+    const accessToken = getCookie(ADMIN_ACCESS_TOKEN_KEY);
+    const userInfo = accessToken ? getUserInfoFromToken(accessToken) : null;
+    const cinemaId = userInfo?.cinemaId?.trim() || "";
+    if (!cinemaId) {
+      setCinemaMissing(true);
+      toast.error(t("admin.showtimes.cinema_claim_missing"));
+      return;
+    }
+    setManagerCinemaId(cinemaId);
   }, []);
 
   useEffect(() => {
-    if (form.cinemaId) screenMutation.mutation(form.cinemaId);
-  }, [form.cinemaId]);
+    if (!managerCinemaId || !effectiveMovieId) return;
+    fetchData();
+  }, [managerCinemaId, effectiveMovieId, page, fetch]);
+
+  useEffect(() => {
+    movieMutation.mutation({ page: 1, fetch: 100 });
+    distributionMutation.mutation();
+  }, []);
+
+  useEffect(() => {
+    if (selectedMovieId && !eligibleMovies.some((m) => m.id === selectedMovieId)) {
+      setSelectedMovieId("");
+    }
+  }, [eligibleMovies, selectedMovieId]);
+
+  useEffect(() => {
+    if (!managerCinemaId) return;
+    screenMutation.mutation();
+  }, [managerCinemaId]);
 
   const filtered = items; // Backend handled filter ideally, or we can filter locally if needed.
 
@@ -236,14 +298,13 @@ export default function ShowtimeSchedulerPage() {
 
   const calendarItems = useMemo(() => {
     let list = items;
-    if (cinemaFilter !== "all") list = list.filter((s) => s.cinemaId === cinemaFilter);
     if (search) {
       const q = search.toLowerCase();
       list = list.filter((s) => s.movieTitle?.toLowerCase().includes(q));
     }
     const weekKeys = weekDates.map(formatDateKey);
     return list.filter((s) => s.date && weekKeys.includes(s.date));
-  }, [items, cinemaFilter, search, weekDates]);
+  }, [items, search, weekDates]);
 
   const allSel =
     filtered.length > 0 && filtered.every((i) => selected.has(i.id));
@@ -258,12 +319,14 @@ export default function ShowtimeSchedulerPage() {
   };
 
   const openCreate = (prefillDate?: string, prefillTime?: string) => {
+    const defaultMovieId = selectedMovieId || eligibleMovies[0]?.id || "";
+    const defaultDistributionId = defaultMovieId ? activeDistributionMap.get(defaultMovieId)?.id || "" : "";
     setEditing(null);
     setForm({
-      movieId: "",
-      cinemaId: cinemaFilter === "all" ? "" : cinemaFilter,
+      movieId: defaultMovieId,
+      cinemaId: managerCinemaId,
       screenId: "",
-      movieDistributionId: "",
+      movieDistributionId: defaultDistributionId,
       date: prefillDate || "",
       startTime: prefillTime || "",
       endTime: "",
@@ -272,12 +335,13 @@ export default function ShowtimeSchedulerPage() {
   };
 
   const openEdit = (s: ShowtimeOutputDto) => {
+    const distributionId = activeDistributionMap.get(s.movieId)?.id || "";
     setEditing(s);
     setForm({
       movieId: s.movieId,
-      cinemaId: cinemaFilter,
+      cinemaId: managerCinemaId,
       screenId: s.screenId,
-      movieDistributionId: "",
+      movieDistributionId: distributionId,
       date: s.startTime.split("T")[0],
       startTime: s.startTime.split("T")[1].substring(0, 5),
       endTime: s.endTime.split("T")[1].substring(0, 5),
@@ -313,7 +377,13 @@ export default function ShowtimeSchedulerPage() {
   };
 
   const bulkDelete = () => {
-    Promise.allSettled(Array.from(selected).map((id) => deleteMutation.mutation(id))).then(() => {
+    Promise.allSettled(Array.from(selected).map((id) => deleteMutation.mutation(id))).then((results) => {
+      const failed = results.filter((r) => r.status === "rejected").length;
+      if (failed === 0) {
+        toast.success(t("admin.showtimes.bulk_delete_success", { count: selected.size }));
+      } else {
+        toast.error(t("admin.showtimes.bulk_delete_partial", { success: selected.size - failed, total: selected.size }));
+      }
       setSelected(new Set());
       setDeleteOpen(false);
       fetchData();
@@ -332,7 +402,7 @@ export default function ShowtimeSchedulerPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl font-bold">Lịch chiếu phim</h1>
+        <h1 className="font-heading text-2xl font-bold">{t("admin.showtimes.title")}</h1>
 
         <div className="flex items-center gap-3">
           <LTTTabs
@@ -344,20 +414,20 @@ export default function ShowtimeSchedulerPage() {
             <LTTTabsList className="h-9">
               <LTTTabsTrigger value="table" className="gap-1.5 px-3 text-xs">
                 <List className="h-3.5 w-3.5" />
-                Bảng
+                {t("admin.showtimes.view.table")}
               </LTTTabsTrigger>
               <LTTTabsTrigger
                 value="calendar"
                 className="gap-1.5 px-3 text-xs"
               >
                 <CalendarDays className="h-3.5 w-3.5" />
-                Lịch
+                {t("admin.showtimes.view.calendar")}
               </LTTTabsTrigger>
             </LTTTabsList>
           </LTTTabs>
 
-          <LTTButton onClick={() => openCreate()} className="gap-2">
-            <Plus className="h-4 w-4" /> Thêm suất chiếu
+          <LTTButton onClick={() => openCreate()} className="gap-2" disabled={!managerCinemaId || cinemaMissing}>
+            <Plus className="h-4 w-4" /> {t("admin.showtimes.add")}
           </LTTButton>
         </div>
       </div>
@@ -366,7 +436,7 @@ export default function ShowtimeSchedulerPage() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
           <LTTInput
-            placeholder="Tìm theo tên phim..."
+            placeholder={t("admin.showtimes.search_placeholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -381,23 +451,6 @@ export default function ShowtimeSchedulerPage() {
             className="w-44"
           />
         )}
-
-        <LTTSelect
-          value={cinemaFilter}
-          onValueChange={(v) => setCinemaFilter(v)}
-        >
-          <LTTSelectTrigger className="w-56">
-            <LTTSelectValue placeholder="Chọn rạp" />
-          </LTTSelectTrigger>
-          <LTTSelectContent>
-            <LTTSelectItem value="all">Tất cả rạp</LTTSelectItem>
-            {cinemas.map((c) => (
-              <LTTSelectItem key={c.id} value={c.id}>
-                {c.name}
-              </LTTSelectItem>
-            ))}
-          </LTTSelectContent>
-        </LTTSelect>
 
         {viewMode === "table" && selected.size > 0 && (
           <LTTButton
@@ -414,9 +467,15 @@ export default function ShowtimeSchedulerPage() {
             <LTTSelectValue placeholder="Chọn phim để tải lịch" />
           </LTTSelectTrigger>
           <LTTSelectContent>
-            {movies.map((m) => (
-              <LTTSelectItem key={m.id} value={m.id}>{m.title}</LTTSelectItem>
-            ))}
+            {eligibleMovies.length === 0 ? (
+              <div className="px-3 py-2 text-xs text-muted-foreground-shadcn">
+                No distributed valid movies available for this cinema now.
+              </div>
+            ) : (
+              eligibleMovies.map((m) => (
+                <LTTSelectItem key={m.id} value={m.id}>{m.title}</LTTSelectItem>
+              ))
+            )}
           </LTTSelectContent>
         </LTTSelect>
         <LTTButton variant="outline" className="gap-2" onClick={fetchData} loading={listMutation.isLoading}>
@@ -697,24 +756,10 @@ export default function ShowtimeSchedulerPage() {
           totalCount={totalCount}
           page={page}
           pageSize={fetch}
-          onPageChange={(nextPage) => {
-            setPage(nextPage);
-            listMutation.mutation({
-              movieId: effectiveMovieId,
-              cinemaId: cinemaFilter === "all" ? "" : cinemaFilter,
-              page: nextPage,
-              fetch,
-            });
-          }}
+          onPageChange={(nextPage) => setPage(nextPage)}
           onPageSizeChange={(nextSize) => {
             setFetch(nextSize);
             setPage(1);
-            listMutation.mutation({
-              movieId: effectiveMovieId,
-              cinemaId: cinemaFilter === "all" ? "" : cinemaFilter,
-              page: 1,
-              fetch: nextSize,
-            });
           }}
           loading={listMutation.isLoading}
         />
@@ -731,49 +776,35 @@ export default function ShowtimeSchedulerPage() {
 
           <div className="grid gap-4 py-2 sm:grid-cols-2">
             <div className="space-y-2">
-              <LTTLabel>Phim *</LTTLabel>
+              <LTTLabel>{t("admin.showtimes.form.movie")}</LTTLabel>
               <LTTSelect
                 value={form.movieId}
-                onValueChange={(v) =>
-                  setForm({ ...form, movieId: v })
-                }
+                onValueChange={(v) => {
+                  const distributionId = activeDistributionMap.get(v)?.id || "";
+                  setForm({ ...form, movieId: v, movieDistributionId: distributionId });
+                }}
               >
                 <LTTSelectTrigger>
-                  <LTTSelectValue placeholder="Chọn phim" />
+                  <LTTSelectValue placeholder={t("admin.showtimes.form.movie_placeholder")} />
                 </LTTSelectTrigger>
                 <LTTSelectContent>
-                  {movies.map((m) => (
-                    <LTTSelectItem key={m.id} value={m.id}>
-                      {m.title}
-                    </LTTSelectItem>
-                  ))}
+                  {eligibleMovies.length === 0 ? (
+                    <div className="px-3 py-2 text-xs text-muted-foreground-shadcn">
+                      No distributed valid movies available for this cinema now.
+                    </div>
+                  ) : (
+                    eligibleMovies.map((m) => (
+                      <LTTSelectItem key={m.id} value={m.id}>
+                        {m.title}
+                      </LTTSelectItem>
+                    ))
+                  )}
                 </LTTSelectContent>
               </LTTSelect>
             </div>
 
             <div className="space-y-2">
-              <LTTLabel>Rạp *</LTTLabel>
-              <LTTSelect
-                value={form.cinemaId}
-                onValueChange={(v) =>
-                  setForm({ ...form, cinemaId: v })
-                }
-              >
-                <LTTSelectTrigger>
-                  <LTTSelectValue placeholder="Chọn rạp" />
-                </LTTSelectTrigger>
-                <LTTSelectContent>
-                  {cinemas.map((c) => (
-                    <LTTSelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </LTTSelectItem>
-                  ))}
-                </LTTSelectContent>
-              </LTTSelect>
-            </div>
-
-            <div className="space-y-2">
-              <LTTLabel>Phòng chiếu *</LTTLabel>
+              <LTTLabel>{t("admin.showtimes.form.screen")}</LTTLabel>
               <LTTSelect
                 value={form.screenId}
                 onValueChange={(v) =>
@@ -781,7 +812,7 @@ export default function ShowtimeSchedulerPage() {
                 }
               >
                 <LTTSelectTrigger>
-                  <LTTSelectValue placeholder="Chọn phòng" />
+                  <LTTSelectValue placeholder={t("admin.showtimes.form.screen_placeholder")} />
                 </LTTSelectTrigger>
                 <LTTSelectContent>
                   {screens.map((s) => (
@@ -890,7 +921,15 @@ export default function ShowtimeSchedulerPage() {
           <div className="py-3 text-sm text-muted-foreground-shadcn">Bạn có chắc chắn muốn xóa suất chiếu này?</div>
           <LTTDialogFooter>
             <LTTButton variant="outline" onClick={() => setSingleDeleteOpen(false)}>Hủy</LTTButton>
-            <LTTButton variant="destructive" onClick={() => { deleteMutation.mutation(singleDeleteId); setSingleDeleteOpen(false); }}>
+            <LTTButton
+              variant="destructive"
+              onClick={async () => {
+                await deleteMutation.mutation(singleDeleteId);
+                setSingleDeleteOpen(false);
+                toast.success("Đã xóa suất chiếu");
+                fetchData();
+              }}
+            >
               Xóa
             </LTTButton>
           </LTTDialogFooter>

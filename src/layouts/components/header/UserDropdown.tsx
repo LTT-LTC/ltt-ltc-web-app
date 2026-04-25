@@ -16,8 +16,10 @@ import {
 } from "@/src/@core/const";
 import { getCookie, removeCookie } from "@/src/@core/utils/cookie";
 import { getUserInfoFromToken, UserClaims } from "@/src/@core/utils/jwt";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 export default function UserDropdown() {
+  const { t } = useLocalization();
   const [isOpen, setIsOpen] = useState(false);
   const isAdminContext = typeof window !== 'undefined' && (
     window.location.pathname.startsWith("/administration") ||
@@ -96,7 +98,7 @@ export default function UserDropdown() {
   };
 
   // Extract real info or use placeholders
-  const fullName = userInfo?.fullName || userInfo?.userName || "User";
+  const fullName = userInfo?.fullName || userInfo?.userName || t("common.user");
   const email = userInfo?.email || "user@gmail.com";
 
   if (!isLoggedIn) {
@@ -108,7 +110,7 @@ export default function UserDropdown() {
             variant="primary"
             className="flex items-center gap-2 px-4 py-2 font-bold text-sm tracking-widest bg-primary text-white transition-all duration-200 hover:scale-105 hover:!bg-primary hover:!text-white"
           >
-            Login / Register
+            {t("customer.auth.login_or_register")}
           </LTTButton>
         </Link>
       );
@@ -165,7 +167,7 @@ export default function UserDropdown() {
               baseClassName="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 no-underline"
             >
               <span className="material-symbols-outlined text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-300">person</span>
-              Thông tin cá nhân
+              {t("customer.my_ltc.nav.account_details")}
             </DropdownItem>
           </li>
           <li>
@@ -176,7 +178,7 @@ export default function UserDropdown() {
               baseClassName="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 no-underline"
             >
               <span className="material-symbols-outlined text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-300">dashboard</span>
-              Dashboard của tôi
+              {t("customer.my_ltc.nav.dashboard")}
             </DropdownItem>
           </li>
         </ul>
@@ -189,7 +191,7 @@ export default function UserDropdown() {
           {!isLoading && (
             <span className="material-symbols-outlined text-red-500 group-hover:text-red-700">logout</span>
           )}
-          Đăng xuất
+          {t("common.logout")}
         </LTTButton>
       </Dropdown>
     </div>

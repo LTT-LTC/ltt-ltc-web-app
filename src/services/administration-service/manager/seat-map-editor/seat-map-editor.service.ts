@@ -1,10 +1,8 @@
 import http from "@/src/@core/http";
-import { rootPath } from "../../administration.service";
 import { CreateSeatLayoutDto, UpdateSeatLayoutDto } from "../../screen/models/input.model";
 import { SeatLayoutDto } from "../../screen/models/output.model";
-import { screenService } from "../../screen/screen.service";
+import { seatMapService } from "../../seat-map/seat-map.service";
 
-const screensPath = "/screens/cinema";
 const fallbackCinemaStorageKey = "managerCinemaId";
 
 const getManagerCinemaId = (): string | undefined => {
@@ -32,7 +30,7 @@ interface SeatMapPayload {
 
 interface ScreenListResponseItem {
   id: string;
-  screenNumber: number;
+  name: string;
   seatLayout?: string;
 }
 
@@ -42,12 +40,12 @@ const countSeats = (layout?: SeatMapPayload): number => {
 };
 
 const getSeatLayoutsAsync = async (screenId: string): Promise<SeatLayoutDto[]> => {
-  const { data } = await http.get(`${rootPath}/${screensPath}/${screenId}`);
+  const { data } = await http.get(`/ltc/administration-service/manager/seatmaps/cinema/${screenId}`);
   if (!data?.items) return [];
   return data.items.map((item: ScreenListResponseItem) => ({
     id: item.id,
     screenId: item.id,
-    name: `Screen ${item.screenNumber}`,
+    name: item.name,
     layout: parseSeatLayout(item.seatLayout),
     createdAt: "",
     updatedAt: "",
@@ -55,12 +53,11 @@ const getSeatLayoutsAsync = async (screenId: string): Promise<SeatLayoutDto[]> =
 };
 
 const getSeatLayoutByIdAsync = async (_screenId: string, id: string): Promise<SeatLayoutDto> => {
-  const cinemaId = getManagerCinemaId();
-  const data = await screenService.getScreenByIdAsync(cinemaId ?? "", id);
+  const data = await seatMapService.getSeatMapByIdAsync(id);
   return {
     id: data.id,
     screenId: data.id,
-    name: `Screen ${data.screenNumber}`,
+    name: data.name,
     layout: parseSeatLayout(data.seatLayout),
     createdAt: "",
     updatedAt: "",
@@ -72,17 +69,15 @@ const createSeatLayoutAsync = async (screenId: string, body: CreateSeatLayoutDto
   if (!cinemaId) {
     throw new Error("Missing manager cinema context.");
   }
-  const created = await screenService.createScreenAsync(cinemaId, {
-    screenNumber: Number(body.name) || 1,
-    screenType: "2D",
+  const created = await seatMapService.createSeatMapAsync(cinemaId, {
+    name: body.name,
     seatLayout: JSON.stringify(body.layout),
     seatCount: countSeats(body.layout as SeatMapPayload),
-    status: "active",
   });
   return {
     id: created.id,
     screenId: created.id,
-    name: `Screen ${created.screenNumber}`,
+    name: created.name,
     layout: parseSeatLayout(created.seatLayout),
     createdAt: "",
     updatedAt: "",
@@ -90,22 +85,17 @@ const createSeatLayoutAsync = async (screenId: string, body: CreateSeatLayoutDto
 };
 
 const updateSeatLayoutAsync = async (_screenId: string, id: string, body: UpdateSeatLayoutDto): Promise<SeatLayoutDto> => {
-  const cinemaId = getManagerCinemaId();
-  if (!cinemaId) {
-    throw new Error("Missing manager cinema context.");
-  }
-  const current = await screenService.getScreenByIdAsync(cinemaId, id);
-  const updated = await screenService.updateScreenAsync(cinemaId, id, {
-    screenNumber: current.screenNumber,
-    screenType: current.screenType || "2D",
-    status: current.status || "active",
+  const current = await seatMapService.getSeatMapByIdAsync(id);
+  const updated = await seatMapService.updateSeatMapAsync(id, {
+    name: body.name || current.name,
+    description: current.description,
     seatCount: body.layout ? countSeats(body.layout as SeatMapPayload) : current.seatCount,
     seatLayout: body.layout ? JSON.stringify(body.layout) : current.seatLayout,
   });
   return {
     id: updated.id,
     screenId: updated.id,
-    name: `Screen ${updated.screenNumber}`,
+    name: updated.name,
     layout: parseSeatLayout(updated.seatLayout),
     createdAt: "",
     updatedAt: "",
@@ -113,11 +103,7 @@ const updateSeatLayoutAsync = async (_screenId: string, id: string, body: Update
 };
 
 const deleteSeatLayoutAsync = async (_screenId: string, id: string): Promise<void> => {
-  const cinemaId = getManagerCinemaId();
-  if (!cinemaId) {
-    throw new Error("Missing manager cinema context.");
-  }
-  await screenService.deleteScreenAsync(cinemaId, id);
+  await seatMapService.deleteSeatMapAsync(id);
 };
 
 export const managerSeatMapEditorService = {

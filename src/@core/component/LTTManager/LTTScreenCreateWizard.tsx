@@ -18,6 +18,7 @@ import { cn } from "@/src/@core/utils/cn";
 import { LTTDialog, LTTDialogContent, LTTDialogFooter, LTTDialogHeader, LTTDialogTitle } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
+import { LTTTextarea } from "@/src/@core/component/LTTShadcnUI/LTTTextarea";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import { LTTSelect, LTTSelectContent, LTTSelectItem, LTTSelectTrigger, LTTSelectValue } from "@/src/@core/component/LTTShadcnUI/LTTSelect";
 
@@ -26,7 +27,6 @@ import {
   type SeatLayout,
   type SeatLayoutSeat,
   mockAdminCinemas,
-  mockSeatTypes,
   screenTypes,
   type SeatType,
 } from "@/src/@core/const/mock/adminMockData";
@@ -70,23 +70,39 @@ interface Props {
   onCreated: (screen: Screen) => void;
   onUpdate?: (screen: Screen) => void;
   initialData?: Screen;
+  fixedCinemaId?: string;
+  entityType?: "screen" | "seatmap";
+  isSubmitting?: boolean;
+  seatTypes?: SeatType[];
   /** When true, renders as a page-level card instead of a modal dialog */
   inline?: boolean;
 }
 
-export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, initialData, inline = false }: Props) {
+export default function LTTScreenCreateWizard({
+  onClose,
+  onCreated,
+  onUpdate,
+  initialData,
+  fixedCinemaId,
+  entityType = "screen",
+  isSubmitting = false,
+  seatTypes: externalSeatTypes = [],
+  inline = false,
+}: Props) {
   const isEditMode = !!initialData;
+  const isSeatMapMode = entityType === "seatmap";
   const [step, setStep] = useState(1);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
 
-  const SEAT_TYPES_STORAGE_KEY = "ltt_admin_mock_seat_types";
-  const [seatTypes, setSeatTypes] = useState<SeatType[]>(mockSeatTypes);
+  const [seatTypes, setSeatTypes] = useState<SeatType[]>(externalSeatTypes);
 
   // Step 1 fields
   const [tenantId, setTenantId] = useState("tenant-001");
   const [cinemaId, setCinemaId] = useState("");
+  const [seatMapName, setSeatMapName] = useState("");
+  const [seatMapDescription, setSeatMapDescription] = useState("");
   const [screenNumber, setScreenNumber] = useState("");
   const [screenType, setScreenType] = useState("");
   const [seatCount, setSeatCount] = useState("100");
@@ -123,12 +139,15 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
   );
 
   useEffect(() => {
-    try {
-      if (typeof window === "undefined") return;
-      const raw = localStorage.getItem(SEAT_TYPES_STORAGE_KEY);
-      if (raw) setSeatTypes(JSON.parse(raw) as SeatType[]);
-    } catch {}
-  }, []);
+    setSeatTypes(externalSeatTypes);
+  }, [externalSeatTypes]);
+
+  useEffect(() => {
+    if (seatTypes.length === 0) return;
+    if (!seatTypes.some((x) => x.id === activeSeatTypeId)) {
+      setActiveSeatTypeId(seatTypes[0].id);
+    }
+  }, [seatTypes, activeSeatTypeId]);
 
   /**
    * Recalculate seat codes:
@@ -300,6 +319,8 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
       if (initialData) {
         setTenantId(initialData.tenantId || "tenant-001");
         setCinemaId(initialData.cinemaId);
+        setSeatMapName(initialData.name || "");
+        setSeatMapDescription(initialData.description || "");
         setScreenNumber(String(initialData.screenNumber));
         setScreenType(initialData.screenType);
         setSeatCount(String(initialData.seatCount));
@@ -394,6 +415,8 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
         if (parsed.step) setStep(parsed.step);
         if (parsed.tenantId) setTenantId(parsed.tenantId);
         if (parsed.cinemaId) setCinemaId(parsed.cinemaId);
+        if (parsed.seatMapName) setSeatMapName(parsed.seatMapName);
+        if (parsed.seatMapDescription) setSeatMapDescription(parsed.seatMapDescription);
         if (parsed.screenNumber) setScreenNumber(parsed.screenNumber);
         if (parsed.screenType) setScreenType(parsed.screenType);
         if (parsed.seatCount) setSeatCount(parsed.seatCount);
@@ -413,6 +436,12 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
     initGrid(8, 12, "rectangle");
   }, [initGrid, initialData]);
 
+  useEffect(() => {
+    if (fixedCinemaId) {
+      setCinemaId(fixedCinemaId);
+    }
+  }, [fixedCinemaId]);
+
   // Auto-save draft & track dirtiness
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -424,6 +453,8 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
             step,
             tenantId,
             cinemaId,
+            seatMapName,
+            seatMapDescription,
             screenNumber,
             screenType,
             seatCount,
@@ -445,6 +476,8 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
     step,
     tenantId,
     cinemaId,
+    seatMapName,
+    seatMapDescription,
     screenNumber,
     screenType,
     seatCount,
@@ -461,10 +494,10 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
 
   // isDirty tracking (simplified: any change to key fields sets dirty)
   useEffect(() => {
-    if (tenantId !== "tenant-001" || cinemaId !== "" || screenNumber !== "" || screenType !== "" || grid.length > 0) {
+    if (tenantId !== "tenant-001" || cinemaId !== "" || seatMapName !== "" || screenNumber !== "" || screenType !== "" || grid.length > 0) {
       if (!isDirty && grid.length > 0) setIsDirty(true);
     }
-  }, [tenantId, cinemaId, screenNumber, screenType, grid]);
+  }, [tenantId, cinemaId, seatMapName, screenNumber, screenType, grid]);
 
   // Beforeunload guard
   useEffect(() => {
@@ -745,6 +778,11 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
   };
 
   const goToStep2 = () => {
+    if (isSeatMapMode) {
+      setStep(2);
+      return;
+    }
+
     if (!cinemaId || !screenNumber || !screenType) {
       toast.error("Vui lòng điền đầy đủ thông tin");
       return;
@@ -867,6 +905,11 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
   };
 
   const handleConfirmCreate = () => {
+    if (isSeatMapMode && !seatMapName.trim()) {
+      toast.error("Vui lòng nhập tên sơ đồ ghế");
+      return;
+    }
+
     const now = new Date()
       .toLocaleString("sv-SE")
       .slice(0, 16)
@@ -876,6 +919,9 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
       id: initialData?.id ?? `scr-${Date.now()}`,
       tenantId,
       cinemaId,
+      seatMapId: initialData?.seatMapId,
+      name: seatMapName.trim() || undefined,
+      description: seatMapDescription.trim() || undefined,
       screenNumber: parseInt(screenNumber),
       screenType,
       seatLayout: buildSeatLayout(),
@@ -896,6 +942,11 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
 
   const getSeatTypeToolList = () => (
     <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1">
+      {seatTypes.length === 0 && (
+        <div className="rounded-md border border-dashed p-2 text-[11px] text-muted-foreground-shadcn">
+          Chưa có dữ liệu loại ghế. Vui lòng làm mới danh sách seat type.
+        </div>
+      )}
       {seatTypes.map((st) => (
         <button
           key={st.id}
@@ -935,13 +986,39 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
                 />
               </div>
               <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground-shadcn px-1">
-                <span className={cn(step >= 1 ? "text-primary-shadcn" : "text-muted-foreground-shadcn")}>1. Thông tin rạp</span>
-                <span className={cn(step >= 2 ? "text-primary-shadcn" : "text-muted-foreground-shadcn")}>2. Thiết kế sơ đồ</span>
+                <span className={cn(step >= 1 ? "text-primary-shadcn" : "text-muted-foreground-shadcn")}>
+                  {isSeatMapMode ? "1. Thiết kế sơ đồ" : "1. Thông tin rạp"}
+                </span>
+                <span className={cn(step >= 2 ? "text-primary-shadcn" : "text-muted-foreground-shadcn")}>
+                  {isSeatMapMode ? "2. Thông tin sơ đồ" : "2. Thiết kế sơ đồ"}
+                </span>
               </div>
             </div>
 
-            {step === 1 && (
+            {((step === 1 && !isSeatMapMode) || (step === 2 && isSeatMapMode)) && (
               <div className="grid gap-6 sm:grid-cols-2 max-w-2xl mx-auto py-4">
+                {isSeatMapMode ? (
+                  <>
+                    <div className="space-y-2 sm:col-span-2">
+                      <LTTLabel>Tên sơ đồ ghế *</LTTLabel>
+                      <LTTInput
+                        value={seatMapName}
+                        onChange={(e) => setSeatMapName(e.target.value)}
+                        placeholder="Ví dụ: Seat map phòng 1"
+                      />
+                    </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <LTTLabel>Mô tả</LTTLabel>
+                      <LTTTextarea
+                        value={seatMapDescription}
+                        onChange={(e) => setSeatMapDescription(e.target.value)}
+                        placeholder="Mô tả sơ đồ ghế"
+                        rows={4}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
                 <div className="space-y-2">
                   <LTTLabel>Tenant ID</LTTLabel>
                   <LTTInput
@@ -951,18 +1028,25 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
                 </div>
                 <div className="space-y-2">
                   <LTTLabel>Rạp *</LTTLabel>
-                  <LTTSelect value={cinemaId} onValueChange={setCinemaId}>
-                    <LTTSelectTrigger>
-                      <LTTSelectValue placeholder="Chọn rạp" />
-                    </LTTSelectTrigger>
-                    <LTTSelectContent>
-                      {mockAdminCinemas.map((c) => (
-                        <LTTSelectItem key={c.id} value={c.id}>
-                          {c.name}
-                        </LTTSelectItem>
-                      ))}
-                    </LTTSelectContent>
-                  </LTTSelect>
+                  {fixedCinemaId ? (
+                    <LTTInput
+                      value={mockAdminCinemas.find((c) => c.id === fixedCinemaId)?.name ?? fixedCinemaId}
+                      disabled
+                    />
+                  ) : (
+                    <LTTSelect value={cinemaId} onValueChange={setCinemaId}>
+                      <LTTSelectTrigger>
+                        <LTTSelectValue placeholder="Chọn rạp" />
+                      </LTTSelectTrigger>
+                      <LTTSelectContent>
+                        {mockAdminCinemas.map((c) => (
+                          <LTTSelectItem key={c.id} value={c.id}>
+                            {c.name}
+                          </LTTSelectItem>
+                        ))}
+                      </LTTSelectContent>
+                    </LTTSelect>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <LTTLabel>Số phòng *</LTTLabel>
@@ -999,10 +1083,12 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
                     Số lượng ghế chính xác sẽ được xác định ở bước thiết kế.
                   </p>
                 </div>
+                  </>
+                )}
               </div>
             )}
 
-            {step === 2 && (
+            {((step === 2 && !isSeatMapMode) || (step === 1 && isSeatMapMode)) && (
               <div className="flex flex-col lg:flex-row gap-6">
                 {/* Main Screen Area */}
                 <div className="flex-1 space-y-6 min-w-0">
@@ -1363,7 +1449,7 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
                 onClick={() => setStep(1)}
                 className="gap-2 mr-auto"
               >
-                <ArrowLeft className="h-4 w-4" /> Quay lại thông tin
+                <ArrowLeft className="h-4 w-4" /> {isSeatMapMode ? "Quay lại thiết kế" : "Quay lại thông tin"}
               </LTTButton>
             )}
 
@@ -1373,7 +1459,7 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
 
             {step === 1 && (
               <LTTButton onClick={goToStep2} className="gap-2 px-6">
-                Thiết kế sơ đồ <ArrowRight className="h-4 w-4" />
+                {isSeatMapMode ? "Nhập thông tin sơ đồ" : "Thiết kế sơ đồ"} <ArrowRight className="h-4 w-4" />
               </LTTButton>
             )}
 
@@ -1397,8 +1483,16 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
           <div className="px-6 py-4 border-b border-border-shadcn">
             <h2 className="font-semibold text-base">
               {step === 1
-                ? isEditMode ? "Bước 1: Chỉnh thông tin phòng chiếu" : "Bước 1: Thông tin phòng chiếu"
-                : isEditMode ? "Bước 2: Chỉnh sửa sơ đồ ghế" : "Bước 2: Thiết kế sơ đồ ghế"}
+                ? (
+                  isSeatMapMode
+                    ? (isEditMode ? "Bước 1: Chỉnh sửa sơ đồ ghế" : "Bước 1: Thiết kế sơ đồ ghế")
+                    : (isEditMode ? "Bước 1: Chỉnh thông tin phòng chiếu" : "Bước 1: Thông tin phòng chiếu")
+                )
+                : (
+                  isSeatMapMode
+                    ? (isEditMode ? "Bước 2: Chỉnh thông tin sơ đồ ghế" : "Bước 2: Thông tin sơ đồ ghế")
+                    : (isEditMode ? "Bước 2: Chỉnh sửa sơ đồ ghế" : "Bước 2: Thiết kế sơ đồ ghế")
+                )}
             </h2>
           </div>
           <div className="flex-1 overflow-y-auto px-6 py-6">{wizardContent}</div>
@@ -1419,17 +1513,17 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
               <div className="flex justify-between">
                 <span className="text-muted-foreground-shadcn">Rạp:</span>
                 <span className="font-bold">
-                  {mockAdminCinemas.find((c) => c.id === cinemaId)?.name}
+                  {isSeatMapMode ? seatMapName : mockAdminCinemas.find((c) => c.id === cinemaId)?.name}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground-shadcn">Số phòng:</span>
-                <span className="font-bold">{screenNumber}</span>
+                <span className="text-muted-foreground-shadcn">{isSeatMapMode ? "Mô tả:" : "Số phòng:"}</span>
+                <span className="font-bold">{isSeatMapMode ? (seatMapDescription || "—") : screenNumber}</span>
               </div>
-              <div className="flex justify-between">
+              {!isSeatMapMode && <div className="flex justify-between">
                 <span className="text-muted-foreground-shadcn">Loại phòng:</span>
                 <span className="font-bold">{screenType}</span>
-              </div>
+              </div>}
               <div className="flex justify-between border-t border-border-shadcn pt-2 mt-2">
                 <span className="text-muted-foreground-shadcn font-bold">Tổng số ghế:</span>
                 <span className="font-bold text-primary-shadcn text-lg">{actualSeatCount}</span>
@@ -1437,7 +1531,7 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
             </div>
             <LTTDialogFooter>
               <LTTButton variant="outline" onClick={() => setConfirmOpen(false)}>Hủy</LTTButton>
-              <LTTButton onClick={handleConfirmCreate}>
+              <LTTButton onClick={handleConfirmCreate} loading={isSubmitting} disabled={isSubmitting}>
                 {isEditMode ? "Xác nhận & Cập nhật" : "Xác nhận & Lưu"}
               </LTTButton>
             </LTTDialogFooter>
@@ -1477,8 +1571,16 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
           <LTTDialogHeader className="px-6 py-4 border-b border-border-shadcn">
             <LTTDialogTitle>
               {step === 1
-                ? isEditMode ? "Bước 1: Chỉnh thông tin phòng chiếu" : "Bước 1: Thông tin phòng chiếu"
-                : isEditMode ? "Bước 2: Chỉnh sửa sơ đồ ghế" : "Bước 2: Thiết kế sơ đồ ghế"}
+                ? (
+                  isSeatMapMode
+                    ? (isEditMode ? "Bước 1: Chỉnh sửa sơ đồ ghế" : "Bước 1: Thiết kế sơ đồ ghế")
+                    : (isEditMode ? "Bước 1: Chỉnh thông tin phòng chiếu" : "Bước 1: Thông tin phòng chiếu")
+                )
+                : (
+                  isSeatMapMode
+                    ? (isEditMode ? "Bước 2: Chỉnh thông tin sơ đồ ghế" : "Bước 2: Thông tin sơ đồ ghế")
+                    : (isEditMode ? "Bước 2: Chỉnh sửa sơ đồ ghế" : "Bước 2: Thiết kế sơ đồ ghế")
+                )}
             </LTTDialogTitle>
           </LTTDialogHeader>
 
@@ -1501,19 +1603,19 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
           </LTTDialogHeader>
           <div className="space-y-3 py-4 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground-shadcn">Rạp:</span>
+              <span className="text-muted-foreground-shadcn">{isSeatMapMode ? "Tên sơ đồ:" : "Rạp:"}</span>
               <span className="font-bold">
-                {mockAdminCinemas.find((c) => c.id === cinemaId)?.name}
+                {isSeatMapMode ? seatMapName : mockAdminCinemas.find((c) => c.id === cinemaId)?.name}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground-shadcn">Số phòng:</span>
-              <span className="font-bold">{screenNumber}</span>
+              <span className="text-muted-foreground-shadcn">{isSeatMapMode ? "Mô tả:" : "Số phòng:"}</span>
+              <span className="font-bold">{isSeatMapMode ? (seatMapDescription || "—") : screenNumber}</span>
             </div>
-            <div className="flex justify-between">
+            {!isSeatMapMode && <div className="flex justify-between">
               <span className="text-muted-foreground-shadcn">Loại phòng:</span>
               <span className="font-bold">{screenType}</span>
-            </div>
+            </div>}
             <div className="flex justify-between border-t border-border-shadcn pt-2 mt-2">
               <span className="text-muted-foreground-shadcn font-bold">Tổng số ghế:</span>
               <span className="font-bold text-primary-shadcn text-lg">{actualSeatCount}</span>
@@ -1521,7 +1623,7 @@ export default function LTTScreenCreateWizard({ onClose, onCreated, onUpdate, in
           </div>
           <LTTDialogFooter>
             <LTTButton variant="outline" onClick={() => setConfirmOpen(false)}>Hủy</LTTButton>
-            <LTTButton onClick={handleConfirmCreate}>
+            <LTTButton onClick={handleConfirmCreate} loading={isSubmitting} disabled={isSubmitting}>
               {isEditMode ? "Xác nhận & Cập nhật" : "Xác nhận & Lưu"}
             </LTTButton>
           </LTTDialogFooter>
