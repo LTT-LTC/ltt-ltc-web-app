@@ -14,12 +14,14 @@ import LTTSelect from "@/src/@core/component/AntD/LTTSelect";
 import { Form, notification } from "antd";
 import Link from "next/link";
 import dayjs from "dayjs";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 import { columns } from "./table.type";
 import ShowtimesFilter from "../Filter";
 import { AdminShowtime, mockAdminShowtimes, mockAdminMovies, mockAdminCinemas } from "../_mock/data";
 
 const ShowtimesListPage = () => {
+  const { t } = useLocalization();
   const [items, setItems] = useState<AdminShowtime[]>(mockAdminShowtimes);
   const [filters, setFilters] = useState<any>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -51,7 +53,7 @@ const ShowtimesListPage = () => {
 
   const handleDelete = (id: string) => {
     setItems((prev) => prev.filter((i) => i.id !== id));
-    notification.success({ message: "Đã xóa suất chiếu" });
+    notification.success({ message: t("admin.showtimes.toast.delete_success") });
   };
 
   const handleAdd = () => {
@@ -80,10 +82,10 @@ const ShowtimesListPage = () => {
 
       if (editingItem) {
         setItems((prev) => prev.map((i) => i.id === editingItem.id ? { ...i, ...payload } : i));
-        notification.success({ message: "Cập nhật thành công" });
+        notification.success({ message: t("admin.showtimes.toast.update_success") });
       } else {
         setItems((prev) => [{ ...payload, id: "st-" + Date.now() }, ...prev]);
-        notification.success({ message: "Tạo mới thành công" });
+        notification.success({ message: t("admin.showtimes.toast.create_success") });
       }
       setIsModalOpen(false);
     } catch (e) {
@@ -95,35 +97,35 @@ const ShowtimesListPage = () => {
     <>
       <LTTBreadcrumb
         items={[
-          { title: "Quản lý rạp" },
-          { title: <Link href="/administration/manager/showtimes">Xếp lịch chiếu</Link> },
+          { title: t("admin.menu.cinema_configuration") },
+          { title: <Link href="/administration/manager/showtimes">{t("admin.showtimes.title")}</Link> },
         ]}
       />
       <div className="flex justify-end mt-3 mb-4">
         <LTTButton variant="primary" onClick={handleAdd}>
-          Thêm suất chiếu
+          {t("admin.showtimes.add")}
         </LTTButton>
       </div>
 
-      <LTTCard height="table" title="Xếp lịch chiếu" className="mt-3">
+      <LTTCard height="table" title={t("admin.showtimes.title")} className="mt-3">
         <div className="search flex flex-row items-center gap-2 mt-0 mb-4">
           <ShowtimesFilter onFilterChange={(f) => setFilters(f)} />
         </div>
         <LTTTabs
           defaultActiveKey="1"
           items={[
-            { key: "1", label: "Tất cả" },
+            { key: "1", label: t("common.all") },
           ]}
         />
         <LTTTable
           rowKey="id"
-          columns={columns(handleEdit, handleDelete)}
+          columns={columns(t, handleEdit, handleDelete)}
           dataSource={filteredItems}
         />
       </LTTCard>
 
       <LTTModal
-        title={editingItem ? "Chỉnh sửa suất chiếu" : "Thêm suất chiếu mới"}
+        title={editingItem ? t("admin.showtimes.edit_title") : t("admin.showtimes.add_title")}
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         onOk={onSubmit}

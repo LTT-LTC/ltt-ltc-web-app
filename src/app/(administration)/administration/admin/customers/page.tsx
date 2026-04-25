@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, User, Lock, Unlock, Trash2, Mail, Phone, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
@@ -12,30 +12,51 @@ import {
     LTTDialogTitle,
     LTTDialogFooter
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
+import {
+    LTTSelect,
+    LTTSelectContent,
+    LTTSelectItem,
+    LTTSelectTrigger,
+    LTTSelectValue,
+} from "@/src/@core/component/LTTShadcnUI/LTTSelect";
 import { toast } from "sonner";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
-import useDebouncedListQuery from "@/src/@core/hooks/useDebouncedListQuery";
 import { customerService } from "@/src/services/administration-service/customer/customer.service";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 import { GetCustomerListInputDto } from "@/src/services/administration-service/customer/models/input.model";
 import { CustomerOutputDto } from "@/src/services/administration-service/customer/models/output.model";
+import AdminTablePagination from "../_components/AdminTablePagination";
+import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 
 export default function CustomersPage() {
     const { t, currentLanguage } = useLocalization();
     const [items, setItems] = useState<CustomerOutputDto[]>([]);
     const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [totalCount, setTotalCount] = useState(0);
     const [selectedCustomer, setSelectedCustomer] = useState<CustomerOutputDto | null>(null);
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [confirmType, setConfirmType] = useState<"lock" | "unlock" | "delete">("lock");
 
-    const fetchData = (keyword: string) => {
-        listMutation.mutation({ page: 1, fetch: 100, keyword: keyword.trim() });
+    const fetchData = () => {
+        listMutation.mutation({
+            skipCount: (page - 1) * pageSize,
+            maxResultCount: pageSize,
+            filter: debouncedSearch.trim()
+        });
     };
 
     const listMutation = useLTTMutation<PagedResultDto<CustomerOutputDto>, GetCustomerListInputDto>({
         mutationFn: (params) => customerService.getCustomerListAsync(params),
-        onSuccess: (res) => { if (res && res.items) setItems(res.items); },
+        onSuccess: (res) => {
+            if (res && res.items) {
+                setItems(res.items);
+                setTotalCount(res.totalCount || res.items.length);
+            }
+        },
         onError: (err) => toast.error(err.message || t("admin.customer_management.fetch_error"))
     });
 
@@ -44,7 +65,7 @@ export default function CustomersPage() {
         onSuccess: () => {
             toast.success(t("admin.customer_management.action_success.lock"));
             setConfirmOpen(false);
-            fetchData(debouncedSearch);
+            fetchData();
         }
     });
 
@@ -53,7 +74,7 @@ export default function CustomersPage() {
         onSuccess: () => {
             toast.success(t("admin.customer_management.action_success.unlock"));
             setConfirmOpen(false);
-            fetchData(debouncedSearch);
+            fetchData();
         }
     });
 
@@ -62,16 +83,23 @@ export default function CustomersPage() {
         onSuccess: () => {
             toast.success(t("admin.customer_management.action_success.delete"));
             setConfirmOpen(false);
-            fetchData(debouncedSearch);
+            fetchData();
         }
     });
 
-    const debouncedSearch = useDebouncedListQuery(
-        search,
-        (keyword) => {
-            fetchData(keyword);
-        }
-    );
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(search), 300);
+        return () => clearTimeout(timer);
+    }, [search]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [debouncedSearch]);
+
+    useEffect(() => {
+        fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [page, pageSize, debouncedSearch]);
 
     const handleAction = (customer: CustomerOutputDto, type: "lock" | "unlock" | "delete") => {
         setSelectedCustomer(customer);
@@ -108,17 +136,18 @@ export default function CustomersPage() {
                 <LTTButton
                     variant="outline"
                     className="gap-2"
-                    onClick={() => fetchData(debouncedSearch)}
+                    onClick={fetchData}
                     loading={listMutation.isLoading}
                 >
                     <RefreshCw className="h-4 w-4" /> {t("admin.customer_management.refresh")}
                 </LTTButton>
             </div>
 
-            <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
+            <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm my-3">
                 <table className="w-full text-sm text-left">
                     <thead>
                         <tr className="border-b border-border-shadcn bg-muted-shadcn/50 font-semibold">
+                            <th className="px-4 py-3">{t("admin.customer_management.table.index")}</th>
                             <th className="px-4 py-3">{t("admin.customer_management.table.customer")}</th>
                             <th className="px-4 py-3">{t("admin.customer_management.table.contact")}</th>
                             <th className="px-4 py-3">{t("admin.customer_management.table.birthday")}</th>
@@ -128,15 +157,16 @@ export default function CustomersPage() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border-shadcn">
-                        {items.length === 0 ? (
-                            <tr>
-                                <td colSpan={6} className="py-12 text-center text-muted-foreground-shadcn">
-                                    {listMutation.isLoading ? t("admin.customer_management.loading") : t("admin.customer_management.empty")}
-                                </td>
-                            </tr>
+                        {listMutation.isLoading ? (
+                            <DomainTableStateRow colSpan={7} state="loading" loadingText={t("admin.customer_management.loading")} />
+                        ) : items.length === 0 ? (
+                            <DomainTableStateRow colSpan={7} state="empty" emptyText={t("admin.customer_management.empty")} />
                         ) : (
-                            items.map((c) => (
+                            items.map((c, idx) => (
                                 <tr key={c.id} className="hover:bg-muted-shadcn/30 transition-colors">
+                                    <td className="px-4 py-3 text-muted-foreground-shadcn">
+                                        {(page - 1) * pageSize + idx + 1}
+                                    </td>
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600">
@@ -144,7 +174,7 @@ export default function CustomersPage() {
                                             </div>
                                             <div>
                                                 <div className="font-bold">{c.name}</div>
-                                                <div className="text-[10px] text-muted-foreground-shadcn uppercase tracking-wider font-semibold">{c.memberCode || t("admin.customer_management.member_fallback")}</div>
+                                                <div className="text-[10px] text-muted-foreground-shadcn uppercase tracking-wider font-semibold">{c.profileQRUrl || t("admin.customer_management.member_fallback")}</div>
                                             </div>
                                         </div>
                                     </td>
@@ -183,6 +213,18 @@ export default function CustomersPage() {
                     </tbody>
                 </table>
             </div>
+
+            <AdminTablePagination
+                totalCount={totalCount}
+                page={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(size) => {
+                    setPage(1);
+                    setPageSize(size);
+                }}
+                loading={listMutation.isLoading}
+            />
 
             <LTTDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
                 <LTTDialogContent className="sm:max-w-sm">

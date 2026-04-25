@@ -7,13 +7,31 @@ import { DropdownItem } from "@/src/@core/component/LTTDropdown/DropdownItem";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { administrationService } from "@/src/services/administration-service/administration.service";
 import { customerService } from "@/src/services/customer-service/customer.service";
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, TENANT_KEY } from "@/src/@core/const";
+import {
+  ADMIN_ACCESS_TOKEN_KEY,
+  ADMIN_REFRESH_TOKEN_KEY,
+  CUSTOMER_ACCESS_TOKEN_KEY,
+  CUSTOMER_REFRESH_TOKEN_KEY,
+  TENANT_KEY
+} from "@/src/@core/const";
 import { getCookie, removeCookie } from "@/src/@core/utils/cookie";
 import { getUserInfoFromToken, UserClaims } from "@/src/@core/utils/jwt";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 export default function UserDropdown() {
+  const { t } = useLocalization();
   const [isOpen, setIsOpen] = useState(false);
-  const accessToken = getCookie(ACCESS_TOKEN_KEY);
+  const isAdminContext = typeof window !== 'undefined' && (
+    window.location.pathname.startsWith("/administration") ||
+    window.location.pathname.startsWith("/admin") ||
+    window.location.pathname.startsWith("/employee") ||
+    window.location.pathname.startsWith("/manager") ||
+    window.location.pathname.startsWith("/staff") ||
+    window.location.pathname.startsWith("/pos")
+  );
+  const accessToken = isAdminContext
+    ? getCookie(ADMIN_ACCESS_TOKEN_KEY)
+    : getCookie(CUSTOMER_ACCESS_TOKEN_KEY);
   const isLoggedIn = Boolean(accessToken);
   const userInfo: UserClaims | null = accessToken ? getUserInfoFromToken(accessToken) : null;
 
@@ -44,19 +62,17 @@ export default function UserDropdown() {
   });
 
   const handleLocalLogout = () => {
-    const isAdmin = typeof window !== 'undefined' && (
-      window.location.pathname.startsWith("/administration") ||
-      window.location.pathname.startsWith("/admin") ||
-      window.location.pathname.startsWith("/employee") ||
-      window.location.pathname.startsWith("/manager") ||
-      window.location.pathname.startsWith("/staff") ||
-      window.location.pathname.startsWith("/pos")
-    );
+    const isAdmin = isAdminContext;
 
-    localStorage.removeItem(TENANT_KEY);
-    removeCookie(ACCESS_TOKEN_KEY);
-    removeCookie(REFRESH_TOKEN_KEY);
-    removeCookie(TENANT_KEY);
+    if (isAdmin) {
+      localStorage.removeItem(TENANT_KEY);
+      removeCookie(ADMIN_ACCESS_TOKEN_KEY);
+      removeCookie(ADMIN_REFRESH_TOKEN_KEY);
+      removeCookie(TENANT_KEY);
+    } else {
+      removeCookie(CUSTOMER_ACCESS_TOKEN_KEY);
+      removeCookie(CUSTOMER_REFRESH_TOKEN_KEY);
+    }
 
     if (isAdmin) {
       window.location.href = "/administration-login";
@@ -82,7 +98,7 @@ export default function UserDropdown() {
   };
 
   // Extract real info or use placeholders
-  const fullName = userInfo?.fullName || userInfo?.userName || "User";
+  const fullName = userInfo?.fullName || userInfo?.userName || t("common.user");
   const email = userInfo?.email || "user@gmail.com";
 
   if (!isLoggedIn) {
@@ -94,7 +110,7 @@ export default function UserDropdown() {
             variant="primary"
             className="flex items-center gap-2 px-4 py-2 font-bold text-sm tracking-widest bg-primary text-white transition-all duration-200 hover:scale-105 hover:!bg-primary hover:!text-white"
           >
-            Login / Register
+            {t("customer.auth.login_or_register")}
           </LTTButton>
         </Link>
       );
@@ -151,7 +167,7 @@ export default function UserDropdown() {
               baseClassName="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 no-underline"
             >
               <span className="material-symbols-outlined text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-300">person</span>
-              Thông tin cá nhân
+              {t("customer.my_ltc.nav.account_details")}
             </DropdownItem>
           </li>
           <li>
@@ -162,7 +178,7 @@ export default function UserDropdown() {
               baseClassName="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 no-underline"
             >
               <span className="material-symbols-outlined text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-300">dashboard</span>
-              Dashboard của tôi
+              {t("customer.my_ltc.nav.dashboard")}
             </DropdownItem>
           </li>
         </ul>
@@ -175,7 +191,7 @@ export default function UserDropdown() {
           {!isLoading && (
             <span className="material-symbols-outlined text-red-500 group-hover:text-red-700">logout</span>
           )}
-          Đăng xuất
+          {t("common.logout")}
         </LTTButton>
       </Dropdown>
     </div>

@@ -85,6 +85,9 @@ export interface Screen {
   id: string;
   tenantId: string;
   cinemaId: string;
+  seatMapId?: string;
+  name?: string;
+  description?: string;
   screenNumber: number;
   screenType: string;
   seatLayout: SeatLayout;

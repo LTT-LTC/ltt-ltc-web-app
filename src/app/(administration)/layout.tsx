@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { AdminRole } from "@/src/@core/type/permission.types";
 import { adminNavItems, managerNavItems, staffNavItems, posNavItems } from "@/src/@core/http/routes/administration";
 import LTTAdminSubDomainLayout from "@/src/@core/component/LTTAdminSubDomainLayout";
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from "@/src/@core/const";
+import { ADMIN_ACCESS_TOKEN_KEY, ADMIN_REFRESH_TOKEN_KEY } from "@/src/@core/const";
 import { getCookie, removeCookie } from "@/src/@core/utils/cookie";
 import {
   getAdminHomePathByRole,
@@ -25,7 +25,7 @@ export default function AdministrationGroupLayout({
   const pathname = usePathname();
 
   const isLoginPath = pathname.includes("/login");
-  const accessToken = getCookie(ACCESS_TOKEN_KEY);
+  const accessToken = getCookie(ADMIN_ACCESS_TOKEN_KEY);
   const role = resolveAdminRoleFromToken(accessToken);
 
   useEffect(() => {
@@ -39,8 +39,8 @@ export default function AdministrationGroupLayout({
     }
 
     if (!role) {
-      removeCookie(ACCESS_TOKEN_KEY);
-      removeCookie(REFRESH_TOKEN_KEY);
+      removeCookie(ADMIN_ACCESS_TOKEN_KEY);
+      removeCookie(ADMIN_REFRESH_TOKEN_KEY);
       window.location.href = "/administration-login";
       return;
     }

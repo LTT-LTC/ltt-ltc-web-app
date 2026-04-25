@@ -3,8 +3,8 @@ import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { GetCustomerListInputDto } from "@/src/services/administration-service/customer/models/input.model";
 import { CustomerOutputDto } from "../customer/models/output.model";
 
-const path = "/customer-service";
-const customerPath = "/customer-all";
+const path = "/customer-service/admin";
+const customerPath = "/customer";
 const adminProfilePath = "/profile";
 
 const getCustomerListAsync = async (params: GetCustomerListInputDto) => {

@@ -65,7 +65,7 @@ export const EmployeeDetailsProvider = ({
     data: createEmployee,
     isLoading: isCreateEmployeeLoading,
     isInitLoading: isCreateEmployeeInitLoading,
-  } = useLTTMutation<string, { body: any }>({
+  } = useLTTMutation<EmployeeOutputDto, { body: any }>({
     mutationFn: ({ body }) => {
       return administrationService.employeeService.createEmployeeAsync(body);
     },
@@ -81,7 +81,7 @@ export const EmployeeDetailsProvider = ({
     data: updatedEmployee,
     isLoading: isUpdateEmployeeLoading,
     isInitLoading: isUpdateEmployeeInitLoading,
-  } = useLTTMutation<boolean, { employeeId: string; body: any }>({
+  } = useLTTMutation<EmployeeOutputDto, { employeeId: string; body: any }>({
     mutationFn: ({ employeeId, body }) => {
       return administrationService.employeeService.updateEmployeeAsync(
         employeeId,

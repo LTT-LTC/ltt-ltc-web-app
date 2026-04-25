@@ -5,6 +5,13 @@ import { Plus, Pencil, Trash2, User, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import {
+    LTTSelect,
+    LTTSelectContent,
+    LTTSelectItem,
+    LTTSelectTrigger,
+    LTTSelectValue,
+} from "@/src/@core/component/LTTShadcnUI/LTTSelect";
+import {
     LTTDialog,
     LTTDialogContent,
     LTTDialogHeader,
@@ -21,30 +28,14 @@ import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { toast } from "sonner";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
-
-let actorItemsCache: ActorOutputDto[] | null = null;
-let actorItemsRequest: Promise<ActorOutputDto[]> | null = null;
-
-const loadActorItems = async () => {
-    if (actorItemsCache !== null) {
-        return actorItemsCache;
-    }
-
-    if (!actorItemsRequest) {
-        actorItemsRequest = movieService.getActorsAsync({ page: 1, fetch: 1000 }).then((res) => {
-            actorItemsCache = res?.items ?? [];
-            return actorItemsCache;
-        }).finally(() => {
-            actorItemsRequest = null;
-        });
-    }
-
-    return actorItemsRequest;
-};
+import AdminTablePagination from "../_components/AdminTablePagination";
 
 export default function ActorTab() {
     const { t } = useLocalization();
     const [items, setItems] = useState<ActorOutputDto[]>([]);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [totalCount, setTotalCount] = useState(0);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
@@ -52,11 +43,11 @@ export default function ActorTab() {
     const [form, setForm] = useState<CreateActorInputDto>({ name: "" });
 
     const listMutation = useLTTMutation<PagedResultDto<ActorOutputDto> | undefined, void>({
-        mutationFn: () => movieService.getActorsAsync({ page: 1, fetch: 1000 }),
+        mutationFn: () => movieService.getActorsAsync({ page, fetch: pageSize }),
         onSuccess: (res) => {
             const nextItems = res?.items ?? [];
-            actorItemsCache = nextItems;
             setItems(nextItems);
+            setTotalCount(res?.totalCount ?? 0);
         },
         onError: (err) => toast.error(err.message || t("admin.movie_metadata.actors.fetch_error"))
     });
@@ -68,6 +59,7 @@ export default function ActorTab() {
             setDialogOpen(false);
             setExitConfirmOpen(false);
             setIsDirty(false);
+            setPage(1);
             listMutation.mutation();
         },
         onError: (err) => toast.error(err.message || t("admin.movie_metadata.common.add_error"))
@@ -89,24 +81,20 @@ export default function ActorTab() {
         mutationFn: (id) => movieService.deleteActorAsync(id),
         onSuccess: () => {
             toast.success(t("admin.movie_metadata.common.delete_success"));
-            listMutation.mutation();
+            if (items.length === 1 && page > 1) {
+                setPage(page - 1);
+                // useEffect will trigger refresh due to page dependency
+            } else {
+                listMutation.mutation();
+            }
         },
         onError: (err) => toast.error(err.message || t("admin.movie_metadata.common.delete_error"))
     });
 
     useEffect(() => {
-        let active = true;
-
-        void loadActorItems().then((nextItems) => {
-            if (active) {
-                setItems(nextItems);
-            }
-        });
-
-        return () => {
-            active = false;
-        };
-    }, []);
+        listMutation.mutation();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [page, pageSize]);
 
     const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || deleteMutation.isLoading;
 
@@ -166,7 +154,7 @@ export default function ActorTab() {
                 </LTTButton>
             </div>
 
-            <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
+            <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm my-3">
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
@@ -220,6 +208,18 @@ export default function ActorTab() {
                     </tbody>
                 </table>
             </div>
+
+            <AdminTablePagination
+                totalCount={totalCount}
+                page={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(size) => {
+                    setPage(1);
+                    setPageSize(size);
+                }}
+                loading={listMutation.isLoading}
+            />
 
             <LTTDialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                 <LTTDialogContent>

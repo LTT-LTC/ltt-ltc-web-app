@@ -3,7 +3,7 @@ import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { ActorOutputDto } from "./models/output.model";
 import { CreateActorInputDto, GetActorListInputDto, UpdateActorInputDto } from "./models/input.model";
 
-const rootPath = "/movie-service";
+const rootPath = "/movie-service/admin/actor";
 const actorPath = "/actor";
 
 const getActorsAsync = async (

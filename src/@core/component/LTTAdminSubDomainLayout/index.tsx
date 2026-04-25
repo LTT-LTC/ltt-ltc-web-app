@@ -17,7 +17,13 @@ import { cn } from "@/src/@core/utils/cn";
 import { useLocalization } from "../../hooks/use-localization";
 import { getUserInfoFromToken, UserClaims } from "../../utils/jwt";
 import { getCookie, removeCookie } from "../../utils/cookie";
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, TENANT_KEY } from "../../const";
+import {
+  ADMIN_ACCESS_TOKEN_KEY,
+  ADMIN_REFRESH_TOKEN_KEY,
+  CUSTOMER_ACCESS_TOKEN_KEY,
+  CUSTOMER_REFRESH_TOKEN_KEY,
+  TENANT_KEY
+} from "../../const";
 import useLTTMutation from "../../hooks/useLTTMutation";
 import { administrationService } from "@/src/services/administration-service/administration.service";
 import { customerService } from "@/src/services/customer-service/customer.service";
@@ -48,7 +54,7 @@ export default function LTTAdminSubDomainLayout({
 
   // User Logic
   const [isUserOpen, setIsUserOpen] = useState(false);
-  const accessToken = getCookie(ACCESS_TOKEN_KEY);
+  const accessToken = getCookie(ADMIN_ACCESS_TOKEN_KEY) || getCookie(CUSTOMER_ACCESS_TOKEN_KEY);
   const userInfo: UserClaims | null = accessToken ? getUserInfoFromToken(accessToken) : null;
 
   const { mutation: logOut, isLoading: isLoggingOut } = useLTTMutation<boolean, void>({
@@ -82,10 +88,15 @@ export default function LTTAdminSubDomainLayout({
     );
 
     localStorage.removeItem("user_info");
-    localStorage.removeItem(TENANT_KEY);
-    removeCookie(ACCESS_TOKEN_KEY);
-    removeCookie(REFRESH_TOKEN_KEY);
-    removeCookie(TENANT_KEY);
+    if (isAdmin) {
+      localStorage.removeItem(TENANT_KEY);
+      removeCookie(ADMIN_ACCESS_TOKEN_KEY);
+      removeCookie(ADMIN_REFRESH_TOKEN_KEY);
+      removeCookie(TENANT_KEY);
+    } else {
+      removeCookie(CUSTOMER_ACCESS_TOKEN_KEY);
+      removeCookie(CUSTOMER_REFRESH_TOKEN_KEY);
+    }
 
     if (isAdmin) {
       window.location.href = "/administration-login";
@@ -115,7 +126,7 @@ export default function LTTAdminSubDomainLayout({
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed left-0 top-0 z-30 flex h-screen flex-col border-r border-border-shadcn bg-card transition-all duration-200",
+          "fixed left-0 top-0 z-30 flex h-screen flex-col border-r border-border-shadcn bg-white transition-all duration-200",
           collapsed ? "w-16" : "w-64"
         )}
       >
@@ -162,7 +173,7 @@ export default function LTTAdminSubDomainLayout({
       {/* Main Content */}
       <div className={cn("flex flex-1 flex-col transition-all duration-200", collapsed ? "ml-16" : "ml-64")}>
         {/* Top Bar */}
-        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border-shadcn bg-white dark:bg-gray-900 px-6">
+        <header className="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-border-shadcn bg-white px-6">
           <div className="flex items-center gap-2 text-sm text-muted-foreground-shadcn">
             <span>Administration</span>
             <span>/</span>

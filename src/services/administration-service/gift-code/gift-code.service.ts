@@ -8,15 +8,12 @@ import {
 } from "./models/input.model";
 import { GiftCodeOutputDto } from "./models/output.model";
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
-
+import { toAbpPaginationParams } from "../_shared/pagination";
 const path = "/gift-codes";
 
 const getGiftCodeListAsync = async (params: GetGiftCodeListInputDto): Promise<PagedResultDto<GiftCodeOutputDto>> => {
     const response = await http.get<ApiResult<PagedResultDto<GiftCodeOutputDto>>>(`${rootPath}${path}`, {
-        params: {
-            skipCount: (params.page - 1) * params.fetch,
-            maxResultCount: params.fetch
-        }
+        params: toAbpPaginationParams(params)
     });
     return response.data.data;
 };

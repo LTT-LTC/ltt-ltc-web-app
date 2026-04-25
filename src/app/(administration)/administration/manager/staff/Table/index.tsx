@@ -12,12 +12,14 @@ import LTTInput from "@/src/@core/component/AntD/LTTInput";
 import LTTSelect from "@/src/@core/component/AntD/LTTSelect";
 import { Form, notification } from "antd";
 import Link from "next/link";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 import { columns } from "./table.type";
 import StaffFilter from "../Filter";
 import { StaffMember, mockStaff, staffRoles, mockAdminCinemas } from "../_mock/data";
 
 const StaffListPage = () => {
+  const { t } = useLocalization();
   const [items, setItems] = useState<StaffMember[]>(mockStaff);
   const [filters, setFilters] = useState<any>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -45,7 +47,7 @@ const StaffListPage = () => {
 
   const handleDelete = (id: string) => {
     setItems((prev) => prev.filter((i) => i.id !== id));
-    notification.success({ message: "Đã xóa nhân viên" });
+    notification.success({ message: t("admin.staff.toast.delete_success") });
   };
 
   const handleAdd = () => {
@@ -62,7 +64,7 @@ const StaffListPage = () => {
   const onSubmit = async () => {
     try {
       const values = await form.validateFields();
-      const cinema = values.cinemaId === "all" ? { name: "Tất cả" } : mockAdminCinemas.find((c) => c.id === values.cinemaId);
+      const cinema = values.cinemaId === "all" ? { name: t("admin.staff.table.dash") } : mockAdminCinemas.find((c) => c.id === values.cinemaId);
 
       const payload = {
         ...values,
@@ -71,10 +73,10 @@ const StaffListPage = () => {
 
       if (editingItem) {
         setItems((prev) => prev.map((i) => i.id === editingItem.id ? { ...i, ...payload } : i));
-        notification.success({ message: "Cập nhật thành công" });
+        notification.success({ message: t("admin.staff.toast.update_success") });
       } else {
         setItems((prev) => [...prev, { ...payload, id: Date.now().toString(), joinedAt: new Date().toISOString().slice(0, 10), lastLogin: "" }]);
-        notification.success({ message: "Tạo mới thành công" });
+        notification.success({ message: t("admin.staff.toast.create_success") });
       }
       setIsModalOpen(false);
     } catch (e) {
@@ -87,23 +89,23 @@ const StaffListPage = () => {
       <LTTBreadcrumb
         items={[
           { title: "Quản trị" },
-          { title: <Link href="/administration/manager/staff">Nhân viên & Phân quyền</Link> },
+          { title: <Link href="/administration/manager/staff">{t("admin.staff.title")}</Link> },
         ]}
       />
       <div className="flex justify-end mt-3 mb-4">
         <LTTButton variant="primary" onClick={handleAdd}>
-          Thêm nhân viên
+          {t("admin.staff.add_employee")}
         </LTTButton>
       </div>
 
-      <LTTCard height="table" title="Nhân viên" className="mt-3">
+      <LTTCard height="table" title={t("admin.staff.title")} className="mt-3">
         <div className="search flex flex-row items-center gap-2 mt-0 mb-4">
           <StaffFilter onFilterChange={(f) => setFilters(f)} />
         </div>
         <LTTTabs
           defaultActiveKey="1"
           items={[
-            { key: "1", label: "Tất cả" },
+            { key: "1", label: t("common.all") },
           ]}
         />
         <LTTTable

@@ -1,90 +1,123 @@
 "use client";
-import React, { useState, useMemo, useEffect } from "react";
+
+import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import LTTMovieCard from "@/src/@core/component/LTTMovieCard";
+import LTTModal from "@/src/@core/component/AntD/LTTModal";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
-import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import {
-    getMovieSelectionMutation,
-    MovieSelectionTab,
-} from "@/src/mutations/customer-content/getMovieSelection.mutation";
-import { CustomerMovieOutputDto } from "@/src/services/customer-service/content/models/output.model";
+    buildMovieCardItem,
+    MOVIE_PAGE_SIZE,
+    MovieCardItem,
+    MovieSectionStatus,
+    useMovieCatalog,
+} from "./movieCatalog";
+import { extractYoutubeVideoId } from "./movieTrailer";
 
-const PAGE_SIZE = 8;
+const emptyPageState: Record<MovieSectionStatus, number> = {
+    now_showing: 0,
+    coming_soon: 0,
+};
+
+const sectionKeyToLabel: Record<MovieSectionStatus, string> = {
+    now_showing: "NOW SHOWING",
+    coming_soon: "COMING SOON",
+};
 
 const MovieSelection: React.FC = () => {
     const { t } = useLocalization();
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<MovieSelectionTab>("now_showing");
-    const [page, setPage] = useState(0);
+    const { nowShowingMovies, comingSoonMovies, isLoading, error, reloadMovies } = useMovieCatalog();
+    const [activeTab, setActiveTab] = useState<MovieSectionStatus>("now_showing");
+    const [pageByTab, setPageByTab] = useState<Record<MovieSectionStatus, number>>(emptyPageState);
+    const [trailerOpen, setTrailerOpen] = useState(false);
+    const [trailerTitle, setTrailerTitle] = useState("");
+    const [trailerUrl, setTrailerUrl] = useState("");
 
-    const { mutation, data, isLoading } = useLTTMutation<CustomerMovieOutputDto[], MovieSelectionTab>({
-        mutationFn: getMovieSelectionMutation,
-    });
+    const activeMovies = activeTab === "now_showing" ? nowShowingMovies : comingSoonMovies;
+    const totalPages = Math.max(1, Math.ceil(activeMovies.length / MOVIE_PAGE_SIZE));
+    const activePage = Math.min(pageByTab[activeTab], totalPages - 1);
 
-    const movies = data ?? [];
-    const totalPages = Math.max(1, Math.ceil(movies.length / PAGE_SIZE));
+    const currentMovies = useMemo<MovieCardItem[]>(() => {
+        const start = activePage * MOVIE_PAGE_SIZE;
+        return activeMovies.slice(start, start + MOVIE_PAGE_SIZE).map((movie, index) =>
+            buildMovieCardItem(movie, start + index),
+        );
+    }, [activeMovies, activePage]);
+    const trailerYoutubeId = useMemo(() => extractYoutubeVideoId(trailerUrl), [trailerUrl]);
 
-    const currentMovies = useMemo(
-        () => movies.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE),
-        [movies, page]
-    );
+    const handlePrevious = () => {
+        setPageByTab((current) => ({
+            ...current,
+            [activeTab]: Math.max(0, activePage - 1),
+        }));
+    };
 
-    useEffect(() => {
-        mutation(activeTab);
-        setPage(0);
-    }, [activeTab]);
+    const handleNext = () => {
+        setPageByTab((current) => ({
+            ...current,
+            [activeTab]: Math.min(totalPages - 1, activePage + 1),
+        }));
+    };
 
-    const goNext = () => setPage((prev) => Math.min(prev + 1, totalPages - 1));
-    const goPrev = () => setPage((prev) => Math.max(prev - 1, 0));
+    const activeCount = activeMovies.length;
 
-    const isNowShowing = activeTab === "now_showing";
-    const isComingSoon = activeTab === "coming_soon";
+    const openTrailerModal = (title: string, url?: string) => {
+        if (!url) {
+            return;
+        }
+
+        setTrailerTitle(title);
+        setTrailerUrl(url);
+        setTrailerOpen(true);
+    };
 
     return (
         <section className="w-[92%] lg:w-[70%] mx-auto py-8 sm:py-16">
             <div className="flex flex-col gap-4 sm:gap-6 mb-6 sm:mb-10 border-b border-slate-200 dark:border-slate-800 pb-4">
                 <div className="flex items-center gap-3 sm:gap-4">
                     <span className="material-symbols-outlined text-primary text-3xl sm:text-4xl">movie_filter</span>
-                    <h2 className="text-xl sm:text-3xl font-black tracking-tight uppercase">{t("customer.homepage.movie_selection") || "Movie Selection"}</h2>
+                    <h2 className="text-xl sm:text-3xl font-black tracking-tight uppercase">
+                        {t("customer.homepage.movie_selection") || "Movie Selection"}
+                    </h2>
                 </div>
+
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
                     <div className="flex overflow-x-auto gap-1 pb-1 scrollbar-hide w-full sm:w-auto">
-                        <button
-                            onClick={() => setActiveTab("now_showing")}
-                            className={`px-4 sm:px-6 py-2 font-bold rounded-t-lg text-xs sm:text-sm whitespace-nowrap ${isNowShowing
-                                ? "bg-primary text-white"
-                                : "text-slate-500 hover:bg-slate-100"
-                                }`}
-                        >
-                            {t("customer.homepage.now_showing") || "NOW SHOWING"}
-                        </button>
-                        <button
-                            onClick={() => setActiveTab("coming_soon")}
-                            className={`px-4 sm:px-6 py-2 font-bold rounded-t-lg text-xs sm:text-sm whitespace-nowrap ${isComingSoon
-                                ? "bg-primary text-white"
-                                : "text-slate-500 hover:bg-slate-100"
-                                }`}
-                        >
-                            {t("customer.homepage.coming_soon") || "COMING SOON"}
-                        </button>
-                        <button className="px-4 sm:px-6 py-2 text-slate-500 hover:bg-slate-100 font-bold rounded-t-lg text-xs sm:text-sm whitespace-nowrap">{t("customer.homepage.special_screening") || "SPECIAL SCREENING"}</button>
+                        {(Object.keys(sectionKeyToLabel) as MovieSectionStatus[]).map((status) => (
+                            <button
+                                key={status}
+                                onClick={() => setActiveTab(status)}
+                                className={`px-4 sm:px-6 py-2 font-bold rounded-t-lg text-xs sm:text-sm whitespace-nowrap transition-colors ${activeTab === status
+                                    ? "bg-primary text-white"
+                                    : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                    }`}
+                            >
+                                {t(`customer.homepage.${status}`) || sectionKeyToLabel[status]}
+                                <span className="ml-2 opacity-75">({status === "now_showing" ? nowShowingMovies.length : comingSoonMovies.length})</span>
+                            </button>
+                        ))}
                     </div>
+
                     {totalPages > 1 && (
                         <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                             <button
-                                onClick={goPrev}
-                                disabled={page === 0}
+                                onClick={handlePrevious}
+                                disabled={activePage === 0}
                                 className="size-9 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-inherit disabled:hover:border-slate-200"
+                                aria-label="Previous page"
                             >
                                 <span className="material-symbols-outlined text-lg">chevron_left</span>
                             </button>
-                            <span className="text-xs text-slate-500 min-w-[3rem] text-center">{page + 1} / {totalPages}</span>
+                            <span className="text-xs text-slate-500 min-w-16 text-center">
+                                {activePage + 1} / {totalPages}
+                            </span>
                             <button
-                                onClick={goNext}
-                                disabled={page === totalPages - 1}
+                                onClick={handleNext}
+                                disabled={activePage >= totalPages - 1}
                                 className="size-9 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-inherit disabled:hover:border-slate-200"
+                                aria-label="Next page"
                             >
                                 <span className="material-symbols-outlined text-lg">chevron_right</span>
                             </button>
@@ -92,7 +125,8 @@ const MovieSelection: React.FC = () => {
                     )}
                 </div>
             </div>
-            <div className="relative min-h-[200px]">
+
+            <div className="relative min-h-55">
                 {isLoading && (
                     <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/60 dark:bg-slate-900/60 rounded-xl backdrop-blur-sm">
                         <Image
@@ -104,23 +138,88 @@ const MovieSelection: React.FC = () => {
                         />
                     </div>
                 )}
-                <div
-                    className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6 transition-all duration-300 ease-in-out opacity-100 translate-x-0"
-                >
-                    {currentMovies.map((movie) => (
-                        <LTTMovieCard
-                            key={movie.id}
-                            title={movie.title}
-                            image={movie.image}
-                            tags={movie.tags}
-                            description={movie.description}
-                            genre={movie.genre}
-                            trailerYoutubeId={movie.trailerYoutubeId}
-                            onViewDetail={() => router.push(`/movie/${movie.id}`)}
-                        />
-                    ))}
-                </div>
+
+                {!isLoading && error && (
+                    <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                        <p className="mb-4">{error}</p>
+                        <button
+                            type="button"
+                            onClick={reloadMovies}
+                            className="inline-flex items-center gap-2 rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary hover:text-white transition-colors"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">refresh</span>
+                            Retry
+                        </button>
+                    </div>
+                )}
+
+                {!isLoading && !error && currentMovies.length === 0 && (
+                    <div className="rounded-xl border border-dashed border-slate-300 dark:border-slate-700 px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                        {activeTab === "now_showing"
+                            ? (t("customer.homepage.now_showing") || "Now Showing")
+                            : (t("customer.homepage.coming_soon") || "Coming Soon")}
+                        {" "}
+                        movies are not available yet.
+                    </div>
+                )}
+
+                {!isLoading && !error && currentMovies.length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
+                        {currentMovies.map((movie) => (
+                            <LTTMovieCard
+                                key={movie.id}
+                                title={movie.title}
+                                image={movie.image}
+                                tags={movie.tags}
+                                description={movie.description}
+                                genre={movie.genre}
+                                runningTime={movie.runningTime}
+                                releaseDate={movie.releaseDate}
+                                onTrailer={movie.trailerUrl ? () => openTrailerModal(movie.title, movie.trailerUrl) : undefined}
+                                onViewDetail={() => router.push(`/movie-service/${movie.id}`)}
+                            />
+                        ))}
+                    </div>
+                )}
+
+                {!isLoading && !error && activeCount > 0 && activeCount <= MOVIE_PAGE_SIZE && (
+                    <div className="mt-4 text-center text-xs text-slate-500 dark:text-slate-400">
+                        Showing {activeCount} movie{activeCount === 1 ? "" : "s"} on one page.
+                    </div>
+                )}
             </div>
+
+            <LTTModal
+                open={trailerOpen}
+                onCancel={() => setTrailerOpen(false)}
+                footer={null}
+                width={900}
+                destroyOnHidden
+                centered
+                title={trailerTitle ? `${trailerTitle} — Trailer` : "Trailer"}
+                className="trailer-modal"
+                styles={{
+                    body: { padding: 0 },
+                    mask: { backdropFilter: "blur(8px)", background: "rgba(0,0,0,0.75)" },
+                }}
+            >
+                <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+                    {trailerYoutubeId ? (
+                        <iframe
+                            className="absolute inset-0 w-full h-full"
+                            src={`https://www.youtube.com/embed/${trailerYoutubeId}`}
+                            title={trailerTitle ? `${trailerTitle} Trailer` : "Trailer"}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            referrerPolicy="strict-origin-when-cross-origin"
+                        />
+                    ) : (
+                        <div className="absolute inset-0 flex items-center justify-center bg-slate-950 text-white/70">
+                            Trailer is not available yet.
+                        </div>
+                    )}
+                </div>
+            </LTTModal>
         </section>
     );
 };

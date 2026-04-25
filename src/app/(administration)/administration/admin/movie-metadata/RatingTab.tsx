@@ -5,6 +5,13 @@ import { Plus, Pencil, Trash2, ShieldCheck, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import {
+    LTTSelect,
+    LTTSelectContent,
+    LTTSelectItem,
+    LTTSelectTrigger,
+    LTTSelectValue,
+} from "@/src/@core/component/LTTShadcnUI/LTTSelect";
+import {
     LTTDialog,
     LTTDialogContent,
     LTTDialogHeader,
@@ -22,30 +29,14 @@ import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 import { CreateRatingInputDto, UpdateRatingInputDto } from "@/src/services/administration-service/movie/models/input.model";
 import { RatingOutputDto } from "@/src/services/administration-service/movie/models/output.model";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
-
-let ratingItemsCache: RatingOutputDto[] | null = null;
-let ratingItemsRequest: Promise<RatingOutputDto[]> | null = null;
-
-const loadRatingItems = async () => {
-    if (ratingItemsCache !== null) {
-        return ratingItemsCache;
-    }
-
-    if (!ratingItemsRequest) {
-        ratingItemsRequest = movieService.getRatingsAsync().then((res) => {
-            ratingItemsCache = res?.items ?? [];
-            return ratingItemsCache;
-        }).finally(() => {
-            ratingItemsRequest = null;
-        });
-    }
-
-    return ratingItemsRequest;
-};
+import AdminTablePagination from "../_components/AdminTablePagination";
 
 export default function RatingTab() {
     const { t } = useLocalization();
     const [items, setItems] = useState<RatingOutputDto[]>([]);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [totalCount, setTotalCount] = useState(0);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
@@ -53,11 +44,11 @@ export default function RatingTab() {
     const [form, setForm] = useState<CreateRatingInputDto>({ code: "", name: "", description: "" });
 
     const listMutation = useLTTMutation<PagedResultDto<RatingOutputDto> | undefined, void>({
-        mutationFn: () => movieService.getRatingsAsync(),
+        mutationFn: () => movieService.getRatingsAsync({ page, fetch: pageSize }),
         onSuccess: (res) => {
             const nextItems = res?.items ?? [];
-            ratingItemsCache = nextItems;
             setItems(nextItems);
+            setTotalCount(res?.totalCount ?? 0);
         },
         onError: (err) => toast.error(err.message || t("admin.movie_metadata.ratings.fetch_error"))
     });
@@ -69,6 +60,7 @@ export default function RatingTab() {
             setDialogOpen(false);
             setExitConfirmOpen(false);
             setIsDirty(false);
+            setPage(1);
             listMutation.mutation();
         },
         onError: (err) => toast.error(err.message || t("admin.movie_metadata.common.add_error"))
@@ -90,24 +82,21 @@ export default function RatingTab() {
         mutationFn: (id) => movieService.deleteRatingAsync(id),
         onSuccess: () => {
             toast.success(t("admin.movie_metadata.common.delete_success"));
-            listMutation.mutation();
+            if (items.length === 1 && page > 1) {
+                setPage(page - 1);
+                // useEffect will trigger refresh due to page dependency
+            } else {
+                listMutation.mutation();
+            }
         },
         onError: (err) => toast.error(err.message || t("admin.movie_metadata.common.delete_error"))
     });
 
     useEffect(() => {
-        let active = true;
+        listMutation.mutation();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [page, pageSize]);
 
-        void loadRatingItems().then((nextItems) => {
-            if (active) {
-                setItems(nextItems);
-            }
-        });
-
-        return () => {
-            active = false;
-        };
-    }, []);
 
     const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || deleteMutation.isLoading;
 
@@ -167,7 +156,7 @@ export default function RatingTab() {
                 </LTTButton>
             </div>
 
-            <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
+            <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm my-3">
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
@@ -227,6 +216,18 @@ export default function RatingTab() {
                     </tbody>
                 </table>
             </div>
+
+            <AdminTablePagination
+                totalCount={totalCount}
+                page={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(size) => {
+                    setPage(1);
+                    setPageSize(size);
+                }}
+                loading={listMutation.isLoading}
+            />
 
             <LTTDialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                 <LTTDialogContent>

@@ -5,7 +5,7 @@ export interface CustomerOutputDto {
     gender: string;
     dateOfBirth?: string;
     emailAddress: string;
-    memberCode?: string;
+    profileQRUrl?: string;
     address?: string;
     emailVerified?: string;
     isLocked?: boolean;

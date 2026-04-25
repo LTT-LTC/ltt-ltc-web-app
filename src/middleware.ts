@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY, TENANT_KEY } from './@core/const';
+import {
+    ADMIN_ACCESS_TOKEN_KEY,
+    ADMIN_REFRESH_TOKEN_KEY,
+    CUSTOMER_ACCESS_TOKEN_KEY,
+    CUSTOMER_REFRESH_TOKEN_KEY,
+    TENANT_KEY
+} from './@core/const';
 import {
     getAdminHomePathByRole,
     isAdminAuthPath,
@@ -41,8 +47,8 @@ const createLoginRedirect = (request: NextRequest, clearCookies = false) => {
 
     const response = NextResponse.redirect(loginUrl);
     if (clearCookies) {
-        response.cookies.delete(ACCESS_TOKEN_KEY);
-        response.cookies.delete(REFRESH_TOKEN_KEY);
+        response.cookies.delete(ADMIN_ACCESS_TOKEN_KEY);
+        response.cookies.delete(ADMIN_REFRESH_TOKEN_KEY);
     }
     return response;
 };
@@ -67,9 +73,15 @@ const getDefaultTenant = () => {
             return 'LTC';
         }
 
-        const firstTenant = parsedTenants[0]?.value;
-        if (typeof firstTenant === 'string' && firstTenant.trim()) {
-            return firstTenant.trim();
+        const firstTenant = parsedTenants[0];
+        const tenantValue = firstTenant?.value;
+        if (typeof tenantValue === 'string' && tenantValue.trim()) {
+            return tenantValue.trim();
+        }
+
+        const tenantLabel = firstTenant?.label;
+        if (typeof tenantLabel === 'string' && tenantLabel.trim()) {
+            return tenantLabel.trim();
         }
     } catch {
         return 'LTC';
@@ -142,24 +154,28 @@ const resolveValidatedAdminRole = async (request: NextRequest, accessToken: stri
 
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
-    const accessToken = request.cookies.get(ACCESS_TOKEN_KEY)?.value;
+    const adminAccessToken = request.cookies.get(ADMIN_ACCESS_TOKEN_KEY)?.value;
+    const adminRefreshToken = request.cookies.get(ADMIN_REFRESH_TOKEN_KEY)?.value;
+    const customerAccessToken = request.cookies.get(CUSTOMER_ACCESS_TOKEN_KEY)?.value;
+    const customerRefreshToken = request.cookies.get(CUSTOMER_REFRESH_TOKEN_KEY)?.value;
+    const hasCustomerAuthToken = Boolean(customerAccessToken || customerRefreshToken);
 
     const isSensitiveCustomer = sensitiveCustomerRoutes.some(route => pathname.startsWith(route));
     const isCustomerAuthPath = customerAuthRoutes.some(route => pathname.startsWith(route));
 
-    if (isAdminAuthPath(pathname) && accessToken) {
-        const role = await resolveValidatedAdminRole(request, accessToken);
+    if (isAdminAuthPath(pathname) && adminAccessToken) {
+        const role = await resolveValidatedAdminRole(request, adminAccessToken);
         if (role) {
             return NextResponse.redirect(new URL(getAdminHomePathByRole(role), request.url));
         }
     }
 
-    if (isCustomerAuthPath && accessToken) {
-        return NextResponse.redirect(new URL('/', request.url));
+    if (isCustomerAuthPath && hasCustomerAuthToken) {
+        return NextResponse.redirect(new URL('/homepage', request.url));
     }
 
     if (isSensitiveCustomer) {
-        if (!accessToken) {
+        if (!customerAccessToken) {
             const loginUrl = new URL(`/customer-login`, request.url);
             loginUrl.searchParams.set('returnUrl', pathname);
             return NextResponse.redirect(loginUrl);
@@ -167,11 +183,11 @@ export async function middleware(request: NextRequest) {
     }
 
     if (isAdminProtectedPath(pathname)) {
-        if (!accessToken) {
+        if (!adminAccessToken) {
             return createLoginRedirect(request);
         }
 
-        const role = await resolveValidatedAdminRole(request, accessToken);
+        const role = await resolveValidatedAdminRole(request, adminAccessToken);
         if (!role) {
             return createLoginRedirect(request, true);
         }

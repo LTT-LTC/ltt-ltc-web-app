@@ -23,6 +23,24 @@ const LTTTable = ({
   pagination,
   ...props
 }: LTTTableProps) => {
+  const loadingConfig =
+    typeof props.loading === "boolean"
+      ? {
+          spinning: props.loading,
+        }
+      : {
+          ...(props.loading || {}),
+        };
+
+  const animatedLoading = {
+    ...loadingConfig,
+    indicator: (
+      <div className="flex items-center justify-center">
+        <img src="/images/main/LTTAppLoading.gif" alt="Loading" className="h-10 w-10 object-contain" />
+      </div>
+    ),
+  };
+
   return (
     <>
       <Table
@@ -32,6 +50,7 @@ const LTTTable = ({
         columns={columns}
         dataSource={dataSource}
         pagination={false}
+        loading={animatedLoading}
         locale={{
           emptyText: <LTTRenderIf condition={(dataSource ?? [])?.length === 0}><LTTEmpty /></LTTRenderIf>,
         }}

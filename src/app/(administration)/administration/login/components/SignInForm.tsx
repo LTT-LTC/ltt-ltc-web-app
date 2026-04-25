@@ -7,8 +7,8 @@ import LTTEyeIcon from "@/src/@core/component/LTTIcon/iconoir/eye";
 import LTTEyeClosedIcon from "@/src/@core/component/LTTIcon/iconoir/eye-closed";
 import Link from "next/link";
 import {
-    ACCESS_TOKEN_KEY,
-    REFRESH_TOKEN_KEY,
+    ADMIN_ACCESS_TOKEN_KEY,
+    ADMIN_REFRESH_TOKEN_KEY,
 } from "@/src/@core/const";
 import { useEffect, useState } from "react";
 import { Form } from "antd";
@@ -59,7 +59,7 @@ const FormDetail = () => {
     useEffect(() => {
         getOrCreateTenantOnClient();
 
-        const accessToken = getCookie(ACCESS_TOKEN_KEY);
+        const accessToken = getCookie(ADMIN_ACCESS_TOKEN_KEY);
         if (accessToken) {
             const role = resolveAdminRoleFromToken(accessToken);
             if (role) {
@@ -67,8 +67,8 @@ const FormDetail = () => {
                 return;
             }
 
-            removeCookie(ACCESS_TOKEN_KEY);
-            removeCookie(REFRESH_TOKEN_KEY);
+            removeCookie(ADMIN_ACCESS_TOKEN_KEY);
+            removeCookie(ADMIN_REFRESH_TOKEN_KEY);
         }
     }, []);
 
@@ -85,15 +85,15 @@ const FormDetail = () => {
 
                 const role = resolveAdminRoleFromToken(res.accessToken);
                 if (!role) {
-                    removeCookie(ACCESS_TOKEN_KEY);
-                    removeCookie(REFRESH_TOKEN_KEY);
+                    removeCookie(ADMIN_ACCESS_TOKEN_KEY);
+                    removeCookie(ADMIN_REFRESH_TOKEN_KEY);
                     showNotificationError(t("admin.auth.login.errors.no_admin_access", "This account does not have access to the administration portal."));
                     return;
                 }
 
                 showNotificationSuccess(t("admin.auth.login.messages.login_success", "Login successful."));
-                setCookie(ACCESS_TOKEN_KEY, res.accessToken);
-                setCookie(REFRESH_TOKEN_KEY, res.refreshToken);
+                setCookie(ADMIN_ACCESS_TOKEN_KEY, res.accessToken);
+                setCookie(ADMIN_REFRESH_TOKEN_KEY, res.refreshToken);
                 setIsRedirecting(true);
                 setTimeout(() => {
                     window.location.href = getAdminHomePathByRole(role);
@@ -153,7 +153,7 @@ const FormDetail = () => {
                 </div>
                 <div className="relative flex justify-center text-sm">
                     <span className="p-2 text-gray-400 bg-white dark:bg-gray-900 sm:px-5 sm:py-2">
-                        Hoặc
+                        {t("common.or")}
                     </span>
                 </div>
             </div>
@@ -162,22 +162,22 @@ const FormDetail = () => {
 
 
                     <LTTFormItem
-                        label="Tài khoản"
+                        label={t("admin.auth.login.form.username_label")}
                         name="username"
                         rules={[rules.required]}
                         className="mb-3"
                     >
-                        <LTTInput label="Tài khoản" showCount={false} allowClear={false} />
+                        <LTTInput label={t("admin.auth.login.form.username_label")} showCount={false} allowClear={false} />
                     </LTTFormItem>
 
                     <LTTFormItem
-                        label="Mật khẩu"
+                        label={t("admin.auth.login.form.password_label")}
                         name="password"
                         rules={[rules.required]}
                         className="mb-3"
                     >
                         <LTTInput
-                            label="Mật khẩu"
+                            label={t("admin.auth.login.form.password_label")}
                             showCount={false}
                             allowClear={false}
                             type={showPassword ? "text" : "password"}
@@ -205,7 +205,7 @@ const FormDetail = () => {
                             href="/administration-reset-password"
                             className="text-sm text-brand-600 hover:text-brand-600 focus:text-brand-600 dark:!text-brand-400"
                         >
-                            Quên mật khẩu?
+                            {t("admin.auth.login.form.forgot_password")}
                         </Link>
                     </div>
                     <div className="mt-2">
@@ -215,7 +215,7 @@ const FormDetail = () => {
                             className="w-full"
                             size="sm"
                         >
-                            Đăng nhập
+                            {t("admin.auth.login.form.submit")}
                         </LTTButton>
                     </div>
                 </div>

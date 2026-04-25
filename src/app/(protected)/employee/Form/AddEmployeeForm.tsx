@@ -15,6 +15,7 @@ import { rules } from "@/src/@core/utils/rules";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { administrationService } from "@/src/services/administration-service/administration.service";
 import { EmployeeOutputDto } from "@/src/services/administration-service/employee/models/output.model";
+import { CreateEmployeeInputDto } from "@/src/services/administration-service/employee/models/input.model";
 import { showNotificationSuccess } from "@/src/@core/utils/message";
 
 // TODO: Replace with actual data from API
@@ -41,7 +42,7 @@ interface AddEmployeeFormProps {
 const AddEmployeeForm = ({ open, onClose, onSuccess }: AddEmployeeFormProps) => {
     const [form] = Form.useForm();
 
-    const { mutation, isLoading } = useLTTMutation<string, FormData>({
+    const { mutation, isLoading } = useLTTMutation<EmployeeOutputDto, CreateEmployeeInputDto>({
         mutationFn: (formData) =>
             administrationService.employeeService.createEmployeeAsync(formData as any),
         onSuccess: () => {
@@ -53,19 +54,16 @@ const AddEmployeeForm = ({ open, onClose, onSuccess }: AddEmployeeFormProps) => 
     });
 
     const onFinish = (values: any) => {
-        const formData = new FormData();
-        formData.append("Name", values.name);
-        formData.append("Email", values.email);
-        formData.append("Code", values.code);
-        // formData.append("PositionId", values.positionId);
-        // formData.append("OrganizationUnitId", values.organizationUnitId);
-
-        if (values.otherEmail) formData.append("OtherEmail", values.otherEmail);
-        if (values.phone) formData.append("PhoneNumber", values.phone);
-        if (values.dateOfBirth) formData.append("DateOfBirth", dayjs(values.dateOfBirth).toISOString());
-        if (values.joinDate) formData.append("JoinedDate", dayjs(values.joinDate).toISOString());
-
-        mutation(formData);
+        mutation({
+            name: values.name,
+            email: values.email,
+            code: values.code,
+            role: "Staff",
+            otherEmail: values.otherEmail,
+            phoneNumber: values.phone,
+            hireDate: values.joinDate ? dayjs(values.joinDate).toISOString() : undefined,
+            cinemaId: values.organizationUnitId || null,
+        });
     };
 
     const handleCancel = () => {

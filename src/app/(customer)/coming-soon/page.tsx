@@ -1,97 +1,52 @@
 "use client";
-import React from "react";
+
+import React, { useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import TopBar from "../_components/TopBar";
 import Header from "../_components/Header";
 import Footer from "../_components/Footer";
 import LTTMovieCard from "@/src/@core/component/LTTMovieCard";
-
-// Mock Data — Coming Soon movies
-const MOVIES = [
-    {
-        title: "JUNGLE EXPEDITION",
-        image: "/images/movie-current-banners/470wx700h-jungle.jpg",
-        tags: [{ text: "T16", className: "bg-yellow-500 text-black" }],
-        genre: "Adventure, Action",
-        runningTime: 118,
-        releaseDate: "Apr 18, 2026",
-        description: "Deep in uncharted territory, a rescue team must survive the deadliest jungle on Earth.",
-    },
-    {
-        title: "BẢO VỆ THÀNH CHỦ 3",
-        image: "/images/movie-current-banners/470wx700h-bvtc_3.jpg",
-        tags: [{ text: "T13", className: "bg-orange-400 text-black" }],
-        genre: "Action, Comedy",
-        runningTime: 105,
-        releaseDate: "Apr 25, 2026",
-        description: "The beloved guardians return for one last stand against a new threat.",
-    },
-    {
-        title: "KOKUHO",
-        image: "/images/movie-current-banners/kokuho_470x700.jpg",
-        tags: [{ text: "T18", className: "bg-red-600 text-white" }],
-        genre: "Thriller, Mystery",
-        runningTime: 134,
-        releaseDate: "May 2, 2026",
-        description: "A detective unravels a century-old conspiracy hidden in the rice fields of Japan.",
-    },
-    {
-        title: "PETS ON A TRAIN",
-        image: "/images/movie-current-banners/pets_on_a_train_tet_themed_poster.jpg",
-        tags: [{ text: "K", className: "bg-blue-400 text-white" }],
-        genre: "Animation, Family, Comedy",
-        runningTime: 92,
-        releaseDate: "May 9, 2026",
-        description: "When their owners leave for vacation, the pets embark on their own cross-country adventure.",
-    },
-    {
-        title: "ĐỔI GIÓ HƯ",
-        image: "/images/movie-current-banners/poster_payoff_doi_gio_hu_6.jpg",
-        tags: [{ text: "T16", className: "bg-yellow-500 text-black" }],
-        genre: "Drama, Romance",
-        runningTime: 121,
-        releaseDate: "May 16, 2026",
-        description: "Two strangers find comfort in each other during a summer that changes everything.",
-    },
-    {
-        title: "TIỆC TẾT",
-        image: "/images/movie-current-banners/to_poster_official_tiectet_3x4_fa.jpg",
-        tags: [{ text: "T13", className: "bg-orange-400 text-black" }],
-        genre: "Comedy, Family",
-        runningTime: 109,
-        releaseDate: "May 23, 2026",
-        description: "A chaotic family reunion spirals into the most unforgettable Tet holiday ever.",
-    },
-    {
-        title: "JANUR",
-        image: "/images/movie-current-banners/350x495-janur.jpg",
-        tags: [{ text: "T18", className: "bg-red-600 text-white" }],
-        genre: "Horror, Thriller",
-        runningTime: 97,
-        releaseDate: "Jun 6, 2026",
-        description: "An ancient curse awakens when a family moves into a house surrounded by palm leaves.",
-    },
-    {
-        title: "MIKURA",
-        image: "/images/movie-current-banners/350x495-mikura.jpg",
-        tags: [{ text: "T16", className: "bg-yellow-500 text-black" }],
-        genre: "Action, Sci-Fi",
-        runningTime: 142,
-        releaseDate: "Jun 20, 2026",
-        description: "In a fractured future, one warrior holds the key to reuniting a broken world.",
-    },
-];
+import LTTModal from "@/src/@core/component/AntD/LTTModal";
+import { buildMovieCardItem, MOVIE_PAGE_SIZE, useMovieCatalog } from "../_components/movieCatalog";
+import { extractYoutubeVideoId } from "../_components/movieTrailer";
 
 export default function ComingSoonPage() {
     const router = useRouter();
+    const { comingSoonMovies, isLoading, error, reloadMovies } = useMovieCatalog();
+    const [page, setPage] = useState(0);
+    const [trailerOpen, setTrailerOpen] = useState(false);
+    const [trailerTitle, setTrailerTitle] = useState("");
+    const [trailerUrl, setTrailerUrl] = useState("");
+
+    const totalPages = Math.max(1, Math.ceil(comingSoonMovies.length / MOVIE_PAGE_SIZE));
+    const currentPage = Math.min(page, totalPages - 1);
+
+    const currentMovies = useMemo(
+        () => comingSoonMovies.slice(currentPage * MOVIE_PAGE_SIZE, (currentPage + 1) * MOVIE_PAGE_SIZE).map((movie, index) =>
+            buildMovieCardItem(movie, currentPage * MOVIE_PAGE_SIZE + index),
+        ),
+        [comingSoonMovies, currentPage],
+    );
+    const trailerYoutubeId = useMemo(() => extractYoutubeVideoId(trailerUrl), [trailerUrl]);
+
+    const openTrailerModal = (title: string, url?: string) => {
+        if (!url) {
+            return;
+        }
+
+        setTrailerTitle(title);
+        setTrailerUrl(url);
+        setTrailerOpen(true);
+    };
+
     return (
         <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
             <TopBar />
             <Header />
 
-            <main className="flex-grow py-6">
-                {/* Breadcrumb */}
+            <main className="grow py-6">
                 <div className="w-[92%] lg:w-[70%] mx-auto flex items-center gap-2 mb-8 text-sm">
                     <Link href="/homepage" className="hover:text-primary transition-colors flex items-center">
                         <span className="material-symbols-outlined text-[18px]">home</span>
@@ -102,25 +57,118 @@ export default function ComingSoonPage() {
                     <span className="font-bold border-b border-primary text-primary">Coming Soon</span>
                 </div>
 
-                {/* Title Section */}
-                <div className="w-[92%] lg:w-[70%] mx-auto flex items-end justify-between border-b-2 border-slate-900 dark:border-white pb-2 mb-8">
+                <div className="w-[92%] lg:w-[70%] mx-auto flex items-end justify-between border-b-2 border-slate-900 dark:border-white pb-2 mb-8 gap-4">
                     <h1 className="text-3xl sm:text-4xl font-normal uppercase tracking-wide m-0 p-0 leading-none">Coming Soon</h1>
                     <div className="flex gap-6">
-                        <Link href="/now-showing" className="text-xl sm:text-3xl font-light text-slate-400 dark:text-slate-600 uppercase cursor-pointer hover:text-slate-500 transition-colors">Now Showing</Link>
+                        <Link href="/now-showing" className="text-xl sm:text-3xl font-light text-slate-400 dark:text-slate-600 uppercase cursor-pointer hover:text-slate-500 transition-colors">
+                            Now Showing
+                        </Link>
                     </div>
                 </div>
 
-                {/* Movie Grid */}
-                <div className="w-[92%] lg:w-[70%] mx-auto grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-                    {MOVIES.map((movie, idx) => (
-                        <LTTMovieCard
-                            key={idx}
-                            {...movie}
-                            onViewDetail={() => router.push(`/movie/${100 + idx + 1}`)}
-                        />
-                    ))}
+                <div className="w-[92%] lg:w-[70%] mx-auto">
+                    {isLoading && (
+                        <div className="flex min-h-55 items-center justify-center rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 bg-white/50 dark:bg-slate-900/40">
+                            <Image src="/images/main/LTTAppLoading.gif" alt="Loading..." width={80} height={80} priority />
+                        </div>
+                    )}
+
+                    {!isLoading && error && (
+                        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                            <p className="mb-4">{error}</p>
+                            <button
+                                type="button"
+                                onClick={reloadMovies}
+                                className="inline-flex items-center gap-2 rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary hover:text-white transition-colors"
+                            >
+                                <span className="material-symbols-outlined text-[18px]">refresh</span>
+                                Retry
+                            </button>
+                        </div>
+                    )}
+
+                    {!isLoading && !error && currentMovies.length === 0 && (
+                        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                            No coming soon movies are available yet.
+                        </div>
+                    )}
+
+                    {!isLoading && !error && currentMovies.length > 0 && (
+                        <>
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+                                {currentMovies.map((movie) => (
+                                    <LTTMovieCard
+                                        key={movie.id}
+                                        title={movie.title}
+                                        image={movie.image}
+                                        tags={movie.tags}
+                                        description={movie.description}
+                                        genre={movie.genre}
+                                        runningTime={movie.runningTime}
+                                        releaseDate={movie.releaseDate}
+                                        onTrailer={movie.trailerUrl ? () => openTrailerModal(movie.title, movie.trailerUrl) : undefined}
+                                        onViewDetail={() => router.push(`/movie-service/${movie.id}`)}
+                                    />
+                                ))}
+                            </div>
+
+                            {totalPages > 1 && (
+                                <div className="mt-8 flex items-center justify-center gap-3">
+                                    <button
+                                        onClick={() => setPage((current) => Math.max(0, current - 1))}
+                                        disabled={currentPage === 0}
+                                        className="size-9 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-inherit disabled:hover:border-slate-200"
+                                    >
+                                        <span className="material-symbols-outlined text-lg">chevron_left</span>
+                                    </button>
+                                    <span className="text-xs text-slate-500 min-w-16 text-center">
+                                        {currentPage + 1} / {totalPages}
+                                    </span>
+                                    <button
+                                        onClick={() => setPage((current) => Math.min(totalPages - 1, current + 1))}
+                                        disabled={currentPage >= totalPages - 1}
+                                        className="size-9 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-inherit disabled:hover:border-slate-200"
+                                    >
+                                        <span className="material-symbols-outlined text-lg">chevron_right</span>
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
             </main>
+
+            <LTTModal
+                open={trailerOpen}
+                onCancel={() => setTrailerOpen(false)}
+                footer={null}
+                width={900}
+                destroyOnHidden
+                centered
+                title={trailerTitle ? `${trailerTitle} — Trailer` : "Trailer"}
+                className="trailer-modal"
+                styles={{
+                    body: { padding: 0 },
+                    mask: { backdropFilter: "blur(8px)", background: "rgba(0,0,0,0.75)" },
+                }}
+            >
+                <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+                    {trailerYoutubeId ? (
+                        <iframe
+                            className="absolute inset-0 w-full h-full"
+                            src={`https://www.youtube.com/embed/${trailerYoutubeId}`}
+                            title={trailerTitle ? `${trailerTitle} Trailer` : "Trailer"}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            referrerPolicy="strict-origin-when-cross-origin"
+                        />
+                    ) : (
+                        <div className="absolute inset-0 flex items-center justify-center bg-slate-950 text-white/70">
+                            Trailer is not available yet.
+                        </div>
+                    )}
+                </div>
+            </LTTModal>
 
             <Footer />
         </div>

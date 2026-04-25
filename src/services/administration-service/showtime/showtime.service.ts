@@ -11,7 +11,7 @@ import { rootPath } from "../administration.service";
 const path = "/showtimes";
 
 const getShowtimeListAsync = async (params: GetShowtimeListInputDto): Promise<PagedResultDto<ShowtimeOutputDto>> => {
-    const response = await http.get<ApiResult<PagedResultDto<ShowtimeOutputDto>>>(`${rootPath}${path}`, {
+    const response = await http.get<ApiResult<PagedResultDto<ShowtimeOutputDto>>>(`${rootPath}${path}/movie/${params.movieId}`, {
         params: {
             cinemaId: params.cinemaId,
             skipCount: (params.page - 1) * params.fetch,
@@ -42,6 +42,8 @@ const deleteShowtimeAsync = async (id: string): Promise<void> => {
 
 export const showtimeService = {
     getShowtimeListAsync,
+    getShowtimeByIdAsync,
     createShowtimeAsync,
+    updateShowtimeAsync,
     deleteShowtimeAsync
 };

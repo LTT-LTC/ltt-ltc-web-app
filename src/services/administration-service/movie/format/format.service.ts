@@ -3,7 +3,7 @@ import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { FormatOutputDto } from "./models/output.model";
 import { CreateFormatInputDto, GetFormatListInputDto, UpdateFormatInputDto } from "./models/input.model";
 
-const rootPath = "/movie-service";
+const rootPath = "/movie-service/admin/format";
 const formatPath = "/format";
 
 const getFormatsAsync = async (

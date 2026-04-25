@@ -5,6 +5,13 @@ import { Plus, Pencil, Trash2, Box, RefreshCw } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import {
+    LTTSelect,
+    LTTSelectContent,
+    LTTSelectItem,
+    LTTSelectTrigger,
+    LTTSelectValue,
+} from "@/src/@core/component/LTTShadcnUI/LTTSelect";
+import {
     LTTDialog,
     LTTDialogContent,
     LTTDialogHeader,
@@ -20,30 +27,14 @@ import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { toast } from "sonner";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
-
-let formatItemsCache: FormatOutputDto[] | null = null;
-let formatItemsRequest: Promise<FormatOutputDto[]> | null = null;
-
-const loadFormatItems = async () => {
-    if (formatItemsCache !== null) {
-        return formatItemsCache;
-    }
-
-    if (!formatItemsRequest) {
-        formatItemsRequest = movieService.getFormatsAsync({ page: 1, fetch: 1000 }).then((res) => {
-            formatItemsCache = res?.items ?? [];
-            return formatItemsCache;
-        }).finally(() => {
-            formatItemsRequest = null;
-        });
-    }
-
-    return formatItemsRequest;
-};
+import AdminTablePagination from "../_components/AdminTablePagination";
 
 export default function FormatTab() {
     const { t } = useLocalization();
     const [items, setItems] = useState<FormatOutputDto[]>([]);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [totalCount, setTotalCount] = useState(0);
     const [dialogOpen, setDialogOpen] = useState(false);
     const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
     const [isDirty, setIsDirty] = useState(false);
@@ -51,11 +42,11 @@ export default function FormatTab() {
     const [name, setName] = useState("");
 
     const listMutation = useLTTMutation<PagedResultDto<FormatOutputDto> | undefined, void>({
-        mutationFn: () => movieService.getFormatsAsync({ page: 1, fetch: 1000 }),
+        mutationFn: () => movieService.getFormatsAsync({ page, fetch: pageSize }),
         onSuccess: (res) => {
             const nextItems = res?.items ?? [];
-            formatItemsCache = nextItems;
             setItems(nextItems);
+            setTotalCount(res?.totalCount ?? 0);
         },
         onError: (err) => toast.error(err.message || t("admin.movie_metadata.formats.fetch_error"))
     });
@@ -67,6 +58,7 @@ export default function FormatTab() {
             setDialogOpen(false);
             setExitConfirmOpen(false);
             setIsDirty(false);
+            setPage(1);
             listMutation.mutation();
         },
         onError: (err) => toast.error(err.message || t("admin.movie_metadata.common.add_error"))
@@ -88,25 +80,20 @@ export default function FormatTab() {
         mutationFn: (id) => movieService.deleteFormatAsync(id),
         onSuccess: () => {
             toast.success(t("admin.movie_metadata.common.delete_success"));
-            listMutation.mutation();
+            if (items.length === 1 && page > 1) {
+                setPage(page - 1);
+                // useEffect will trigger refresh due to page dependency
+            } else {
+                listMutation.mutation();
+            }
         },
         onError: (err) => toast.error(err.message || t("admin.movie_metadata.common.delete_error"))
     });
 
     useEffect(() => {
-        let active = true;
-
-        void loadFormatItems().then((nextItems) => {
-            if (active) {
-                setItems(nextItems);
-            }
-        });
-
-        return () => {
-            active = false;
-        };
-    }, []);
-
+        listMutation.mutation();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [page, pageSize]);
     const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || deleteMutation.isLoading;
 
     const handleSave = () => {
@@ -165,7 +152,7 @@ export default function FormatTab() {
                 </LTTButton>
             </div>
 
-            <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
+            <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm my-3">
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
@@ -219,6 +206,18 @@ export default function FormatTab() {
                     </tbody>
                 </table>
             </div>
+
+            <AdminTablePagination
+                totalCount={totalCount}
+                page={page}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(size) => {
+                    setPage(1);
+                    setPageSize(size);
+                }}
+                loading={listMutation.isLoading}
+            />
 
             <LTTDialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
                 <LTTDialogContent>

@@ -32,6 +32,7 @@ import {
     UpdateDistributionInputDto,
 } from "@/src/services/administration-service/movie/models/input.model";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
+import AdminTablePagination from "../_components/AdminTablePagination";
 
 export default function DistributionTable() {
     const { t, currentLanguage } = useLocalization();
@@ -170,7 +171,6 @@ export default function DistributionTable() {
         setForm((prev) => ({ ...prev, movieId: movies[0].id }));
     }, [dialogOpen, editing, form.movieId, movies]);
 
-    const totalPages = Math.max(1, Math.ceil((totalCount || items.length) / fetch));
     const dateLocale = currentLanguage === "en" ? "en-US" : "vi-VN";
 
     return (
@@ -184,7 +184,7 @@ export default function DistributionTable() {
                 </LTTButton>
             </div>
 
-            <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
+            <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm my-3">
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
@@ -262,41 +262,17 @@ export default function DistributionTable() {
                 </table>
             </div>
 
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-border-shadcn bg-card px-4 py-3">
-                <div className="text-sm text-muted-foreground-shadcn">
-                    {t("admin.movies.distribution.total_records", { count: totalCount || items.length })}
-                </div>
-                <div className="flex items-center gap-2">
-                    <LTTSelect value={String(fetch)} onValueChange={(value) => {
-                        setPage(1);
-                        setFetch(Number(value));
-                    }}>
-                        <LTTSelectTrigger className="w-24">
-                            <LTTSelectValue />
-                        </LTTSelectTrigger>
-                        <LTTSelectContent>
-                            <LTTSelectItem value="10">10</LTTSelectItem>
-                            <LTTSelectItem value="20">20</LTTSelectItem>
-                            <LTTSelectItem value="50">50</LTTSelectItem>
-                        </LTTSelectContent>
-                    </LTTSelect>
-                    <LTTButton
-                        variant="outline"
-                        onClick={() => setPage((currentPage) => Math.max(1, currentPage - 1))}
-                        disabled={page === 1 || listMutation.isLoading}
-                    >
-                        {t("admin.movies.distribution.previous")}
-                    </LTTButton>
-                    <span className="text-sm">{t("admin.movies.distribution.page", { page, totalPages })}</span>
-                    <LTTButton
-                        variant="outline"
-                        onClick={() => setPage((currentPage) => currentPage + 1)}
-                        disabled={page >= totalPages || listMutation.isLoading}
-                    >
-                        {t("admin.movies.distribution.next")}
-                    </LTTButton>
-                </div>
-            </div>
+            <AdminTablePagination
+                totalCount={totalCount || items.length}
+                page={page}
+                pageSize={fetch}
+                onPageChange={setPage}
+                onPageSizeChange={(size) => {
+                    setPage(1);
+                    setFetch(size);
+                }}
+                loading={listMutation.isLoading}
+            />
 
             <LTTDialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <LTTDialogContent className="sm:max-w-md">

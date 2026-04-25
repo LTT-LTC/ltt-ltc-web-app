@@ -49,13 +49,12 @@ const LTTMovieCard: React.FC<LTTMovieCardProps> = ({
 
     return (
         <div className="group cursor-pointer h-full flex flex-col">
-            <div className="relative overflow-hidden aspect-[2/3] rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl transition-shadow duration-300">
-                <Image
+            <div className="relative overflow-hidden aspect-2/3 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl transition-shadow duration-300">
+                <img
                     alt={title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     src={image}
-                    fill
-                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                    loading="lazy"
                 />
 
                 {/* Tags (Top-left) */}
@@ -70,10 +69,10 @@ const LTTMovieCard: React.FC<LTTMovieCardProps> = ({
                 {/* Rank Ribbon (Top-right) */}
                 {rank && (
                     <div className="absolute top-0 right-4 z-10 w-8 h-10 flex flex-col items-center">
-                        <div className={`${getRankColor(rank)} w-full flex-grow flex items-center justify-center text-white font-black text-lg shadow-md rounded-t-sm z-20 relative`}>
+                        <div className={`${getRankColor(rank)} w-full grow flex items-center justify-center text-white font-black text-lg shadow-md rounded-t-sm z-20 relative`}>
                             {rank}
                             {/* Circle border effect */}
-                            <div className="absolute -top-[1px] -right-[1px] -left-[1px] -bottom-[1px] border-2 border-white/20 rounded-t-sm pointer-events-none"></div>
+                            <div className="absolute -top-px -right-px -left-px -bottom-px border-2 border-white/20 rounded-t-sm pointer-events-none"></div>
                             <div className="absolute -bottom-1 w-[80%] h-1 bg-black/10 blur-[1px]"></div>
                         </div>
                         {/* Ribbon tail */}
@@ -121,8 +120,8 @@ const LTTMovieCard: React.FC<LTTMovieCardProps> = ({
                     </button>
                 </div>
             </div>
-            <div className="pt-3 px-1 flex-grow flex flex-col gap-1">
-                <h3 className="font-bold text-base uppercase leading-tight group-hover:text-primary transition-colors line-clamp-2 min-h-[2.5rem]">{title}</h3>
+            <div className="pt-3 px-1 grow flex flex-col gap-1">
+                <h3 className="font-bold text-base uppercase leading-tight group-hover:text-primary transition-colors line-clamp-2 min-h-10">{title}</h3>
 
                 <div className="mt-auto text-xs text-slate-500 dark:text-slate-400 space-y-1">
                     {genre && (

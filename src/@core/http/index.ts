@@ -5,12 +5,14 @@ import axios, {
   HttpStatusCode,
   InternalAxiosRequestConfig,
 } from "axios";
-import { getCookie, removeCookie, setCookie } from "../utils/cookie";
+import { getCookie, setCookie } from "../utils/cookie";
 import {
-  ACCESS_TOKEN_KEY,
+  ADMIN_ACCESS_TOKEN_KEY,
+  ADMIN_REFRESH_TOKEN_KEY,
   AUTHORIZATION_KEY,
+  CUSTOMER_ACCESS_TOKEN_KEY,
+  CUSTOMER_REFRESH_TOKEN_KEY,
   LANGUAGE_KEY,
-  REFRESH_TOKEN_KEY,
   TENANT_KEY,
   TOKEN_TYPE_KEY,
 } from "../const";
@@ -19,10 +21,14 @@ import { administrationService } from "@/src/services/administration-service/adm
 import { customerService } from "@/src/services/customer-service/customer.service";
 import qs from "qs";
 import { translate } from "../utils/localization";
+import { isAdminAuthPath, isAdminProtectedPath } from "../utils/admin-auth";
+import { toast } from "sonner";
+import { getDefaultTenant, normalizeTenantForHeader } from "../utils/tenant";
 
 let isRefreshing = false;
-let refreshPromise: Promise<any> | null = null;
+let refreshPromise: Promise<unknown> | null = null;
 let isRedirectingToLogin = false;
+let redirectCountdownTimer: ReturnType<typeof setInterval> | null = null;
 
 type RetryableRequestConfig = InternalAxiosRequestConfig & {
   _retry?: boolean;
@@ -48,11 +54,11 @@ const isAuthRefreshExcludedRequest = (url?: string) => {
   );
 };
 
-function isObjectLike(value: unknown): value is Record<string, any> {
+function isObjectLike(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function isApiEnvelope(value: unknown): value is { data: any } {
+function isApiEnvelope(value: unknown): value is { data: unknown } {
   if (!isObjectLike(value)) {
     return false;
   }
@@ -91,16 +97,25 @@ function normalizeResponseData<T>(response: AxiosResponse<T>) {
   return response;
 }
 
-function extractErrorMessage(payload: any): string {
+function extractErrorMessage(payload: unknown): string {
   if (typeof payload === "string" && payload.trim()) {
     return payload;
   }
 
+  const payloadRecord = isObjectLike(payload)
+    ? (payload as Record<string, unknown>)
+    : undefined;
+  const payloadError = isObjectLike(payloadRecord?.error)
+    ? (payloadRecord.error as Record<string, unknown>)
+    : undefined;
+
+  // Prefer API nested error.message over generic wrapper message
+  // (e.g. wrapper "Not Success" vs useful domain message).
   const directMessage =
-    payload?.message ||
-    payload?.error?.message ||
-    payload?.error_description ||
-    payload?.title;
+    payloadError?.message ||
+    payloadRecord?.message ||
+    payloadRecord?.error_description ||
+    payloadRecord?.title;
 
   if (typeof directMessage === "string" && directMessage.trim()) {
     return directMessage;
@@ -109,35 +124,121 @@ function extractErrorMessage(payload: any): string {
   return translate("http.unknown_error", "Lỗi không xác định, vui lòng liên hệ quản trị viên.");
 }
 
-function normalizeHttpError(payload: any, fallbackMessage?: string) {
+function normalizeHttpError(payload: unknown, fallbackMessage?: string) {
   const message = fallbackMessage || extractErrorMessage(payload);
   if (!isObjectLike(payload)) {
     return { message };
   }
 
   return {
-    ...(payload as Record<string, any>),
+    ...(payload as Record<string, unknown>),
     message,
-    error: (payload as Record<string, any>).error,
+    error: (payload as Record<string, unknown>).error,
   };
+}
+
+/**
+ * Customer-facing app calls `/customer-service/...`.
+ * Administration UI also calls `/customer-service/admin/...` (BFF-style paths) with an **administration** token;
+ * those must not use customer refresh or redirect to customer login.
+ */
+function shouldUseCustomerAuthRefresh(failedRequestUrl?: string): boolean {
+  const requestUrl = failedRequestUrl ?? "";
+  const lower = requestUrl.toLowerCase();
+  const isAdminCustomerServiceProxy =
+    lower.includes("/customer-service/admin");
+
+  if (typeof window !== "undefined") {
+    const pathname = window.location.pathname;
+    if (isAdminProtectedPath(pathname) || isAdminAuthPath(pathname)) {
+      return false;
+    }
+    if (
+      pathname.startsWith("/employee") ||
+      pathname.startsWith("/manager") ||
+      pathname.startsWith("/staff") ||
+      pathname.startsWith("/pos")
+    ) {
+      return false;
+    }
+  }
+
+  if (isAdminCustomerServiceProxy) {
+    return false;
+  }
+
+  return lower.includes("/customer-service/");
+}
+
+function getAuthCookieKeys(isCustomerRequest: boolean) {
+  return isCustomerRequest
+    ? {
+      accessTokenKey: CUSTOMER_ACCESS_TOKEN_KEY,
+      refreshTokenKey: CUSTOMER_REFRESH_TOKEN_KEY,
+    }
+    : {
+      accessTokenKey: ADMIN_ACCESS_TOKEN_KEY,
+      refreshTokenKey: ADMIN_REFRESH_TOKEN_KEY,
+    };
+}
+
+function shouldSkipAuthRefresh(failedRequestUrl?: string): boolean {
+  const requestUrl = (failedRequestUrl ?? "").toLowerCase();
+
+  // Public customer-facing data endpoints should never drive auth refresh/logout flow.
+  // These endpoints can fail due to throttling (503/429) and must not affect session state.
+  return (
+    requestUrl.includes("/movie-service/") ||
+    requestUrl.includes("/product-service/") ||
+    requestUrl.includes("/customer-service/movie") ||
+    requestUrl.includes("/customer-service/cinema") ||
+    requestUrl.includes("/customer-service/showtime") ||
+    requestUrl.includes("/customer-service/product")
+  );
+}
+
+function isSoftLogoutExemptCustomerRequest(failedRequestUrl?: string): boolean {
+  const requestUrl = (failedRequestUrl ?? "").toLowerCase();
+  return requestUrl.includes("/customer-service/customer/profile");
+}
+
+function startUnauthorizedRedirectCountdown(isCustomer: boolean) {
+  if (isRedirectingToLogin) {
+    return;
+  }
+
+  isRedirectingToLogin = true;
+  const redirectUrl = isCustomer ? "/customer-login" : "/administration-login";
+  let seconds = 10;
+  const toastId = "unauthorized-redirect-countdown";
+
+  toast.error(`Session is not authorized for this endpoint. Redirecting in ${seconds}s...`, { id: toastId });
+
+  redirectCountdownTimer = setInterval(() => {
+    seconds -= 1;
+    if (seconds > 0) {
+      toast.error(`Session is not authorized for this endpoint. Redirecting in ${seconds}s...`, { id: toastId });
+      return;
+    }
+
+    if (redirectCountdownTimer) {
+      clearInterval(redirectCountdownTimer);
+      redirectCountdownTimer = null;
+    }
+    toast.error("Redirecting to login...", { id: toastId });
+    window.location.href = redirectUrl;
+  }, 1000);
 }
 
 // Xử lý refresh token
 async function refreshTokenAsync(url?: string) {
-  const isCustomerRequest = url?.includes("/customer-service/");
-  const refreshToken = getCookie(REFRESH_TOKEN_KEY) ?? "";
-  const accessToken = getCookie(ACCESS_TOKEN_KEY) ?? "";
+  const isCustomerRequest = shouldUseCustomerAuthRefresh(url);
+  const { accessTokenKey, refreshTokenKey } = getAuthCookieKeys(isCustomerRequest);
+  const refreshToken = getCookie(refreshTokenKey) ?? "";
+  const accessToken = getCookie(accessTokenKey) ?? "";
 
   if (!refreshToken) {
-    const missingTokenError = new Error("Missing refresh token");
-    http.defaults.headers.common[AUTHORIZATION_KEY] = "";
-    removeCookie(ACCESS_TOKEN_KEY);
-    removeCookie(REFRESH_TOKEN_KEY);
-    if (!isRedirectingToLogin) {
-      isRedirectingToLogin = true;
-      window.location.href = isCustomerRequest ? `/customer-login` : `/administration-login`;
-    }
-    throw missingTokenError;
+    throw new Error("Missing refresh token");
   }
 
   const requestLogin: RefreshLoginInputDto = {
@@ -149,41 +250,33 @@ async function refreshTokenAsync(url?: string) {
       ? await customerService.authService.refreshTokenAsync(requestLogin)
       : await administrationService.authService.refreshTokenAsync(requestLogin);
     return response;
-  } catch (error: any) {
-    http.defaults.headers.common[AUTHORIZATION_KEY] = "";
-    removeCookie(ACCESS_TOKEN_KEY);
-    removeCookie(REFRESH_TOKEN_KEY);
-    if (!isRedirectingToLogin) {
-      isRedirectingToLogin = true;
-      window.location.href = isCustomerRequest ? `/customer-login` : `/administration-login`;
-    }
+  } catch (error: unknown) {
+    // Do not mutate token storage here.
+    // Session cleanup/redirection should be decided by calling context.
     throw error;
   }
 }
 
 // Xử lý request trước khi gửi đi
 const onRequestInterceptor = (config: InternalAxiosRequestConfig) => {
-  const accessToken = getCookie(ACCESS_TOKEN_KEY);
+  const isCustomerRequest = shouldUseCustomerAuthRefresh(config.url);
+  const { accessTokenKey } = getAuthCookieKeys(isCustomerRequest);
+  const accessToken = getCookie(accessTokenKey);
   const selectedLanguage = localStorage.getItem(LANGUAGE_KEY) ?? "vi";
 
-  let tenantId = localStorage.getItem(TENANT_KEY);
-  if (!tenantId && process.env.NEXT_PUBLIC_TENANTS) {
-    try {
-      const parsedTenants = JSON.parse(process.env.NEXT_PUBLIC_TENANTS);
-      if (Array.isArray(parsedTenants) && parsedTenants.length > 0) {
-        tenantId = parsedTenants[0].value;
-      }
-    } catch (e) {
-      console.warn("Failed to parse NEXT_PUBLIC_TENANTS", e);
-    }
+  const tenantFromLocalStorage = typeof window !== "undefined" ? localStorage.getItem(TENANT_KEY) : null;
+  const tenantFromCookie = getCookie(TENANT_KEY);
+  const fallbackTenant = getDefaultTenant();
+  const normalizedTenantId = normalizeTenantForHeader(
+    tenantFromLocalStorage?.trim() || tenantFromCookie?.trim() || fallbackTenant
+  );
+
+  if (typeof window !== "undefined") {
+    localStorage.setItem(TENANT_KEY, normalizedTenantId);
+    setCookie(TENANT_KEY, normalizedTenantId);
   }
 
-  const normalizedTenantId = tenantId?.trim();
-  if (normalizedTenantId) {
-    config.headers[TENANT_KEY] = normalizedTenantId;
-  } else {
-    delete config.headers[TENANT_KEY];
-  }
+  config.headers[TENANT_KEY] = normalizedTenantId;
   config.headers["Accept-Language"] = selectedLanguage;
 
   // Refresh endpoint should only rely on refresh-token payload, not an expired bearer token.
@@ -196,7 +289,7 @@ const onRequestInterceptor = (config: InternalAxiosRequestConfig) => {
   }
   if (config.params) {
     config.paramsSerializer = {
-      serialize: (params: Record<string, any>) =>
+      serialize: (params: Record<string, unknown>) =>
         qs.stringify(params, { encode: true }),
     };
   }
@@ -213,9 +306,18 @@ const onResponseInterceptor = async (error: AxiosError) => {
   if (error.response && error.response.status === HttpStatusCode.Unauthorized) {
     const requestConfig = error.config as RetryableRequestConfig | undefined;
     const requestUrl = requestConfig?.url;
-
-    if (!requestConfig || requestConfig._retry || requestConfig._skipAuthRefresh || isAuthRefreshExcludedRequest(requestUrl)) {
+    const isCustomerRequest = shouldUseCustomerAuthRefresh(requestUrl);
+    const { accessTokenKey, refreshTokenKey } = getAuthCookieKeys(isCustomerRequest);
+    const isSoftAuthFailureRequest = isSoftLogoutExemptCustomerRequest(requestUrl);
+    const skipAuthRefresh = shouldSkipAuthRefresh(requestUrl);
+    const hasRefreshToken = Boolean(getCookie(refreshTokenKey));
+    if (!requestConfig || requestConfig._retry || requestConfig._skipAuthRefresh || isAuthRefreshExcludedRequest(requestUrl) || skipAuthRefresh) {
       return Promise.reject(normalizeHttpError(error.response?.data));
+    }
+
+    if (!hasRefreshToken) {
+      startUnauthorizedRedirectCountdown(isCustomerRequest);
+      return Promise.reject(normalizeHttpError(error.response?.data, "Session expired. Please login again."));
     }
 
     if (!isRefreshing) {
@@ -224,67 +326,44 @@ const onResponseInterceptor = async (error: AxiosError) => {
     }
 
     if (refreshPromise) {
-      let newToken: any;
+      let newToken: unknown;
       try {
         newToken = await refreshPromise;
+      } catch (refreshError) {
+        if (!isSoftAuthFailureRequest) {
+          http.defaults.headers.common[AUTHORIZATION_KEY] = "";
+          startUnauthorizedRedirectCountdown(isCustomerRequest);
+        }
+        return Promise.reject(normalizeHttpError((refreshError as AxiosError)?.response?.data ?? error.response?.data));
       } finally {
         refreshPromise = null;
         isRefreshing = false;
       }
 
-      if (!newToken?.accessToken || !newToken?.refreshToken) {
+      if (!isObjectLike(newToken) || !newToken.accessToken || !newToken.refreshToken) {
+        if (!isSoftAuthFailureRequest) {
+          http.defaults.headers.common[AUTHORIZATION_KEY] = "";
+          // Keep existing tokens intact here. Some public-data endpoints can return 401
+          // transiently while the session is still recoverable on subsequent requests.
+          startUnauthorizedRedirectCountdown(isCustomerRequest);
+        }
         return Promise.reject(normalizeHttpError(error.response?.data));
       }
 
       http.defaults.headers.common[AUTHORIZATION_KEY] =
-        `${TOKEN_TYPE_KEY} ${newToken.accessToken}`;
-      setCookie(ACCESS_TOKEN_KEY, newToken.accessToken);
-      setCookie(REFRESH_TOKEN_KEY, newToken.refreshToken);
+        `${TOKEN_TYPE_KEY} ${String(newToken.accessToken)}`;
+      setCookie(accessTokenKey, String(newToken.accessToken));
+      setCookie(refreshTokenKey, String(newToken.refreshToken));
 
       requestConfig._retry = true;
       requestConfig.headers = requestConfig.headers ?? {};
-      requestConfig.headers[AUTHORIZATION_KEY] = `${TOKEN_TYPE_KEY} ${newToken.accessToken}`;
+      requestConfig.headers[AUTHORIZATION_KEY] = `${TOKEN_TYPE_KEY} ${String(newToken.accessToken)}`;
       return http(requestConfig);
     }
   }
 
-  const _response = error.response?.data as any;
-  // 400 => Bad Request, lỗi từ phía client => hiển thị thông báo lỗi
-  if (error.response && error.response.status === HttpStatusCode.BadRequest) {
-    return Promise.reject(normalizeHttpError(_response));
-  }
-
-  // 403 => Forbidden, không có quyền truy cập => chuyển hướng đến trang 403
-  if (error.response && error.response.status === HttpStatusCode.Forbidden) {
-    const isAuthRequest = error.config?.url?.includes("/auth");
-    if (!isAuthRequest) {
-      window.location.href = `/403`;
-    }
-    return Promise.reject(normalizeHttpError(_response));
-  }
-
-  // 404 => Not Found, không tìm thấy tài nguyên => chuyển hướng đến trang 404
-  // if (error.response && error.response.status === HttpStatusCode.NotFound) {
-  //   window.location.href = `/404`;
-  //   return Promise.reject(error.response.data);
-  // }
-
-  // 500 => Internal Server Error, lỗi từ phía server => chuyển hướng đến trang 500
-  if (
-    error.response &&
-    error.response.status === HttpStatusCode.InternalServerError
-  ) {
-    return Promise.reject(normalizeHttpError(_response));
-  }
-
-  // 503 => Service Unavailable, dịch vụ tạm thời không khả dụng
-  if (
-    error.response &&
-    error.response.status === 503
-  ) {
-    return Promise.reject(normalizeHttpError(_response, translate("http.service_unavailable", "Dịch vụ tạm thời không khả dụng. Vui lòng thử lại sau.")));
-  }
-
+  const _response = error.response?.data as unknown;
+  // For non-401 errors, pass backend message through as-is.
   return Promise.reject(normalizeHttpError(_response));
 };
 

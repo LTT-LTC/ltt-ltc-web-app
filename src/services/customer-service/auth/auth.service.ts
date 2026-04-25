@@ -3,7 +3,7 @@ import { CustomerLoginInputDto, CustomerLogoutInputDto, CustomerRefreshLoginInpu
 import { CustomerLoginOutputDto } from "./models/output.model";
 import { rootCustomerPath } from "../customer.service";
 
-const path = "/auth";
+const path = "/customer/auth";
 
 const loginAsync = async (body: CustomerLoginInputDto) => {
     const { data } = await http.post<CustomerLoginOutputDto>(`${rootCustomerPath}${path}`, body);

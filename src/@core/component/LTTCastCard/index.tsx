@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import LTTAvatar from "@/src/@core/component/AntD/LTTAvatar";
+import { LTTAvatar } from "@/src/@core/component/LTTShadcnUI/LTTAvatar";
 
 export interface LTTCastCardProps {
     name: string;
@@ -21,6 +21,8 @@ const LTTCastCard: React.FC<LTTCastCardProps> = ({
                 src={image}
                 size={size}
                 shape="circle"
+                alt={name}
+                fallbackText={name}
             />
             <div className="w-full">
                 <p className="text-sm font-semibold text-slate-900 dark:text-white truncate m-0">

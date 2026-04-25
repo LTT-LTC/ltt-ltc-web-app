@@ -1,6 +1,6 @@
 export interface GetCustomerListInputDto {
-    page: number;
-    fetch: number;
-    keyword?:string;
-    status?:string;
+    skipCount: number;
+    maxResultCount: number;
+    filter?: string;
+    status?: string;
 }
