@@ -5,7 +5,9 @@ import {
     CreateProductInputDto,
     UpdateProductInputDto,
     CreateCategoryInputDto,
-    CreateComboInputDto
+    CreateComboInputDto,
+    UpdateCategoryInputDto,
+    UpdateComboInputDto
 } from "./models/input.model";
 import {
     ProductOutputDto,
@@ -58,7 +60,7 @@ const createCategoryAsync = async (body: CreateCategoryInputDto): Promise<Catego
     return response.data.data;
 };
 
-const updateCategoryAsync = async (id: string, body: CreateCategoryInputDto): Promise<CategoryOutputDto> => {
+const updateCategoryAsync = async (id: string, body: UpdateCategoryInputDto): Promise<CategoryOutputDto> => {
     const response = await http.put<ApiResult<CategoryOutputDto>>(`${rootpath}${categoryPath}/${id}`, body);
     return response.data.data;
 };
@@ -77,7 +79,7 @@ const getComboByIdAsync = async (id: string): Promise<ComboOutputDto> => {
     return response.data.data;
 };
 
-const updateComboAsync = async (id: string, body: CreateComboInputDto): Promise<ComboOutputDto> => {
+const updateComboAsync = async (id: string, body: UpdateComboInputDto): Promise<ComboOutputDto> => {
     const response = await http.put<ApiResult<ComboOutputDto>>(`${rootpath}${comboPath}/${id}`, body);
     return response.data.data;
 }
