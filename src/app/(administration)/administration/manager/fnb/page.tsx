@@ -1,650 +1,1021 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Plus, Pencil, Trash2, Search, Coffee, RefreshCw } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Plus, RefreshCw, Search } from "lucide-react";
+import { toast } from "sonner";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
-import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
 import {
-  LTTDialog,
-  LTTDialogContent,
-  LTTDialogHeader,
-  LTTDialogTitle,
-  LTTDialogFooter,
-} from "@/src/@core/component/LTTShadcnUI/LTTDialog";
-import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
-import { LTTTextarea } from "@/src/@core/component/LTTShadcnUI/LTTTextarea";
-import {
-  LTTSelect,
-  LTTSelectContent,
-  LTTSelectItem,
-  LTTSelectTrigger,
-  LTTSelectValue,
+    LTTSelect,
+    LTTSelectContent,
+    LTTSelectItem,
+    LTTSelectTrigger,
+    LTTSelectValue,
 } from "@/src/@core/component/LTTShadcnUI/LTTSelect";
-import {
-  LTTTabs,
-  LTTTabsContent,
-  LTTTabsList,
-  LTTTabsTrigger,
-} from "@/src/@core/component/LTTShadcnUI/LTTTabs";
-import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
-import { toast } from "sonner";
-import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
-import { managerFnbService as productService } from "@/src/services/administration-service/manager/fnb/fnb.service";
-import { ProductOutputDto, CategoryOutputDto } from "@/src/services/administration-service/product/models/output.model";
-import { GetProductListInputDto, CreateProductInputDto, UpdateProductInputDto } from "@/src/services/administration-service/product/models/input.model";
-import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
-import { useEffect } from "react";
-import { cn } from "@/src/@core/utils/cn";
+import { LTTTabs, LTTTabsList, LTTTabsTrigger } from "@/src/@core/component/LTTShadcnUI/LTTTabs";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
-import AdminTablePagination from "@/src/app/(administration)/administration/admin/_components/AdminTablePagination";
-import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
+import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
+import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
+import { managerFnbService } from "@/src/services/administration-service/manager/fnb/fnb.service";
+import {
+    CreateCategoryInputDto,
+    CreateComboInputDto,
+    CreateComboItemInputDto,
+    CreateProductInputDto,
+    CreateProductVariantInputDto,
+    GetProductListInputDto,
+    UpdateCategoryInputDto,
+    UpdateComboInputDto,
+    UpdateProductInputDto,
+    UpdateProductVariantInputDto,
+} from "@/src/services/administration-service/product/models/input.model";
+import {
+    CategoryOutputDto,
+    ComboDetailOutputDto,
+    ComboOutputDto,
+    ProductDetailOutputDto,
+    ProductOutputDto,
+    ProductVariantOutputDto,
+} from "@/src/services/administration-service/product/models/output.model";
+import FnbTabSections from "./components/FnbTabSections";
+import FnbDialogs from "./components/FnbDialogs";
 
-const catLabel: Record<string, string> = {
-  popcorn: "Bắp rang",
-  drink: "Nước uống",
-  combo: "Combo",
-  snack: "Snack",
-  other: "Khác",
-};
-const statusColor: Record<string, string> = {
-  available: "bg-green-100 text-green-700 border-green-200",
-  out_of_stock: "bg-amber-100 text-amber-700 border-amber-200",
-  discontinued: "bg-muted-shadcn text-muted-foreground-shadcn border-muted-shadcn",
-};
-const statusLabel: Record<string, string> = {
-  available: "Có sẵn",
-  out_of_stock: "Hết hàng",
-  discontinued: "Ngưng bán",
+type FnbTab = "products" | "category" | "combos" | "variant";
+
+interface ProductFormState {
+    name: string;
+    productCategoryId: string;
+    basePrice: number;
+    description: string;
+    imageUrl: string;
+    isActive: boolean;
+    productType: string;
+}
+
+interface CategoryFormState {
+    name: string;
+    description: string;
+    isActive: boolean;
+}
+
+interface ComboFormState {
+    name: string;
+    description: string;
+    totalPrice: number;
+    isActive: boolean;
+}
+
+interface VariantFormState {
+    name: string;
+    additionalPrice: number;
+    isActive: boolean;
+}
+
+const formatVnd = (amount: number) => `${amount.toLocaleString("vi-VN")}đ`;
+
+const defaultProductForm = (categoryId = ""): ProductFormState => ({
+    name: "",
+    productCategoryId: categoryId,
+    basePrice: 0,
+    description: "",
+    imageUrl: "",
+    isActive: true,
+    productType: "Food",
+});
+
+const defaultCategoryForm: CategoryFormState = {
+    name: "",
+    description: "",
+    isActive: true,
 };
 
-const formatVND = (n: number) => n.toLocaleString("vi-VN") + "đ";
+const defaultComboForm: ComboFormState = {
+    name: "",
+    description: "",
+    totalPrice: 0,
+    isActive: true,
+};
+
+const defaultVariantForm: VariantFormState = {
+    name: "",
+    additionalPrice: 0,
+    isActive: true,
+};
 
 export default function FnBPage() {
-  const { t } = useLocalization();
-  const [activeTab, setActiveTab] = useState("products");
-  const [items, setItems] = useState<ProductOutputDto[]>([]);
-  const [categories, setCategories] = useState<CategoryOutputDto[]>([]);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [catFilter, setCatFilter] = useState("all");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [editing, setEditing] = useState<ProductOutputDto | null>(null);
-  const [singleDeleteId, setSingleDeleteId] = useState("");
-  const [singleDeleteOpen, setSingleDeleteOpen] = useState(false);
-  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
-  const [categoryEditing, setCategoryEditing] = useState<CategoryOutputDto | null>(null);
-  const [categorySingleDeleteId, setCategorySingleDeleteId] = useState("");
-  const [categorySingleDeleteOpen, setCategorySingleDeleteOpen] = useState(false);
-  const [categoryForm, setCategoryForm] = useState({ name: "", description: "" });
-  const [categorySearch, setCategorySearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [fetch, setFetch] = useState(10);
-  const [totalCount, setTotalCount] = useState(0);
-  const [form, setForm] = useState({
-    name: "",
-    categoryId: "",
-    price: 0,
-    description: "",
-  });
-
-  const listMutation = useLTTMutation<PagedResultDto<ProductOutputDto> | undefined, GetProductListInputDto>({
-    mutationFn: (input) => productService.getProductListAsync(input),
-    onSuccess: (res) => {
-      if (res && res.items) {
-        setItems(res.items);
-        setTotalCount(res.totalCount);
-      }
-    },
-    onError: (err) => toast.error(err.message || t("admin.fnb.fetch_error"))
-  });
-
-  const catMutation = useLTTMutation<PagedResultDto<CategoryOutputDto> | undefined, void>({
-    mutationFn: () => productService.getCategoryListAsync({ page: 1, fetch: 100 }),
-    onSuccess: (res) => { if (res && res.items) setCategories(res.items); }
-  });
-
-  const createCategoryMutation = useLTTMutation<CategoryOutputDto | undefined, { name: string; description?: string }>({
-    mutationFn: (input) => productService.createCategoryAsync(input),
-    onSuccess: () => {
-      toast.success("Tạo danh mục thành công");
-      catMutation.mutation();
-      setCategoryDialogOpen(false);
-      setCategoryEditing(null);
-    },
-    onError: (err) => toast.error(err.message || t("admin.fnb.generic_error"))
-  });
-
-  const updateCategoryMutation = useLTTMutation<CategoryOutputDto | undefined, { id: string; body: { name: string; description?: string } }>({
-    mutationFn: ({ id, body }) => productService.updateCategoryAsync(id, body),
-    onSuccess: () => {
-      toast.success("Cập nhật danh mục thành công");
-      catMutation.mutation();
-      setCategoryDialogOpen(false);
-      setCategoryEditing(null);
-    },
-    onError: (err) => toast.error(err.message || t("admin.fnb.generic_error"))
-  });
-
-  const createMutation = useLTTMutation<ProductOutputDto | undefined, CreateProductInputDto>({
-    mutationFn: (input) => productService.createProductAsync(input),
-    onSuccess: () => {
-      toast.success(t("admin.fnb.create_success"));
-      fetchData();
-      setDialogOpen(false);
-    },
-    onError: (err) => toast.error(err.message || t("admin.fnb.generic_error"))
-  });
-
-  const updateMutation = useLTTMutation<ProductOutputDto | undefined, { id: string; body: UpdateProductInputDto }>({
-    mutationFn: (input) => productService.updateProductAsync(input.id, input.body),
-    onSuccess: () => {
-      toast.success(t("admin.fnb.update_success"));
-      fetchData();
-      setDialogOpen(false);
-    },
-    onError: (err) => toast.error(err.message || t("admin.fnb.generic_error"))
-  });
-
-  const fetchData = () => {
-    listMutation.mutation({
-      page,
-      fetch,
-      keyword: debouncedSearch || undefined,
-      categoryId: catFilter === "all" ? undefined : catFilter
+    const { t } = useLocalization();
+    const [activeTab, setActiveTab] = useState<FnbTab>("products");
+    const [loadedTabs, setLoadedTabs] = useState<Record<FnbTab, boolean>>({
+        products: false,
+        category: false,
+        combos: false,
+        variant: false,
     });
-  };
 
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 300);
-    return () => clearTimeout(timer);
-  }, [search]);
+    const [products, setProducts] = useState<ProductOutputDto[]>([]);
+    const [categories, setCategories] = useState<CategoryOutputDto[]>([]);
+    const [combos, setCombos] = useState<ComboOutputDto[]>([]);
+    const [comboDetailMap, setComboDetailMap] = useState<Record<string, ComboDetailOutputDto>>({});
+    const [variantRows, setVariantRows] = useState<ProductVariantOutputDto[]>([]);
 
-  useEffect(() => {
-    fetchData();
-  }, [debouncedSearch, catFilter, page]);
+    const [productPage, setProductPage] = useState(1);
+    const [productFetch, setProductFetch] = useState(10);
+    const [productTotal, setProductTotal] = useState(0);
+    const [comboPage, setComboPage] = useState(1);
+    const [comboFetch, setComboFetch] = useState(10);
+    const [comboTotal, setComboTotal] = useState(0);
+    const [categoryPage, setCategoryPage] = useState(1);
+    const [categoryFetch, setCategoryFetch] = useState(10);
+    const [categoryTotal, setCategoryTotal] = useState(0);
+    const [variantPage, setVariantPage] = useState(1);
+    const [variantFetch, setVariantFetch] = useState(10);
+    const [variantTotal, setVariantTotal] = useState(0);
 
-  useEffect(() => {
-    catMutation.mutation();
-  }, []);
+    const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [categorySearch, setCategorySearch] = useState("");
+    const [comboSearch, setComboSearch] = useState("");
+    const [variantSearch, setVariantSearch] = useState("");
+    const [categoryFilter, setCategoryFilter] = useState("all");
+    const [variantProductId, setVariantProductId] = useState("all");
+    const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
 
-  const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading;
-  const categoryLoading = catMutation.isLoading || createCategoryMutation.isLoading || updateCategoryMutation.isLoading;
+    const [productDialogOpen, setProductDialogOpen] = useState(false);
+    const [productDeleteDialogOpen, setProductDeleteDialogOpen] = useState(false);
+    const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+    const [categoryDeleteDialogOpen, setCategoryDeleteDialogOpen] = useState(false);
+    const [comboDialogOpen, setComboDialogOpen] = useState(false);
+    const [comboDeleteDialogOpen, setComboDeleteDialogOpen] = useState(false);
+    const [comboItemDialogOpen, setComboItemDialogOpen] = useState(false);
+    const [variantDialogOpen, setVariantDialogOpen] = useState(false);
+    const [variantDeleteDialogOpen, setVariantDeleteDialogOpen] = useState(false);
 
-  const filtered = useMemo(() => items, [items]);
-  const filteredCategories = useMemo(() => {
-    if (!categorySearch.trim()) return categories;
-    const q = categorySearch.toLowerCase();
-    return categories.filter((c) => c.name.toLowerCase().includes(q) || (c.description || "").toLowerCase().includes(q));
-  }, [categories, categorySearch]);
+    const [editingProduct, setEditingProduct] = useState<ProductOutputDto | null>(null);
+    const [editingCategory, setEditingCategory] = useState<CategoryOutputDto | null>(null);
+    const [editingCombo, setEditingCombo] = useState<ComboOutputDto | null>(null);
+    const [editingVariant, setEditingVariant] = useState<ProductVariantOutputDto | null>(null);
 
-  const allSel =
-    filtered.length > 0 && filtered.every((i) => selected.has(i.id));
-  const toggleAll = () =>
-    allSel
-      ? setSelected(new Set())
-      : setSelected(new Set(filtered.map((i) => i.id)));
-  const toggle = (id: string) => {
-    const n = new Set(selected);
-    n.has(id) ? n.delete(id) : n.add(id);
-    setSelected(n);
-  };
+    const [singleProductDeleteId, setSingleProductDeleteId] = useState("");
+    const [singleCategoryDeleteId, setSingleCategoryDeleteId] = useState("");
+    const [singleComboDeleteId, setSingleComboDeleteId] = useState("");
+    const [singleVariantDeleteId, setSingleVariantDeleteId] = useState("");
+    const [selectedComboForItem, setSelectedComboForItem] = useState<string>("");
+    const [selectedComboItemId, setSelectedComboItemId] = useState<string>("");
 
-  const openCreate = () => {
-    setEditing(null);
-    setForm({
-      name: "",
-      categoryId: categories.length > 0 ? categories[0].id : "",
-      price: 0,
-      description: "",
+    const [productForm, setProductForm] = useState<ProductFormState>(defaultProductForm());
+    const [categoryForm, setCategoryForm] = useState<CategoryFormState>(defaultCategoryForm);
+    const [comboForm, setComboForm] = useState<ComboFormState>(defaultComboForm);
+    const [variantForm, setVariantForm] = useState<VariantFormState>(defaultVariantForm);
+    const [comboItemForm, setComboItemForm] = useState<CreateComboItemInputDto>({
+        productId: "",
+        quantity: 1,
     });
-    setDialogOpen(true);
-  };
 
-  const openEdit = (item: ProductOutputDto) => {
-    setEditing(item);
-    setForm({
-      name: item.name,
-      categoryId: item.categoryId,
-      price: item.price,
-      description: item.description || "",
+    const LOCAL_STATE_KEY = "manager-fnb-local-state-v1";
+
+    const listProductsMutation = useLTTMutation<PagedResultDto<ProductOutputDto> | undefined, GetProductListInputDto>({
+        mutationFn: (input) => managerFnbService.getProductListAsync(input),
+        onSuccess: (result) => {
+            setProducts(result?.items || []);
+            setProductTotal(result?.totalCount || 0);
+        },
+        onError: (err) => toast.error(err.message || "Failed to fetch products."),
     });
-    setDialogOpen(true);
-  };
 
-  const save = () => {
-    if (!form.name.trim()) {
-      toast.error(t("admin.fnb.validation.name_required"));
-      return;
-    }
-    if (editing) {
-      updateMutation.mutation({ id: editing.id, body: form as UpdateProductInputDto });
-    } else {
-      createMutation.mutation(form as CreateProductInputDto);
-    }
-  };
+    const listCategoriesMutation = useLTTMutation<PagedResultDto<CategoryOutputDto> | undefined, { page: number; fetch: number; keyword?: string }>({
+        mutationFn: ({ page, fetch, keyword }) => managerFnbService.getCategoryListAsync({ page, fetch, keyword }),
+        onSuccess: (result) => {
+            const nextCategories = result?.items || [];
+            setCategories(nextCategories);
+            setCategoryTotal(result?.totalCount || 0);
 
-  const openCreateCategory = () => {
-    setCategoryEditing(null);
-    setCategoryForm({ name: "", description: "" });
-    setCategoryDialogOpen(true);
-  };
-
-  const openEditCategory = (item: CategoryOutputDto) => {
-    setCategoryEditing(item);
-    setCategoryForm({ name: item.name, description: item.description || "" });
-    setCategoryDialogOpen(true);
-  };
-
-  const saveCategory = () => {
-    if (!categoryForm.name.trim()) {
-      toast.error("Vui lòng nhập tên danh mục");
-      return;
-    }
-    if (categoryEditing) {
-      updateCategoryMutation.mutation({
-        id: categoryEditing.id,
-        body: { name: categoryForm.name.trim(), description: categoryForm.description.trim() || undefined },
-      });
-      return;
-    }
-    createCategoryMutation.mutation({
-      name: categoryForm.name.trim(),
-      description: categoryForm.description.trim() || undefined,
-    });
-  };
-
-  const bulkDelete = () => {
-    Promise.allSettled(Array.from(selected).map((id) => productService.deleteProductAsync(id))).then(() => {
-      toast.success(t("admin.fnb.bulk_delete_success", { count: selected.size }));
-      setSelected(new Set());
-      setDeleteOpen(false);
-      fetchData();
-    });
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="font-heading text-2xl font-bold">{t("admin.fnb.title")}</h1>
-        <LTTButton onClick={activeTab === "products" ? openCreate : openCreateCategory} className="gap-2">
-          <Plus className="h-4 w-4" /> {t("admin.fnb.add")}
-        </LTTButton>
-      </div>
-
-      <LTTTabs value={activeTab} onValueChange={setActiveTab}>
-        <LTTTabsList className="bg-muted-shadcn/50">
-          <LTTTabsTrigger value="products">Products</LTTTabsTrigger>
-          <LTTTabsTrigger value="categories">Categories</LTTTabsTrigger>
-        </LTTTabsList>
-      </LTTTabs>
-
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
-          <LTTInput
-            placeholder={activeTab === "products" ? t("admin.fnb.search_placeholder") : "Tìm danh mục..."}
-            value={activeTab === "products" ? search : categorySearch}
-            onChange={(e) => {
-              if (activeTab === "products") {
-                setSearch(e.target.value);
-                setPage(1);
-              } else {
-                setCategorySearch(e.target.value);
-              }
-            }}
-            className="pl-9"
-          />
-        </div>
-        {activeTab === "products" && (
-          <LTTSelect value={catFilter} onValueChange={(v: string) => { setCatFilter(v); setPage(1); }}>
-            <LTTSelectTrigger className="w-56"><LTTSelectValue /></LTTSelectTrigger>
-            <LTTSelectContent>
-              <LTTSelectItem value="all">{t("admin.fnb.tabs.all", { count: items.length })}</LTTSelectItem>
-              {categories.map((c) => (
-                <LTTSelectItem key={c.id} value={c.id}>{c.name}</LTTSelectItem>
-              ))}
-            </LTTSelectContent>
-          </LTTSelect>
-        )}
-        {selected.size > 0 && (
-          activeTab === "products" && (
-          <LTTButton
-            variant="destructive"
-            size="sm"
-            className="gap-2"
-            onClick={() => setDeleteOpen(true)}
-          >
-            <Trash2 className="h-4 w-4" /> {t("admin.common.delete_confirm.ok")} {selected.size}
-          </LTTButton>
-          )
-        )}
-        <LTTButton
-          variant="outline"
-          className="gap-2"
-          onClick={() => {
-            if (activeTab === "products") {
-              setPage(1);
-              listMutation.mutation({
-                page: 1,
-                fetch,
-                keyword: debouncedSearch || undefined,
-                categoryId: catFilter === "all" ? undefined : catFilter,
-              });
-            } else {
-              catMutation.mutation();
+            if (nextCategories.length === 0) {
+                setCategoryFilter("all");
+                setVariantProductId("all");
+                return;
             }
-          }}
-          loading={activeTab === "products" ? listMutation.isLoading : catMutation.isLoading}
-        >
-          <RefreshCw className="h-4 w-4" /> Làm mới
-        </LTTButton>
-      </div>
 
-      {activeTab === "products" ? (
-      <>
-      <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
-              <th className="w-10 px-3 py-3">
-                <LTTCheckbox checked={allSel} onCheckedChange={toggleAll} />
-              </th>
-              <th className="px-4 py-3 text-left font-semibold">{t("admin.fnb.table.index")}</th>
-              <th className="px-4 py-3 text-left font-semibold">{t("admin.fnb.table.product")}</th>
-              <th className="px-4 py-3 text-left font-semibold">{t("admin.fnb.table.category")}</th>
-              <th className="px-4 py-3 text-right font-semibold">{t("admin.fnb.table.price")}</th>
-              <th className="px-4 py-3 text-left font-semibold">{t("admin.fnb.table.description")}</th>
-              <th className="px-4 py-3 text-right font-semibold">{t("admin.fnb.table.actions")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <DomainTableStateRow colSpan={9} state="loading" loadingText={t("admin.fnb.loading")} />
-            ) : filtered.length === 0 ? (
-              <DomainTableStateRow colSpan={9} state="empty" emptyText={t("admin.fnb.empty")} />
-            ) : (
-              filtered.map((item, idx) => (
-                <tr
-                  key={item.id}
-                  className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors"
+            if (categoryFilter !== "all" && !nextCategories.some((category) => category.id === categoryFilter)) {
+                setCategoryFilter("all");
+            }
+        },
+        onError: (err) => {
+            toast.error(err.message || "Failed to fetch categories.");
+        },
+    });
+
+    const listCombosMutation = useLTTMutation<PagedResultDto<ComboOutputDto> | undefined, { page: number; fetch: number; keyword?: string }>({
+        mutationFn: (input) => managerFnbService.getComboListAsync(input),
+        onSuccess: (result) => {
+            setCombos(result?.items || []);
+            setComboTotal(result?.totalCount || 0);
+        },
+        onError: (err) => toast.error(err.message || "Failed to fetch combos."),
+    });
+
+    const getComboDetailMutation = useLTTMutation<ComboDetailOutputDto | undefined, string>({
+        mutationFn: (comboId) => managerFnbService.getComboByIdAsync(comboId),
+        onSuccess: (detail) => {
+            if (!detail) {
+                return;
+            }
+            setComboDetailMap((current) => ({ ...current, [detail.id]: detail }));
+        },
+        onError: (err) => toast.error(err.message || "Failed to fetch combo items."),
+    });
+
+    const getProductDetailMutation = useLTTMutation<ProductDetailOutputDto | undefined, string>({
+        mutationFn: (productId) => managerFnbService.getProductByIdAsync(productId),
+        onSuccess: (detail) => {
+            setVariantRows(detail?.productVariants || []);
+        },
+        onError: (err) => toast.error(err.message || "Failed to fetch variants."),
+    });
+
+    function fetchProducts(page: number) {
+        listProductsMutation.mutation({
+            page,
+            fetch: productFetch,
+            keyword: debouncedSearch.trim(),
+            categoryId: categoryFilter === "all" ? undefined : categoryFilter,
+        });
+    }
+
+    function fetchCombos(page: number) {
+        listCombosMutation.mutation({
+            page,
+            fetch: comboFetch,
+            keyword: comboSearch.trim(),
+        });
+    }
+
+    const createProductMutation = useLTTMutation<ProductOutputDto | undefined, CreateProductInputDto>({
+        mutationFn: (body) => managerFnbService.createProductAsync(body),
+        onSuccess: () => {
+            toast.success("Product created.");
+            setProductDialogOpen(false);
+            fetchProducts(productPage);
+        },
+        onError: (err) => toast.error(err.message || "Failed to create product."),
+    });
+
+    const updateProductMutation = useLTTMutation<ProductOutputDto | undefined, { id: string; body: UpdateProductInputDto }>({
+        mutationFn: ({ id, body }) => managerFnbService.updateProductAsync(id, body),
+        onSuccess: () => {
+            toast.success("Product updated.");
+            setProductDialogOpen(false);
+            fetchProducts(productPage);
+        },
+        onError: (err) => toast.error(err.message || "Failed to update product."),
+    });
+
+    const createCategoryMutation = useLTTMutation<CategoryOutputDto | undefined, CreateCategoryInputDto>({
+        mutationFn: (body) => managerFnbService.createCategoryAsync(body),
+        onSuccess: () => {
+            toast.success("Category created.");
+            setCategoryDialogOpen(false);
+            listCategoriesMutation.mutation({ page: categoryPage, fetch: categoryFetch, keyword: categorySearch.trim() || undefined });
+        },
+        onError: (err) => toast.error(err.message || "Failed to create category."),
+    });
+
+    const updateCategoryMutation = useLTTMutation<CategoryOutputDto | undefined, { id: string; body: UpdateCategoryInputDto }>({
+        mutationFn: ({ id, body }) => managerFnbService.updateCategoryAsync(id, body),
+        onSuccess: () => {
+            toast.success("Category updated.");
+            setCategoryDialogOpen(false);
+            listCategoriesMutation.mutation({ page: categoryPage, fetch: categoryFetch, keyword: categorySearch.trim() || undefined });
+        },
+        onError: (err) => toast.error(err.message || "Failed to update category."),
+    });
+
+    const createComboMutation = useLTTMutation<ComboOutputDto | undefined, CreateComboInputDto>({
+        mutationFn: (body) => managerFnbService.createComboAsync(body),
+        onSuccess: () => {
+            toast.success("Combo created.");
+            setComboDialogOpen(false);
+            fetchCombos(comboPage);
+        },
+        onError: (err) => toast.error(err.message || "Failed to create combo."),
+    });
+
+    const updateComboMutation = useLTTMutation<ComboOutputDto | undefined, { id: string; body: UpdateComboInputDto }>({
+        mutationFn: ({ id, body }) => managerFnbService.updateComboAsync(id, body),
+        onSuccess: () => {
+            toast.success("Combo updated.");
+            setComboDialogOpen(false);
+            fetchCombos(comboPage);
+        },
+        onError: (err) => toast.error(err.message || "Failed to update combo."),
+    });
+
+    const createVariantMutation = useLTTMutation<ProductVariantOutputDto | undefined, CreateProductVariantInputDto>({
+        mutationFn: (body) => managerFnbService.createProductVariantAsync(variantProductId, body),
+        onSuccess: () => {
+            toast.success("Variant created.");
+            setVariantDialogOpen(false);
+            if (variantProductId !== "all") {
+                getProductDetailMutation.mutation(variantProductId);
+            }
+        },
+        onError: (err) => toast.error(err.message || "Failed to create variant."),
+    });
+
+    const updateVariantMutation = useLTTMutation<ProductVariantOutputDto | undefined, UpdateProductVariantInputDto>({
+        mutationFn: (body) => managerFnbService.updateProductVariantAsync(variantProductId, editingVariant?.id || "", body),
+        onSuccess: () => {
+            toast.success("Variant updated.");
+            setVariantDialogOpen(false);
+            if (variantProductId !== "all") {
+                getProductDetailMutation.mutation(variantProductId);
+            }
+        },
+        onError: (err) => toast.error(err.message || "Failed to update variant."),
+    });
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(search), 300);
+        return () => clearTimeout(timer);
+    }, [search]);
+
+    useEffect(() => {
+        const raw = window.localStorage.getItem(LOCAL_STATE_KEY);
+        if (!raw) {
+            return;
+        }
+        try {
+            const local = JSON.parse(raw) as Partial<{
+                activeTab: FnbTab;
+                search: string;
+                categorySearch: string;
+                comboSearch: string;
+                variantSearch: string;
+                categoryFilter: string;
+                variantProductId: string;
+                productPage: number;
+                productFetch: number;
+                comboPage: number;
+                comboFetch: number;
+                categoryPage: number;
+                categoryFetch: number;
+                variantPage: number;
+                variantFetch: number;
+            }>;
+            if (local.activeTab) setActiveTab(local.activeTab);
+            if (local.search !== undefined) setSearch(local.search);
+            if (local.categorySearch !== undefined) setCategorySearch(local.categorySearch);
+            if (local.comboSearch !== undefined) setComboSearch(local.comboSearch);
+            if (local.variantSearch !== undefined) setVariantSearch(local.variantSearch);
+            if (local.categoryFilter !== undefined) setCategoryFilter(local.categoryFilter);
+            if (local.variantProductId !== undefined) setVariantProductId(local.variantProductId);
+            if (local.productPage !== undefined) setProductPage(local.productPage);
+            if (local.productFetch !== undefined) setProductFetch(local.productFetch);
+            if (local.comboPage !== undefined) setComboPage(local.comboPage);
+            if (local.comboFetch !== undefined) setComboFetch(local.comboFetch);
+            if (local.categoryPage !== undefined) setCategoryPage(local.categoryPage);
+            if (local.categoryFetch !== undefined) setCategoryFetch(local.categoryFetch);
+            if (local.variantPage !== undefined) setVariantPage(local.variantPage);
+            if (local.variantFetch !== undefined) setVariantFetch(local.variantFetch);
+        } catch {
+            // Ignore invalid persisted state.
+        }
+    }, []);
+
+    useEffect(() => {
+        window.localStorage.setItem(
+            LOCAL_STATE_KEY,
+            JSON.stringify({
+                activeTab,
+                search,
+                categorySearch,
+                comboSearch,
+                variantSearch,
+                categoryFilter,
+                variantProductId,
+                productPage,
+                productFetch,
+                comboPage,
+                comboFetch,
+                categoryPage,
+                categoryFetch,
+                variantPage,
+                variantFetch,
+            }),
+        );
+    }, [
+        activeTab,
+        search,
+        categorySearch,
+        comboSearch,
+        variantSearch,
+        categoryFilter,
+        variantProductId,
+        productPage,
+        productFetch,
+        comboPage,
+        comboFetch,
+        categoryPage,
+        categoryFetch,
+        variantPage,
+        variantFetch,
+    ]);
+
+    useEffect(() => {
+        if (activeTab === "products" && !loadedTabs.products) {
+            fetchProducts(productPage);
+            setLoadedTabs((current) => ({ ...current, products: true }));
+        }
+        if (activeTab === "category" && !loadedTabs.category) {
+            listCategoriesMutation.mutation({ page: categoryPage, fetch: categoryFetch, keyword: categorySearch.trim() || undefined });
+            setLoadedTabs((current) => ({ ...current, category: true }));
+        }
+        if (activeTab === "combos" && !loadedTabs.combos) {
+            fetchCombos(comboPage);
+            setLoadedTabs((current) => ({ ...current, combos: true }));
+        }
+        if (activeTab === "variant" && !loadedTabs.variant) {
+            setLoadedTabs((current) => ({ ...current, variant: true }));
+            if (variantProductId !== "all") {
+                getProductDetailMutation.mutation(variantProductId);
+            }
+        }
+    }, [activeTab, loadedTabs, productPage, comboPage, categoryPage, categoryFetch, categorySearch, variantProductId]);
+
+    useEffect(() => {
+        if (!loadedTabs.products || activeTab !== "products") {
+            return;
+        }
+        fetchProducts(productPage);
+    }, [loadedTabs.products, activeTab, productPage, productFetch, debouncedSearch, categoryFilter]);
+
+    useEffect(() => {
+        if (!loadedTabs.combos || activeTab !== "combos") {
+            return;
+        }
+        fetchCombos(comboPage);
+    }, [loadedTabs.combos, activeTab, comboPage, comboFetch, comboSearch]);
+
+    useEffect(() => {
+        if (!loadedTabs.category || activeTab !== "category") {
+            return;
+        }
+        listCategoriesMutation.mutation({ page: categoryPage, fetch: categoryFetch, keyword: categorySearch.trim() || undefined });
+    }, [loadedTabs.category, activeTab, categoryPage, categoryFetch, categorySearch]);
+
+    useEffect(() => {
+        if (!loadedTabs.variant || activeTab !== "variant") {
+            return;
+        }
+        if (variantProductId !== "all") {
+            getProductDetailMutation.mutation(variantProductId);
+        } else {
+            setVariantRows([]);
+        }
+    }, [loadedTabs.variant, activeTab, variantProductId]);
+
+    useEffect(() => {
+        setVariantPage(1);
+    }, [variantSearch, variantProductId]);
+
+    const categoryById = useMemo(
+        () => categories.reduce<Record<string, CategoryOutputDto>>((acc, item) => {
+            acc[item.id] = item;
+            return acc;
+        }, {}),
+        [categories],
+    );
+
+    const filteredCategories = useMemo(() => categories, [categories]);
+
+    const filteredVariants = useMemo(() => {
+        if (!variantSearch.trim()) {
+            return variantRows;
+        }
+        const query = variantSearch.trim().toLowerCase();
+        return variantRows.filter((variant) => variant.name.toLowerCase().includes(query));
+    }, [variantRows, variantSearch]);
+
+    const pagedVariants = useMemo(() => {
+        const start = (variantPage - 1) * variantFetch;
+        return filteredVariants.slice(start, start + variantFetch);
+    }, [filteredVariants, variantPage, variantFetch]);
+
+    useEffect(() => {
+        setVariantTotal(filteredVariants.length);
+    }, [filteredVariants]);
+
+    const isAnyLoading = listProductsMutation.isLoading || listCategoriesMutation.isLoading || listCombosMutation.isLoading;
+
+    const openCreateProduct = () => {
+        if (categories.length === 0) {
+            toast.error("Categories are required before creating products.");
+            return;
+        }
+        setEditingProduct(null);
+        setProductForm(defaultProductForm(categories[0].id));
+        setProductDialogOpen(true);
+    };
+
+    const openEditProduct = (item: ProductOutputDto) => {
+        setEditingProduct(item);
+        setProductForm({
+            name: item.name,
+            productCategoryId: item.productCategoryId,
+            basePrice: Number(item.basePrice),
+            description: item.description || "",
+            imageUrl: item.imageUrl || "",
+            isActive: item.isActive,
+            productType: item.productType || "Food",
+        });
+        setProductDialogOpen(true);
+    };
+
+    const saveProduct = () => {
+        if (!productForm.name.trim()) {
+            toast.error("Product name is required.");
+            return;
+        }
+        if (!productForm.productCategoryId) {
+            toast.error("Category is required.");
+            return;
+        }
+
+        const payload: CreateProductInputDto = {
+            productCategoryId: productForm.productCategoryId,
+            name: productForm.name.trim(),
+            description: productForm.description.trim() || undefined,
+            basePrice: productForm.basePrice,
+            imageUrl: productForm.imageUrl.trim() || undefined,
+            isActive: productForm.isActive,
+            productType: productForm.productType.trim() || undefined,
+        };
+
+        if (editingProduct) {
+            updateProductMutation.mutation({
+                id: editingProduct.id,
+                body: payload,
+            });
+            return;
+        }
+
+        createProductMutation.mutation(payload);
+    };
+
+    const openCreateCategory = () => {
+        setEditingCategory(null);
+        setCategoryForm(defaultCategoryForm);
+        setCategoryDialogOpen(true);
+    };
+
+    const openEditCategory = (item: CategoryOutputDto) => {
+        setEditingCategory(item);
+        setCategoryForm({
+            name: item.name,
+            description: item.description || "",
+            isActive: item.isActive,
+        });
+        setCategoryDialogOpen(true);
+    };
+
+    const saveCategory = () => {
+        if (!categoryForm.name.trim()) {
+            toast.error("Category name is required.");
+            return;
+        }
+        const payload: CreateCategoryInputDto = {
+            name: categoryForm.name.trim(),
+            description: categoryForm.description.trim() || undefined,
+            isActive: categoryForm.isActive,
+        };
+
+        if (editingCategory) {
+            updateCategoryMutation.mutation({
+                id: editingCategory.id,
+                body: payload,
+            });
+            return;
+        }
+        createCategoryMutation.mutation(payload);
+    };
+
+    const openCreateCombo = () => {
+        setEditingCombo(null);
+        setComboForm(defaultComboForm);
+        setComboDialogOpen(true);
+    };
+
+    const openEditCombo = (item: ComboOutputDto) => {
+        setEditingCombo(item);
+        setComboForm({
+            name: item.name,
+            description: item.description || "",
+            totalPrice: Number(item.totalPrice),
+            isActive: item.isActive,
+        });
+        setComboDialogOpen(true);
+    };
+
+    const saveCombo = () => {
+        if (!comboForm.name.trim()) {
+            toast.error("Combo name is required.");
+            return;
+        }
+        const payload: CreateComboInputDto = {
+            name: comboForm.name.trim(),
+            description: comboForm.description.trim() || undefined,
+            totalPrice: comboForm.totalPrice,
+            isActive: comboForm.isActive,
+            comboItems: [],
+        };
+
+        if (editingCombo) {
+            const updatePayload: UpdateComboInputDto = {
+                name: payload.name,
+                description: payload.description,
+                totalPrice: payload.totalPrice,
+                isActive: payload.isActive,
+            };
+            updateComboMutation.mutation({ id: editingCombo.id, body: updatePayload });
+            return;
+        }
+
+        createComboMutation.mutation(payload);
+    };
+
+    const openCreateVariant = () => {
+        if (variantProductId === "all") {
+            toast.error("Select a product first.");
+            return;
+        }
+        setEditingVariant(null);
+        setVariantForm(defaultVariantForm);
+        setVariantDialogOpen(true);
+    };
+
+    const openEditVariant = (item: ProductVariantOutputDto) => {
+        setEditingVariant(item);
+        setVariantForm({
+            name: item.name,
+            additionalPrice: Number(item.additionalPrice),
+            isActive: item.isActive,
+        });
+        setVariantDialogOpen(true);
+    };
+
+    const saveVariant = () => {
+        if (variantProductId === "all") {
+            toast.error("Select a product first.");
+            return;
+        }
+        if (!variantForm.name.trim()) {
+            toast.error("Variant name is required.");
+            return;
+        }
+
+        const payload: CreateProductVariantInputDto = {
+            name: variantForm.name.trim(),
+            additionalPrice: variantForm.additionalPrice,
+            isActive: variantForm.isActive,
+        };
+
+        if (editingVariant) {
+            updateVariantMutation.mutation(payload as UpdateProductVariantInputDto);
+            return;
+        }
+
+        createVariantMutation.mutation(payload);
+    };
+
+    const toggleProductSelection = (id: string) => {
+        setSelectedProductIds((current) => {
+            const next = new Set(current);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    };
+
+    const bulkDeleteProducts = async () => {
+        await Promise.allSettled(Array.from(selectedProductIds).map((id) => managerFnbService.deleteProductAsync(id)));
+        setSelectedProductIds(new Set());
+        setProductDeleteDialogOpen(false);
+        fetchProducts(productPage);
+        toast.success("Selected products deleted.");
+    };
+
+    const onAddComboItem = async () => {
+        if (!selectedComboForItem) {
+            toast.error("Select a combo first.");
+            return;
+        }
+        if (!comboItemForm.productId) {
+            toast.error("Select a product.");
+            return;
+        }
+        if (comboItemForm.quantity < 1) {
+            toast.error("Quantity must be at least 1.");
+            return;
+        }
+        await managerFnbService.addComboItemAsync(selectedComboForItem, comboItemForm);
+        getComboDetailMutation.mutation(selectedComboForItem);
+        setComboItemDialogOpen(false);
+        setComboItemForm({ productId: "", quantity: 1 });
+        toast.success("Combo item added.");
+    };
+
+    const currentComboDetail = selectedComboForItem ? comboDetailMap[selectedComboForItem] : undefined;
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <h1 className="font-heading text-2xl font-bold">{t("admin.fnb.title")}</h1>
+                <LTTButton
+                    onClick={() => {
+                        if (activeTab === "products") openCreateProduct();
+                        if (activeTab === "category") openCreateCategory();
+                        if (activeTab === "combos") openCreateCombo();
+                        if (activeTab === "variant") openCreateVariant();
+                    }}
+                    className="gap-2"
                 >
-                  <td className="px-3 py-3">
-                    <LTTCheckbox
-                      checked={selected.has(item.id)}
-                      onCheckedChange={() => toggle(item.id)}
-                    />
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground-shadcn">{idx + 1}</td>
-                  <td className="px-4 py-3 font-medium flex items-center gap-2">
-                    <Coffee className="h-4 w-4 text-primary-shadcn opacity-50" />
-                    {item.name}
-                  </td>
-                  <td className="px-4 py-3">
-                    <LTTBadge className="bg-accent-shadcn text-accent-shadcn-foreground border-red-200">
-                      {item.categoryName || t("admin.fnb.fallback_product")}
-                    </LTTBadge>
-                  </td>
-                  <td className="px-4 py-3 text-right font-semibold">{formatVND(item.price)}</td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground-shadcn max-w-[200px] truncate">
-                    {item.description || t("admin.fnb.empty_value")}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex justify-end gap-1">
-                      <LTTButton
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => openEdit(item)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </LTTButton>
-                      <LTTButton
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive"
-                        onClick={() => {
-                          setSingleDeleteId(item.id);
-                          setSingleDeleteOpen(true);
+                    <Plus className="h-4 w-4" /> Add
+                </LTTButton>
+            </div>
+
+            <LTTTabs value={activeTab} onValueChange={(value) => setActiveTab(value as FnbTab)}>
+                <LTTTabsList className="bg-muted-shadcn/50">
+                    <LTTTabsTrigger value="products">Products</LTTTabsTrigger>
+                    <LTTTabsTrigger value="category">Category</LTTTabsTrigger>
+                    <LTTTabsTrigger value="combos">Combos</LTTTabsTrigger>
+                    <LTTTabsTrigger value="variant">Variant</LTTTabsTrigger>
+                </LTTTabsList>
+            </LTTTabs>
+
+            <div className="flex items-center gap-3">
+                <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
+                    <LTTInput
+                        placeholder="Search..."
+                        value={activeTab === "products" ? search : activeTab === "category" ? categorySearch : activeTab === "combos" ? comboSearch : variantSearch}
+                        onChange={(e) => {
+                            if (activeTab === "products") {
+                                setSearch(e.target.value);
+                                setProductPage(1);
+                            } else if (activeTab === "category") {
+                                setCategorySearch(e.target.value);
+                                setCategoryPage(1);
+                            } else if (activeTab === "combos") {
+                                setComboSearch(e.target.value);
+                                setComboPage(1);
+                            } else {
+                                setVariantSearch(e.target.value);
+                                setVariantPage(1);
+                            }
                         }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </LTTButton>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-      <AdminTablePagination
-        totalCount={totalCount}
-        page={page}
-        pageSize={fetch}
-        onPageChange={(nextPage) => {
-          setPage(nextPage);
-        }}
-        onPageSizeChange={(nextSize) => {
-          setFetch(nextSize);
-          setPage(1);
-        }}
-        loading={listMutation.isLoading}
-      />
-      </>
-      ) : (
-        <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
-                <th className="px-4 py-3 text-left font-semibold">#</th>
-                <th className="px-4 py-3 text-left font-semibold">Category name</th>
-                <th className="px-4 py-3 text-left font-semibold">Description</th>
-                <th className="px-4 py-3 text-right font-semibold">{t("admin.fnb.table.actions")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {categoryLoading ? (
-                <DomainTableStateRow colSpan={4} state="loading" loadingText="Đang tải danh mục..." />
-              ) : filteredCategories.length === 0 ? (
-                <DomainTableStateRow colSpan={4} state="empty" emptyText="Không có dữ liệu danh mục." />
-              ) : (
-                filteredCategories.map((item, idx) => (
-                  <tr key={item.id} className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors">
-                    <td className="px-4 py-3 text-muted-foreground-shadcn">{idx + 1}</td>
-                    <td className="px-4 py-3 font-medium">{item.name}</td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground-shadcn max-w-[300px] truncate">{item.description || "—"}</td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex justify-end gap-1">
-                        <LTTButton variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditCategory(item)}>
-                          <Pencil className="h-4 w-4" />
-                        </LTTButton>
-                        <LTTButton
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => {
-                            setCategorySingleDeleteId(item.id);
-                            setCategorySingleDeleteOpen(true);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </LTTButton>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                        className="pl-9"
+                    />
+                </div>
+
+                {activeTab === "products" && (
+                    <LTTSelect
+                        value={categoryFilter}
+                        onValueChange={(value: string) => {
+                            setCategoryFilter(value);
+                            setProductPage(1);
+                        }}
+                    >
+                        <LTTSelectTrigger className="w-64">
+                            <LTTSelectValue />
+                        </LTTSelectTrigger>
+                        <LTTSelectContent>
+                            <LTTSelectItem value="all">All categories</LTTSelectItem>
+                            {categories.map((category) => (
+                                <LTTSelectItem key={category.id} value={category.id}>
+                                    {category.name}
+                                </LTTSelectItem>
+                            ))}
+                        </LTTSelectContent>
+                    </LTTSelect>
+                )}
+
+                {activeTab === "variant" && (
+                    <LTTSelect
+                        value={variantProductId}
+                        onValueChange={(value: string) => {
+                            setVariantProductId(value);
+                            setVariantPage(1);
+                        }}
+                    >
+                        <LTTSelectTrigger className="w-64">
+                            <LTTSelectValue placeholder="Choose product" />
+                        </LTTSelectTrigger>
+                        <LTTSelectContent>
+                            <LTTSelectItem value="all">Choose product</LTTSelectItem>
+                            {products.map((product) => (
+                                <LTTSelectItem key={product.id} value={product.id}>
+                                    {product.name}
+                                </LTTSelectItem>
+                            ))}
+                        </LTTSelectContent>
+                    </LTTSelect>
+                )}
+
+                <LTTButton
+                    variant="outline"
+                    className="gap-2"
+                    loading={isAnyLoading}
+                    onClick={() => {
+                        if (activeTab === "products") {
+                            setLoadedTabs((current) => ({ ...current, products: true }));
+                            fetchProducts(1);
+                        }
+                        if (activeTab === "category") {
+                            setLoadedTabs((current) => ({ ...current, category: true }));
+                            setCategoryPage(1);
+                            listCategoriesMutation.mutation({ page: 1, fetch: categoryFetch, keyword: categorySearch.trim() || undefined });
+                        }
+                        if (activeTab === "combos") {
+                            setLoadedTabs((current) => ({ ...current, combos: true }));
+                            fetchCombos(1);
+                        }
+                        if (activeTab === "variant" && variantProductId !== "all") getProductDetailMutation.mutation(variantProductId);
+                    }}
+                >
+                    <RefreshCw className="h-4 w-4" /> Refresh
+                </LTTButton>
+            </div>
+
+            <FnbTabSections
+                activeTab={activeTab}
+                products={products}
+                combos={combos}
+                categoryById={categoryById}
+                filteredCategories={filteredCategories}
+                filteredVariants={pagedVariants}
+                selectedProductIds={selectedProductIds}
+                productTotal={productTotal}
+                productPage={productPage}
+                productFetch={productFetch}
+                comboTotal={comboTotal}
+                comboPage={comboPage}
+                comboFetch={comboFetch}
+                categoryTotal={categoryTotal}
+                categoryPage={categoryPage}
+                categoryFetch={categoryFetch}
+                variantTotal={variantTotal}
+                variantPage={variantPage}
+                variantFetch={variantFetch}
+                variantProductId={variantProductId}
+                selectedComboForItem={selectedComboForItem}
+                currentComboDetail={currentComboDetail}
+                selectedComboItemId={selectedComboItemId}
+                isProductsLoading={listProductsMutation.isLoading}
+                isCategoriesLoading={listCategoriesMutation.isLoading}
+                isCombosLoading={listCombosMutation.isLoading}
+                isComboDetailLoading={getComboDetailMutation.isLoading}
+                isVariantsLoading={getProductDetailMutation.isLoading}
+                formatVnd={formatVnd}
+                onToggleAllProducts={() =>
+                    setSelectedProductIds(
+                        products.length > 0 && products.every((item) => selectedProductIds.has(item.id))
+                            ? new Set()
+                            : new Set(products.map((item) => item.id)),
+                    )
+                }
+                onToggleProduct={toggleProductSelection}
+                onOpenEditProduct={openEditProduct}
+                onOpenDeleteProduct={(id) => {
+                    setSingleProductDeleteId(id);
+                    setProductDeleteDialogOpen(true);
+                }}
+                onBulkDeleteProducts={bulkDeleteProducts}
+                onProductPageChange={(nextPage) => setProductPage(nextPage)}
+                onProductPageSizeChange={(nextSize) => {
+                    setProductFetch(nextSize);
+                    setProductPage(1);
+                }}
+                onOpenEditCategory={openEditCategory}
+                onOpenDeleteCategory={(id) => {
+                    setSingleCategoryDeleteId(id);
+                    setCategoryDeleteDialogOpen(true);
+                }}
+                onCategoryPageChange={(nextPage) => setCategoryPage(nextPage)}
+                onCategoryPageSizeChange={(nextSize) => {
+                    setCategoryFetch(nextSize);
+                    setCategoryPage(1);
+                }}
+                onOpenComboItems={(id) => {
+                    setSelectedComboForItem(id);
+                    getComboDetailMutation.mutation(id);
+                }}
+                onOpenEditCombo={openEditCombo}
+                onOpenDeleteCombo={(id) => {
+                    setSingleComboDeleteId(id);
+                    setComboDeleteDialogOpen(true);
+                }}
+                onComboPageChange={(nextPage) => setComboPage(nextPage)}
+                onComboPageSizeChange={(nextSize) => {
+                    setComboFetch(nextSize);
+                    setComboPage(1);
+                }}
+                onOpenCreateComboItem={() => {
+                    setComboItemForm({
+                        productId: products[0]?.id || "",
+                        quantity: 1,
+                    });
+                    setComboItemDialogOpen(true);
+                }}
+                onDeleteComboItem={async (comboItemId) => {
+                    setSelectedComboItemId(comboItemId);
+                    await managerFnbService.deleteComboItemAsync(selectedComboForItem, comboItemId);
+                    toast.success("Combo item deleted.");
+                    getComboDetailMutation.mutation(selectedComboForItem);
+                    setSelectedComboItemId("");
+                }}
+                onOpenEditVariant={openEditVariant}
+                onOpenDeleteVariant={(id) => {
+                    setSingleVariantDeleteId(id);
+                    setVariantDeleteDialogOpen(true);
+                }}
+                onVariantPageChange={(nextPage) => setVariantPage(nextPage)}
+                onVariantPageSizeChange={(nextSize) => {
+                    setVariantFetch(nextSize);
+                    setVariantPage(1);
+                }}
+            />
+
+            <FnbDialogs
+                categories={categories}
+                products={products}
+                editingProduct={editingProduct}
+                editingCategory={editingCategory}
+                editingCombo={editingCombo}
+                editingVariant={editingVariant}
+                productForm={productForm}
+                categoryForm={categoryForm}
+                comboForm={comboForm}
+                variantForm={variantForm}
+                comboItemForm={comboItemForm}
+                productDialogOpen={productDialogOpen}
+                categoryDialogOpen={categoryDialogOpen}
+                comboDialogOpen={comboDialogOpen}
+                variantDialogOpen={variantDialogOpen}
+                comboItemDialogOpen={comboItemDialogOpen}
+                productDeleteDialogOpen={productDeleteDialogOpen}
+                categoryDeleteDialogOpen={categoryDeleteDialogOpen}
+                comboDeleteDialogOpen={comboDeleteDialogOpen}
+                variantDeleteDialogOpen={variantDeleteDialogOpen}
+                isProductSaving={createProductMutation.isLoading || updateProductMutation.isLoading}
+                isCategorySaving={createCategoryMutation.isLoading || updateCategoryMutation.isLoading}
+                isComboSaving={createComboMutation.isLoading || updateComboMutation.isLoading}
+                isVariantSaving={createVariantMutation.isLoading || updateVariantMutation.isLoading}
+                onProductDialogOpenChange={setProductDialogOpen}
+                onCategoryDialogOpenChange={setCategoryDialogOpen}
+                onComboDialogOpenChange={setComboDialogOpen}
+                onVariantDialogOpenChange={setVariantDialogOpen}
+                onComboItemDialogOpenChange={setComboItemDialogOpen}
+                onProductDeleteDialogOpenChange={setProductDeleteDialogOpen}
+                onCategoryDeleteDialogOpenChange={setCategoryDeleteDialogOpen}
+                onComboDeleteDialogOpenChange={setComboDeleteDialogOpen}
+                onVariantDeleteDialogOpenChange={setVariantDeleteDialogOpen}
+                setProductForm={(updater) => setProductForm((prev) => updater(prev))}
+                setCategoryForm={(updater) => setCategoryForm((prev) => updater(prev))}
+                setComboForm={(updater) => setComboForm((prev) => updater(prev))}
+                setVariantForm={(updater) => setVariantForm((prev) => updater(prev))}
+                setComboItemForm={(updater) => setComboItemForm((prev) => updater(prev))}
+                onSaveProduct={saveProduct}
+                onSaveCategory={saveCategory}
+                onSaveCombo={saveCombo}
+                onSaveVariant={saveVariant}
+                onAddComboItem={onAddComboItem}
+                onConfirmDeleteProduct={async () => {
+                    await managerFnbService.deleteProductAsync(singleProductDeleteId);
+                    setProductDeleteDialogOpen(false);
+                    fetchProducts(productPage);
+                    toast.success("Product deleted.");
+                }}
+                onConfirmDeleteCategory={async () => {
+                    await managerFnbService.deleteCategoryAsync(singleCategoryDeleteId);
+                    setCategoryDeleteDialogOpen(false);
+                    listCategoriesMutation.mutation({ page: categoryPage, fetch: categoryFetch, keyword: categorySearch.trim() || undefined });
+                    toast.success("Category deleted.");
+                }}
+                onConfirmDeleteCombo={async () => {
+                    await managerFnbService.deleteComboAsync(singleComboDeleteId);
+                    setComboDeleteDialogOpen(false);
+                    fetchCombos(comboPage);
+                    toast.success("Combo deleted.");
+                }}
+                onConfirmDeleteVariant={async () => {
+                    await managerFnbService.deleteProductVariantAsync(variantProductId, singleVariantDeleteId);
+                    setVariantDeleteDialogOpen(false);
+                    getProductDetailMutation.mutation(variantProductId);
+                    toast.success("Variant deleted.");
+                }}
+            />
         </div>
-      )}
-
-      <LTTDialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <LTTDialogContent className="sm:max-w-lg">
-          <LTTDialogHeader>
-            <LTTDialogTitle>
-              {editing ? t("admin.fnb.form.edit_title") : t("admin.fnb.form.create_title")}
-            </LTTDialogTitle>
-          </LTTDialogHeader>
-          <div className="grid gap-4 py-2 sm:grid-cols-2">
-            <div className="space-y-2 sm:col-span-2">
-              <LTTLabel>{t("admin.fnb.form.name")}</LTTLabel>
-              <LTTInput
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <LTTLabel>{t("admin.fnb.form.category")}</LTTLabel>
-              <LTTSelect
-                value={form.categoryId}
-                onValueChange={(v: string) => setForm({ ...form, categoryId: v })}
-              >
-                <LTTSelectTrigger>
-                  <LTTSelectValue placeholder={t("admin.fnb.form.category_placeholder")} />
-                </LTTSelectTrigger>
-                <LTTSelectContent>
-                  {categories.map((c) => (
-                    <LTTSelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </LTTSelectItem>
-                  ))}
-                </LTTSelectContent>
-              </LTTSelect>
-            </div>
-            <div className="space-y-2">
-              <LTTLabel>{t("admin.fnb.form.price")}</LTTLabel>
-              <LTTInput
-                type="number"
-                value={form.price}
-                onChange={(e) => setForm({ ...form, price: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <LTTLabel>{t("admin.fnb.form.description")}</LTTLabel>
-              <LTTTextarea
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                rows={2}
-                placeholder={t("admin.fnb.form.description_placeholder")}
-              />
-            </div>
-          </div>
-          <LTTDialogFooter>
-            <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>
-              {t("admin.common.delete_confirm.cancel")}
-            </LTTButton>
-            <LTTButton onClick={save}>
-              {editing ? t("admin.fnb.form.save") : t("admin.fnb.form.create")}
-            </LTTButton>
-          </LTTDialogFooter>
-        </LTTDialogContent>
-      </LTTDialog>
-
-      <LTTDialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
-        <LTTDialogContent className="sm:max-w-lg">
-          <LTTDialogHeader>
-            <LTTDialogTitle>{categoryEditing ? "Chỉnh sửa danh mục" : "Tạo danh mục mới"}</LTTDialogTitle>
-          </LTTDialogHeader>
-          <div className="grid gap-4 py-2">
-            <div className="space-y-2">
-              <LTTLabel>Tên danh mục *</LTTLabel>
-              <LTTInput
-                value={categoryForm.name}
-                onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-              />
-            </div>
-            <div className="space-y-2">
-              <LTTLabel>Mô tả</LTTLabel>
-              <LTTTextarea
-                value={categoryForm.description}
-                onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-                rows={2}
-              />
-            </div>
-          </div>
-          <LTTDialogFooter>
-            <LTTButton variant="outline" onClick={() => setCategoryDialogOpen(false)}>
-              {t("admin.common.delete_confirm.cancel")}
-            </LTTButton>
-            <LTTButton onClick={saveCategory} loading={createCategoryMutation.isLoading || updateCategoryMutation.isLoading}>
-              {categoryEditing ? "Lưu" : "Tạo mới"}
-            </LTTButton>
-          </LTTDialogFooter>
-        </LTTDialogContent>
-      </LTTDialog>
-
-      <LTTDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <LTTDialogContent className="sm:max-w-sm">
-          <LTTDialogHeader>
-            <LTTDialogTitle>{t("admin.fnb.delete_confirm.title")}</LTTDialogTitle>
-          </LTTDialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-muted-foreground-shadcn">
-              {t("admin.fnb.delete_confirm.message", { count: selected.size })}
-            </p>
-          </div>
-          <LTTDialogFooter>
-            <LTTButton variant="outline" onClick={() => setDeleteOpen(false)}>
-              {t("admin.common.delete_confirm.cancel")}
-            </LTTButton>
-            <LTTButton variant="destructive" onClick={bulkDelete}>
-              {t("admin.fnb.delete_confirm.confirm")}
-            </LTTButton>
-          </LTTDialogFooter>
-        </LTTDialogContent>
-      </LTTDialog>
-      <LTTDialog open={singleDeleteOpen} onOpenChange={setSingleDeleteOpen}>
-        <LTTDialogContent className="sm:max-w-sm">
-          <LTTDialogHeader>
-            <LTTDialogTitle>{t("admin.common.delete_confirm.title")}</LTTDialogTitle>
-          </LTTDialogHeader>
-          <div className="py-3 text-sm text-muted-foreground-shadcn">{t("admin.fnb.delete_confirm.message", { count: 1 })}</div>
-          <LTTDialogFooter>
-            <LTTButton variant="outline" onClick={() => setSingleDeleteOpen(false)}>
-              {t("admin.common.delete_confirm.cancel")}
-            </LTTButton>
-            <LTTButton
-              variant="destructive"
-              onClick={async () => {
-                await productService.deleteProductAsync(singleDeleteId);
-                toast.success(t("admin.fnb.delete_single_success", { name: "" }));
-                setSingleDeleteOpen(false);
-                fetchData();
-              }}
-            >
-              {t("admin.common.delete_confirm.ok")}
-            </LTTButton>
-          </LTTDialogFooter>
-        </LTTDialogContent>
-      </LTTDialog>
-      <LTTDialog open={categorySingleDeleteOpen} onOpenChange={setCategorySingleDeleteOpen}>
-        <LTTDialogContent className="sm:max-w-sm">
-          <LTTDialogHeader>
-            <LTTDialogTitle>{t("admin.common.delete_confirm.title")}</LTTDialogTitle>
-          </LTTDialogHeader>
-          <div className="py-3 text-sm text-muted-foreground-shadcn">Bạn có chắc chắn muốn xóa danh mục này?</div>
-          <LTTDialogFooter>
-            <LTTButton variant="outline" onClick={() => setCategorySingleDeleteOpen(false)}>
-              {t("admin.common.delete_confirm.cancel")}
-            </LTTButton>
-            <LTTButton
-              variant="destructive"
-              onClick={async () => {
-                await productService.deleteCategoryAsync(categorySingleDeleteId);
-                toast.success("Xóa danh mục thành công");
-                setCategorySingleDeleteOpen(false);
-                catMutation.mutation();
-              }}
-            >
-              {t("admin.common.delete_confirm.ok")}
-            </LTTButton>
-          </LTTDialogFooter>
-        </LTTDialogContent>
-      </LTTDialog>
-    </div>
-  );
+    );
 }

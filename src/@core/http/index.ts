@@ -184,12 +184,14 @@ function getAuthCookieKeys(isCustomerRequest: boolean) {
 
 function shouldSkipAuthRefresh(failedRequestUrl?: string): boolean {
   const requestUrl = (failedRequestUrl ?? "").toLowerCase();
+  const isManagerProductServiceRequest = requestUrl.includes("/product-service/manager/");
 
   // Public customer-facing data endpoints should never drive auth refresh/logout flow.
   // These endpoints can fail due to throttling (503/429) and must not affect session state.
+  // Keep manager/admin protected routes retryable via refresh flow.
   return (
     requestUrl.includes("/movie-service/") ||
-    requestUrl.includes("/product-service/") ||
+    (requestUrl.includes("/product-service/") && !isManagerProductServiceRequest) ||
     requestUrl.includes("/administration-service/customer/news-and-offers") ||
     requestUrl.includes("/customer-service/movie") ||
     requestUrl.includes("/customer-service/cinema") ||
@@ -303,8 +305,8 @@ const onResponseInterceptor = async (error: AxiosError) => {
     return Promise.reject(normalizeHttpError(undefined, translate("http.network_error", "Lỗi kết nối đến máy chủ, vui lòng thử lại sau.")));
   }
 
-  // 401 => Unauthorized, token hết hạn hoặc không hợp lệ => refresh token
-  if (error.response && error.response.status === HttpStatusCode.Unauthorized) {
+  // 401/403 => Unauthorized/Forbidden from expired or invalid session => refresh token
+  if (error.response && (error.response.status === HttpStatusCode.Unauthorized || error.response.status === HttpStatusCode.Forbidden)) {
     const requestConfig = error.config as RetryableRequestConfig | undefined;
     const requestUrl = requestConfig?.url;
     const isCustomerRequest = shouldUseCustomerAuthRefresh(requestUrl);
