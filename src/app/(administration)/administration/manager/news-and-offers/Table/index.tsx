@@ -14,15 +14,17 @@ import { cn } from "@/src/@core/utils/cn";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 import AdminTablePagination from "@/src/app/(administration)/administration/admin/_components/AdminTablePagination";
 import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
+import { Search } from "lucide-react";
+import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 
 interface Props {
-    search: string;
     onEdit: (item: NewsAndOffersOutputDto) => void;
 }
 
-export default function NewsAndOffersTable({ search, onEdit }: Props) {
+export default function NewsAndOffersTable({ onEdit }: Props) {
     const { t } = useLocalization();
     const [items, setItems] = useState<NewsAndOffersOutputDto[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [page, setPage] = useState(1);
     const [fetch, setFetch] = useState(10);
@@ -58,27 +60,43 @@ export default function NewsAndOffersTable({ search, onEdit }: Props) {
 
     useEffect(() => {
         const timer = setTimeout(() => {
-            setDebouncedSearch(search);
+            setDebouncedSearch(searchQuery.trim());
         }, 300);
         return () => clearTimeout(timer);
-    }, [search]);
-
-    useEffect(() => {
-        setPage(1);
-    }, [debouncedSearch]);
+    }, [searchQuery]);
 
     useEffect(() => {
         fetchData();
+        // Intentionally omit listMutation: useLTTMutation returns a new object each render.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [debouncedSearch, page, fetch]);
 
     return (
-        <div className="space-y-3">
-            <div className="flex justify-end">
-                <LTTButton variant="outline" size="sm" className="gap-2" onClick={fetchData} loading={listMutation.isLoading}>
-                    <RefreshCw className="h-4 w-4" /> Làm mới
+        <div className="w-full space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+                <div className="relative min-w-0 flex-1 max-w-sm">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
+                    <LTTInput
+                        placeholder={t("admin.news_and_offers.search_placeholder")}
+                        value={searchQuery}
+                        onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setPage(1);
+                        }}
+                        className="pl-9"
+                    />
+                </div>
+                <LTTButton
+                    type="button"
+                    variant="outline"
+                    className="gap-2 shrink-0"
+                    onClick={fetchData}
+                    loading={listMutation.isLoading}
+                >
+                    <RefreshCw className="h-4 w-4" /> {t("admin.news_and_offers.refresh")}
                 </LTTButton>
             </div>
-            <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden">
+            <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden my-3">
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b border-border-shadcn bg-muted-shadcn/50">

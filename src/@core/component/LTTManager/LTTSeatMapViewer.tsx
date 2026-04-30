@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { Footprints, AlertTriangle, DoorOpen } from "lucide-react";
 import { cn } from "@/src/@core/utils/cn";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 import {
   type SeatLayout,
   type SeatLayoutSeat,
@@ -71,6 +72,7 @@ export default function LTTSeatMapViewer({
   showLegend = true,
   className,
 }: LTTSeatMapViewerProps) {
+  const { t } = useLocalization();
   const cellSize = compact ? "h-5 w-5" : "h-7 w-7";
   const cellText = compact ? "text-[7px]" : "text-[8px]";
   const gap      = "gap-0.5";
@@ -163,11 +165,11 @@ export default function LTTSeatMapViewer({
             }}
           >
             <span className="text-[9px] font-bold tracking-[0.35em] text-white/90 uppercase">
-              Màn hình
+              {t("admin.seatmap.viewer.screen_label")}
             </span>
           </div>
           <p className="text-center text-[9px] text-muted-foreground-shadcn mt-1 tracking-widest uppercase font-medium opacity-60">
-            ── Khán phòng ──
+            {t("admin.seatmap.viewer.auditorium_label")}
           </p>
         </div>
       )}
@@ -342,11 +344,11 @@ export default function LTTSeatMapViewer({
             <>
               <div className="flex items-center gap-1.5">
                 <div className="h-3 w-3 rounded-sm bg-primary-shadcn" />
-                <span className="text-muted-foreground-shadcn">Đã chọn</span>
+                <span className="text-muted-foreground-shadcn">{t("admin.seatmap.viewer.legend.selected")}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="h-3 w-3 rounded-sm bg-red-400" />
-                <span className="text-muted-foreground-shadcn">Đã đặt</span>
+                <span className="text-muted-foreground-shadcn">{t("admin.seatmap.viewer.legend.booked")}</span>
               </div>
             </>
           )}
@@ -355,11 +357,11 @@ export default function LTTSeatMapViewer({
             <>
               <div className="flex items-center gap-1.5">
                 <div className="h-3 w-3 rounded-sm bg-blue-500/40" />
-                <span className="text-muted-foreground-shadcn">Còn trống</span>
+                <span className="text-muted-foreground-shadcn">{t("admin.seatmap.viewer.legend.available")}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="h-3 w-3 rounded-sm bg-red-400" />
-                <span className="text-muted-foreground-shadcn">Đã đặt</span>
+                <span className="text-muted-foreground-shadcn">{t("admin.seatmap.viewer.legend.booked")}</span>
               </div>
             </>
           )}
@@ -368,15 +370,15 @@ export default function LTTSeatMapViewer({
 
           <div className="flex items-center gap-1.5">
             <Footprints className="h-3 w-3 text-muted-foreground-shadcn" />
-            <span className="text-muted-foreground-shadcn">Lối đi</span>
+            <span className="text-muted-foreground-shadcn">{t("admin.seatmap.viewer.legend.walkway")}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <AlertTriangle className="h-3 w-3 text-orange-500" />
-            <span className="text-muted-foreground-shadcn">Thoát hiểm</span>
+            <span className="text-muted-foreground-shadcn">{t("admin.seatmap.viewer.legend.emergency_exit")}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <DoorOpen className="h-3 w-3 text-green-600" />
-            <span className="text-muted-foreground-shadcn">Cửa</span>
+            <span className="text-muted-foreground-shadcn">{t("admin.seatmap.viewer.legend.door")}</span>
           </div>
         </div>
       )}

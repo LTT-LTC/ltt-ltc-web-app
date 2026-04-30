@@ -746,7 +746,7 @@ export default function FnBPage() {
             </div>
 
             <LTTTabs value={activeTab} onValueChange={(value) => setActiveTab(value as FnbTab)}>
-                <LTTTabsList className="bg-muted-shadcn/50">
+                <LTTTabsList className="bg-muted-shadcn/50 my-2">
                     <LTTTabsTrigger value="products">Products</LTTTabsTrigger>
                     <LTTTabsTrigger value="category">Category</LTTTabsTrigger>
                     <LTTTabsTrigger value="combos">Combos</LTTTabsTrigger>

@@ -39,7 +39,7 @@ interface POSStepIndicatorProps {
 
 export function POSStepIndicator({ currentStep }: POSStepIndicatorProps) {
   return (
-    <div className="flex items-center gap-0">
+    <div className="flex items-center gap-0 my-3">
       {POS_STEPS.map((s, i) => (
         <div key={s.num} className="flex items-center flex-1 last:flex-none">
           <div className="flex items-center gap-2.5 shrink-0">

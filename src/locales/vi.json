@@ -40,6 +40,7 @@
       "title": "Tin tức & Ưu đãi",
       "add": "Thêm mới",
       "search_placeholder": "Tìm kiếm tin tức hoặc ưu đãi...",
+      "refresh": "Làm mới",
       "fetch_error": "Không thể tải danh sách tin tức",
       "delete_success": "Đã xóa tin tức/ưu đãi",
       "delete_error": "Lỗi khi xóa",
@@ -48,6 +49,7 @@
       "create_error": "Lỗi khi tạo mới",
       "update_success": "Cập nhật thành công",
       "update_error": "Lỗi khi cập nhật",
+      "empty": "Không tìm thấy tin tức hoặc ưu đãi nào.",
       "validation": {
         "title_required": "Vui lòng nhập tiêu đề",
         "content_required": "Vui lòng nhập nội dung"
@@ -226,22 +228,22 @@
       "fetch_error": "Lỗi tải lịch chiếu",
       "distribution_fetch_error": "Không thể tải dữ liệu phát hành phim",
       "create_success": "Tạo thành công",
+      "create_error": "Tạo thất bại",
+      "update_success": "Cập nhật thành công",
+      "update_error": "Cập nhật thất bại",
+      "delete_success": "Xóa thành công",
       "toast": {
         "create_success": "Tạo thành công",
         "update_success": "Cập nhật thành công",
         "delete_success": "Xóa thành công"
-      },
-      "table": {
-        "format": "Định dạng",
-        "price": "Giá",
-        "status": "Trạng thái",
-        "actions": "Thao tác"
       },
       "actions": {
         "edit": "Sửa"
       },
       "status": {
         "scheduled": "Đã lên lịch",
+        "started": "Đang chiếu",
+        "ended": "Đã kết thúc",
         "completed": "Đã chiếu",
         "cancelled": "Đã hủy"
       },
@@ -257,7 +259,75 @@
         "movie": "Phim *",
         "movie_placeholder": "Chọn phim",
         "screen": "Phòng chiếu *",
-        "screen_placeholder": "Chọn phòng"
+        "screen_placeholder": "Chọn phòng",
+        "show_date": "Ngày chiếu",
+        "distribution_window": "Khoảng phát hành",
+        "format": "Định dạng",
+        "select_format": "Chọn định dạng",
+        "loading_screens": "Đang tải danh sách phòng...",
+        "loading_formats": "Đang tải định dạng...",
+        "start_time": "Giờ bắt đầu",
+        "end_time": "Giờ kết thúc",
+        "language": "Ngôn ngữ",
+        "caption": "Phụ đề",
+        "base_price": "Giá cơ bản (VND)",
+        "base_price_placeholder": "Ví dụ: 85000",
+        "save_changes": "Lưu thay đổi",
+        "create": "Tạo suất chiếu",
+        "context_load_error": "Không thể tải dữ liệu hỗ trợ cho form suất chiếu.",
+        "validation": {
+          "required": "Vui lòng nhập đủ thông tin suất chiếu.",
+          "base_price_invalid": "Giá cơ bản phải lớn hơn 0."
+        }
+      },
+      "tabs": {
+        "scheduler": "Lập lịch chiếu",
+        "distribution": "Phân phối phim"
+      },
+      "refresh": "Làm mới",
+      "empty": "Không có dữ liệu lịch chiếu.",
+      "loading": "Đang tải dữ liệu lịch chiếu...",
+      "movie_filter_placeholder": "Chọn phim để tải lịch chiếu",
+      "calendar": {
+        "today": "Hôm nay",
+        "hour": "Giờ"
+      },
+      "distribution": {
+        "search_placeholder": "Tìm kiếm phân phối phim...",
+        "loading": "Đang tải dữ liệu phân phối phim...",
+        "empty": "Không có dữ liệu phân phối phim.",
+        "exclusive": "Độc quyền",
+        "standard": "Phổ thông",
+        "status": {
+          "upcoming": "Sắp diễn ra",
+          "expired": "Hết hạn",
+          "active": "Đang hiệu lực"
+        },
+        "table": {
+          "movie": "Phim",
+          "date_range": "Ngày phân phối",
+          "exclusive": "Độc quyền",
+          "status": "Trạng thái"
+        }
+      },
+      "table": {
+        "movie": "Phim",
+        "screen": "Phòng chiếu",
+        "show_date": "Ngày chiếu",
+        "time": "Thời gian",
+        "format": "Định dạng",
+        "base_price": "Giá cơ bản",
+        "status": "Trạng thái",
+        "updated_at": "Cập nhật lúc",
+        "actions": "Thao tác"
+      },
+      "pricing_reference": "Tham chiếu quy tắc giá",
+      "pricing_empty": "Không tìm thấy quy tắc giá cho rạp này.",
+      "pricing_columns": {
+        "rule_type": "Loại quy tắc",
+        "multiplier": "Hệ số",
+        "time_window": "Khung giờ",
+        "days": "Ngày áp dụng"
       }
     },
     "screens": {
@@ -266,28 +336,197 @@
       "search_placeholder": "Tìm kiếm phòng chiếu...",
       "refresh": "Làm mới",
       "fetch_error": "Lỗi tải danh sách phòng chiếu",
+      "seat_type_fetch_error": "Không thể tải danh sách loại ghế.",
       "create_success": "Thêm phòng chiếu thành công",
       "update_success": "Cập nhật phòng chiếu thành công",
       "delete_success": "Xóa phòng chiếu thành công",
       "generic_error": "Có lỗi xảy ra",
       "cinema_claim_missing": "Không tìm thấy cinemaId trong phiên đăng nhập. Vui lòng đăng nhập lại.",
+      "bulk_delete_button": "Xóa {{count}}",
       "bulk_delete_success": "Xóa {{count}} phòng chiếu thành công",
       "bulk_delete_partial": "Xóa thành công {{success}}/{{total}} phòng chiếu",
+      "table": {
+        "screen_number": "Phòng chiếu số",
+        "screen_type": "Loại màn hình",
+        "seat_count": "Số lượng ghế",
+        "seat_layout": "Bố trí ghế",
+        "status": "Trạng thái",
+        "actions": "Thao tác",
+        "screen_label": "Phòng {{number}}"
+      },
+      "state": {
+        "loading": "Đang tải dữ liệu phòng chiếu...",
+        "empty": "Không có dữ liệu phòng chiếu nào."
+      },
+      "status": {
+        "active": "Hoạt động",
+        "maintenance": "Bảo trì",
+        "inactive": "Không hoạt động",
+        "empty": "—"
+      },
+      "form": {
+        "edit_title": "Chỉnh sửa phòng chiếu",
+        "create_title": "Thêm phòng chiếu mới",
+        "screen_number": "Phòng chiếu số *",
+        "screen_type": "Loại màn hình *",
+        "status": "Trạng thái",
+        "seat_map": "Sơ đồ ghế *",
+        "seat_map_placeholder": "Chọn sơ đồ ghế",
+        "design_new": "Thiết kế mới",
+        "created_seatmap_hint": "Đã tạo sơ đồ mới và chọn sẵn.",
+        "preview_title": "Xem trước sơ đồ ghế đã chọn",
+        "preview_unavailable": "Không thể hiển thị xem trước sơ đồ ghế.",
+        "cancel": "Hủy",
+        "save": "Lưu",
+        "create": "Tạo mới"
+      },
+      "delete_confirm": {
+        "title": "Xác nhận xóa",
+        "bulk_message": "Bạn có chắc chắn muốn xóa {{count}} phòng chiếu đã chọn? Hành động này không thể hoàn tác.",
+        "single_title": "Xác nhận xóa phòng chiếu",
+        "single_message": "Bạn có chắc chắn muốn xóa phòng chiếu này?",
+        "confirm": "Xác nhận xóa",
+        "delete": "Xóa",
+        "cancel": "Hủy"
+      },
       "validation": {
         "cinema_required": "Vui lòng chọn rạp trước khi tạo hoặc cập nhật phòng chiếu",
-        "screen_number_invalid": "Số phòng chiếu không hợp lệ"
+        "screen_number_invalid": "Số phòng chiếu không hợp lệ",
+        "seat_map_required": "Vui lòng chọn sơ đồ ghế.",
+        "seat_count_invalid": "Sơ đồ ghế đã chọn không hợp lệ (SeatCount <= 0)."
       }
     },
     "seatmap": {
-      "title": "Quản lý phòng chiếu",
-      "add": "Thêm phòng chiếu",
-      "search_placeholder": "Tìm kiếm phòng chiếu...",
+      "title": "Quản lý sơ đồ ghế",
+      "add": "Thêm sơ đồ ghế",
+      "search_placeholder": "Tìm kiếm sơ đồ ghế...",
       "refresh": "Làm mới",
       "fetch_error": "Không thể tải dữ liệu sơ đồ ghế",
-      "create_success": "Tạo phòng chiếu thành công!",
-      "update_success": "Cập nhật phòng chiếu thành công!",
-      "delete_success": "Đã xóa phòng chiếu",
-      "bulk_delete_success": "Đã xóa {{count}} phòng chiếu"
+      "seat_type_fetch_error": "Không thể tải danh sách loại ghế.",
+      "create_success": "Tạo sơ đồ ghế thành công!",
+      "update_success": "Cập nhật sơ đồ ghế thành công!",
+      "delete_success": "Đã xóa sơ đồ ghế",
+      "bulk_delete_success": "Đã xóa {{count}} sơ đồ ghế",
+      "bulk_delete_button": "Xóa {{count}} mục",
+      "table": {
+        "index": "STT",
+        "name": "Tên sơ đồ",
+        "description": "Mô tả",
+        "seat_count": "Số ghế",
+        "created_at": "Ngày tạo",
+        "updated_at": "Cập nhật",
+        "actions": "Thao tác",
+        "loading": "Đang tải dữ liệu sơ đồ ghế...",
+        "empty": "Không có dữ liệu"
+      },
+      "actions": {
+        "view": "Xem sơ đồ",
+        "edit": "Chỉnh sửa",
+        "delete": "Xóa"
+      },
+      "delete_dialog": {
+        "title": "Xác nhận xóa",
+        "message": "Bạn có chắc chắn muốn xóa {{count}} sơ đồ ghế? Hành động này không thể hoàn tác.",
+        "cancel": "Hủy",
+        "confirm": "Xóa"
+      },
+      "viewer": {
+        "title": "Sơ đồ ghế",
+        "fallback_name": "Sơ đồ ghế",
+        "total_seats": "Tổng ghế",
+        "screen_label": "Màn hình",
+        "auditorium_label": "Khán phòng",
+        "legend": {
+          "selected": "Đã chọn",
+          "booked": "Đã đặt",
+          "available": "Còn trống",
+          "walkway": "Lối đi",
+          "emergency_exit": "Thoát hiểm",
+          "door": "Cửa"
+        }
+      },
+      "wizard": {
+        "progress": {
+          "design": "1. Thiết kế sơ đồ",
+          "cinema_info": "1. Thông tin rạp",
+          "map_info": "2. Thông tin sơ đồ"
+        },
+        "step_titles": {
+          "design": "Bước 1: Thiết kế sơ đồ ghế",
+          "edit_design": "Bước 1: Chỉnh sửa sơ đồ ghế",
+          "screen_info": "Bước 1: Thông tin phòng chiếu",
+          "edit_screen_info": "Bước 1: Chỉnh thông tin phòng chiếu",
+          "map_info": "Bước 2: Thông tin sơ đồ ghế",
+          "edit_map_info": "Bước 2: Chỉnh thông tin sơ đồ ghế"
+        },
+        "validation": {
+          "required_fields": "Vui lòng điền đầy đủ thông tin",
+          "name_required": "Vui lòng nhập tên sơ đồ ghế"
+        },
+        "empty_seat_type_data": "Chưa có dữ liệu loại ghế. Vui lòng làm mới danh sách seat type.",
+        "form": {
+          "name_label": "Tên sơ đồ ghế *",
+          "name_placeholder": "Ví dụ: Seat map phòng 1",
+          "description_label": "Mô tả",
+          "description_placeholder": "Mô tả sơ đồ ghế",
+          "cinema_label": "Rạp *",
+          "cinema_placeholder": "Chọn rạp",
+          "screen_number_label": "Số phòng *",
+          "screen_type_label": "Loại phòng *",
+          "screen_type_placeholder": "Chọn loại phòng",
+          "estimated_seats_label": "Số ghế dự kiến",
+          "estimated_seats_hint": "Số lượng ghế chính xác sẽ được xác định ở bước thiết kế."
+        },
+        "canvas": {
+          "screen_display": "Màn hình hiển thị",
+          "total_seats": "Tổng ghế"
+        },
+        "grid": {
+          "title": "Cài đặt lưới",
+          "layout_placeholder": "Chọn kiểu bố cục",
+          "size": "Kích thước (1 cấu hình)",
+          "rows": "Hàng (A-Z)",
+          "cols": "Cột",
+          "reset": "Thiết lập lại lưới"
+        },
+        "tools": {
+          "title": "Công cụ vẽ",
+          "seat": "GHẾ",
+          "walkway": "LỐI ĐI",
+          "emergency_exit": "PCCC",
+          "door": "CỬA",
+          "delete_cell": "XÓA Ô",
+          "seat_type_apply": "Loại ghế áp dụng"
+        },
+        "actions": {
+          "back_to_design": "Quay lại thiết kế",
+          "back_to_info": "Quay lại thông tin",
+          "cancel": "Hủy bỏ",
+          "next_to_info": "Nhập thông tin sơ đồ",
+          "next_to_design": "Thiết kế sơ đồ",
+          "finish_update": "Cập nhật sơ đồ",
+          "finish_create": "Hoàn tất lưu sơ đồ"
+        },
+        "confirm": {
+          "create_title": "Xác nhận tạo phòng chiếu",
+          "update_title": "Xác nhận cập nhật phòng chiếu",
+          "cinema_label": "Rạp:",
+          "name_label": "Tên sơ đồ:",
+          "description_label": "Mô tả:",
+          "screen_label": "Số phòng:",
+          "screen_type_label": "Loại phòng:",
+          "total_seats": "Tổng số ghế:",
+          "cancel": "Hủy",
+          "confirm_create": "Xác nhận & Lưu",
+          "confirm_update": "Xác nhận & Cập nhật"
+        },
+        "exit_confirm": {
+          "title": "Bạn có thay đổi chưa lưu",
+          "message": "Bạn có thay đổi chưa hoàn tất. Thoát sẽ xóa toàn bộ bản nháp hiện tại. Bạn có chắc chắn muốn thoát?",
+          "stay": "Ở lại chỉnh sửa",
+          "exit_discard": "Thoát & Xóa nháp"
+        }
+      }
     },
     "menu": {
       "dashboard": "Bảng Điều Khiển",

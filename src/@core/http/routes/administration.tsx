@@ -155,13 +155,6 @@ export const managerNavItems: NavItemConfig[] = [
     permissionKey: "manager:news-and-offers",
   },
   {
-    key: "reports",
-    label: "Revenue Report",
-    path: "/administration/manager/reports",
-    icon: BarChart3,
-    permissionKey: "manager:reports",
-  },
-  {
     key: "promotions",
     label: "Promotion & Giftcard",
     path: "/administration/manager/promotions",
@@ -176,26 +169,33 @@ export const managerNavItems: NavItemConfig[] = [
     permissionKey: "manager:screens",
   },
   {
-    key: "crm",
-    label: "CRM & Incident",
-    path: "/administration/manager/crm",
-    icon: HeadphonesIcon,
-    permissionKey: "manager:crm",
+    key: "reports",
+    label: "Revenue Report",
+    path: "/administration/manager/reports",
+    icon: BarChart3,
+    permissionKey: "manager:reports",
   },
-  {
-    key: "refunds",
-    label: "Refund Approval",
-    path: "/administration/manager/refunds",
-    icon: RotateCcw,
-    permissionKey: "manager:refunds",
-  },
-  {
-    key: "bookings",
-    label: "Booking Management",
-    path: "/administration/manager/bookings",
-    icon: BookingIcon,
-    permissionKey: "manager:bookings",
-  },
+  // {
+  //   key: "crm",
+  //   label: "CRM & Incident",
+  //   path: "/administration/manager/crm",
+  //   icon: HeadphonesIcon,
+  //   permissionKey: "manager:crm",
+  // },
+  // {
+  //   key: "refunds",
+  //   label: "Refund Approval",
+  //   path: "/administration/manager/refunds",
+  //   icon: RotateCcw,
+  //   permissionKey: "manager:refunds",
+  // },x
+  // {
+  //   key: "bookings",
+  //   label: "Booking Management",
+  //   path: "/administration/manager/bookings",
+  //   icon: BookingIcon,
+  //   permissionKey: "manager:bookings",
+  // },
 ];
 
 /** Navigation items for Cinema Staff sub-domain (Currently unused, merged into Manager/Admin) */

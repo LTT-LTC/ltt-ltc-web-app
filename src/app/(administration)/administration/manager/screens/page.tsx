@@ -162,7 +162,7 @@ export default function ScreensConfigPage() {
       });
       setSeatTypes(mapped);
     },
-    onError: (err) => toast.error(err.message || "Không thể tải danh sách seat type.")
+    onError: (err) => toast.error(err.message || t("admin.screens.seat_type_fetch_error"))
   });
 
   const fetchData = (keyword?: string, pageNumber?: number) => {
@@ -248,12 +248,12 @@ export default function ScreensConfigPage() {
     }
 
     if (!form.seatMapId) {
-      toast.error("Vui lòng chọn sơ đồ ghế.");
+      toast.error(t("admin.screens.validation.seat_map_required"));
       return;
     }
     const linkedSeatCount = selectedSeatMap?.seatCount || 0;
     if (linkedSeatCount <= 0) {
-      toast.error("Sơ đồ ghế đã chọn không hợp lệ (SeatCount <= 0).");
+      toast.error(t("admin.screens.validation.seat_count_invalid"));
       return;
     }
 
@@ -344,7 +344,7 @@ export default function ScreensConfigPage() {
             className="gap-2"
             onClick={() => setDeleteOpen(true)}
           >
-            <Trash2 className="h-4 w-4" /> Xóa {selected.size}
+            <Trash2 className="h-4 w-4" /> {t("admin.screens.bulk_delete_button", { count: selected.size })}
           </LTTButton>
         )}
         <LTTButton
@@ -363,26 +363,26 @@ export default function ScreensConfigPage() {
         </LTTButton>
       </div>
 
-      <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
+      <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm my-3">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
               <th className="w-10 px-3 py-3">
                 <LTTCheckbox checked={allSel} onCheckedChange={toggleAll} />
               </th>
-              <th className="px-4 py-3 text-left font-semibold">Phòng chiếu số</th>
-              <th className="px-4 py-3 text-left font-semibold">Loại màn hình</th>
-              <th className="px-4 py-3 text-left font-semibold">Số lượng ghế</th>
-              <th className="px-4 py-3 text-left font-semibold">Bố trí ghế</th>
-              <th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
-              <th className="px-4 py-3 text-right font-semibold">Thao tác</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.screens.table.screen_number")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.screens.table.screen_type")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.screens.table.seat_count")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.screens.table.seat_layout")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.screens.table.status")}</th>
+              <th className="px-4 py-3 text-right font-semibold">{t("admin.screens.table.actions")}</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <DomainTableStateRow colSpan={7} state="loading" loadingText="Đang tải dữ liệu phòng chiếu..." />
+              <DomainTableStateRow colSpan={7} state="loading" loadingText={t("admin.screens.state.loading")} />
             ) : items.length === 0 ? (
-              <DomainTableStateRow colSpan={7} state="empty" emptyText="Không có dữ liệu phòng chiếu nào." />
+              <DomainTableStateRow colSpan={7} state="empty" emptyText={t("admin.screens.state.empty")} />
             ) : (
               items.map((item) => (
                 <tr
@@ -395,15 +395,19 @@ export default function ScreensConfigPage() {
                       onCheckedChange={() => toggle(item.id)}
                     />
                   </td>
-                  <td className="px-4 py-3 font-medium">Phòng {item.screenNumber}</td>
+                  <td className="px-4 py-3 font-medium">{t("admin.screens.table.screen_label", { number: item.screenNumber })}</td>
                   <td className="px-4 py-3">{item.screenType}</td>
                   <td className="px-4 py-3">{item.seatCount}</td>
-                  <td className="px-4 py-3">{item.seatMapName || "—"}</td>
+                  <td className="px-4 py-3">{item.seatMapName || t("admin.screens.status.empty")}</td>
                   <td className="px-4 py-3">
                     <LTTBadge
                       className={`font-medium ${statusColors[item.status || "active"] || statusColors.active}`}
                     >
-                      {item.status === "active" ? "Hoạt động" : item.status === "maintenance" ? "Bảo trì" : "Trống"}
+                      {item.status === "active"
+                        ? t("admin.screens.status.active")
+                        : item.status === "maintenance"
+                          ? t("admin.screens.status.maintenance")
+                          : t("admin.screens.status.inactive")}
                     </LTTBadge>
                   </td>
                   <td className="px-4 py-3">
@@ -445,11 +449,11 @@ export default function ScreensConfigPage() {
       <LTTDialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <LTTDialogContent className="sm:max-w-lg">
           <LTTDialogHeader>
-            <LTTDialogTitle>{editing ? "Chỉnh sửa phòng chiếu" : "Thêm phòng chiếu mới"}</LTTDialogTitle>
+            <LTTDialogTitle>{editing ? t("admin.screens.form.edit_title") : t("admin.screens.form.create_title")}</LTTDialogTitle>
           </LTTDialogHeader>
           <div className="grid max-h-[70vh] gap-4 overflow-y-auto py-2 pr-1 sm:grid-cols-2">
             <div className="space-y-2">
-              <LTTLabel>Phòng chiếu số *</LTTLabel>
+              <LTTLabel>{t("admin.screens.form.screen_number")}</LTTLabel>
               <LTTInput
                 type="number"
                 value={form.screenNumber}
@@ -457,7 +461,7 @@ export default function ScreensConfigPage() {
               />
             </div>
             <div className="space-y-2">
-              <LTTLabel>Loại màn hình *</LTTLabel>
+              <LTTLabel>{t("admin.screens.form.screen_type")}</LTTLabel>
               <LTTSelect value={form.screenType} onValueChange={(v: string) => setForm({ ...form, screenType: v })}>
                 <LTTSelectTrigger><LTTSelectValue /></LTTSelectTrigger>
                 <LTTSelectContent>
@@ -468,21 +472,21 @@ export default function ScreensConfigPage() {
               </LTTSelect>
             </div>
             <div className="space-y-2">
-              <LTTLabel>Trạng thái</LTTLabel>
+              <LTTLabel>{t("admin.screens.form.status")}</LTTLabel>
               <LTTSelect value={form.status} onValueChange={(v: string) => setForm({ ...form, status: v })}>
                 <LTTSelectTrigger><LTTSelectValue /></LTTSelectTrigger>
                 <LTTSelectContent>
-                  <LTTSelectItem value="active">Hoạt động</LTTSelectItem>
-                  <LTTSelectItem value="maintenance">Bảo trì</LTTSelectItem>
-                  <LTTSelectItem value="inactive">Không hoạt động</LTTSelectItem>
+                  <LTTSelectItem value="active">{t("admin.screens.status.active")}</LTTSelectItem>
+                  <LTTSelectItem value="maintenance">{t("admin.screens.status.maintenance")}</LTTSelectItem>
+                  <LTTSelectItem value="inactive">{t("admin.screens.status.inactive")}</LTTSelectItem>
                 </LTTSelectContent>
               </LTTSelect>
             </div>
             <div className="space-y-2 sm:col-span-2">
-              <LTTLabel>Sơ đồ ghế *</LTTLabel>
+              <LTTLabel>{t("admin.screens.form.seat_map")}</LTTLabel>
               <div className="flex gap-2">
                 <LTTSelect value={form.seatMapId} onValueChange={(v: string) => setForm({ ...form, seatMapId: v })}>
-                  <LTTSelectTrigger><LTTSelectValue placeholder="Chọn sơ đồ ghế" /></LTTSelectTrigger>
+                  <LTTSelectTrigger><LTTSelectValue placeholder={t("admin.screens.form.seat_map_placeholder")} /></LTTSelectTrigger>
                   <LTTSelectContent>
                     {seatMaps.map((map) => (
                       <LTTSelectItem key={map.id} value={map.id}>{map.name}</LTTSelectItem>
@@ -490,7 +494,7 @@ export default function ScreensConfigPage() {
                   </LTTSelectContent>
                 </LTTSelect>
                 <LTTButton variant="outline" onClick={handleOpenDesignDialog}>
-                  Thiết kế mới
+                  {t("admin.screens.form.design_new")}
                 </LTTButton>
                 <LTTButton
                   variant="outline"
@@ -514,12 +518,12 @@ export default function ScreensConfigPage() {
                   <RefreshCw className="h-4 w-4" />
                 </LTTButton>
               </div>
-              {createdSeatMapId && <p className="text-xs text-muted-foreground-shadcn">Đã tạo sơ đồ mới và chọn sẵn.</p>}
+              {createdSeatMapId && <p className="text-xs text-muted-foreground-shadcn">{t("admin.screens.form.created_seatmap_hint")}</p>}
             </div>
             {selectedSeatMap && (
               <div className="space-y-2 sm:col-span-2 rounded-md border border-border-shadcn p-3">
                 <div className="flex items-center justify-between">
-                  <LTTLabel>Xem trước sơ đồ ghế đã chọn</LTTLabel>
+                  <LTTLabel>{t("admin.screens.form.preview_title")}</LTTLabel>
                   <span className="text-xs text-muted-foreground-shadcn">
                     {selectedSeatMap.name}
                   </span>
@@ -535,16 +539,16 @@ export default function ScreensConfigPage() {
                   </div>
                 ) : (
                   <p className="text-xs text-muted-foreground-shadcn">
-                    Không thể hiển thị xem trước sơ đồ ghế.
+                    {t("admin.screens.form.preview_unavailable")}
                   </p>
                 )}
               </div>
             )}
           </div>
           <LTTDialogFooter>
-            <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>Hủy</LTTButton>
+            <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>{t("admin.screens.form.cancel")}</LTTButton>
             <LTTButton onClick={save} loading={saveLoading} disabled={!selectedCinemaId || saveLoading}>
-              {editing ? "Lưu" : "Tạo mới"}
+              {editing ? t("admin.screens.form.save") : t("admin.screens.form.create")}
             </LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
@@ -563,30 +567,30 @@ export default function ScreensConfigPage() {
       <LTTDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <LTTDialogContent className="sm:max-w-sm">
           <LTTDialogHeader>
-            <LTTDialogTitle>Xác nhận xóa</LTTDialogTitle>
+            <LTTDialogTitle>{t("admin.screens.delete_confirm.title")}</LTTDialogTitle>
           </LTTDialogHeader>
           <div className="py-4">
             <p className="text-sm text-muted-foreground-shadcn">
-              Bạn có chắc chắn muốn xóa <strong>{selected.size}</strong> phòng chiếu đã chọn? Hành động này không thể hoàn tác.
+              {t("admin.screens.delete_confirm.bulk_message", { count: selected.size })}
             </p>
           </div>
           <LTTDialogFooter>
-            <LTTButton variant="outline" onClick={() => setDeleteOpen(false)}>Hủy</LTTButton>
-            <LTTButton variant="destructive" onClick={bulkDelete}>Xác nhận xóa</LTTButton>
+            <LTTButton variant="outline" onClick={() => setDeleteOpen(false)}>{t("admin.screens.delete_confirm.cancel")}</LTTButton>
+            <LTTButton variant="destructive" onClick={bulkDelete}>{t("admin.screens.delete_confirm.confirm")}</LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
       </LTTDialog>
       <LTTDialog open={singleDeleteOpen} onOpenChange={setSingleDeleteOpen}>
         <LTTDialogContent className="sm:max-w-sm">
           <LTTDialogHeader>
-            <LTTDialogTitle>Xác nhận xóa phòng chiếu</LTTDialogTitle>
+            <LTTDialogTitle>{t("admin.screens.delete_confirm.single_title")}</LTTDialogTitle>
           </LTTDialogHeader>
           <div className="py-4">
-            <p className="text-sm text-muted-foreground-shadcn">Bạn có chắc chắn muốn xóa phòng chiếu này?</p>
+            <p className="text-sm text-muted-foreground-shadcn">{t("admin.screens.delete_confirm.single_message")}</p>
           </div>
           <LTTDialogFooter>
-            <LTTButton variant="outline" onClick={() => setSingleDeleteOpen(false)}>Hủy</LTTButton>
-            <LTTButton variant="destructive" onClick={confirmDeleteOne}>Xóa</LTTButton>
+            <LTTButton variant="outline" onClick={() => setSingleDeleteOpen(false)}>{t("admin.screens.delete_confirm.cancel")}</LTTButton>
+            <LTTButton variant="destructive" onClick={confirmDeleteOne}>{t("admin.screens.delete_confirm.delete")}</LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
       </LTTDialog>

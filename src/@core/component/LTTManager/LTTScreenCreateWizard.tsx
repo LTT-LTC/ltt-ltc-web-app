@@ -13,6 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 
 import { cn } from "@/src/@core/utils/cn";
 import { LTTDialog, LTTDialogContent, LTTDialogFooter, LTTDialogHeader, LTTDialogTitle } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
@@ -89,6 +90,7 @@ export default function LTTScreenCreateWizard({
   seatTypes: externalSeatTypes = [],
   inline = false,
 }: Props) {
+  const { t } = useLocalization();
   const isEditMode = !!initialData;
   const isSeatMapMode = entityType === "seatmap";
   const [step, setStep] = useState(1);
@@ -784,7 +786,7 @@ export default function LTTScreenCreateWizard({
     }
 
     if (!cinemaId || !screenNumber || !screenType) {
-      toast.error("Vui lòng điền đầy đủ thông tin");
+      toast.error(t("admin.seatmap.wizard.validation.required_fields"));
       return;
     }
     setStep(2);
@@ -906,7 +908,7 @@ export default function LTTScreenCreateWizard({
 
   const handleConfirmCreate = () => {
     if (isSeatMapMode && !seatMapName.trim()) {
-      toast.error("Vui lòng nhập tên sơ đồ ghế");
+      toast.error(t("admin.seatmap.wizard.validation.name_required"));
       return;
     }
 
@@ -944,7 +946,7 @@ export default function LTTScreenCreateWizard({
     <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1">
       {seatTypes.length === 0 && (
         <div className="rounded-md border border-dashed p-2 text-[11px] text-muted-foreground-shadcn">
-          Chưa có dữ liệu loại ghế. Vui lòng làm mới danh sách seat type.
+          {t("admin.seatmap.wizard.empty_seat_type_data")}
         </div>
       )}
       {seatTypes.map((st) => (
@@ -987,10 +989,10 @@ export default function LTTScreenCreateWizard({
               </div>
               <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground-shadcn px-1">
                 <span className={cn(step >= 1 ? "text-primary-shadcn" : "text-muted-foreground-shadcn")}>
-                  {isSeatMapMode ? "1. Thiết kế sơ đồ" : "1. Thông tin rạp"}
+                  {isSeatMapMode ? t("admin.seatmap.wizard.progress.design") : t("admin.seatmap.wizard.progress.cinema_info")}
                 </span>
                 <span className={cn(step >= 2 ? "text-primary-shadcn" : "text-muted-foreground-shadcn")}>
-                  {isSeatMapMode ? "2. Thông tin sơ đồ" : "2. Thiết kế sơ đồ"}
+                  {isSeatMapMode ? t("admin.seatmap.wizard.progress.map_info") : t("admin.seatmap.wizard.progress.design")}
                 </span>
               </div>
             </div>
@@ -1000,19 +1002,19 @@ export default function LTTScreenCreateWizard({
                 {isSeatMapMode ? (
                   <>
                     <div className="space-y-2 sm:col-span-2">
-                      <LTTLabel>Tên sơ đồ ghế *</LTTLabel>
+                      <LTTLabel>{t("admin.seatmap.wizard.form.name_label")}</LTTLabel>
                       <LTTInput
                         value={seatMapName}
                         onChange={(e) => setSeatMapName(e.target.value)}
-                        placeholder="Ví dụ: Seat map phòng 1"
+                        placeholder={t("admin.seatmap.wizard.form.name_placeholder")}
                       />
                     </div>
                     <div className="space-y-2 sm:col-span-2">
-                      <LTTLabel>Mô tả</LTTLabel>
+                      <LTTLabel>{t("admin.seatmap.wizard.form.description_label")}</LTTLabel>
                       <LTTTextarea
                         value={seatMapDescription}
                         onChange={(e) => setSeatMapDescription(e.target.value)}
-                        placeholder="Mô tả sơ đồ ghế"
+                        placeholder={t("admin.seatmap.wizard.form.description_placeholder")}
                         rows={4}
                       />
                     </div>
@@ -1027,7 +1029,7 @@ export default function LTTScreenCreateWizard({
                   />
                 </div>
                 <div className="space-y-2">
-                  <LTTLabel>Rạp *</LTTLabel>
+                  <LTTLabel>{t("admin.seatmap.wizard.form.cinema_label")}</LTTLabel>
                   {fixedCinemaId ? (
                     <LTTInput
                       value={mockAdminCinemas.find((c) => c.id === fixedCinemaId)?.name ?? fixedCinemaId}
@@ -1036,7 +1038,7 @@ export default function LTTScreenCreateWizard({
                   ) : (
                     <LTTSelect value={cinemaId} onValueChange={setCinemaId}>
                       <LTTSelectTrigger>
-                        <LTTSelectValue placeholder="Chọn rạp" />
+                        <LTTSelectValue placeholder={t("admin.seatmap.wizard.form.cinema_placeholder")} />
                       </LTTSelectTrigger>
                       <LTTSelectContent>
                         {mockAdminCinemas.map((c) => (
@@ -1049,7 +1051,7 @@ export default function LTTScreenCreateWizard({
                   )}
                 </div>
                 <div className="space-y-2">
-                  <LTTLabel>Số phòng *</LTTLabel>
+                  <LTTLabel>{t("admin.seatmap.wizard.form.screen_number_label")}</LTTLabel>
                   <LTTInput
                     type="number"
                     value={screenNumber}
@@ -1058,10 +1060,10 @@ export default function LTTScreenCreateWizard({
                   />
                 </div>
                 <div className="space-y-2">
-                  <LTTLabel>Loại phòng *</LTTLabel>
+                  <LTTLabel>{t("admin.seatmap.wizard.form.screen_type_label")}</LTTLabel>
                   <LTTSelect value={screenType} onValueChange={setScreenType}>
                     <LTTSelectTrigger>
-                      <LTTSelectValue placeholder="Chọn loại phòng" />
+                      <LTTSelectValue placeholder={t("admin.seatmap.wizard.form.screen_type_placeholder")} />
                     </LTTSelectTrigger>
                     <LTTSelectContent>
                       {screenTypes.map((t) => (
@@ -1073,14 +1075,14 @@ export default function LTTScreenCreateWizard({
                   </LTTSelect>
                 </div>
                 <div className="space-y-2 sm:col-span-2">
-                  <LTTLabel>Số ghế dự kiến</LTTLabel>
+                  <LTTLabel>{t("admin.seatmap.wizard.form.estimated_seats_label")}</LTTLabel>
                   <LTTInput
                     type="number"
                     value={seatCount}
                     onChange={(e) => setSeatCount(e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground-shadcn">
-                    Số lượng ghế chính xác sẽ được xác định ở bước thiết kế.
+                    {t("admin.seatmap.wizard.form.estimated_seats_hint")}
                   </p>
                 </div>
                   </>
@@ -1102,7 +1104,7 @@ export default function LTTScreenCreateWizard({
                       }}
                     >
                       <span className="text-[10px] font-bold tracking-[0.4em] text-white uppercase">
-                        Màn hình hiển thị
+                        {t("admin.seatmap.wizard.canvas.screen_display")}
                       </span>
                     </div>
                   </div>
@@ -1244,7 +1246,7 @@ export default function LTTScreenCreateWizard({
                   {/* Legend */}
                   <div className="flex flex-wrap items-center justify-center gap-4 rounded-xl border border-border-shadcn bg-muted-shadcn/20 px-6 py-4 text-xs">
                     <div className="flex items-center gap-1.5 font-bold mr-4">
-                      Tổng ghế:{" "}
+                      {t("admin.seatmap.wizard.canvas.total_seats")}:{" "}
                       <span className="text-primary-shadcn text-sm">
                         {actualSeatCount}
                       </span>
@@ -1268,19 +1270,19 @@ export default function LTTScreenCreateWizard({
 
                     <div className="flex items-center gap-1.5">
                       <div className="h-3.5 w-3.5 rounded-sm bg-muted-shadcn/50 border border-dashed border-border-shadcn" />
-                      <span className="text-muted-foreground-shadcn">Trống</span>
+                      <span className="text-muted-foreground-shadcn">{t("admin.seatmap.viewer.legend.available")}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Footprints className="h-3.5 w-3.5 text-muted-foreground-shadcn" />
-                      <span className="text-muted-foreground-shadcn">Lối đi</span>
+                      <span className="text-muted-foreground-shadcn">{t("admin.seatmap.viewer.legend.walkway")}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />
-                      <span className="text-muted-foreground-shadcn">Thoát hiểm</span>
+                      <span className="text-muted-foreground-shadcn">{t("admin.seatmap.viewer.legend.emergency_exit")}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <DoorOpen className="h-3.5 w-3.5 text-green-600" />
-                      <span className="text-muted-foreground-shadcn">Cửa</span>
+                      <span className="text-muted-foreground-shadcn">{t("admin.seatmap.viewer.legend.door")}</span>
                     </div>
                   </div>
                 </div>
@@ -1289,12 +1291,12 @@ export default function LTTScreenCreateWizard({
                 <div className="w-full lg:w-72 shrink-0 space-y-5 rounded-xl border border-border-shadcn bg-card p-5 shadow-sm">
                   <div className="space-y-3">
                     <LTTLabel className="text-xs font-bold uppercase tracking-wider text-muted-foreground-shadcn">
-                      Cài đặt lưới
+                      {t("admin.seatmap.wizard.grid.title")}
                     </LTTLabel>
 
                     <LTTSelect value={layoutType} onValueChange={(v) => setLayoutType(v as LayoutType)}>
                       <LTTSelectTrigger>
-                        <LTTSelectValue placeholder="Chọn kiểu bố cục" />
+                        <LTTSelectValue placeholder={t("admin.seatmap.wizard.grid.layout_placeholder")} />
                       </LTTSelectTrigger>
                       <LTTSelectContent>
                         <LTTSelectItem value="rectangle">Rectangle</LTTSelectItem>
@@ -1305,7 +1307,7 @@ export default function LTTScreenCreateWizard({
 
                     {layoutType === "square" ? (
                       <div className="space-y-2">
-                        <LTTLabel className="text-[10px]">Kích thước (1 cấu hình)</LTTLabel>
+                        <LTTLabel className="text-[10px]">{t("admin.seatmap.wizard.grid.size")}</LTTLabel>
                         <LTTInput
                           type="number"
                           min={1}
@@ -1318,7 +1320,7 @@ export default function LTTScreenCreateWizard({
                     ) : (
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
-                          <LTTLabel className="text-[10px]">Hàng (A-Z)</LTTLabel>
+                          <LTTLabel className="text-[10px]">{t("admin.seatmap.wizard.grid.rows")}</LTTLabel>
                           <LTTInput
                             type="number"
                             min={1}
@@ -1329,7 +1331,7 @@ export default function LTTScreenCreateWizard({
                           />
                         </div>
                         <div className="space-y-1.5">
-                          <LTTLabel className="text-[10px]">Cột</LTTLabel>
+                          <LTTLabel className="text-[10px]">{t("admin.seatmap.wizard.grid.cols")}</LTTLabel>
                           <LTTInput
                             type="number"
                             min={1}
@@ -1348,13 +1350,13 @@ export default function LTTScreenCreateWizard({
                       className="w-full h-9 text-xs font-medium"
                       onClick={handleRegenerateGrid}
                     >
-                      <RotateCw className="h-4 w-4" /> Thiết lập lại lưới
+                      <RotateCw className="h-4 w-4" /> {t("admin.seatmap.wizard.grid.reset")}
                     </LTTButton>
                   </div>
 
                   <div className="border-t border-border-shadcn pt-5 space-y-3">
                     <LTTLabel className="text-xs font-bold uppercase tracking-wider text-muted-foreground-shadcn">
-                      Công cụ vẽ
+                      {t("admin.seatmap.wizard.tools.title")}
                     </LTTLabel>
                     <div className="grid grid-cols-2 gap-2">
                       <button
@@ -1368,7 +1370,7 @@ export default function LTTScreenCreateWizard({
                         onClick={() => setActiveTool("select")}
                       >
                         <MousePointer2 className="h-5 w-5" />
-                        <span>GHẾ</span>
+                        <span>{t("admin.seatmap.wizard.tools.seat")}</span>
                       </button>
 
                       <button
@@ -1382,7 +1384,7 @@ export default function LTTScreenCreateWizard({
                         onClick={() => setActiveTool("walkway")}
                       >
                         <Footprints className="h-5 w-5" />
-                        <span>LỐI ĐI</span>
+                        <span>{t("admin.seatmap.wizard.tools.walkway")}</span>
                       </button>
 
                       <button
@@ -1396,7 +1398,7 @@ export default function LTTScreenCreateWizard({
                         onClick={() => setActiveTool("emergency_exit")}
                       >
                         <AlertTriangle className="h-5 w-5" />
-                        <span>PCCC</span>
+                        <span>{t("admin.seatmap.wizard.tools.emergency_exit")}</span>
                       </button>
 
                       <button
@@ -1410,7 +1412,7 @@ export default function LTTScreenCreateWizard({
                         onClick={() => setActiveTool("door")}
                       >
                         <DoorOpen className="h-5 w-5" />
-                        <span>CỬA</span>
+                        <span>{t("admin.seatmap.wizard.tools.door")}</span>
                       </button>
 
                       <button
@@ -1424,14 +1426,14 @@ export default function LTTScreenCreateWizard({
                         onClick={() => setActiveTool("delete")}
                       >
                         <Trash2 className="h-5 w-5" />
-                        <span>XÓA Ô</span>
+                        <span>{t("admin.seatmap.wizard.tools.delete_cell")}</span>
                       </button>
                     </div>
                   </div>
 
                   <div className="border-t border-border-shadcn pt-5 space-y-3">
                     <LTTLabel className="text-xs font-bold uppercase tracking-wider text-muted-foreground-shadcn">
-                      Loại ghế áp dụng
+                      {t("admin.seatmap.wizard.tools.seat_type_apply")}
                     </LTTLabel>
                     {getSeatTypeToolList()}
                   </div>
@@ -1449,17 +1451,17 @@ export default function LTTScreenCreateWizard({
                 onClick={() => setStep(1)}
                 className="gap-2 mr-auto"
               >
-                <ArrowLeft className="h-4 w-4" /> {isSeatMapMode ? "Quay lại thiết kế" : "Quay lại thông tin"}
+                <ArrowLeft className="h-4 w-4" /> {isSeatMapMode ? t("admin.seatmap.wizard.actions.back_to_design") : t("admin.seatmap.wizard.actions.back_to_info")}
               </LTTButton>
             )}
 
             <LTTButton variant="ghost" onClick={handleSafeClose}>
-              Hủy bỏ
+              {t("admin.seatmap.wizard.actions.cancel")}
             </LTTButton>
 
             {step === 1 && (
               <LTTButton onClick={goToStep2} className="gap-2 px-6">
-                {isSeatMapMode ? "Nhập thông tin sơ đồ" : "Thiết kế sơ đồ"} <ArrowRight className="h-4 w-4" />
+                {isSeatMapMode ? t("admin.seatmap.wizard.actions.next_to_info") : t("admin.seatmap.wizard.actions.next_to_design")} <ArrowRight className="h-4 w-4" />
               </LTTButton>
             )}
 
@@ -1469,7 +1471,7 @@ export default function LTTScreenCreateWizard({
           className="gap-2 px-8"
         >
           <Check className="h-4 w-4" />
-          {isEditMode ? "Cập nhật sơ đồ" : "Hoàn tất lưu sơ đồ"}
+          {isEditMode ? t("admin.seatmap.wizard.actions.finish_update") : t("admin.seatmap.wizard.actions.finish_create")}
         </LTTButton>
       )}
     </>
@@ -1485,13 +1487,13 @@ export default function LTTScreenCreateWizard({
               {step === 1
                 ? (
                   isSeatMapMode
-                    ? (isEditMode ? "Bước 1: Chỉnh sửa sơ đồ ghế" : "Bước 1: Thiết kế sơ đồ ghế")
-                    : (isEditMode ? "Bước 1: Chỉnh thông tin phòng chiếu" : "Bước 1: Thông tin phòng chiếu")
+                    ? (isEditMode ? t("admin.seatmap.wizard.step_titles.edit_design") : t("admin.seatmap.wizard.step_titles.design"))
+                    : (isEditMode ? t("admin.seatmap.wizard.step_titles.edit_screen_info") : t("admin.seatmap.wizard.step_titles.screen_info"))
                 )
                 : (
                   isSeatMapMode
-                    ? (isEditMode ? "Bước 2: Chỉnh thông tin sơ đồ ghế" : "Bước 2: Thông tin sơ đồ ghế")
-                    : (isEditMode ? "Bước 2: Chỉnh sửa sơ đồ ghế" : "Bước 2: Thiết kế sơ đồ ghế")
+                    ? (isEditMode ? t("admin.seatmap.wizard.step_titles.edit_map_info") : t("admin.seatmap.wizard.step_titles.map_info"))
+                    : (isEditMode ? t("admin.seatmap.wizard.step_titles.edit_design") : t("admin.seatmap.wizard.step_titles.design"))
                 )}
             </h2>
           </div>
@@ -1506,33 +1508,33 @@ export default function LTTScreenCreateWizard({
           <LTTDialogContent className="sm:max-w-sm bg-white">
             <LTTDialogHeader>
               <LTTDialogTitle>
-                {isEditMode ? "Xác nhận cập nhật phòng chiếu" : "Xác nhận tạo phòng chiếu"}
+                {isEditMode ? t("admin.seatmap.wizard.confirm.update_title") : t("admin.seatmap.wizard.confirm.create_title")}
               </LTTDialogTitle>
             </LTTDialogHeader>
             <div className="space-y-3 py-4 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground-shadcn">Rạp:</span>
+                <span className="text-muted-foreground-shadcn">{t("admin.seatmap.wizard.confirm.cinema_label")}</span>
                 <span className="font-bold">
                   {isSeatMapMode ? seatMapName : mockAdminCinemas.find((c) => c.id === cinemaId)?.name}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground-shadcn">{isSeatMapMode ? "Mô tả:" : "Số phòng:"}</span>
+                <span className="text-muted-foreground-shadcn">{isSeatMapMode ? t("admin.seatmap.wizard.confirm.description_label") : t("admin.seatmap.wizard.confirm.screen_label")}</span>
                 <span className="font-bold">{isSeatMapMode ? (seatMapDescription || "—") : screenNumber}</span>
               </div>
               {!isSeatMapMode && <div className="flex justify-between">
-                <span className="text-muted-foreground-shadcn">Loại phòng:</span>
+                <span className="text-muted-foreground-shadcn">{t("admin.seatmap.wizard.confirm.screen_type_label")}</span>
                 <span className="font-bold">{screenType}</span>
               </div>}
               <div className="flex justify-between border-t border-border-shadcn pt-2 mt-2">
-                <span className="text-muted-foreground-shadcn font-bold">Tổng số ghế:</span>
+                <span className="text-muted-foreground-shadcn font-bold">{t("admin.seatmap.wizard.confirm.total_seats")}</span>
                 <span className="font-bold text-primary-shadcn text-lg">{actualSeatCount}</span>
               </div>
             </div>
             <LTTDialogFooter>
-              <LTTButton variant="outline" onClick={() => setConfirmOpen(false)}>Hủy</LTTButton>
+              <LTTButton variant="outline" onClick={() => setConfirmOpen(false)}>{t("admin.seatmap.wizard.confirm.cancel")}</LTTButton>
               <LTTButton onClick={handleConfirmCreate} loading={isSubmitting} disabled={isSubmitting}>
-                {isEditMode ? "Xác nhận & Cập nhật" : "Xác nhận & Lưu"}
+                {isEditMode ? t("admin.seatmap.wizard.confirm.confirm_update") : t("admin.seatmap.wizard.confirm.confirm_create")}
               </LTTButton>
             </LTTDialogFooter>
           </LTTDialogContent>
@@ -1542,19 +1544,17 @@ export default function LTTScreenCreateWizard({
         <LTTDialog open={exitConfirmOpen} onOpenChange={setExitConfirmOpen}>
           <LTTDialogContent className="sm:max-w-sm bg-white">
             <LTTDialogHeader>
-              <LTTDialogTitle>Bạn có thay đổi chưa lưu</LTTDialogTitle>
+              <LTTDialogTitle>{t("admin.seatmap.wizard.exit_confirm.title")}</LTTDialogTitle>
             </LTTDialogHeader>
             <div className="py-2 text-sm text-muted-foreground-shadcn leading-relaxed">
-              Bạn có thay đổi chưa hoàn tất. Thoát sẽ{" "}
-              <strong className="text-destructive">xóa toàn bộ bản nháp</strong>{" "}
-              hiện tại. Bạn có chắc chắn muốn thoát?
+              {t("admin.seatmap.wizard.exit_confirm.message")}
             </div>
             <LTTDialogFooter className="gap-2">
               <LTTButton variant="outline" onClick={() => setExitConfirmOpen(false)} className="flex-1">
-                Ở lại chỉnh sửa
+                {t("admin.seatmap.wizard.exit_confirm.stay")}
               </LTTButton>
               <LTTButton variant="destructive" onClick={handleConfirmExit} className="flex-1">
-                Thoát & Xóa nháp
+                {t("admin.seatmap.wizard.exit_confirm.exit_discard")}
               </LTTButton>
             </LTTDialogFooter>
           </LTTDialogContent>
@@ -1573,13 +1573,13 @@ export default function LTTScreenCreateWizard({
               {step === 1
                 ? (
                   isSeatMapMode
-                    ? (isEditMode ? "Bước 1: Chỉnh sửa sơ đồ ghế" : "Bước 1: Thiết kế sơ đồ ghế")
-                    : (isEditMode ? "Bước 1: Chỉnh thông tin phòng chiếu" : "Bước 1: Thông tin phòng chiếu")
+                    ? (isEditMode ? t("admin.seatmap.wizard.step_titles.edit_design") : t("admin.seatmap.wizard.step_titles.design"))
+                    : (isEditMode ? t("admin.seatmap.wizard.step_titles.edit_screen_info") : t("admin.seatmap.wizard.step_titles.screen_info"))
                 )
                 : (
                   isSeatMapMode
-                    ? (isEditMode ? "Bước 2: Chỉnh thông tin sơ đồ ghế" : "Bước 2: Thông tin sơ đồ ghế")
-                    : (isEditMode ? "Bước 2: Chỉnh sửa sơ đồ ghế" : "Bước 2: Thiết kế sơ đồ ghế")
+                    ? (isEditMode ? t("admin.seatmap.wizard.step_titles.edit_map_info") : t("admin.seatmap.wizard.step_titles.map_info"))
+                    : (isEditMode ? t("admin.seatmap.wizard.step_titles.edit_design") : t("admin.seatmap.wizard.step_titles.design"))
                 )}
             </LTTDialogTitle>
           </LTTDialogHeader>
@@ -1598,33 +1598,33 @@ export default function LTTScreenCreateWizard({
         <LTTDialogContent className="sm:max-w-sm bg-white">
           <LTTDialogHeader>
             <LTTDialogTitle>
-              {isEditMode ? "Xác nhận cập nhật phòng chiếu" : "Xác nhận tạo phòng chiếu"}
+              {isEditMode ? t("admin.seatmap.wizard.confirm.update_title") : t("admin.seatmap.wizard.confirm.create_title")}
             </LTTDialogTitle>
           </LTTDialogHeader>
           <div className="space-y-3 py-4 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground-shadcn">{isSeatMapMode ? "Tên sơ đồ:" : "Rạp:"}</span>
+              <span className="text-muted-foreground-shadcn">{isSeatMapMode ? t("admin.seatmap.wizard.confirm.name_label") : t("admin.seatmap.wizard.confirm.cinema_label")}</span>
               <span className="font-bold">
                 {isSeatMapMode ? seatMapName : mockAdminCinemas.find((c) => c.id === cinemaId)?.name}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground-shadcn">{isSeatMapMode ? "Mô tả:" : "Số phòng:"}</span>
+              <span className="text-muted-foreground-shadcn">{isSeatMapMode ? t("admin.seatmap.wizard.confirm.description_label") : t("admin.seatmap.wizard.confirm.screen_label")}</span>
               <span className="font-bold">{isSeatMapMode ? (seatMapDescription || "—") : screenNumber}</span>
             </div>
             {!isSeatMapMode && <div className="flex justify-between">
-              <span className="text-muted-foreground-shadcn">Loại phòng:</span>
+              <span className="text-muted-foreground-shadcn">{t("admin.seatmap.wizard.confirm.screen_type_label")}</span>
               <span className="font-bold">{screenType}</span>
             </div>}
             <div className="flex justify-between border-t border-border-shadcn pt-2 mt-2">
-              <span className="text-muted-foreground-shadcn font-bold">Tổng số ghế:</span>
+              <span className="text-muted-foreground-shadcn font-bold">{t("admin.seatmap.wizard.confirm.total_seats")}</span>
               <span className="font-bold text-primary-shadcn text-lg">{actualSeatCount}</span>
             </div>
           </div>
           <LTTDialogFooter>
-            <LTTButton variant="outline" onClick={() => setConfirmOpen(false)}>Hủy</LTTButton>
+            <LTTButton variant="outline" onClick={() => setConfirmOpen(false)}>{t("admin.seatmap.wizard.confirm.cancel")}</LTTButton>
             <LTTButton onClick={handleConfirmCreate} loading={isSubmitting} disabled={isSubmitting}>
-              {isEditMode ? "Xác nhận & Cập nhật" : "Xác nhận & Lưu"}
+              {isEditMode ? t("admin.seatmap.wizard.confirm.confirm_update") : t("admin.seatmap.wizard.confirm.confirm_create")}
             </LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
@@ -1633,19 +1633,17 @@ export default function LTTScreenCreateWizard({
       <LTTDialog open={exitConfirmOpen} onOpenChange={setExitConfirmOpen}>
         <LTTDialogContent className="sm:max-w-sm bg-white">
           <LTTDialogHeader>
-            <LTTDialogTitle>Bạn có thay đổi chưa lưu</LTTDialogTitle>
+            <LTTDialogTitle>{t("admin.seatmap.wizard.exit_confirm.title")}</LTTDialogTitle>
           </LTTDialogHeader>
           <div className="py-2 text-sm text-muted-foreground-shadcn leading-relaxed">
-            Bạn có thay đổi chưa hoàn tất trong bản thiết kế này. Thoát sẽ{" "}
-            <strong className="text-destructive">xóa toàn bộ bản nháp</strong>{" "}
-            hiện tại. Bạn có chắc chắn muốn thoát?
+            {t("admin.seatmap.wizard.exit_confirm.message")}
           </div>
           <LTTDialogFooter className="gap-2">
             <LTTButton variant="outline" onClick={() => setExitConfirmOpen(false)} className="flex-1">
-              Ở lại chỉnh sửa
+              {t("admin.seatmap.wizard.exit_confirm.stay")}
             </LTTButton>
             <LTTButton variant="destructive" onClick={handleConfirmExit} className="flex-1">
-              Thoát & Xóa nháp
+              {t("admin.seatmap.wizard.exit_confirm.exit_discard")}
             </LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
