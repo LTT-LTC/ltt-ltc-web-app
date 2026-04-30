@@ -6,12 +6,13 @@ import {
 } from "./models/input.model";
 import { ShowtimeOutputDto } from "./models/output.model";
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
-import { rootPath } from "../administration.service";
+import { getManagerRootPath, getRoleScopedRootPath } from "../administration.service";
 
 const path = "/showtimes";
 
 const getShowtimeListAsync = async (params: GetShowtimeListInputDto): Promise<PagedResultDto<ShowtimeOutputDto>> => {
-    const response = await http.get<ApiResult<PagedResultDto<ShowtimeOutputDto>>>(`${rootPath}${path}/movie/${params.movieId}`, {
+    const roleRootPath = getRoleScopedRootPath();
+    const response = await http.get<ApiResult<PagedResultDto<ShowtimeOutputDto>>>(`${roleRootPath}${path}/movie/${params.movieId}`, {
         params: {
             cinemaId: params.cinemaId,
             skipCount: (params.page - 1) * params.fetch,
@@ -22,22 +23,26 @@ const getShowtimeListAsync = async (params: GetShowtimeListInputDto): Promise<Pa
 };
 
 const getShowtimeByIdAsync = async (id: string): Promise<ShowtimeOutputDto> => {
-    const response = await http.get<ApiResult<ShowtimeOutputDto>>(`${rootPath}${path}/${id}`);
+    const roleRootPath = getRoleScopedRootPath();
+    const response = await http.get<ApiResult<ShowtimeOutputDto>>(`${roleRootPath}${path}/${id}`);
     return response.data.data;
 }
 
 const updateShowtimeAsync = async (id: string, body: CreateShowtimeInputDto): Promise<ShowtimeOutputDto> => {
-    const response = await http.put<ApiResult<ShowtimeOutputDto>>(`${rootPath}${path}/${id}`, body);
+    const managerRootPath = getManagerRootPath();
+    const response = await http.put<ApiResult<ShowtimeOutputDto>>(`${managerRootPath}${path}/${id}`, body);
     return response.data.data;
 }
 
 const createShowtimeAsync = async (body: CreateShowtimeInputDto): Promise<ShowtimeOutputDto> => {
-    const response = await http.post<ApiResult<ShowtimeOutputDto>>(`${rootPath}${path}`, body);
+    const managerRootPath = getManagerRootPath();
+    const response = await http.post<ApiResult<ShowtimeOutputDto>>(`${managerRootPath}${path}`, body);
     return response.data.data;
 };
 
 const deleteShowtimeAsync = async (id: string): Promise<void> => {
-    await http.delete<ApiResult<void>>(`${rootPath}${path}/${id}`);
+    const managerRootPath = getManagerRootPath();
+    await http.delete<ApiResult<void>>(`${managerRootPath}${path}/${id}`);
 };
 
 export const showtimeService = {
