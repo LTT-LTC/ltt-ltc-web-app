@@ -44,6 +44,10 @@ export const authRootPath: string = get.rootPath("/administration-service");
 export const rootPath: string = get.rootPath(`/administration-service${resolveRoleSegment()}`);
 export const getRoleScopedRootPath = (): string =>
     get.rootPath(`/administration-service${resolveRoleSegment()}`);
+export const getAdminRootPath = (): string => get.rootPath("/administration-service/admin");
+export const getManagerRootPath = (): string => get.rootPath("/administration-service/manager");
+export const getStaffRootPath = (): string => get.rootPath("/administration-service/staff");
+export const getPosRootPath = (): string => get.rootPath("/administration-service/pos");
 
 export const administrationService = {
     authService: authService,

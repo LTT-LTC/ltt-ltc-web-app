@@ -24,11 +24,8 @@ import { formatService } from "./format/format.service";
 import { genreService } from "./genre/genre.service";
 import { roleService } from "./role/role.service";
 import { studioService } from "./studio/studio.service";
+import { getMovieRoleRootPath } from "./role-root-path";
 
-const movieRootPath = "/movie-service/admin/movie";
-const ratingRootPath = "/movie-service/admin/rating";
-const distributionRootPath = "/movie-service/admin/distribution";
-const mediaFileRootPath = "/movie-service/admin";
 const moviePath = "/movie";
 const ratingPath = "/rating";
 const distributionPath = "/movie-distribution";
@@ -43,11 +40,13 @@ export interface UploadMoviePosterOutputDto {
 }
 
 const getMovieListAsync = async (params: GetMovieListDto): Promise<PagedResultDto<MovieOutputDto>> => {
+    const movieRootPath = `${getMovieRoleRootPath()}/movie`;
     const response = await http.get<PagedResultDto<MovieOutputDto>>(`${movieRootPath}${moviePath}-all`, { params });
     return response.data;
 };
 
 const getMovieDetailAsync = async (id: string): Promise<MovieDetailOutputDto> => {
+    const movieRootPath = `${getMovieRoleRootPath()}/movie`;
     const response = await http.get<MovieDetailOutputDto>(`${movieRootPath}${moviePath}/${id}`);
     return response.data;
 };
@@ -108,6 +107,7 @@ const buildMovieFormData = (body: CreateMovieInputDto | UpdateMovieInputDto): Fo
 };
 
 const createMovieAsync = async (body: CreateMovieInputDto): Promise<MovieOutputDto> => {
+    const movieRootPath = `${getMovieRoleRootPath()}/movie`;
     const formData = buildMovieFormData(body);
     const response = await http.post<MovieOutputDto>(`${movieRootPath}${moviePath}`, formData, {
         headers: {
@@ -118,6 +118,7 @@ const createMovieAsync = async (body: CreateMovieInputDto): Promise<MovieOutputD
 };
 
 const updateMovieAsync = async (id: string, body: UpdateMovieInputDto): Promise<MovieOutputDto> => {
+    const movieRootPath = `${getMovieRoleRootPath()}/movie`;
     const formData = buildMovieFormData(body);
     const response = await http.put<MovieOutputDto>(`${movieRootPath}${moviePath}/${id}`, formData, {
         headers: {
@@ -128,10 +129,12 @@ const updateMovieAsync = async (id: string, body: UpdateMovieInputDto): Promise<
 };
 
 const deleteMovieAsync = async (id: string): Promise<void> => {
+    const movieRootPath = `${getMovieRoleRootPath()}/movie`;
     await http.delete<void>(`${movieRootPath}${moviePath}/${id}`);
 };
 
 const uploadMoviePosterAsync = async (imageFile: File): Promise<UploadMoviePosterOutputDto> => {
+    const mediaFileRootPath = getMovieRoleRootPath();
     const formData = new FormData();
     formData.append("ImageFile", imageFile);
     const response = await http.post<UploadMoviePosterOutputDto>(`${mediaFileRootPath}${mediaFilePath}/poster`, formData);
@@ -139,17 +142,20 @@ const uploadMoviePosterAsync = async (imageFile: File): Promise<UploadMoviePoste
 };
 
 const bulkDeleteMoviesAsync = async (ids: string[]): Promise<void> => {
+    const movieRootPath = `${getMovieRoleRootPath()}/movie`;
     await http.delete<void>(`${movieRootPath}${moviePath}`, { data: ids });
 };
 
 const getRatingsAsync = async (
     params: GetRatingListInputDto = { page: 1, fetch: 1000 },
 ): Promise<PagedResultDto<RatingOutputDto>> => {
+    const ratingRootPath = `${getMovieRoleRootPath()}/rating`;
     const response = await http.get<PagedResultDto<RatingOutputDto>>(`${ratingRootPath}${ratingPath}-all`, { params });
     return response.data;
 };
 
 const createRatingAsync = async (body: CreateRatingInputDto): Promise<RatingOutputDto> => {
+    const ratingRootPath = `${getMovieRoleRootPath()}/rating`;
     const response = await http.post<RatingOutputDto>(`${ratingRootPath}${ratingPath}`, {}, {
         params: {
             Code: body.code,
@@ -161,6 +167,7 @@ const createRatingAsync = async (body: CreateRatingInputDto): Promise<RatingOutp
 };
 
 const updateRatingAsync = async (id: string, body: UpdateRatingInputDto): Promise<RatingOutputDto> => {
+    const ratingRootPath = `${getMovieRoleRootPath()}/rating`;
     const response = await http.put<RatingOutputDto>(`${ratingRootPath}${ratingPath}/${id}`, {}, {
         params: {
             Code: body.code,
@@ -172,12 +179,14 @@ const updateRatingAsync = async (id: string, body: UpdateRatingInputDto): Promis
 };
 
 const deleteRatingAsync = async (id: string): Promise<void> => {
+    const ratingRootPath = `${getMovieRoleRootPath()}/rating`;
     await http.delete<void>(`${ratingRootPath}${ratingPath}/${id}`);
 };
 
 const getDistributionsAsync = async (
     params: GetDistributionListInputDto = { skipCount: 0, maxResultCount: 100 },
 ): Promise<PagedResultDto<MovieDistributionOutputDto>> => {
+    const distributionRootPath = `${getMovieRoleRootPath()}/distribution`;
     const response = await http.get<PagedResultDto<MovieDistributionOutputDto>>(`${distributionRootPath}${distributionPath}-all`, { params });
     return response.data;
 };
@@ -196,6 +205,7 @@ const toUpdateDistributionParams = (body: UpdateDistributionInputDto): UpdateDis
 });
 
 const createDistributionAsync = async (body: CreateDistributionInputDto): Promise<MovieDistributionOutputDto> => {
+    const distributionRootPath = `${getMovieRoleRootPath()}/distribution`;
     const params = toCreateDistributionParams(body);
     const response = await http.post<MovieDistributionOutputDto>(`${distributionRootPath}${distributionPath}`, {}, {
         params,
@@ -204,6 +214,7 @@ const createDistributionAsync = async (body: CreateDistributionInputDto): Promis
 };
 
 const updateDistributionAsync = async (id: string, body: UpdateDistributionInputDto): Promise<MovieDistributionOutputDto> => {
+    const distributionRootPath = `${getMovieRoleRootPath()}/distribution`;
     const params = toUpdateDistributionParams(body);
     const response = await http.put<MovieDistributionOutputDto>(`${distributionRootPath}${distributionPath}/${id}`, {}, {
         params,
@@ -212,6 +223,7 @@ const updateDistributionAsync = async (id: string, body: UpdateDistributionInput
 };
 
 const deleteDistributionAsync = async (id: string): Promise<void> => {
+    const distributionRootPath = `${getMovieRoleRootPath()}/distribution`;
     await http.delete<void>(`${distributionRootPath}${distributionPath}/${id}`);
 };
 
