@@ -44,7 +44,7 @@ export default function DomainTablePagination({
 
   return (
     <div
-      className={`flex items-center justify-between gap-3 rounded-lg border border-border-shadcn bg-card px-4 py-3 my-3 ${className || ""}`.trim()}
+      className={`flex w-full min-w-0 items-center justify-between gap-3 rounded-lg border border-border-shadcn bg-card px-4 py-3 my-3 ${className || ""}`.trim()}
     >
       <div className="text-sm text-muted-foreground-shadcn">
         {totalLabel(totalCount)}

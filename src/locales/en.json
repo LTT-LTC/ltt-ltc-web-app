@@ -40,6 +40,7 @@
       "title": "News & Offers",
       "add": "Add new",
       "search_placeholder": "Search news or offers...",
+      "refresh": "Refresh",
       "fetch_error": "Unable to load news list",
       "delete_success": "News/offer deleted",
       "delete_error": "Delete failed",
@@ -48,6 +49,7 @@
       "create_error": "Create failed",
       "update_success": "Updated successfully",
       "update_error": "Update failed",
+      "empty": "No news or offers found.",
       "validation": {
         "title_required": "Please enter a title",
         "content_required": "Please enter content"
@@ -226,22 +228,22 @@
       "fetch_error": "Failed to load showtimes",
       "distribution_fetch_error": "Cannot load movie distribution data",
       "create_success": "Created successfully",
+      "create_error": "Create failed",
+      "update_success": "Updated successfully",
+      "update_error": "Update failed",
+      "delete_success": "Deleted successfully",
       "toast": {
         "create_success": "Created successfully",
         "update_success": "Updated successfully",
         "delete_success": "Deleted successfully"
-      },
-      "table": {
-        "format": "Format",
-        "price": "Price",
-        "status": "Status",
-        "actions": "Actions"
       },
       "actions": {
         "edit": "Edit"
       },
       "status": {
         "scheduled": "Scheduled",
+        "started": "Started",
+        "ended": "Ended",
         "completed": "Completed",
         "cancelled": "Cancelled"
       },
@@ -257,7 +259,75 @@
         "movie": "Movie *",
         "movie_placeholder": "Select movie",
         "screen": "Screen *",
-        "screen_placeholder": "Select screen"
+        "screen_placeholder": "Select screen",
+        "show_date": "Show date",
+        "distribution_window": "Distribution window",
+        "format": "Format",
+        "select_format": "Select format",
+        "loading_screens": "Loading screens...",
+        "loading_formats": "Loading formats...",
+        "start_time": "Start time",
+        "end_time": "End time",
+        "language": "Language",
+        "caption": "Caption",
+        "base_price": "Base price (VND)",
+        "base_price_placeholder": "e.g. 85000",
+        "save_changes": "Save changes",
+        "create": "Create showtime",
+        "context_load_error": "Failed to load dialog context data.",
+        "validation": {
+          "required": "Please fill in all required showtime fields.",
+          "base_price_invalid": "Base price must be greater than 0."
+        }
+      },
+      "tabs": {
+        "scheduler": "Showtime Scheduler",
+        "distribution": "Movie Distribution"
+      },
+      "refresh": "Refresh",
+      "empty": "No showtimes found.",
+      "loading": "Loading showtimes...",
+      "movie_filter_placeholder": "Select movie to load showtimes",
+      "calendar": {
+        "today": "Today",
+        "hour": "Hour"
+      },
+      "distribution": {
+        "search_placeholder": "Search movie distribution...",
+        "loading": "Loading movie distribution...",
+        "empty": "No movie distribution found.",
+        "exclusive": "Exclusive",
+        "standard": "Standard",
+        "status": {
+          "upcoming": "Upcoming",
+          "expired": "Expired",
+          "active": "Active"
+        },
+        "table": {
+          "movie": "Movie",
+          "date_range": "Distribution Date",
+          "exclusive": "Exclusive",
+          "status": "Status"
+        }
+      },
+      "table": {
+        "movie": "Movie",
+        "screen": "Screen",
+        "show_date": "Show Date",
+        "time": "Time",
+        "format": "Format",
+        "base_price": "Base Price",
+        "status": "Status",
+        "updated_at": "Updated At",
+        "actions": "Actions"
+      },
+      "pricing_reference": "Pricing Rules Reference",
+      "pricing_empty": "No pricing rules found for this cinema.",
+      "pricing_columns": {
+        "rule_type": "Rule Type",
+        "multiplier": "Multiplier",
+        "time_window": "Time Window",
+        "days": "Days"
       }
     },
     "screens": {
@@ -266,28 +336,197 @@
       "search_placeholder": "Search screens...",
       "refresh": "Refresh",
       "fetch_error": "Failed to load screens",
+      "seat_type_fetch_error": "Failed to load seat types.",
       "create_success": "Screen created successfully",
       "update_success": "Screen updated successfully",
       "delete_success": "Screen deleted successfully",
       "generic_error": "Something went wrong",
       "cinema_claim_missing": "CinemaId claim is missing in your login session. Please sign in again.",
+      "bulk_delete_button": "Delete {{count}}",
       "bulk_delete_success": "Deleted {{count}} screens",
       "bulk_delete_partial": "Deleted {{success}}/{{total}} screens",
+      "table": {
+        "screen_number": "Screen Number",
+        "screen_type": "Screen Type",
+        "seat_count": "Seat Count",
+        "seat_layout": "Seat Layout",
+        "status": "Status",
+        "actions": "Actions",
+        "screen_label": "Screen {{number}}"
+      },
+      "state": {
+        "loading": "Loading screens...",
+        "empty": "No screen data found."
+      },
+      "status": {
+        "active": "Active",
+        "maintenance": "Maintenance",
+        "inactive": "Inactive",
+        "empty": "—"
+      },
+      "form": {
+        "edit_title": "Edit screen",
+        "create_title": "Add new screen",
+        "screen_number": "Screen number *",
+        "screen_type": "Screen type *",
+        "status": "Status",
+        "seat_map": "Seat map *",
+        "seat_map_placeholder": "Select seat map",
+        "design_new": "Design new",
+        "created_seatmap_hint": "Created and pre-selected new seat map.",
+        "preview_title": "Selected seat map preview",
+        "preview_unavailable": "Cannot render seat map preview.",
+        "cancel": "Cancel",
+        "save": "Save",
+        "create": "Create"
+      },
+      "delete_confirm": {
+        "title": "Confirm delete",
+        "bulk_message": "Are you sure you want to delete {{count}} selected screens? This action cannot be undone.",
+        "single_title": "Confirm screen deletion",
+        "single_message": "Are you sure you want to delete this screen?",
+        "confirm": "Confirm delete",
+        "delete": "Delete",
+        "cancel": "Cancel"
+      },
       "validation": {
         "cinema_required": "Please select cinema before creating or updating a screen",
-        "screen_number_invalid": "Invalid screen number"
+        "screen_number_invalid": "Invalid screen number",
+        "seat_map_required": "Please select a seat map.",
+        "seat_count_invalid": "Selected seat map is invalid (SeatCount <= 0)."
       }
     },
     "seatmap": {
-      "title": "Screen Management",
-      "add": "Add screen",
-      "search_placeholder": "Search screens...",
+      "title": "Seat Map Editor",
+      "add": "Add seat map",
+      "search_placeholder": "Search seat map...",
       "refresh": "Refresh",
       "fetch_error": "Unable to load seat map data",
-      "create_success": "Screen created successfully!",
-      "update_success": "Screen updated successfully!",
-      "delete_success": "Screen deleted",
-      "bulk_delete_success": "Deleted {{count}} screens"
+      "seat_type_fetch_error": "Failed to load seat types.",
+      "create_success": "Seat map created successfully!",
+      "update_success": "Seat map updated successfully!",
+      "delete_success": "Seat map deleted",
+      "bulk_delete_success": "Deleted {{count}} seat maps",
+      "bulk_delete_button": "Delete {{count}} items",
+      "table": {
+        "index": "No.",
+        "name": "Seat map name",
+        "description": "Description",
+        "seat_count": "Seats",
+        "created_at": "Created at",
+        "updated_at": "Updated at",
+        "actions": "Actions",
+        "loading": "Loading seat map data...",
+        "empty": "No data"
+      },
+      "actions": {
+        "view": "View layout",
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "delete_dialog": {
+        "title": "Confirm delete",
+        "message": "Are you sure you want to delete {{count}} seat maps? This action cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Delete"
+      },
+      "viewer": {
+        "title": "Seat map",
+        "fallback_name": "Seat map",
+        "total_seats": "Total seats",
+        "screen_label": "Screen",
+        "auditorium_label": "Auditorium",
+        "legend": {
+          "selected": "Selected",
+          "booked": "Booked",
+          "available": "Available",
+          "walkway": "Walkway",
+          "emergency_exit": "Emergency Exit",
+          "door": "Door"
+        }
+      },
+      "wizard": {
+        "progress": {
+          "design": "1. Layout design",
+          "cinema_info": "1. Cinema information",
+          "map_info": "2. Seat map information"
+        },
+        "step_titles": {
+          "design": "Step 1: Design seat map",
+          "edit_design": "Step 1: Edit seat map",
+          "screen_info": "Step 1: Screen information",
+          "edit_screen_info": "Step 1: Edit screen information",
+          "map_info": "Step 2: Seat map information",
+          "edit_map_info": "Step 2: Edit seat map information"
+        },
+        "validation": {
+          "required_fields": "Please fill in all required fields.",
+          "name_required": "Please enter seat map name."
+        },
+        "empty_seat_type_data": "No seat type data. Please refresh seat type list.",
+        "form": {
+          "name_label": "Seat map name *",
+          "name_placeholder": "Example: Screen 1 seat map",
+          "description_label": "Description",
+          "description_placeholder": "Seat map description",
+          "cinema_label": "Cinema *",
+          "cinema_placeholder": "Select cinema",
+          "screen_number_label": "Screen number *",
+          "screen_type_label": "Screen type *",
+          "screen_type_placeholder": "Select screen type",
+          "estimated_seats_label": "Estimated seats",
+          "estimated_seats_hint": "Exact seat count will be determined in the design step."
+        },
+        "canvas": {
+          "screen_display": "Screen Display",
+          "total_seats": "Total seats"
+        },
+        "grid": {
+          "title": "Grid settings",
+          "layout_placeholder": "Select layout type",
+          "size": "Size",
+          "rows": "Rows (A-Z)",
+          "cols": "Columns",
+          "reset": "Reset grid"
+        },
+        "tools": {
+          "title": "Drawing tools",
+          "seat": "SEAT",
+          "walkway": "WALKWAY",
+          "emergency_exit": "EMERGENCY",
+          "door": "DOOR",
+          "delete_cell": "DELETE CELL",
+          "seat_type_apply": "Apply seat type"
+        },
+        "actions": {
+          "back_to_design": "Back to design",
+          "back_to_info": "Back to info",
+          "cancel": "Cancel",
+          "next_to_info": "Enter seat map info",
+          "next_to_design": "Design seat map",
+          "finish_update": "Update map",
+          "finish_create": "Save seat map"
+        },
+        "confirm": {
+          "create_title": "Confirm create",
+          "update_title": "Confirm update",
+          "cinema_label": "Cinema:",
+          "name_label": "Seat map name:",
+          "description_label": "Description:",
+          "screen_label": "Screen number:",
+          "screen_type_label": "Screen type:",
+          "total_seats": "Total seats:",
+          "cancel": "Cancel",
+          "confirm_create": "Confirm & Save",
+          "confirm_update": "Confirm & Update"
+        },
+        "exit_confirm": {
+          "title": "Unsaved changes",
+          "message": "You have unfinished changes. Exiting will discard the current draft. Are you sure you want to exit?",
+          "stay": "Stay editing",
+          "exit_discard": "Exit & Discard"
+        }
+      }
     },
     "menu": {
       "dashboard": "Dashboard",

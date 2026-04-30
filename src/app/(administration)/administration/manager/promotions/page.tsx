@@ -97,7 +97,7 @@ export default function PromotionsPage() {
         </LTTButton>
       </div>
 
-      <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
+      <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm my-3">
         <div className="flex border-b border-border-shadcn bg-muted-shadcn/50 px-4 pt-3">
           <button
             type="button"

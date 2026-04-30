@@ -1,45 +1,35 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Search,
-  CalendarDays,
-  List,
-  ChevronLeft,
-  ChevronRight,
-  RefreshCw,
-} from "lucide-react";
-
+import { useEffect, useMemo, useState } from "react";
+import { CalendarDays, ChevronLeft, ChevronRight, CircleAlert, Info, List, Pencil, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { getCookie } from "@/src/@core/utils/cookie";
+import { getUserInfoFromToken } from "@/src/@core/utils/jwt";
+import { ADMIN_ACCESS_TOKEN_KEY } from "@/src/@core/const";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
+import { cn } from "@/src/@core/utils/cn";
+import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { showtimeService } from "@/src/services/administration-service/showtime/showtime.service";
-import { movieService } from "@/src/services/administration-service/movie/movie.service";
-import { screenService } from "@/src/services/administration-service/screen/screen.service";
 import { CreateShowtimeInputDto } from "@/src/services/administration-service/showtime/models/input.model";
 import { ShowtimeOutputDto } from "@/src/services/administration-service/showtime/models/output.model";
+import { movieService } from "@/src/services/administration-service/movie/movie.service";
 import { MovieDistributionOutputDto, MovieOutputDto } from "@/src/services/administration-service/movie/models/output.model";
+import { FormatOutputDto } from "@/src/services/administration-service/movie/format/models/output.model";
+import { screenService } from "@/src/services/administration-service/screen/screen.service";
 import { ScreenOutputDto } from "@/src/services/administration-service/screen/models/output.model";
-import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
-import { useEffect } from "react";
-import { cn } from "@/src/@core/utils/cn";
-import { getCookie } from "@/src/@core/utils/cookie";
-import { ADMIN_ACCESS_TOKEN_KEY } from "@/src/@core/const";
-import { getUserInfoFromToken } from "@/src/@core/utils/jwt";
-import { useLocalization } from "@/src/@core/hooks/use-localization";
-
+import { managerPricingRulesService } from "@/src/services/administration-service/manager/pricing-rules/pricing-rules.service";
+import { PricingRuleOutputDto } from "@/src/services/administration-service/pricing-rule/models/output.model";
+import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
-import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
-import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import {
   LTTDialog,
   LTTDialogContent,
+  LTTDialogFooter,
   LTTDialogHeader,
   LTTDialogTitle,
-  LTTDialogFooter,
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
+import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import {
   LTTSelect,
@@ -48,58 +38,38 @@ import {
   LTTSelectTrigger,
   LTTSelectValue,
 } from "@/src/@core/component/LTTShadcnUI/LTTSelect";
-import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
-import {
-  LTTTabs,
-  LTTTabsContent,
-  LTTTabsList,
-  LTTTabsTrigger,
-} from "@/src/@core/component/LTTShadcnUI/LTTTabs";
+import { LTTTabs, LTTTabsList, LTTTabsTrigger } from "@/src/@core/component/LTTShadcnUI/LTTTabs";
 import AdminTablePagination from "@/src/app/(administration)/administration/admin/_components/AdminTablePagination";
 import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 
+type MainTab = "scheduler" | "distribution";
+type SchedulerView = "table" | "calendar";
+
+type ShowtimeFormState = {
+  movieId: string;
+  cinemaId: string;
+  screenId: string;
+  movieDistributionId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  format: string;
+  language: string;
+  caption: string;
+  basePrice: string;
+};
+
 const statusColor: Record<string, string> = {
   scheduled: "bg-blue-100 text-blue-700 border-blue-200",
-  cancelled: "bg-red-100 text-red-700 border-red-200",
-  completed:
-    "bg-muted-shadcn text-muted-foreground-shadcn border-muted-shadcn",
+  started: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  ended: "bg-muted-shadcn text-muted-foreground-shadcn border-muted-shadcn",
 };
 
-const statusLabel: Record<string, string> = {
-  scheduled: "Đã lên lịch",
-  cancelled: "Đã hủy",
-  completed: "Đã chiếu",
-};
-
-const formatPrice = (n: number) => n.toLocaleString("vi-VN") + "đ";
-
-const HOURS = Array.from({ length: 15 }, (_, i) => i + 8); // 8:00 - 22:00
+const normalizeMovieStatus = (status?: string) => (status || "").trim().toLowerCase();
+const allowedMovieStatuses = new Set(["now_showing", "coming_soon", "comming_soon"]);
+const toDateInput = (d: Date) => d.toISOString().slice(0, 10);
+const HOURS = Array.from({ length: 15 }, (_, i) => i + 8);
 const DAYS_VI = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
-
-function getWeekDates(baseDate: Date): Date[] {
-  const day = baseDate.getDay();
-  const monday = new Date(baseDate);
-  monday.setDate(baseDate.getDate() - ((day === 0 ? 7 : day) - 1));
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    return d;
-  });
-}
-
-function formatDateKey(d: Date) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-    2,
-    "0"
-  )}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function timeToMinutes(t: string) {
-  const [h, m] = t.split(":").map(Number);
-  return h * 60 + m;
-}
-
-// Movie color palette for calendar blocks (source-style)
 const MOVIE_COLORS = [
   "bg-red-500/80 border-red-600 text-white",
   "bg-blue-500/80 border-blue-600 text-white",
@@ -110,136 +80,258 @@ const MOVIE_COLORS = [
   "bg-cyan-500/80 border-cyan-600 text-white",
   "bg-orange-500/80 border-orange-600 text-white",
 ];
+const extractTime = (value?: string) => {
+  if (!value) return "";
+  if (/^\d{2}:\d{2}(:\d{2})?$/.test(value)) return value.slice(0, 5);
+  const dt = new Date(value);
+  if (Number.isNaN(dt.getTime())) return "";
+  return `${String(dt.getHours()).padStart(2, "0")}:${String(dt.getMinutes()).padStart(2, "0")}`;
+};
+const toTimeInput = (value: string) => extractTime(value);
+const getWeekDates = (baseDate: Date): Date[] => {
+  const day = baseDate.getDay();
+  const monday = new Date(baseDate);
+  monday.setDate(baseDate.getDate() - ((day === 0 ? 7 : day) - 1));
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return d;
+  });
+};
+const formatDateKey = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const timeToMinutes = (t: string) => {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+};
+const normalizeDateString = (value?: string) => {
+  if (!value) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  if (value.includes("T")) return value.split("T")[0];
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return formatDateKey(parsed);
+};
+const extractDate = (item: ShowtimeOutputDto) => {
+  if (item.showDate) return normalizeDateString(item.showDate);
+  if (item.date) return normalizeDateString(item.date);
+  if (item.startTime?.includes("T")) return normalizeDateString(item.startTime);
+  return "";
+};
+const resolveFormatLabel = (item: ShowtimeOutputDto) => {
+  const raw = ((item as unknown as { movieFormat?: string }).movieFormat || item.format || "").trim();
+  if (!raw) return "-";
+  try {
+    const parsed = JSON.parse(raw) as { movie_format?: string; movie_language?: string; movie_caption?: string };
+    return parsed.movie_format || item.format || "-";
+  } catch {
+    return item.format || raw || "-";
+  }
+};
+const resolveShowtimeStatus = (item: ShowtimeOutputDto): "scheduled" | "started" | "ended" => {
+  const date = extractDate(item);
+  const start = extractTime(item.startTime);
+  const end = extractTime(item.endTime);
+  if (!date || !start || !end) return "scheduled";
+
+  const startAt = new Date(`${date}T${start}:00`);
+  const endAt = new Date(`${date}T${end}:00`);
+  const now = new Date();
+
+  if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) return "scheduled";
+  if (now < startAt) return "scheduled";
+  if (now > endAt) return "ended";
+  return "started";
+};
+const addMinutes = (hhmm: string, mins: number) => {
+  const [h, m] = hhmm.split(":").map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return "";
+  const total = h * 60 + m + mins;
+  const normalized = ((total % 1440) + 1440) % 1440;
+  const hh = String(Math.floor(normalized / 60)).padStart(2, "0");
+  const mm = String(normalized % 60).padStart(2, "0");
+  return `${hh}:${mm}`;
+};
+const formatPrice = (n: number) => `${n.toLocaleString("vi-VN")}đ`;
 
 export default function ShowtimeSchedulerPage() {
   const { t } = useLocalization();
-  type ShowtimeFormState = {
-    movieId: string;
-    cinemaId: string;
-    screenId: string;
-    movieDistributionId: string;
-    date: string;
-    startTime: string;
-    endTime: string;
-    format?: string;
-    language?: string;
-    caption?: string;
-    basePrice?: string | number;
-  };
-  const [items, setItems] = useState<ShowtimeOutputDto[]>([]);
+  const [mainTab, setMainTab] = useState<MainTab>("scheduler");
+  const [viewMode, setViewMode] = useState<SchedulerView>("table");
+  const [managerCinemaId, setManagerCinemaId] = useState("");
+
   const [movies, setMovies] = useState<MovieOutputDto[]>([]);
-  const [distributions, setDistributions] = useState<MovieDistributionOutputDto[]>([]);
-  const [screens, setScreens] = useState<ScreenOutputDto[]>([]);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [schedulerDistributions, setSchedulerDistributions] = useState<MovieDistributionOutputDto[]>([]);
+  const [showtimes, setShowtimes] = useState<ShowtimeOutputDto[]>([]);
+  const [showtimeTotal, setShowtimeTotal] = useState(0);
+  const [selectedMovieId, setSelectedMovieId] = useState("");
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("");
-  const [managerCinemaId, setManagerCinemaId] = useState("");
-  const [cinemaMissing, setCinemaMissing] = useState(false);
-  const [viewMode, setViewMode] = useState<"table" | "calendar">("table");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [editing, setEditing] = useState<ShowtimeOutputDto | null>(null);
-  const [calendarWeek, setCalendarWeek] = useState(new Date());
-  const [selectedMovieId, setSelectedMovieId] = useState("");
   const [page, setPage] = useState(1);
   const [fetch, setFetch] = useState(10);
-  const [totalCount, setTotalCount] = useState(0);
-  const [singleDeleteId, setSingleDeleteId] = useState("");
+  const [calendarWeek, setCalendarWeek] = useState(new Date());
+
+  const [distSearch, setDistSearch] = useState("");
+  const [distributionItems, setDistributionItems] = useState<MovieDistributionOutputDto[]>([]);
+  const [distributionTotal, setDistributionTotal] = useState(0);
+  const [distPage, setDistPage] = useState(1);
+  const [distFetch, setDistFetch] = useState(10);
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [pricingDialogOpen, setPricingDialogOpen] = useState(false);
   const [singleDeleteOpen, setSingleDeleteOpen] = useState(false);
+  const [singleDeleteId, setSingleDeleteId] = useState("");
+  const [editing, setEditing] = useState<ShowtimeOutputDto | null>(null);
+  const [endTimeManuallyEdited, setEndTimeManuallyEdited] = useState(false);
 
-  const normalizeMovieStatus = (status?: string) => (status || "").trim().toLowerCase();
-  const allowedMovieStatuses = new Set(["now_showing", "coming_soon", "comming_soon"]);
-  const now = new Date();
-  const nowTime = now.getTime();
-
-  const isDistributionValidNow = (distribution: MovieDistributionOutputDto) => {
-    const startTime = distribution.licenseStartDate ? new Date(distribution.licenseStartDate).getTime() : Number.NEGATIVE_INFINITY;
-    const endTime = distribution.licenseEndDate ? new Date(distribution.licenseEndDate).getTime() : Number.POSITIVE_INFINITY;
-    return nowTime >= startTime && nowTime <= endTime;
-  };
-
-  const activeDistributions = useMemo(
-    () => distributions.filter(isDistributionValidNow),
-    [distributions]
-  );
-
-  const activeDistributionMap = useMemo(() => {
-    const map = new Map<string, MovieDistributionOutputDto>();
-    for (const distribution of activeDistributions) {
-      if (!map.has(distribution.movieId)) {
-        map.set(distribution.movieId, distribution);
-      }
-    }
-    return map;
-  }, [activeDistributions]);
-
-  const eligibleMovies = useMemo(
-    () =>
-      movies.filter(
-        (movie) =>
-          allowedMovieStatuses.has(normalizeMovieStatus(movie.status)) &&
-          activeDistributionMap.has(movie.id)
-      ),
-    [movies, activeDistributionMap]
-  );
-
-  const effectiveMovieId = selectedMovieId || eligibleMovies[0]?.id || "";
+  const [dialogScreens, setDialogScreens] = useState<ScreenOutputDto[]>([]);
+  const [screenOptions, setScreenOptions] = useState<ScreenOutputDto[]>([]);
+  const [dialogFormats, setDialogFormats] = useState<FormatOutputDto[]>([]);
+  const [dialogDistributions, setDialogDistributions] = useState<MovieDistributionOutputDto[]>([]);
+  const [dialogPricingRules, setDialogPricingRules] = useState<PricingRuleOutputDto[]>([]);
 
   const [form, setForm] = useState<ShowtimeFormState>({
     movieId: "",
     cinemaId: "",
     screenId: "",
     movieDistributionId: "",
-    date: "",
+    date: toDateInput(new Date()),
     startTime: "",
     endTime: "",
+    format: "",
+    language: "Vietnamese",
+    caption: "Vietsub",
+    basePrice: "",
   });
 
-  const listMutation = useLTTMutation<PagedResultDto<ShowtimeOutputDto> | undefined, { movieId: string; cinemaId: string; page: number; fetch: number }>({
+  const eligibleMovies = useMemo(
+    () => {
+      const distributedMovieIds = new Set(schedulerDistributions.map((item) => item.movieId));
+      return movies.filter(
+        (movie) =>
+          allowedMovieStatuses.has(normalizeMovieStatus(movie.status)) &&
+          distributedMovieIds.has(movie.id)
+      );
+    },
+    [movies, schedulerDistributions]
+  );
+  const effectiveMovieId = selectedMovieId || eligibleMovies[0]?.id || "";
+  const selectedMovie = useMemo(
+    () => movies.find((movie) => movie.id === form.movieId),
+    [movies, form.movieId]
+  );
+  const selectedDistribution = useMemo(
+    () => dialogDistributions.find((distribution) => distribution.id === form.movieDistributionId),
+    [dialogDistributions, form.movieDistributionId]
+  );
+
+  const listShowtimeMutation = useLTTMutation<
+    PagedResultDto<ShowtimeOutputDto> | undefined,
+    { movieId: string; cinemaId: string; page: number; fetch: number }
+  >({
     mutationFn: (params) => showtimeService.getShowtimeListAsync(params),
     onSuccess: (res) => {
-      if (res && res.items) {
-        setItems(res.items);
-        setTotalCount(res.totalCount);
-      }
+      setShowtimes(res?.items || []);
+      setShowtimeTotal(res?.totalCount || 0);
     },
-    onError: (err) => toast.error(err.message || t("admin.showtimes.fetch_error"))
+    onError: (err) => toast.error(err.message || t("admin.showtimes.fetch_error")),
   });
 
-  const movieMutation = useLTTMutation<PagedResultDto<MovieOutputDto> | undefined, { page: number; fetch: number }>({
-    mutationFn: (p) => movieService.getMovieListAsync(p),
-    onSuccess: (res) => { if (res && res.items) setMovies(res.items); }
+  const movieMutation = useLTTMutation<PagedResultDto<MovieOutputDto> | undefined, void>({
+    mutationFn: () => movieService.getMovieListAsync({ page: 1, fetch: 100 }),
+    onSuccess: (res) => setMovies(res?.items || []),
+    onError: (err) => toast.error(err.message || t("admin.showtimes.fetch_error")),
   });
-  const distributionMutation = useLTTMutation<PagedResultDto<MovieDistributionOutputDto> | undefined, void>({
+
+  const listDistributionMutation = useLTTMutation<PagedResultDto<MovieDistributionOutputDto> | undefined, void>({
+    mutationFn: () => movieService.getDistributionsAsync({ skipCount: (distPage - 1) * distFetch, maxResultCount: distFetch }),
+    onSuccess: (res) => {
+      const q = distSearch.trim().toLowerCase();
+      const list = res?.items || [];
+      const filtered = q ? list.filter((item) => item.movieTitle.toLowerCase().includes(q)) : list;
+      setDistributionItems(filtered);
+      setDistributionTotal(res?.totalCount || filtered.length);
+    },
+    onError: (err) => toast.error(err.message || t("admin.showtimes.distribution_fetch_error")),
+  });
+
+  const schedulerDistributionMutation = useLTTMutation<PagedResultDto<MovieDistributionOutputDto> | undefined, void>({
     mutationFn: () => movieService.getDistributionsAsync({ skipCount: 0, maxResultCount: 1000 }),
-    onSuccess: (res) => { if (res?.items) setDistributions(res.items); },
-    onError: (err) => toast.error(err.message || t("admin.showtimes.distribution_fetch_error"))
+    onSuccess: (res) => setSchedulerDistributions(res?.items || []),
+    onError: (err) => toast.error(err.message || t("admin.showtimes.distribution_fetch_error")),
   });
 
-  const screenMutation = useLTTMutation<PagedResultDto<ScreenOutputDto> | undefined, void>({
-    mutationFn: () => screenService.getScreenListAsync(managerCinemaId, { page: 1, fetch: 100 }),
-    onSuccess: (res) => { if (res && res.items) setScreens(res.items); }
+  const screenLookupMutation = useLTTMutation<PagedResultDto<ScreenOutputDto> | undefined, void>({
+    mutationFn: () => {
+      if (!managerCinemaId) return Promise.resolve(undefined);
+      return screenService.getScreenListAsync(managerCinemaId, { page: 1, fetch: 200 });
+    },
+    onSuccess: (res) => setScreenOptions(res?.items || []),
+    onError: () => setScreenOptions([]),
   });
 
-  const createMutation = useLTTMutation<ShowtimeOutputDto | undefined, CreateShowtimeInputDto>({
+  const loadDialogContextMutation = useLTTMutation<void, void>({
+    mutationFn: async () => {
+      if (!managerCinemaId) return;
+
+      const [screensRes, formatsRes, distributionsRes, pricingRulesRes] = await Promise.all([
+        screenService.getScreenListAsync(managerCinemaId, { page: 1, fetch: 100 }),
+        movieService.getFormats({ page: 1, fetch: 100 }),
+        movieService.getDistributionsAsync({ skipCount: 0, maxResultCount: 1000 }),
+        managerPricingRulesService.getPricingRuleListAsync(managerCinemaId, 1, 100),
+      ]);
+
+      setDialogScreens(screensRes.items || []);
+      setDialogFormats(formatsRes.items || []);
+      setDialogDistributions(distributionsRes.items || []);
+      setDialogPricingRules(pricingRulesRes.items || []);
+      setForm((current) => {
+        const next = { ...current };
+        if (!next.format && formatsRes.items?.length) {
+          next.format = formatsRes.items[0].name;
+        }
+        if (next.movieId && !next.movieDistributionId) {
+          const distribution = (distributionsRes.items || []).find((item) => item.movieId === next.movieId);
+          next.movieDistributionId = distribution?.id || "";
+        }
+        return next;
+      });
+    },
+    onError: (err) => toast.error(err.message || t("admin.showtimes.form.context_load_error")),
+  });
+
+  const createShowtimeMutation = useLTTMutation<ShowtimeOutputDto | undefined, CreateShowtimeInputDto>({
     mutationFn: (body) => showtimeService.createShowtimeAsync(body),
-    onSuccess: () => { toast.success(t("admin.showtimes.create_success")); fetchData(); setDialogOpen(false); }
+    onSuccess: () => {
+      toast.success(t("admin.showtimes.create_success"));
+      setDialogOpen(false);
+      fetchShowtimes();
+    },
+    onError: (err) => toast.error(err.message || t("admin.showtimes.create_error")),
   });
-  const deleteMutation = useLTTMutation<void, string>({
+
+  const updateShowtimeMutation = useLTTMutation<ShowtimeOutputDto | undefined, { id: string; body: CreateShowtimeInputDto }>({
+    mutationFn: ({ id, body }) => showtimeService.updateShowtimeAsync(id, body),
+    onSuccess: () => {
+      toast.success(t("admin.showtimes.update_success"));
+      setDialogOpen(false);
+      fetchShowtimes();
+    },
+    onError: (err) => toast.error(err.message || t("admin.showtimes.update_error")),
+  });
+
+  const deleteShowtimeMutation = useLTTMutation<void, string>({
     mutationFn: (id) => showtimeService.deleteShowtimeAsync(id),
+    onSuccess: () => {
+      toast.success(t("admin.showtimes.delete_success"));
+      fetchShowtimes();
+    },
     onError: (err) => toast.error(err.message || t("admin.showtimes.delete_error")),
   });
 
-  const loading =
-    listMutation.isLoading ||
-    createMutation.isLoading ||
-    movieMutation.isLoading ||
-    distributionMutation.isLoading ||
-    screenMutation.isLoading;
-
-  const fetchData = () => {
-    if (!effectiveMovieId) return;
-    listMutation.mutation({
+  const fetchShowtimes = () => {
+    if (!managerCinemaId || !effectiveMovieId) return;
+    listShowtimeMutation.mutation({
       movieId: effectiveMovieId,
       cinemaId: managerCinemaId,
       page,
@@ -252,572 +344,588 @@ export default function ShowtimeSchedulerPage() {
     const userInfo = accessToken ? getUserInfoFromToken(accessToken) : null;
     const cinemaId = userInfo?.cinemaId?.trim() || "";
     if (!cinemaId) {
-      setCinemaMissing(true);
       toast.error(t("admin.showtimes.cinema_claim_missing"));
       return;
     }
     setManagerCinemaId(cinemaId);
+  }, [t]);
+
+  useEffect(() => {
+    movieMutation.mutation();
+    schedulerDistributionMutation.mutation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (!managerCinemaId || !effectiveMovieId) return;
-    fetchData();
-  }, [managerCinemaId, effectiveMovieId, page, fetch]);
+    if (!managerCinemaId || !effectiveMovieId || mainTab !== "scheduler") return;
+    fetchShowtimes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [managerCinemaId, effectiveMovieId, page, fetch, mainTab]);
 
   useEffect(() => {
-    movieMutation.mutation({ page: 1, fetch: 100 });
-    distributionMutation.mutation();
-  }, []);
+    if (mainTab !== "distribution") return;
+    listDistributionMutation.mutation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mainTab, distPage, distFetch, distSearch]);
 
   useEffect(() => {
-    if (selectedMovieId && !eligibleMovies.some((m) => m.id === selectedMovieId)) {
-      setSelectedMovieId("");
-    }
-  }, [eligibleMovies, selectedMovieId]);
+    if (!dialogOpen || !managerCinemaId) return;
+    loadDialogContextMutation.mutation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dialogOpen, managerCinemaId]);
 
   useEffect(() => {
     if (!managerCinemaId) return;
-    screenMutation.mutation();
+    screenLookupMutation.mutation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [managerCinemaId]);
 
-  const filtered = items; // Backend handled filter ideally, or we can filter locally if needed.
+  const filteredShowtimes = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return showtimes.filter((item) => {
+      const matchSearch = !q || (item.movieTitle || "").toLowerCase().includes(q);
+      const matchDate = !dateFilter || extractDate(item) === dateFilter;
+      return matchSearch && matchDate;
+    });
+  }, [showtimes, search, dateFilter]);
 
-  const weekDates = useMemo(
-    () => getWeekDates(calendarWeek),
-    [calendarWeek]
-  );
-
+  const weekDates = useMemo(() => getWeekDates(calendarWeek), [calendarWeek]);
+  const todayKey = formatDateKey(new Date());
   const movieColorMap = useMemo(() => {
     const map: Record<string, string> = {};
-    const uniqueMovies = [...new Set(items.map((i) => i.movieId))];
+    const uniqueMovies = [...new Set(filteredShowtimes.map((item) => item.movieId))];
     uniqueMovies.forEach((id, idx) => {
       map[id] = MOVIE_COLORS[idx % MOVIE_COLORS.length];
     });
     return map;
-  }, [items]);
-
+  }, [filteredShowtimes]);
   const calendarItems = useMemo(() => {
-    let list = items;
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter((s) => s.movieTitle?.toLowerCase().includes(q));
-    }
     const weekKeys = weekDates.map(formatDateKey);
-    return list.filter((s) => s.date && weekKeys.includes(s.date));
-  }, [items, search, weekDates]);
-
-  const allSel =
-    filtered.length > 0 && filtered.every((i) => selected.has(i.id));
-  const toggleAll = () =>
-    allSel
-      ? setSelected(new Set())
-      : setSelected(new Set(filtered.map((i) => i.id)));
-  const toggle = (id: string) => {
-    const n = new Set(selected);
-    n.has(id) ? n.delete(id) : n.add(id);
-    setSelected(n);
-  };
-
-  const openCreate = (prefillDate?: string, prefillTime?: string) => {
-    const defaultMovieId = selectedMovieId || eligibleMovies[0]?.id || "";
-    const defaultDistributionId = defaultMovieId ? activeDistributionMap.get(defaultMovieId)?.id || "" : "";
-    setEditing(null);
-    setForm({
-      movieId: defaultMovieId,
-      cinemaId: managerCinemaId,
-      screenId: "",
-      movieDistributionId: defaultDistributionId,
-      date: prefillDate || "",
-      startTime: prefillTime || "",
-      endTime: "",
-    });
-    setDialogOpen(true);
-  };
-
-  const openEdit = (s: ShowtimeOutputDto) => {
-    const distributionId = activeDistributionMap.get(s.movieId)?.id || "";
-    setEditing(s);
-    setForm({
-      movieId: s.movieId,
-      cinemaId: managerCinemaId,
-      screenId: s.screenId,
-      movieDistributionId: distributionId,
-      date: s.startTime.split("T")[0],
-      startTime: s.startTime.split("T")[1].substring(0, 5),
-      endTime: s.endTime.split("T")[1].substring(0, 5),
-    });
-    setDialogOpen(true);
-  };
-
-  const save = () => {
-    if (!form.movieId || !form.cinemaId || !form.screenId || !form.movieDistributionId || !form.date || !form.startTime) {
-      toast.error("Vui lòng điền đầy đủ thông tin");
-      return;
-    }
-
-    const start = `${form.date}T${form.startTime}:00Z`;
-    const end = `${form.date}T${form.endTime || "23:59"}:00Z`;
-
-    const movieFormatJson = JSON.stringify({
-      movie_format: form.format || "2D",
-      movie_language: form.language || "Vietnamese",
-      movie_caption: form.caption || "Vietsub",
-    });
-    createMutation.mutation({
-      movieId: form.movieId,
-      cinemaId: form.cinemaId,
-      screenId: form.screenId,
-      distributionId: form.movieDistributionId,
-      showDate: form.date,
-      startTime: start,
-      endTime: end,
-      basePrice: Number(form.basePrice || 0),
-      movieFormat: movieFormatJson,
-    });
-  };
-
-  const bulkDelete = () => {
-    Promise.allSettled(Array.from(selected).map((id) => deleteMutation.mutation(id))).then((results) => {
-      const failed = results.filter((r) => r.status === "rejected").length;
-      if (failed === 0) {
-        toast.success(t("admin.showtimes.bulk_delete_success", { count: selected.size }));
-      } else {
-        toast.error(t("admin.showtimes.bulk_delete_partial", { success: selected.size - failed, total: selected.size }));
-      }
-      setSelected(new Set());
-      setDeleteOpen(false);
-      fetchData();
-    });
-  };
-
+    return filteredShowtimes.filter((item) => weekKeys.includes(extractDate(item)));
+  }, [filteredShowtimes, weekDates]);
   const shiftWeek = (dir: number) => {
     const d = new Date(calendarWeek);
     d.setDate(d.getDate() + dir * 7);
     setCalendarWeek(d);
   };
-
   const goToday = () => setCalendarWeek(new Date());
-  const todayKey = formatDateKey(new Date());
+
+  useEffect(() => {
+    if (viewMode !== "calendar") return;
+    if (calendarItems.length > 0) return;
+    const firstDate = filteredShowtimes[0] ? extractDate(filteredShowtimes[0]) : "";
+    if (!firstDate) return;
+    const parsed = new Date(firstDate);
+    if (Number.isNaN(parsed.getTime())) return;
+    setCalendarWeek(parsed);
+  }, [viewMode, calendarItems.length, filteredShowtimes]);
+
+  const openCreate = (prefillDate?: string, prefillTime?: string) => {
+    const defaultMovie = selectedMovieId || eligibleMovies[0]?.id || "";
+    const defaultDistribution = dialogDistributions.find((item) => item.movieId === defaultMovie)?.id || "";
+    setEditing(null);
+    setEndTimeManuallyEdited(false);
+    setForm({
+      movieId: defaultMovie,
+      cinemaId: managerCinemaId,
+      screenId: "",
+      movieDistributionId: defaultDistribution,
+      date: prefillDate || toDateInput(new Date()),
+      startTime: prefillTime || "",
+      endTime: "",
+      format: dialogFormats[0]?.name || "",
+      language: "Vietnamese",
+      caption: "Vietsub",
+      basePrice: "",
+    });
+    setDialogOpen(true);
+  };
+
+  const openEdit = (item: ShowtimeOutputDto) => {
+    const formatPayload = item.format || "2D";
+    setEditing(item);
+    setEndTimeManuallyEdited(true);
+    setForm({
+      movieId: item.movieId,
+      cinemaId: managerCinemaId,
+      screenId: item.screenId,
+      movieDistributionId: item.distributionId || "",
+      date: extractDate(item) || toDateInput(new Date()),
+      startTime: toTimeInput(item.startTime),
+      endTime: toTimeInput(item.endTime),
+      format: formatPayload,
+      language: "Vietnamese",
+      caption: "Vietsub",
+      basePrice: String(item.basePrice || ""),
+    });
+    setDialogOpen(true);
+  };
+
+  const saveShowtime = () => {
+    if (!form.movieId || !form.cinemaId || !form.screenId || !form.movieDistributionId || !form.date || !form.startTime || !form.endTime) {
+      toast.error(t("admin.showtimes.form.validation.required"));
+      return;
+    }
+
+    const basePrice = Number(form.basePrice);
+    if (!basePrice || basePrice <= 0) {
+      toast.error(t("admin.showtimes.form.validation.base_price_invalid"));
+      return;
+    }
+
+    const body: CreateShowtimeInputDto = {
+      movieId: form.movieId,
+      cinemaId: form.cinemaId,
+      screenId: form.screenId,
+      distributionId: form.movieDistributionId,
+      showDate: form.date,
+      startTime: `${form.startTime}:00`,
+      endTime: `${form.endTime}:00`,
+      duration: selectedMovie?.durationMins || undefined,
+      basePrice,
+      movieFormat: JSON.stringify({
+        movie_format: form.format || "2D",
+        movie_language: form.language || "Vietnamese",
+        movie_caption: form.caption || "Vietsub",
+      }),
+    };
+
+    if (editing?.id) {
+      updateShowtimeMutation.mutation({ id: editing.id, body });
+      return;
+    }
+
+    createShowtimeMutation.mutation(body);
+  };
+
+  const distributionStatus = (item: MovieDistributionOutputDto) => {
+    const now = new Date().getTime();
+    const start = item.licenseStartDate ? new Date(item.licenseStartDate).getTime() : Number.NEGATIVE_INFINITY;
+    const end = item.licenseEndDate ? new Date(item.licenseEndDate).getTime() : Number.POSITIVE_INFINITY;
+    if (now < start) return t("admin.showtimes.distribution.status.upcoming");
+    if (now > end) return t("admin.showtimes.distribution.status.expired");
+    return t("admin.showtimes.distribution.status.active");
+  };
+  const isLikelyGuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  const resolveScreenLabel = (item: ShowtimeOutputDto) => {
+    const name = (item.screenName || "").trim();
+    if (name && !isLikelyGuid(name)) return name;
+    const found = screenOptions.find((screen) => screen.id === item.screenId);
+    if (found) return `Screen ${found.screenNumber}`;
+    return name || item.screenId;
+  };
+  const resolveDurationMinutes = (item: ShowtimeOutputDto) => {
+    const payloadDuration = (item as unknown as { duration?: number }).duration;
+    if (typeof payloadDuration === "number" && payloadDuration > 0) return payloadDuration;
+    const start = timeToMinutes(extractTime(item.startTime));
+    const end = timeToMinutes(extractTime(item.endTime));
+    if (Number.isNaN(start) || Number.isNaN(end)) return 0;
+    const diff = end >= start ? end - start : 24 * 60 - start + end;
+    return diff;
+  };
+  const resolveUpdatedAt = (item: ShowtimeOutputDto) => {
+    const raw = (item as unknown as { updatedAt?: string; lastModificationTime?: string }).updatedAt
+      || (item as unknown as { updatedAt?: string; lastModificationTime?: string }).lastModificationTime;
+    if (!raw) return "--";
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) return raw;
+    return parsed.toLocaleString();
+  };
+
+  const schedulerLoading = listShowtimeMutation.isLoading || deleteShowtimeMutation.isLoading;
+  const saveLoading = createShowtimeMutation.isLoading || updateShowtimeMutation.isLoading;
+  const contextLoading = loadDialogContextMutation.isLoading;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="font-heading text-2xl font-bold">{t("admin.showtimes.title")}</h1>
-
         <div className="flex items-center gap-3">
-          <LTTTabs
-            value={viewMode}
-            onValueChange={(v) =>
-              setViewMode(v as "table" | "calendar")
-            }
-          >
-            <LTTTabsList className="h-9">
-              <LTTTabsTrigger value="table" className="gap-1.5 px-3 text-xs">
-                <List className="h-3.5 w-3.5" />
-                {t("admin.showtimes.view.table")}
-              </LTTTabsTrigger>
-              <LTTTabsTrigger
-                value="calendar"
-                className="gap-1.5 px-3 text-xs"
-              >
-                <CalendarDays className="h-3.5 w-3.5" />
-                {t("admin.showtimes.view.calendar")}
-              </LTTTabsTrigger>
-            </LTTTabsList>
-          </LTTTabs>
-
-          <LTTButton onClick={() => openCreate()} className="gap-2" disabled={!managerCinemaId || cinemaMissing}>
-            <Plus className="h-4 w-4" /> {t("admin.showtimes.add")}
-          </LTTButton>
+          {mainTab === "scheduler" && (
+            <>
+              <LTTTabs value={viewMode} onValueChange={(value) => setViewMode(value as SchedulerView)}>
+                <LTTTabsList className="h-9">
+                  <LTTTabsTrigger value="table" className="gap-1.5 px-3 text-xs">
+                    <List className="h-3.5 w-3.5" /> {t("admin.showtimes.view.table")}
+                  </LTTTabsTrigger>
+                  <LTTTabsTrigger value="calendar" className="gap-1.5 px-3 text-xs">
+                    <CalendarDays className="h-3.5 w-3.5" /> {t("admin.showtimes.view.calendar")}
+                  </LTTTabsTrigger>
+                </LTTTabsList>
+              </LTTTabs>
+              <LTTButton onClick={() => openCreate()} className="gap-2" disabled={!managerCinemaId}>
+                <Plus className="h-4 w-4" /> {t("admin.showtimes.add")}
+              </LTTButton>
+            </>
+          )}
         </div>
       </div>
 
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
-          <LTTInput
-            placeholder={t("admin.showtimes.search_placeholder")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-
-        {viewMode === "table" && (
-          <LTTInput
-            type="date"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="w-44"
-          />
-        )}
-
-        {viewMode === "table" && selected.size > 0 && (
-          <LTTButton
-            variant="destructive"
-            size="sm"
-            className="gap-2"
-            onClick={() => setDeleteOpen(true)}
-          >
-            <Trash2 className="h-4 w-4" /> Xóa {selected.size}
-          </LTTButton>
-        )}
-        <LTTSelect value={effectiveMovieId} onValueChange={(v) => { setSelectedMovieId(v); setPage(1); }}>
-          <LTTSelectTrigger className="w-64">
-            <LTTSelectValue placeholder="Chọn phim để tải lịch" />
-          </LTTSelectTrigger>
-          <LTTSelectContent>
-            {eligibleMovies.length === 0 ? (
-              <div className="px-3 py-2 text-xs text-muted-foreground-shadcn">
-                No distributed valid movies available for this cinema now.
-              </div>
-            ) : (
-              eligibleMovies.map((m) => (
-                <LTTSelectItem key={m.id} value={m.id}>{m.title}</LTTSelectItem>
-              ))
-            )}
-          </LTTSelectContent>
-        </LTTSelect>
-        <LTTButton variant="outline" className="gap-2" onClick={fetchData} loading={listMutation.isLoading}>
-          <RefreshCw className="h-4 w-4" /> Làm mới
-        </LTTButton>
-      </div>
-
-      {viewMode === "table" ? (
-        <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
-                <th className="w-10 px-3 py-3">
-                  <LTTCheckbox checked={allSel} onCheckedChange={toggleAll} />
-                </th>
-                <th className="px-4 py-3 text-left font-semibold">Phim</th>
-                <th className="px-4 py-3 text-left font-semibold">Rạp</th>
-                <th className="px-4 py-3 text-left font-semibold">Phòng</th>
-                <th className="px-4 py-3 text-left font-semibold">Ngày</th>
-                <th className="px-4 py-3 text-left font-semibold">Giờ chiếu</th>
-                <th className="px-4 py-3 text-left font-semibold">Định dạng</th>
-                <th className="px-4 py-3 text-left font-semibold">Giá</th>
-                <th className="px-4 py-3 text-left font-semibold">Trạng thái</th>
-                <th className="px-4 py-3 text-right font-semibold">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <DomainTableStateRow colSpan={10} state="loading" loadingText="Đang tải dữ liệu lịch chiếu..." />
-              ) : filtered.length === 0 ? (
-                <DomainTableStateRow colSpan={10} state="empty" emptyText="Không có dữ liệu lịch chiếu." />
-              ) : (
-                filtered.map((item) => (
-                  <tr
-                    key={item.id}
-                    className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors"
-                  >
-                    <td className="px-3 py-3">
-                      <LTTCheckbox
-                        checked={selected.has(item.id)}
-                        onCheckedChange={() => toggle(item.id)}
-                      />
-                    </td>
-                    <td className="px-4 py-3 font-medium">{item.movieTitle}</td>
-                    <td className="px-4 py-3 text-xs">—</td>
-                    <td className="px-4 py-3 text-xs">
-                      {item.screenName}
-                    </td>
-                    <td className="px-4 py-3 text-xs">{item.startTime?.split("T")[0]}</td>
-                    <td className="px-4 py-3 text-xs font-semibold">
-                      {item.startTime?.split("T")[1].substring(0, 5)} - {item.endTime?.split("T")[1].substring(0, 5)}
-                    </td>
-                    <td className="px-4 py-3 text-xs">{item.format}</td>
-                    <td className="px-4 py-3 text-xs">
-                      {formatPrice(item.basePrice ?? 0)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <LTTBadge
-                        className={cn("font-medium", statusColor[item.status || "active"])}
-                      >
-                        {statusLabel[item.status || "active"]}
-                      </LTTBadge>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end gap-1">
-                        <LTTButton
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => openEdit(item)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </LTTButton>
-                        <LTTButton
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={() => {
-                            setSingleDeleteId(item.id);
-                            setSingleDeleteOpen(true);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </LTTButton>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {/* Week navigation */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <LTTButton
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => shiftWeek(-1)}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </LTTButton>
-
-              <LTTButton
-                variant="outline"
-                size="sm"
-                onClick={goToday}
-                className="text-xs"
-              >
-                Hôm nay
-              </LTTButton>
-
-              <LTTButton
-                variant="outline"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => shiftWeek(1)}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </LTTButton>
+      {mainTab === "scheduler" ? (
+        <>
+            <LTTTabs value={mainTab} onValueChange={(value) => setMainTab(value as MainTab)}>
+                <LTTTabsList className="h-9">
+                    <LTTTabsTrigger value="scheduler" className="px-3 text-xs">{t("admin.showtimes.tabs.scheduler")}</LTTTabsTrigger>
+                    <LTTTabsTrigger value="distribution" className="px-3 text-xs">{t("admin.showtimes.tabs.distribution")}</LTTTabsTrigger>
+                </LTTTabsList>
+            </LTTTabs>
+          <div className="flex items-center gap-3 flex-wrap my-2">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
+              <LTTInput
+                placeholder={t("admin.showtimes.search_placeholder")}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
             </div>
-
-            <span className="text-sm font-medium text-muted-foreground-shadcn">
-              {weekDates[0].toLocaleDateString("vi-VN", {
-                day: "2-digit",
-                month: "2-digit",
-              })}{" "}
-              —{" "}
-              {weekDates[6].toLocaleDateString("vi-VN", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-              })}
-            </span>
+            {viewMode === "table" && (
+              <LTTInput
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="w-44"
+              />
+            )}
+            <LTTSelect value={effectiveMovieId} onValueChange={(value) => { setSelectedMovieId(value); setPage(1); }}>
+              <LTTSelectTrigger className="w-72">
+                <LTTSelectValue placeholder={t("admin.showtimes.movie_filter_placeholder")} />
+              </LTTSelectTrigger>
+              <LTTSelectContent>
+                {eligibleMovies.map((movie) => (
+                  <LTTSelectItem key={movie.id} value={movie.id}>{movie.title}</LTTSelectItem>
+                ))}
+              </LTTSelectContent>
+            </LTTSelect>
+            <LTTButton type="button" variant="outline" className="gap-2" onClick={fetchShowtimes} loading={listShowtimeMutation.isLoading}>
+              <RefreshCw className="h-4 w-4" /> {t("admin.showtimes.refresh")}
+            </LTTButton>
           </div>
 
-          {/* Movie legend */}
-          <div className="flex flex-wrap gap-2">
-            {[...new Set(calendarItems.map((i) => i.movieId))].map((mid) => {
-              const movie = movies.find((m) => m.id === mid);
-              return (
-                <span
-                  key={mid}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${movieColorMap[mid] ||
-                    "bg-muted-shadcn/20 text-muted-foreground-shadcn"
-                    }`}
-                >
-                  {movie?.title || mid}
-                </span>
-              );
-            })}
-          </div>
-
-          {/* Calendar grid */}
-          <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
-              <div className="min-w-[800px]">
-                {/* Header row */}
-                <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border-shadcn bg-muted-shadcn/50">
-                  <div className="px-2 py-2 text-xs font-medium text-muted-foreground-shadcn text-center">
-                    Giờ
-                  </div>
-                  {weekDates.map((d, i) => {
-                    const key = formatDateKey(d);
-                    const isToday = key === todayKey;
-                    return (
-                      <div
-                        key={i}
-                        className={`px-2 py-2 text-center border-l border-border-shadcn ${isToday ? "bg-primary-shadcn/10" : ""
-                          }`}
-                      >
-                        <div className="text-xs text-muted-foreground-shadcn">
-                          {DAYS_VI[(i + 1) % 7 === 0 ? 0 : (i + 1) % 7]}
-                        </div>
-                        <div
-                          className={`text-sm font-semibold ${isToday ? "text-primary-shadcn" : ""
-                            }`}
-                        >
-                          {d.getDate()}/{d.getMonth() + 1}
-                        </div>
-                      </div>
-                    );
-                  })}
+          {viewMode === "table" ? (
+            <>
+              <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm my-3">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
+                      <th className="px-4 py-3 text-left font-semibold">{t("admin.showtimes.table.screen")}</th>
+                      <th className="px-4 py-3 text-left font-semibold">{t("admin.showtimes.table.show_date")}</th>
+                      <th className="px-4 py-3 text-left font-semibold">{t("admin.showtimes.table.time")}</th>
+                      <th className="px-4 py-3 text-left font-semibold">{t("admin.showtimes.table.format")}</th>
+                      <th className="px-4 py-3 text-left font-semibold">{t("admin.showtimes.table.base_price")}</th>
+                      <th className="px-4 py-3 text-left font-semibold">{t("admin.showtimes.table.status")}</th>
+                      <th className="px-4 py-3 text-left font-semibold">{t("admin.showtimes.table.updated_at")}</th>
+                      <th className="px-4 py-3 text-right font-semibold">{t("admin.showtimes.table.actions")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {schedulerLoading ? (
+                      <DomainTableStateRow colSpan={8} state="loading" loadingText={t("admin.showtimes.loading")} />
+                    ) : filteredShowtimes.length === 0 ? (
+                      <DomainTableStateRow colSpan={8} state="empty" emptyText={t("admin.showtimes.empty")} />
+                    ) : (
+                      filteredShowtimes.map((item) => (
+                        <tr key={item.id} className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors">
+                          <td className="px-4 py-3">{resolveScreenLabel(item)}</td>
+                          <td className="px-4 py-3">{extractDate(item)}</td>
+                          <td className="px-4 py-3">
+                            {toTimeInput(item.startTime)} - {toTimeInput(item.endTime)} ({resolveDurationMinutes(item)}m)
+                          </td>
+                          <td className="px-4 py-3">{resolveFormatLabel(item)}</td>
+                          <td className="px-4 py-3">{formatPrice(item.basePrice || 0)}</td>
+                          <td className="px-4 py-3">
+                            <LTTBadge className={cn("font-medium", statusColor[resolveShowtimeStatus(item)] || statusColor.scheduled)}>
+                              {t(`admin.showtimes.status.${resolveShowtimeStatus(item)}`)}
+                            </LTTBadge>
+                          </td>
+                          <td className="px-4 py-3">{resolveUpdatedAt(item)}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex justify-end gap-1">
+                              <LTTButton variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(item)}>
+                                <Pencil className="h-4 w-4" />
+                              </LTTButton>
+                              <LTTButton
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                onClick={() => {
+                                  setSingleDeleteId(item.id);
+                                  setSingleDeleteOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </LTTButton>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <AdminTablePagination
+                totalCount={showtimeTotal}
+                page={page}
+                pageSize={fetch}
+                onPageChange={(nextPage) => setPage(nextPage)}
+                onPageSizeChange={(nextSize) => {
+                  setFetch(nextSize);
+                  setPage(1);
+                }}
+                loading={listShowtimeMutation.isLoading}
+              />
+            </>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <LTTButton variant="outline" size="icon" className="h-8 w-8" onClick={() => shiftWeek(-1)}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </LTTButton>
+                  <LTTButton variant="outline" size="sm" onClick={goToday} className="text-xs">
+                    {t("admin.showtimes.calendar.today")}
+                  </LTTButton>
+                  <LTTButton variant="outline" size="icon" className="h-8 w-8" onClick={() => shiftWeek(1)}>
+                    <ChevronRight className="h-4 w-4" />
+                  </LTTButton>
                 </div>
+                <span className="text-sm font-medium text-muted-foreground-shadcn">
+                  {weekDates[0].toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })} -{" "}
+                  {weekDates[6].toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                </span>
+              </div>
 
-                {/* Time slots */}
-                <div className="relative">
-                  {HOURS.map((hour) => (
-                    <div
-                      key={hour}
-                      className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border-shadcn last:border-0"
+              <div className="flex flex-wrap gap-2">
+                {[...new Set(calendarItems.map((item) => item.movieId))].map((movieId) => {
+                  const movie = movies.find((m) => m.id === movieId);
+                  return (
+                    <span
+                      key={movieId}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
+                        movieColorMap[movieId] || "bg-muted-shadcn text-foreground-shadcn border-border-shadcn"
+                      )}
                     >
-                      <div className="px-2 py-3 text-xs text-muted-foreground-shadcn text-center border-r border-border-shadcn">
-                        {String(hour).padStart(2, "0")}:00
+                      {movie?.title || movieId}
+                    </span>
+                  );
+                })}
+              </div>
+
+              {calendarItems.length === 0 ? (
+                <div className="rounded-lg border border-border-shadcn bg-card p-4 text-sm text-muted-foreground-shadcn">
+                  {t("admin.showtimes.empty")}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <div className="min-w-[800px]">
+                      <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border-shadcn bg-muted-shadcn/50">
+                        <div className="px-2 py-2 text-xs font-medium text-muted-foreground-shadcn text-center">
+                          {t("admin.showtimes.calendar.hour")}
+                        </div>
+                        {weekDates.map((d, i) => {
+                          const key = formatDateKey(d);
+                          const isToday = key === todayKey;
+                          return (
+                            <div key={i} className={cn("px-2 py-2 text-center border-l border-border-shadcn", isToday && "bg-primary/10")}>
+                              <div className="text-xs text-muted-foreground-shadcn">{DAYS_VI[(i + 1) % 7 === 0 ? 0 : i + 1]}</div>
+                              <div className={cn("text-sm font-semibold", isToday && "text-primary")}>
+                                {d.getDate()}/{d.getMonth() + 1}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
 
-                      {weekDates.map((d, di) => {
-                        const dateKey = formatDateKey(d);
-                        const isToday = dateKey === todayKey;
-
-                        const showtimesInSlot = calendarItems.filter((s) => {
-                          if (s.date !== dateKey) return false;
-                          const startMin = timeToMinutes(s.startTime);
-                          const slotStart = hour * 60;
-                          return startMin >= slotStart && startMin < slotStart + 60;
-                        });
-
-                        return (
-                          <div
-                            key={di}
-                            className={`relative border-l border-border-shadcn min-h-[52px] cursor-pointer hover:bg-muted-shadcn/20 transition-colors ${isToday ? "bg-primary-shadcn/5" : ""
-                              }`}
-                            onClick={() =>
-                              openCreate(
-                                dateKey,
-                                `${String(hour).padStart(2, "0")}:00`
-                              )
-                            }
-                          >
-                            {showtimesInSlot.map((st) => {
-                              const startMin = timeToMinutes(st.startTime);
-                              const endMin = st.endTime
-                                ? timeToMinutes(st.endTime)
-                                : startMin + 120;
-                              const durationMin = endMin - startMin;
-                              const topOffset =
-                                ((startMin - hour * 60) / 60) * 100;
-                              const heightPct = (durationMin / 60) * 100;
+                      <div className="relative">
+                        {HOURS.map((hour) => (
+                          <div key={hour} className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border-shadcn last:border-0">
+                            <div className="px-2 py-3 text-xs text-muted-foreground-shadcn text-center border-r border-border-shadcn">
+                              {String(hour).padStart(2, "0")}:00
+                            </div>
+                            {weekDates.map((d, dayIndex) => {
+                              const dateKey = formatDateKey(d);
+                              const isToday = dateKey === todayKey;
+                              const showtimesInSlot = calendarItems.filter((item) => {
+                                const itemDate = extractDate(item);
+                                if (itemDate !== dateKey) return false;
+                                const startMinutes = timeToMinutes(toTimeInput(item.startTime));
+                                const slotStart = hour * 60;
+                                return startMinutes >= slotStart && startMinutes < slotStart + 60;
+                              });
 
                               return (
                                 <div
-                                  key={st.id}
-                                  className={`absolute left-0.5 right-0.5 rounded border px-1 py-0.5 overflow-hidden cursor-pointer z-10 ${movieColorMap[st.movieId] ||
-                                    "bg-muted-shadcn/20 text-muted-foreground-shadcn"
-                                    } ${st.status === "cancelled"
-                                      ? "opacity-40 line-through"
-                                      : ""
-                                    }`}
-                                  style={{
-                                    top: `${topOffset}%`,
-                                    height: `${Math.max(
-                                      heightPct,
-                                      40
-                                    )}%`,
-                                    minHeight: "20px",
-                                  }}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openEdit(st);
-                                  }}
-                                  title={`${st.movieTitle}\n${st.startTime} - ${st.endTime}\nPhòng ${st.screenName} • ${st.cinemaName}`}
+                                  key={dayIndex}
+                                  className={cn(
+                                    "relative border-l border-border-shadcn min-h-[52px] cursor-pointer hover:bg-muted-shadcn/20 transition-colors",
+                                    isToday && "bg-primary/5"
+                                  )}
+                                  onClick={() => openCreate(dateKey, `${String(hour).padStart(2, "0")}:00`)}
                                 >
-                                  <div className="text-[10px] font-bold leading-tight truncate">
-                                    {st.movieTitle}
-                                  </div>
-                                  <div className="text-[9px] opacity-90 leading-tight">
-                                    {st.startTime}-{st.endTime} • P{st.screenName}
-                                  </div>
+                                  {showtimesInSlot.map((item) => {
+                                    const startMinutes = timeToMinutes(toTimeInput(item.startTime));
+                                    const endMinutes = timeToMinutes(toTimeInput(item.endTime));
+                                    const durationMinutes = Math.max(endMinutes - startMinutes, 30);
+                                    const topOffset = ((startMinutes - hour * 60) / 60) * 100;
+                                    const heightPercent = (durationMinutes / 60) * 100;
+
+                                    return (
+                                      <div
+                                        key={item.id}
+                                        className={cn(
+                                          "absolute left-0.5 right-0.5 rounded border px-1 py-0.5 overflow-hidden cursor-pointer z-10",
+                                          movieColorMap[item.movieId] || "bg-slate-500/80 border-slate-600 text-white",
+                                          resolveShowtimeStatus(item) === "ended" && "opacity-70"
+                                        )}
+                                        style={{ top: `${topOffset}%`, height: `${Math.max(heightPercent, 40)}%`, minHeight: "20px" }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          openEdit(item);
+                                        }}
+                                        title={`${item.movieTitle}\n${toTimeInput(item.startTime)} - ${toTimeInput(item.endTime)}\n${item.screenName || item.screenId}`}
+                                      >
+                                        <div className="text-[10px] font-bold leading-tight truncate">{item.movieTitle}</div>
+                                        <div className="text-[9px] opacity-90 leading-tight">
+                                          {toTimeInput(item.startTime)}-{toTimeInput(item.endTime)} ({resolveDurationMinutes(item)}m) • {resolveScreenLabel(item)}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               );
                             })}
                           </div>
-                        );
-                      })}
+                        ))}
+                      </div>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
+          )}
+        </>
+      ) : (
+        <>
+            <LTTTabs value={mainTab} onValueChange={(value) => setMainTab(value as MainTab)}>
+                <LTTTabsList className="h-9">
+                    <LTTTabsTrigger value="scheduler" className="px-3 text-xs">{t("admin.showtimes.tabs.scheduler")}</LTTTabsTrigger>
+                    <LTTTabsTrigger value="distribution" className="px-3 text-xs">{t("admin.showtimes.tabs.distribution")}</LTTTabsTrigger>
+                </LTTTabsList>
+            </LTTTabs>
+          <div className="flex items-center gap-3 flex-wrap my-2">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
+              <LTTInput
+                value={distSearch}
+                onChange={(e) => {
+                  setDistSearch(e.target.value);
+                  setDistPage(1);
+                }}
+                placeholder={t("admin.showtimes.distribution.search_placeholder")}
+                className="pl-9"
+              />
+            </div>
+            <LTTButton variant="outline" className="gap-2" onClick={() => listDistributionMutation.mutation()} loading={listDistributionMutation.isLoading}>
+              <RefreshCw className="h-4 w-4" /> {t("admin.showtimes.refresh")}
+            </LTTButton>
           </div>
-        </div>
-      )}
-      {viewMode === "table" && (
-        <AdminTablePagination
-          totalCount={totalCount}
-          page={page}
-          pageSize={fetch}
-          onPageChange={(nextPage) => setPage(nextPage)}
-          onPageSizeChange={(nextSize) => {
-            setFetch(nextSize);
-            setPage(1);
-          }}
-          loading={listMutation.isLoading}
-        />
+          <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm my-3">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
+                  <th className="px-4 py-3 text-left font-semibold">{t("admin.showtimes.distribution.table.movie")}</th>
+                  <th className="px-4 py-3 text-left font-semibold">{t("admin.showtimes.distribution.table.date_range")}</th>
+                  <th className="px-4 py-3 text-left font-semibold">{t("admin.showtimes.distribution.table.exclusive")}</th>
+                  <th className="px-4 py-3 text-left font-semibold">{t("admin.showtimes.distribution.table.status")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {listDistributionMutation.isLoading ? (
+                  <DomainTableStateRow colSpan={4} state="loading" loadingText={t("admin.showtimes.distribution.loading")} />
+                ) : distributionItems.length === 0 ? (
+                  <DomainTableStateRow colSpan={4} state="empty" emptyText={t("admin.showtimes.distribution.empty")} />
+                ) : (
+                  distributionItems.map((item) => (
+                    <tr key={item.id} className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors">
+                      <td className="px-4 py-3 font-medium">{item.movieTitle}</td>
+                      <td className="px-4 py-3">
+                        {(item.licenseStartDate || "---").split("T")[0]} - {(item.licenseEndDate || "---").split("T")[0]}
+                      </td>
+                      <td className="px-4 py-3">
+                        <LTTBadge className={item.isExclusive ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-700"}>
+                          {item.isExclusive ? t("admin.showtimes.distribution.exclusive") : t("admin.showtimes.distribution.standard")}
+                        </LTTBadge>
+                      </td>
+                      <td className="px-4 py-3">{distributionStatus(item)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          <AdminTablePagination
+            totalCount={distributionTotal}
+            page={distPage}
+            pageSize={distFetch}
+            onPageChange={(nextPage) => setDistPage(nextPage)}
+            onPageSizeChange={(nextSize) => {
+              setDistFetch(nextSize);
+              setDistPage(1);
+            }}
+            loading={listDistributionMutation.isLoading}
+          />
+        </>
       )}
 
-      {/* Create/Edit Dialog */}
       <LTTDialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <LTTDialogContent className="sm:max-w-lg">
+        <LTTDialogContent className="sm:max-w-2xl">
           <LTTDialogHeader>
-            <LTTDialogTitle>
-              {editing ? "Chỉnh sửa suất chiếu" : "Thêm suất chiếu mới"}
-            </LTTDialogTitle>
+            <LTTDialogTitle>{editing ? t("admin.showtimes.edit_title") : t("admin.showtimes.add_title")}</LTTDialogTitle>
           </LTTDialogHeader>
-
           <div className="grid gap-4 py-2 sm:grid-cols-2">
             <div className="space-y-2">
               <LTTLabel>{t("admin.showtimes.form.movie")}</LTTLabel>
               <LTTSelect
                 value={form.movieId}
-                onValueChange={(v) => {
-                  const distributionId = activeDistributionMap.get(v)?.id || "";
-                  setForm({ ...form, movieId: v, movieDistributionId: distributionId });
+                onValueChange={(value) => {
+                  const distribution = dialogDistributions.find((item) => item.movieId === value);
+                  const movie = movies.find((item) => item.id === value);
+                  const autoEnd =
+                    !endTimeManuallyEdited && form.startTime
+                      ? addMinutes(form.startTime, (movie?.durationMins || 120) + 10)
+                      : form.endTime;
+                  setEndTimeManuallyEdited(false);
+                  setForm((current) => ({
+                    ...current,
+                    movieId: value,
+                    movieDistributionId: distribution?.id || "",
+                    endTime: autoEnd,
+                  }));
                 }}
               >
                 <LTTSelectTrigger>
                   <LTTSelectValue placeholder={t("admin.showtimes.form.movie_placeholder")} />
                 </LTTSelectTrigger>
                 <LTTSelectContent>
-                  {eligibleMovies.length === 0 ? (
-                    <div className="px-3 py-2 text-xs text-muted-foreground-shadcn">
-                      No distributed valid movies available for this cinema now.
-                    </div>
-                  ) : (
-                    eligibleMovies.map((m) => (
-                      <LTTSelectItem key={m.id} value={m.id}>
-                        {m.title}
-                      </LTTSelectItem>
-                    ))
-                  )}
+                  {eligibleMovies.map((movie) => (
+                    <LTTSelectItem key={movie.id} value={movie.id}>{movie.title}</LTTSelectItem>
+                  ))}
                 </LTTSelectContent>
               </LTTSelect>
             </div>
 
             <div className="space-y-2">
               <LTTLabel>{t("admin.showtimes.form.screen")}</LTTLabel>
-              <LTTSelect
-                value={form.screenId}
-                onValueChange={(v) =>
-                  setForm({ ...form, screenId: v })
-                }
-              >
+              <LTTSelect value={form.screenId} onValueChange={(value) => setForm((current) => ({ ...current, screenId: value }))}>
                 <LTTSelectTrigger>
-                  <LTTSelectValue placeholder={t("admin.showtimes.form.screen_placeholder")} />
+                  <LTTSelectValue placeholder={contextLoading ? t("admin.showtimes.form.loading_screens") : t("admin.showtimes.form.screen_placeholder")} />
                 </LTTSelectTrigger>
                 <LTTSelectContent>
-                  {screens.map((s) => (
-                    <LTTSelectItem key={s.id} value={s.id}>
-                      {s.screenNumber}
+                  {dialogScreens.map((screen) => (
+                    <LTTSelectItem key={screen.id} value={screen.id}>
+                      Screen {screen.screenNumber} ({screen.screenType})
                     </LTTSelectItem>
                   ))}
                 </LTTSelectContent>
@@ -825,112 +933,149 @@ export default function ShowtimeSchedulerPage() {
             </div>
 
             <div className="space-y-2">
-              <LTTLabel>Ngày chiếu *</LTTLabel>
-              <LTTInput
-                type="date"
-                value={form.date}
-                onChange={(e) =>
-                  setForm({ ...form, date: e.target.value })
-                }
-              />
+              <LTTLabel>{t("admin.showtimes.form.show_date")}</LTTLabel>
+              <LTTInput type="date" value={form.date} onChange={(e) => setForm((current) => ({ ...current, date: e.target.value }))} />
+              {selectedDistribution && (
+                <p className="text-xs text-muted-foreground-shadcn">
+                  {t("admin.showtimes.form.distribution_window")}: {(selectedDistribution.licenseStartDate || "---").split("T")[0]} - {(selectedDistribution.licenseEndDate || "---").split("T")[0]}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <LTTLabel>Giờ bắt đầu *</LTTLabel>
+              <LTTLabel>{t("admin.showtimes.form.format")}</LTTLabel>
+              <LTTSelect value={form.format} onValueChange={(value) => setForm((current) => ({ ...current, format: value }))}>
+                <LTTSelectTrigger>
+                  <LTTSelectValue placeholder={contextLoading ? t("admin.showtimes.form.loading_formats") : t("admin.showtimes.form.select_format")} />
+                </LTTSelectTrigger>
+                <LTTSelectContent>
+                  {dialogFormats.map((format) => (
+                    <LTTSelectItem key={format.id} value={format.name}>{format.name}</LTTSelectItem>
+                  ))}
+                </LTTSelectContent>
+              </LTTSelect>
+            </div>
+
+            <div className="space-y-2">
+              <LTTLabel>{t("admin.showtimes.form.start_time")}</LTTLabel>
               <LTTInput
                 type="time"
                 value={form.startTime}
-                onChange={(e) =>
-                  setForm({ ...form, startTime: e.target.value })
-                }
+                onChange={(e) => {
+                  const nextStartTime = e.target.value;
+                  const autoEnd =
+                    !endTimeManuallyEdited
+                      ? addMinutes(nextStartTime, (selectedMovie?.durationMins || 120) + 10)
+                      : form.endTime;
+                  setEndTimeManuallyEdited(false);
+                  setForm((current) => ({ ...current, startTime: nextStartTime, endTime: autoEnd }));
+                }}
               />
             </div>
 
             <div className="space-y-2">
-              <LTTLabel>Giờ kết thúc</LTTLabel>
+              <LTTLabel>{t("admin.showtimes.form.end_time")}</LTTLabel>
               <LTTInput
                 type="time"
                 value={form.endTime}
-                onChange={(e) =>
-                  setForm({ ...form, endTime: e.target.value })
-                }
+                onChange={(e) => {
+                  setEndTimeManuallyEdited(true);
+                  setForm((current) => ({ ...current, endTime: e.target.value }));
+                }}
               />
             </div>
 
             <div className="space-y-2">
-              <LTTLabel>Định dạng phim</LTTLabel>
-              <LTTInput
-                value={form.format}
-                onChange={(e) =>
-                  setForm({ ...form, format: e.target.value })
-                }
-                placeholder="VD: 2D Phụ Đề Việt"
-              />
+              <LTTLabel>{t("admin.showtimes.form.language")}</LTTLabel>
+              <LTTInput value={form.language} onChange={(e) => setForm((current) => ({ ...current, language: e.target.value }))} />
             </div>
 
             <div className="space-y-2">
-              <LTTLabel>Giá cơ bản (VNĐ)</LTTLabel>
+              <LTTLabel>{t("admin.showtimes.form.caption")}</LTTLabel>
+              <LTTInput value={form.caption} onChange={(e) => setForm((current) => ({ ...current, caption: e.target.value }))} />
+            </div>
+
+            <div className="space-y-2 sm:col-span-2">
+              <div className="flex items-center gap-2">
+                <LTTLabel>{t("admin.showtimes.form.base_price")}</LTTLabel>
+                <button
+                  type="button"
+                  aria-label="Show pricing rules"
+                  className="text-muted-foreground-shadcn hover:text-foreground-shadcn"
+                  onClick={() => setPricingDialogOpen(true)}
+                >
+                  <Info className="h-4 w-4" />
+                </button>
+              </div>
               <LTTInput
                 type="number"
                 value={form.basePrice}
-                onChange={(e) =>
-                  setForm({ ...form, basePrice: e.target.value })
-                }
+                onChange={(e) => setForm((current) => ({ ...current, basePrice: e.target.value }))}
+                placeholder={t("admin.showtimes.form.base_price_placeholder")}
               />
             </div>
           </div>
-
           <LTTDialogFooter>
-            <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>
-              Hủy
-            </LTTButton>
-            <LTTButton onClick={save}>
-              {editing ? "Lưu thay đổi" : "Tạo suất chiếu"}
+            <LTTButton variant="outline" onClick={() => setDialogOpen(false)}>{t("admin.common.delete_confirm.cancel")}</LTTButton>
+            <LTTButton onClick={saveShowtime} loading={saveLoading}>
+              {editing ? t("admin.showtimes.form.save_changes") : t("admin.showtimes.form.create")}
             </LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
       </LTTDialog>
 
-      {/* Bulk Delete Dialog */}
-      <LTTDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <LTTDialogContent className="sm:max-w-sm">
+      <LTTDialog open={pricingDialogOpen} onOpenChange={setPricingDialogOpen}>
+        <LTTDialogContent className="sm:max-w-2xl">
           <LTTDialogHeader>
-            <LTTDialogTitle>Xác nhận xóa suất chiếu</LTTDialogTitle>
+            <LTTDialogTitle className="flex items-center gap-2">
+              <CircleAlert className="h-4 w-4" /> {t("admin.showtimes.pricing_reference")}
+            </LTTDialogTitle>
           </LTTDialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-muted-foreground-shadcn">
-              Bạn có chắc chắn muốn xóa{" "}
-              <strong>{selected.size}</strong> suất chiếu đã chọn? Điều này sẽ gỡ suất chiếu khỏi hệ thống đặt vé.
-            </p>
+          <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
+                  <th className="px-4 py-3 text-left font-semibold">{t("admin.showtimes.pricing_columns.rule_type")}</th>
+                  <th className="px-4 py-3 text-left font-semibold">{t("admin.showtimes.pricing_columns.multiplier")}</th>
+                  <th className="px-4 py-3 text-left font-semibold">{t("admin.showtimes.pricing_columns.time_window")}</th>
+                  <th className="px-4 py-3 text-left font-semibold">{t("admin.showtimes.pricing_columns.days")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dialogPricingRules.length === 0 ? (
+                  <tr><td className="px-4 py-6 text-sm text-muted-foreground-shadcn" colSpan={4}>{t("admin.showtimes.pricing_empty")}</td></tr>
+                ) : (
+                  dialogPricingRules.map((rule) => (
+                    <tr key={rule.id} className="border-b border-border-shadcn last:border-0">
+                      <td className="px-4 py-3">{rule.ruleType}</td>
+                      <td className="px-4 py-3">{rule.multiplier}</td>
+                      <td className="px-4 py-3">{rule.startTime || "--"} - {rule.endTime || "--"}</td>
+                      <td className="px-4 py-3">{(rule.daysOfWeek || []).join(", ")}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-          <LTTDialogFooter>
-            <LTTButton variant="outline" onClick={() => setDeleteOpen(false)}>
-              Hủy
-            </LTTButton>
-            <LTTButton variant="destructive" onClick={bulkDelete}>
-              Xác nhận xóa
-            </LTTButton>
-          </LTTDialogFooter>
         </LTTDialogContent>
       </LTTDialog>
+
       <LTTDialog open={singleDeleteOpen} onOpenChange={setSingleDeleteOpen}>
         <LTTDialogContent className="sm:max-w-sm">
           <LTTDialogHeader>
-            <LTTDialogTitle>Xác nhận xóa suất chiếu</LTTDialogTitle>
+            <LTTDialogTitle>{t("admin.common.delete_confirm.title")}</LTTDialogTitle>
           </LTTDialogHeader>
-          <div className="py-3 text-sm text-muted-foreground-shadcn">Bạn có chắc chắn muốn xóa suất chiếu này?</div>
+          <div className="py-3 text-sm text-muted-foreground-shadcn">{t("admin.common.delete_confirm.message")}</div>
           <LTTDialogFooter>
-            <LTTButton variant="outline" onClick={() => setSingleDeleteOpen(false)}>Hủy</LTTButton>
+            <LTTButton variant="outline" onClick={() => setSingleDeleteOpen(false)}>{t("admin.common.delete_confirm.cancel")}</LTTButton>
             <LTTButton
               variant="destructive"
               onClick={async () => {
-                await deleteMutation.mutation(singleDeleteId);
+                await deleteShowtimeMutation.mutation(singleDeleteId);
                 setSingleDeleteOpen(false);
-                toast.success("Đã xóa suất chiếu");
-                fetchData();
               }}
             >
-              Xóa
+              {t("admin.common.delete_confirm.ok")}
             </LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>

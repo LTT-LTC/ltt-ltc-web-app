@@ -144,7 +144,7 @@ export default function SeatMapPage() {
       });
       setSeatTypes(mapped);
     },
-    onError: (err) => toast.error(err.message || "Không thể tải danh sách seat type."),
+    onError: (err) => toast.error(err.message || t("admin.seatmap.seat_type_fetch_error")),
   });
 
   const fetchData = (keyword?: string, pageNumber?: number) => {
@@ -270,7 +270,7 @@ export default function SeatMapPage() {
             className="gap-2"
             onClick={() => setDeleteDialogOpen(true)}
           >
-            <Trash2 className="h-4 w-4" /> Xóa {selected.size} mục
+            <Trash2 className="h-4 w-4" /> {t("admin.seatmap.bulk_delete_button", { count: selected.size })}
           </LTTButton>
         )}
       </div>
@@ -281,20 +281,20 @@ export default function SeatMapPage() {
               <th className="w-10 px-3 py-3">
                 <LTTCheckbox checked={allSelected} onCheckedChange={toggleAll} />
               </th>
-              <th className="px-4 py-3 text-left font-semibold">STT</th>
-              <th className="px-4 py-3 text-left font-semibold">Tên sơ đồ</th>
-              <th className="px-4 py-3 text-left font-semibold">Mô tả</th>
-              <th className="px-4 py-3 text-left font-semibold">Số ghế</th>
-              <th className="px-4 py-3 text-left font-semibold">Ngày tạo</th>
-              <th className="px-4 py-3 text-left font-semibold">Cập nhật</th>
-              <th className="px-4 py-3 text-right font-semibold">Thao tác</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.seatmap.table.index")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.seatmap.table.name")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.seatmap.table.description")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.seatmap.table.seat_count")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.seatmap.table.created_at")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.seatmap.table.updated_at")}</th>
+              <th className="px-4 py-3 text-right font-semibold">{t("admin.seatmap.table.actions")}</th>
             </tr>
           </thead>
           <tbody>
             {listMutation.isLoading ? (
-              <DomainTableStateRow colSpan={9} state="loading" loadingText="Đang tải dữ liệu sơ đồ ghế..." />
+              <DomainTableStateRow colSpan={9} state="loading" loadingText={t("admin.seatmap.table.loading")} />
             ) : filtered.length === 0 ? (
-              <DomainTableStateRow colSpan={9} state="empty" emptyText="Không có dữ liệu" />
+              <DomainTableStateRow colSpan={9} state="empty" emptyText={t("admin.seatmap.table.empty")} />
             ) : (
               filtered.map((item, idx) => (
                 <tr
@@ -325,7 +325,7 @@ export default function SeatMapPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        title="Xem sơ đồ"
+                        title={t("admin.seatmap.actions.view")}
                         onClick={() => setViewLayout(item)}
                       >
                         <Eye className="h-4 w-4" />
@@ -334,7 +334,7 @@ export default function SeatMapPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        title="Chỉnh sửa"
+                        title={t("admin.seatmap.actions.edit")}
                         onClick={() => handleOpenEditor(item)}
                       >
                         <Pencil className="h-4 w-4" />
@@ -343,7 +343,7 @@ export default function SeatMapPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
-                        title="Xóa"
+                        title={t("admin.seatmap.actions.delete")}
                         onClick={() => handleDeleteOne(item.id)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -372,22 +372,20 @@ export default function SeatMapPage() {
       <LTTDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <LTTDialogContent className="sm:max-w-sm">
           <LTTDialogHeader>
-            <LTTDialogTitle>Xác nhận xóa</LTTDialogTitle>
+            <LTTDialogTitle>{t("admin.seatmap.delete_dialog.title")}</LTTDialogTitle>
           </LTTDialogHeader>
           <p className="text-sm text-muted-foreground">
-            Bạn có chắc chắn muốn xóa{" "}
-            <strong>{selected.size}</strong> phòng chiếu? Hành động này không thể
-            hoàn tác.
+            {t("admin.seatmap.delete_dialog.message", { count: selected.size })}
           </p>
           <LTTDialogFooter>
             <LTTButton
               variant="outline"
               onClick={() => setDeleteDialogOpen(false)}
             >
-              Hủy
+              {t("admin.seatmap.delete_dialog.cancel")}
             </LTTButton>
             <LTTButton variant="destructive" onClick={handleDeleteSelected}>
-              Xóa
+              {t("admin.seatmap.delete_dialog.confirm")}
             </LTTButton>
           </LTTDialogFooter>
         </LTTDialogContent>
@@ -401,7 +399,7 @@ export default function SeatMapPage() {
         <LTTDialogContent className="sm:max-w-3xl">
           <LTTDialogHeader>
             <LTTDialogTitle>
-              Sơ đồ ghế — {viewLayout?.name || "Seat map"}
+              {t("admin.seatmap.viewer.title")} — {viewLayout?.name || t("admin.seatmap.viewer.fallback_name")}
             </LTTDialogTitle>
           </LTTDialogHeader>
 
@@ -414,7 +412,7 @@ export default function SeatMapPage() {
                 showLegend
               />
               <p className="text-center text-xs text-muted-foreground">
-                Tổng ghế: <strong>{viewLayout.seatCount}</strong>
+                {t("admin.seatmap.viewer.total_seats")}: <strong>{viewLayout.seatCount}</strong>
               </p>
             </div>
           )}

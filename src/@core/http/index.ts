@@ -5,7 +5,7 @@ import axios, {
   HttpStatusCode,
   InternalAxiosRequestConfig,
 } from "axios";
-import { getCookie, setCookie } from "../utils/cookie";
+import { getCookie, removeCookie, setCookie } from "../utils/cookie";
 import {
   ADMIN_ACCESS_TOKEN_KEY,
   ADMIN_REFRESH_TOKEN_KEY,
@@ -182,6 +182,12 @@ function getAuthCookieKeys(isCustomerRequest: boolean) {
     };
 }
 
+function clearAuthCookies(isCustomerRequest: boolean) {
+  const { accessTokenKey, refreshTokenKey } = getAuthCookieKeys(isCustomerRequest);
+  removeCookie(accessTokenKey);
+  removeCookie(refreshTokenKey);
+}
+
 function shouldSkipAuthRefresh(failedRequestUrl?: string): boolean {
   const requestUrl = (failedRequestUrl ?? "").toLowerCase();
   const isManagerProductServiceRequest = requestUrl.includes("/product-service/manager/");
@@ -319,6 +325,7 @@ const onResponseInterceptor = async (error: AxiosError) => {
     }
 
     if (!hasRefreshToken) {
+      clearAuthCookies(isCustomerRequest);
       startUnauthorizedRedirectCountdown(isCustomerRequest);
       return Promise.reject(normalizeHttpError(error.response?.data, "Session expired. Please login again."));
     }
@@ -335,6 +342,7 @@ const onResponseInterceptor = async (error: AxiosError) => {
       } catch (refreshError) {
         if (!isSoftAuthFailureRequest) {
           http.defaults.headers.common[AUTHORIZATION_KEY] = "";
+          clearAuthCookies(isCustomerRequest);
           startUnauthorizedRedirectCountdown(isCustomerRequest);
         }
         return Promise.reject(normalizeHttpError((refreshError as AxiosError)?.response?.data ?? error.response?.data));
@@ -346,8 +354,8 @@ const onResponseInterceptor = async (error: AxiosError) => {
       if (!isObjectLike(newToken) || !newToken.accessToken || !newToken.refreshToken) {
         if (!isSoftAuthFailureRequest) {
           http.defaults.headers.common[AUTHORIZATION_KEY] = "";
-          // Keep existing tokens intact here. Some public-data endpoints can return 401
-          // transiently while the session is still recoverable on subsequent requests.
+          clearAuthCookies(isCustomerRequest);
+          // Refresh result is invalid; clear session cookies to force a clean login.
           startUnauthorizedRedirectCountdown(isCustomerRequest);
         }
         return Promise.reject(normalizeHttpError(error.response?.data));

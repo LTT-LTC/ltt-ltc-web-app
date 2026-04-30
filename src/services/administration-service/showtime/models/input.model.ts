@@ -14,6 +14,7 @@ export interface CreateShowtimeInputDto {
     showDate: string;
     startTime: string;
     endTime: string;
+    duration?: number;
     basePrice: number;
     status?: string;
 }
