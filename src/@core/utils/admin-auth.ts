@@ -90,7 +90,7 @@ export const getAdminHomePathByRole = (role: AdminRole): string => {
         case AdminRole.ADMIN:
             return "/administration/admin/dashboard";
         case AdminRole.MANAGER:
-            return "/administration/manager/showtimes";
+            return "/administration/manager/dashboard";
         case AdminRole.STAFF:
             return "/administration/staff/dashboard";
         case AdminRole.POS:

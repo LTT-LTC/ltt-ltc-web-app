@@ -947,31 +947,76 @@
     },
     "executive_dashboard": {
       "title": "Executive Dashboard",
+      "admin_title": "Executive Dashboard",
+      "manager_title": "Manager Dashboard",
+      "admin_subtitle": "Live operational overview for LTC Cinema Group.",
+      "manager_subtitle": "Live operational overview for your cinema branch.",
       "export_report": "Export Report",
-      "summary_title": "Operations Overview",
-      "search_placeholder": "Enter search",
-      "time_range_placeholder": "Select time range",
-      "period": {
+      "filters": {
         "today": "Today",
-        "week": "This Week",
-        "month": "This Month",
-        "quarter": "This Quarter"
+        "last_7_days": "Last 7 days",
+        "last_30_days": "Last 30 days",
+        "this_month": "This month",
+        "custom_range": "Custom range...",
+        "custom_range_tooltip": "Custom date range",
+        "custom_range_title": "Custom date range",
+        "from_date": "From",
+        "to_date": "To",
+        "cancel": "Cancel",
+        "apply": "Apply"
       },
-      "tabs": {
-        "overview": "Overview",
-        "detail": "Details"
+      "kpis": {
+        "revenue_today": "Revenue today",
+        "revenue_today_delta": "+12% vs yesterday",
+        "revenue_today_sub": "On track",
+        "tickets_sold_today": "Tickets sold today",
+        "tickets_sold_today_delta": "+8% vs last week",
+        "tickets_sold_today_sub": "Peak hours ahead",
+        "avg_occupancy_rate": "Average occupancy rate",
+        "avg_occupancy_rate_delta": "Across active halls",
+        "avg_occupancy_rate_sub": "2 halls under 40%",
+        "member_transactions": "Member transactions",
+        "member_transactions_delta": "Of total tickets today",
+        "member_transactions_sub": "Pending approval queue",
+        "manager_revenue_today_delta": "+9% vs target",
+        "manager_revenue_today_sub": "On track",
+        "tickets_sold": "Tickets sold",
+        "tickets_sold_delta": "Of today's seat capacity",
+        "tickets_sold_sub": "Current occupancy",
+        "fnb_spend_per_head": "F&B spend / head",
+        "fnb_spend_per_head_delta": "Below target today",
+        "fnb_spend_per_head_sub": "Upsell needed",
+        "avg_occupancy": "Average occupancy",
+        "avg_occupancy_delta": "2 screens below 40%",
+        "avg_occupancy_sub": "Promote now"
       },
-      "table": {
-        "index": "No.",
-        "metric": "Metric",
-        "current_value": "Current Value",
-        "change": "Change",
-        "trend": "Trend"
+      "charts": {
+        "revenue_breakdown_title": "Revenue breakdown",
+        "revenue_breakdown_subtitle": "Tickets · F&B · Gift cards",
+        "hourly_revenue_title": "Hourly revenue trend",
+        "ticket_legend": "Tickets",
+        "fnb_legend": "F&B / amenities",
+        "gift_legend": "Gift cards",
+        "today": "Today",
+        "yesterday": "Yesterday"
       },
-      "empty_title": "No synchronized data available",
-      "empty_description": "Operational metrics will be updated automatically after cinemas officially operate in the selected time range.",
-      "detail_title": "Detailed information is being prepared",
-      "detail_description": "Please come back after system data cleanup is completed."
+      "workflow": {
+        "title": "Request workflow",
+        "pending_count": "{{count}} pending items",
+        "refund_requests": "Refund approvals",
+        "booking_monitoring": "Booking monitoring",
+        "member_card_requests": "Member card requests",
+        "member_card_requests_admin": "Member card requests (admin queue)"
+      },
+      "alerts": {
+        "title": "Operational alerts",
+        "occupancy_low_title": "Low occupancy detected in selected halls",
+        "occupancy_low_desc": "Consider promotion push or showtime adjustments.",
+        "stock_low_title": "Concessions stock near threshold",
+        "stock_low_desc": "Large popcorn and combo inventory needs replenishment.",
+        "system_ok_title": "Core systems are stable",
+        "system_ok_desc": "POS and payment gateways are operating normally."
+      }
     },
     "seat_type": {
       "title": "Seat Type Configuration",

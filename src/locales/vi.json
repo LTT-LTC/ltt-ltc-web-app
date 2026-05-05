@@ -947,31 +947,76 @@
     },
     "executive_dashboard": {
       "title": "Dashboard điều hành",
+      "admin_title": "Dashboard điều hành",
+      "manager_title": "Dashboard quản lý rạp",
+      "admin_subtitle": "Tổng quan vận hành trực tiếp của toàn hệ thống LTC Cinema.",
+      "manager_subtitle": "Tổng quan vận hành trực tiếp cho rạp đang quản lý.",
       "export_report": "Xuất báo cáo",
-      "summary_title": "Tổng quan hoạt động",
-      "search_placeholder": "Nhập tìm kiếm",
-      "time_range_placeholder": "Chọn khoảng thời gian",
-      "period": {
+      "filters": {
         "today": "Hôm nay",
-        "week": "Tuần này",
-        "month": "Tháng này",
-        "quarter": "Quý này"
+        "last_7_days": "7 ngày gần nhất",
+        "last_30_days": "30 ngày gần nhất",
+        "this_month": "Tháng này",
+        "custom_range": "Tùy chọn khoảng ngày...",
+        "custom_range_tooltip": "Chọn khoảng ngày tùy chỉnh",
+        "custom_range_title": "Khoảng ngày tùy chỉnh",
+        "from_date": "Từ ngày",
+        "to_date": "Đến ngày",
+        "cancel": "Hủy",
+        "apply": "Áp dụng"
       },
-      "tabs": {
-        "overview": "Tổng quan",
-        "detail": "Chi tiết"
+      "kpis": {
+        "revenue_today": "Doanh thu hôm nay",
+        "revenue_today_delta": "+12% so với hôm qua",
+        "revenue_today_sub": "Đang đúng kế hoạch",
+        "tickets_sold_today": "Vé bán hôm nay",
+        "tickets_sold_today_delta": "+8% so với tuần trước",
+        "tickets_sold_today_sub": "Sắp vào giờ cao điểm",
+        "avg_occupancy_rate": "Tỷ lệ lấp đầy trung bình",
+        "avg_occupancy_rate_delta": "Trên các phòng đang hoạt động",
+        "avg_occupancy_rate_sub": "2 phòng dưới 40%",
+        "member_transactions": "Giao dịch thành viên",
+        "member_transactions_delta": "Trên tổng vé hôm nay",
+        "member_transactions_sub": "Hàng đợi chờ duyệt",
+        "manager_revenue_today_delta": "+9% so với chỉ tiêu",
+        "manager_revenue_today_sub": "Đang đúng kế hoạch",
+        "tickets_sold": "Vé đã bán",
+        "tickets_sold_delta": "Trên tổng sức chứa hôm nay",
+        "tickets_sold_sub": "Mức lấp đầy hiện tại",
+        "fnb_spend_per_head": "Chi tiêu F&B / khách",
+        "fnb_spend_per_head_delta": "Thấp hơn mục tiêu hôm nay",
+        "fnb_spend_per_head_sub": "Cần đẩy bán kèm",
+        "avg_occupancy": "Lấp đầy trung bình",
+        "avg_occupancy_delta": "2 phòng dưới 40%",
+        "avg_occupancy_sub": "Nên đẩy khuyến mãi"
       },
-      "table": {
-        "index": "STT",
-        "metric": "Chỉ số",
-        "current_value": "Giá trị hiện tại",
-        "change": "Thay đổi",
-        "trend": "Xu hướng"
+      "charts": {
+        "revenue_breakdown_title": "Cơ cấu doanh thu",
+        "revenue_breakdown_subtitle": "Vé · F&B · Thẻ quà tặng",
+        "hourly_revenue_title": "Xu hướng doanh thu theo giờ",
+        "ticket_legend": "Vé",
+        "fnb_legend": "F&B / tiện ích",
+        "gift_legend": "Thẻ quà tặng",
+        "today": "Hôm nay",
+        "yesterday": "Hôm qua"
       },
-      "empty_title": "Hiện tại chưa có dữ liệu đồng bộ",
-      "empty_description": "Các chỉ số vận hành sẽ được cập nhật tự động sau khi rạp chính thức hoạt động trong khung giờ đã chọn.",
-      "detail_title": "Thông tin chi tiết đang được chuẩn bị",
-      "detail_description": "Vui lòng quay lại sau khi dữ liệu hệ thống được làm sạch."
+      "workflow": {
+        "title": "Quy trình xử lý yêu cầu",
+        "pending_count": "{{count}} yêu cầu đang chờ",
+        "refund_requests": "Duyệt hoàn tiền",
+        "booking_monitoring": "Theo dõi đặt vé",
+        "member_card_requests": "Yêu cầu thẻ thành viên",
+        "member_card_requests_admin": "Yêu cầu thẻ thành viên (hàng đợi admin)"
+      },
+      "alerts": {
+        "title": "Cảnh báo vận hành",
+        "occupancy_low_title": "Một số phòng có tỷ lệ lấp đầy thấp",
+        "occupancy_low_desc": "Nên đẩy khuyến mãi hoặc điều chỉnh suất chiếu.",
+        "stock_low_title": "Tồn kho quầy F&B gần ngưỡng",
+        "stock_low_desc": "Bắp lớn và combo cần bổ sung thêm hàng.",
+        "system_ok_title": "Các hệ thống chính đang ổn định",
+        "system_ok_desc": "POS và cổng thanh toán đang hoạt động bình thường."
+      }
     },
     "seat_type": {
       "title": "Quản lý Cấu hình Loại Ghế",
