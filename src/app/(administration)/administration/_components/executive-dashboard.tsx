@@ -386,6 +386,10 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
   const giftLegend = useMemo(() => t("admin.executive_dashboard.charts.gift_legend"), [t]);
   const todayLegend = useMemo(() => t("admin.executive_dashboard.charts.today"), [t]);
   const yesterdayLegend = useMemo(() => t("admin.executive_dashboard.charts.yesterday"), [t]);
+  const formatCurrencyMillions = (value: unknown) => {
+    const raw = Array.isArray(value) ? value[0] : value;
+    return raw == null ? "—" : `₫${raw}M`;
+  };
 
   return (
     <div className="space-y-4">
@@ -416,7 +420,7 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="day" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(value) => `₫${value}M`} />
-              <Tooltip formatter={(value: number) => `₫${value}M`} />
+              <Tooltip formatter={formatCurrencyMillions} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Bar dataKey="tickets" stackId="a" name={ticketLegend} fill="hsl(217 91% 60%)" />
               <Bar dataKey="fnb" stackId="a" name={fnbLegend} fill="hsl(160 84% 39%)" />
@@ -432,7 +436,7 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="h" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(value) => `₫${value}M`} />
-              <Tooltip formatter={(value: number | null) => (value ? `₫${value}M` : "—")} />
+              <Tooltip formatter={formatCurrencyMillions} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Line type="monotone" dataKey="today" name={todayLegend} stroke="hsl(217 91% 60%)" strokeWidth={2.5} dot={{ r: 3 }} />
               <Line type="monotone" dataKey="yest" name={yesterdayLegend} stroke="hsl(0 0% 60%)" strokeWidth={1.5} strokeDasharray="4 4" dot={{ r: 2 }} />
