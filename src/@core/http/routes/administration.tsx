@@ -113,6 +113,13 @@ export const adminNavItems: NavItemConfig[] = [
 /** Navigation items for Tenant Manager sub-domain */
 export const managerNavItems: NavItemConfig[] = [
   {
+    key: "dashboard",
+    label: "Executive Dashboard",
+    path: "/administration/manager/dashboard",
+    icon: LayoutDashboard,
+    permissionKey: "manager:dashboard",
+  },
+  {
     key: "showtimes",
     label: "Showtime Scheduler",
     path: "/administration/manager/showtimes",
