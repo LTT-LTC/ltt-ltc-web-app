@@ -378,101 +378,101 @@ export default function CinemaConfigPage() {
       <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm my-3">
         <div className="overflow-x-auto">
           <table className="w-full min-w-full text-sm table-auto">
-          <thead>
-            <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
-              <th className="w-10 px-3 py-3">
-                <LTTCheckbox checked={allSel} onCheckedChange={toggleAll} />
-              </th>
-              <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.index")}</th>
-              <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.name")}</th>
-              <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.city")}</th>
-              <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.address")}</th>
-              <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.form.phone")}</th>
-              <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.manager_name") || "Manager Name"}</th>
-              <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.screens")}</th>
-              <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.status")}</th>
-              <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.updated")}</th>
-              <th className="sticky right-0 z-20 px-4 py-3 text-right font-semibold bg-muted-shadcn/95 border-l border-border-shadcn shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.2)]">
-                {t("admin.cinema_configuration.table.actions")}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <DomainTableStateRow colSpan={11} state="loading" loadingText={t("admin.cinema_configuration.loading")} />
-            ) : items.length === 0 ? (
-              <DomainTableStateRow colSpan={11} state="empty" emptyText={t("admin.cinema_configuration.empty")} />
-            ) : (
-              items.map((item, idx) => (
-                <tr
-                  key={item.id}
-                  className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors"
-                >
-                  <td className="px-3 py-3">
-                    <LTTCheckbox
-                      checked={selected.has(item.id)}
-                      onCheckedChange={() => toggle(item.id)}
-                    />
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground-shadcn">{idx + 1}</td>
-                  <td className="px-4 py-3 font-medium">{item.name}</td>
-                  <td className="px-4 py-3">{item.city || "-"}</td>
-                  <td className="px-4 py-3 text-muted-foreground-shadcn max-w-[220px] truncate">
-                    {item.address}
-                  </td>
-                  <td className="px-4 py-3 max-w-[140px] truncate">{item.serviceNumber || "-"}</td>
-                  <td className="px-4 py-3 max-w-[180px] truncate">{getManagerName(item)}</td>
-                  <td className="px-4 py-3">{screenCountByCinema[item.id] ?? 0}</td>
-                  <td className="px-4 py-3">
-                    <LTTBadge
-                      className={`font-medium ${statusColors[item.status || "active"] || statusColors.active}`}
-                    >
-                      {item.status === "active"
-                        ? t("admin.cinema_configuration.status.active")
-                        : item.status === "maintenance"
-                          ? t("admin.cinema_configuration.status.maintenance")
-                          : item.status === "closed" ? t("admin.cinema_configuration.status.closed") : item.status || t("admin.cinema_configuration.status.active")}
-                    </LTTBadge>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground-shadcn text-xs">
-                    {item.updatedAt}
-                  </td>
-                  <td className="sticky right-0 z-10 px-4 py-3 bg-card border-l border-border-shadcn shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.15)]">
-                    <div className="flex justify-end gap-1">
-                      <LTTButton
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => openEdit(item)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </LTTButton>
-                      <LTTConfirmDialog
-                        title={t("admin.cinema_configuration.delete_confirm.single_title")}
-                        description={t("admin.cinema_configuration.delete_confirm.single_message")}
-                        confirmText={t("admin.cinema_configuration.delete_confirm.ok")}
-                        cancelText={t("admin.cinema_configuration.delete_confirm.cancel")}
-                        onConfirm={async () => {
-                          await removeMutation.mutation(item.id);
-                          fetchData();
-                        }}
-                        loading={removeMutation.isLoading}
-                        trigger={
-                          <LTTButton
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </LTTButton>
-                        }
+            <thead>
+              <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
+                <th className="w-10 px-3 py-3">
+                  <LTTCheckbox checked={allSel} onCheckedChange={toggleAll} />
+                </th>
+                <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.index")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.name")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.city")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.address")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.form.phone")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.manager_name") || "Manager Name"}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.screens")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.status")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.updated")}</th>
+                <th className="sticky right-0 z-20 px-4 py-3 text-right font-semibold bg-muted-shadcn/95 border-l border-border-shadcn shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.2)]">
+                  {t("admin.cinema_configuration.table.actions")}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <DomainTableStateRow colSpan={11} state="loading" loadingText={t("admin.cinema_configuration.loading")} />
+              ) : items.length === 0 ? (
+                <DomainTableStateRow colSpan={11} state="empty" emptyText={t("admin.cinema_configuration.empty")} />
+              ) : (
+                items.map((item, idx) => (
+                  <tr
+                    key={item.id}
+                    className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors"
+                  >
+                    <td className="px-3 py-3">
+                      <LTTCheckbox
+                        checked={selected.has(item.id)}
+                        onCheckedChange={() => toggle(item.id)}
                       />
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground-shadcn">{idx + 1}</td>
+                    <td className="px-4 py-3 font-medium">{item.name}</td>
+                    <td className="px-4 py-3">{item.city || "-"}</td>
+                    <td className="px-4 py-3 text-muted-foreground-shadcn max-w-[220px] truncate">
+                      {item.address}
+                    </td>
+                    <td className="px-4 py-3 max-w-[140px] truncate">{item.serviceNumber || "-"}</td>
+                    <td className="px-4 py-3 max-w-[180px] truncate">{getManagerName(item)}</td>
+                    <td className="px-4 py-3">{screenCountByCinema[item.id] ?? 0}</td>
+                    <td className="px-4 py-3">
+                      <LTTBadge
+                        className={`font-medium ${statusColors[item.status || "active"] || statusColors.active}`}
+                      >
+                        {item.status === "active"
+                          ? t("admin.cinema_configuration.status.active")
+                          : item.status === "maintenance"
+                            ? t("admin.cinema_configuration.status.maintenance")
+                            : item.status === "closed" ? t("admin.cinema_configuration.status.closed") : item.status || t("admin.cinema_configuration.status.active")}
+                      </LTTBadge>
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground-shadcn text-xs">
+                      {item.updatedAt}
+                    </td>
+                    <td className="sticky right-0 z-10 px-4 py-3 bg-card border-l border-border-shadcn shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.15)]">
+                      <div className="flex justify-end gap-1">
+                        <LTTButton
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => openEdit(item)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </LTTButton>
+                        <LTTConfirmDialog
+                          title={t("admin.cinema_configuration.delete_confirm.single_title")}
+                          description={t("admin.cinema_configuration.delete_confirm.single_message")}
+                          confirmText={t("admin.cinema_configuration.delete_confirm.ok")}
+                          cancelText={t("admin.cinema_configuration.delete_confirm.cancel")}
+                          onConfirm={async () => {
+                            await removeMutation.mutation(item.id);
+                            fetchData();
+                          }}
+                          loading={removeMutation.isLoading}
+                          trigger={
+                            <LTTButton
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </LTTButton>
+                          }
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
           </table>
         </div>
       </div>

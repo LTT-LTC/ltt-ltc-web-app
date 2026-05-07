@@ -55,7 +55,7 @@ export default function MyLtcLayout({
                       style={{ animationDelay: `${index * 40}ms` }}
                       className={`group relative px-6 py-4 whitespace-nowrap text-sm md:text-base border-l-4 md:border-l-4 md:border-b-0 border-b-4 transition-all duration-300 ease-out animate-[fadeInUp_0.35s_ease-out_forwards] ${isActive
                           ? 'bg-[#cc3434] !text-white hover:!text-white focus:!text-white visited:!text-white border-[#cc3434] font-semibold shadow-sm'
-                          : 'text-gray-700 hover:bg-[#fff1f1] hover:text-[#cc3434] border-transparent'
+                          : 'text-gray-700 hover:bg-[#cc3434] hover:text-white border-transparent'
                         }`}
                     >
                       {item.label}

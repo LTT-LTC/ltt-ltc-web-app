@@ -1549,7 +1549,7 @@ export default function LTTScreenCreateWizard({
             <div className="py-2 text-sm text-muted-foreground-shadcn leading-relaxed">
               {t("admin.seatmap.wizard.exit_confirm.message")}
             </div>
-            <LTTDialogFooter className="gap-2">
+            <LTTDialogFooter className="gap-3 mx-1">
               <LTTButton variant="outline" onClick={() => setExitConfirmOpen(false)} className="flex-1">
                 {t("admin.seatmap.wizard.exit_confirm.stay")}
               </LTTButton>
@@ -1638,7 +1638,7 @@ export default function LTTScreenCreateWizard({
           <div className="py-2 text-sm text-muted-foreground-shadcn leading-relaxed">
             {t("admin.seatmap.wizard.exit_confirm.message")}
           </div>
-          <LTTDialogFooter className="gap-2">
+          <LTTDialogFooter className="gap-3">
             <LTTButton variant="outline" onClick={() => setExitConfirmOpen(false)} className="flex-1">
               {t("admin.seatmap.wizard.exit_confirm.stay")}
             </LTTButton>

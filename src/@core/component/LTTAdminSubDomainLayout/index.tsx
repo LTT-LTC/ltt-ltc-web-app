@@ -149,8 +149,8 @@ export default function LTTAdminSubDomainLayout({
                 className={cn(
                   "mx-2 my-0.5 flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-primary-shadcn text-primary-shadcn-foreground shadow-sm"
-                    : "text-foreground/70 hover:bg-muted-shadcn hover:text-foreground"
+                    ? "bg-primary-shadcn !text-primary-shadcn-foreground hover:!text-primary-shadcn-foreground focus:!text-primary-shadcn-foreground visited:!text-primary-shadcn-foreground shadow-sm"
+                    : "text-foreground/70 hover:bg-primary-shadcn hover:text-primary-shadcn-foreground"
                 )}
                 title={collapsed ? item.label : undefined}
               >
