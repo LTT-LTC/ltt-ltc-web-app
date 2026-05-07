@@ -32,13 +32,6 @@ export const adminNavItems: NavItemConfig[] = [
     permissionKey: "admin:cinema",
   },
   {
-    key: "amenities",
-    label: "Cinema Amenities",
-    path: "/administration/admin/amenities",
-    icon: Building2,
-    permissionKey: "admin:amenities",
-  },
-  {
     key: "seat-types",
     label: "Seat Type",
     path: "/administration/admin/seat-types",

@@ -43,7 +43,7 @@ export const normalizeMovieStatus = (status?: string): MovieSectionStatus | "end
     return "coming_soon";
 };
 
-export const formatMovieDate = (value?: string) => {
+export const formatMovieDate = (value?: string, language = "vi") => {
     if (!value) return "";
 
     const parsed = new Date(value);
@@ -51,7 +51,9 @@ export const formatMovieDate = (value?: string) => {
         return value;
     }
 
-    return new Intl.DateTimeFormat("vi-VN", {
+    const locale = language.toLowerCase().startsWith("en") ? "en-US" : "vi-VN";
+
+    return new Intl.DateTimeFormat(locale, {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
@@ -88,14 +90,14 @@ const getRatingTagClass = (ratingCode?: string) => {
     }
 };
 
-export const buildMovieCardItem = (movie: MovieOutputDto, fallbackIndex: number): MovieCardItem => {
+export const buildMovieCardItem = (movie: MovieOutputDto, fallbackIndex: number, language = "vi"): MovieCardItem => {
     const genres = movie.genreNames ?? movie.genres?.map((genre) => genre.name) ?? [];
     const ratingCode = movie.ratingCode?.trim();
-    const releaseDate = formatMovieDate(movie.releaseDate || movie.premiereDate);
+    const releaseDate = formatMovieDate(movie.releaseDate || movie.premiereDate, language);
 
     return {
         id: movie.id,
-        title: movie.title,
+        title: getLocalizedMovieTitle(movie, language),
         image: getMoviePoster(movie.posterUrl, fallbackIndex),
         tags: ratingCode
             ? [{ text: ratingCode, className: getRatingTagClass(ratingCode) }]
@@ -107,6 +109,21 @@ export const buildMovieCardItem = (movie: MovieOutputDto, fallbackIndex: number)
         trailerUrl: movie.trailerUrl || undefined,
     };
 };
+
+export function getLocalizedMovieTitle(
+    movie: Pick<MovieOutputDto, "title" | "originalTitle">,
+    language = "vi",
+) {
+    const normalizedLanguage = language.toLowerCase();
+    const vietnameseTitle = movie.title?.trim();
+    const englishTitle = movie.originalTitle?.trim();
+
+    if (normalizedLanguage.startsWith("en")) {
+        return englishTitle || vietnameseTitle || "";
+    }
+
+    return vietnameseTitle || englishTitle || "";
+}
 
 export const useMovieCatalog = () => {
     const [movies, setMovies] = useState<MovieOutputDto[]>([]);

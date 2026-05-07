@@ -324,7 +324,7 @@ function KpiStrip({ items }: { items: KpiItem[] }) {
   const { t } = useLocalization();
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {items.map((item) => {
         const DeltaIcon = deltaIconByTone[item.deltaTone];
 
@@ -360,7 +360,7 @@ function WorkflowRequestPanel({ role }: { role: DashboardRole }) {
           <Link
             key={item.key}
             href={item.href}
-            className="flex items-center justify-between rounded-md border border-border-shadcn p-3 transition-colors hover:bg-muted-shadcn/40"
+            className="flex items-center justify-between rounded-md border border-border-shadcn p-3 transition-colors hover:bg-muted-shadcn/40 my-4"
           >
             <div>
               <p className="text-sm font-medium">{t(`admin.executive_dashboard.workflow.${item.key}`)}</p>
@@ -393,7 +393,7 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-heading text-2xl font-bold">{t(`admin.executive_dashboard.${titleKey}`)}</h1>
           <p className="mt-0.5 text-xs text-muted-foreground-shadcn">{t(`admin.executive_dashboard.${subtitleKey}`)}</p>
@@ -410,7 +410,7 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
       <KpiStrip items={kpis} />
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <div className="rounded-xl border border-border-shadcn bg-card p-4">
+        <div className="rounded-xl border border-border-shadcn bg-card p-4 my-4     ">
           <div className="mb-2 flex items-center justify-between">
             <h3 className="font-heading text-sm font-semibold">{t("admin.executive_dashboard.charts.revenue_breakdown_title")}</h3>
             <span className="text-[11px] text-muted-foreground-shadcn">{t("admin.executive_dashboard.charts.revenue_breakdown_subtitle")}</span>
@@ -429,7 +429,7 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
           </ResponsiveContainer>
         </div>
 
-        <div className="rounded-xl border border-border-shadcn bg-card p-4">
+        <div className="rounded-xl border border-border-shadcn bg-card p-4 my-4">
           <h3 className="mb-3 font-heading text-sm font-semibold">{t("admin.executive_dashboard.charts.hourly_revenue_title")}</h3>
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={MANAGER_HOURLY_REVENUE}>
@@ -453,7 +453,7 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
               <div className="space-y-3">
                 {ADMIN_HALLS.map((hall) => (
                   <div key={hall.name}>
-                    <div className="mb-1 flex items-center justify-between text-sm">
+                    <div className="mb-1 flex items-center justify-between text-sm my-4">
                       <span className="text-foreground/90">{hall.name}</span>
                       <span className={cn("font-semibold", toneTextClass(hall.pct >= 80 ? "good" : hall.pct >= 60 ? "info" : hall.pct >= 40 ? "warn" : "danger"))}>
                         {hall.pct}%
@@ -470,7 +470,7 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
             <WorkflowRequestPanel role={role} />
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-3">
+          <div className="grid gap-4 lg:grid-cols-3 my-4">
             <div className="rounded-xl border border-border-shadcn bg-card p-4">
               <h3 className="mb-3 font-heading text-sm font-semibold">Top movies by revenue</h3>
               <div className="divide-y divide-border-shadcn">
@@ -488,25 +488,25 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
 
             <div className="rounded-xl border border-border-shadcn bg-card p-4">
               <h3 className="mb-3 font-heading text-sm font-semibold">Member loyalty health</h3>
-              <div className="space-y-2.5 text-sm">
-                <div className="flex items-center justify-between">
+              <div className="space-y-2.5 text-sm ">
+                <div className="flex items-center justify-between my-4">
                   <span className="text-muted-foreground-shadcn">New sign-ups today</span>
                   <span className="font-semibold">47</span>
                 </div>
-                <div className="flex items-center justify-between border-t border-border-shadcn pt-2.5">
+                <div className="flex items-center justify-between border-t border-border-shadcn pt-2.5 my-4">
                   <span className="text-muted-foreground-shadcn">Pending card requests</span>
                   <LTTBadge variant="destructive">312 Action needed</LTTBadge>
                 </div>
-                <div className="flex items-center justify-between border-t border-border-shadcn pt-2.5">
+                <div className="flex items-center justify-between border-t border-border-shadcn pt-2.5 my-4">
                   <span className="text-muted-foreground-shadcn">Points redeemed today</span>
                   <span className="font-semibold">2,840 pts</span>
                 </div>
                 <div className="border-t border-border-shadcn pt-2.5">
-                  <p className="mb-2 text-xs text-muted-foreground-shadcn">Member tier distribution</p>
+                  <p className="mb-3 font-heading text-sm font-semibold">Member tier distribution</p>
                   <div className="space-y-2">
                     {ADMIN_MEMBER_TIERS.map((tier) => (
                       <div key={tier.name}>
-                        <div className="flex justify-between text-xs">
+                        <div className="flex justify-between text-xs my-4">
                           <span>{tier.name}</span>
                           <span>{tier.pct}%</span>
                         </div>
@@ -525,7 +525,7 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
               <p className="mb-2 text-xs text-muted-foreground-shadcn">Active promotions</p>
               <div className="space-y-2">
                 {ADMIN_PROMOTIONS.map((promotion) => (
-                  <div key={promotion.name} className="flex items-center justify-between gap-2">
+                  <div key={promotion.name} className="flex items-center justify-between gap-2 my-4">
                     <span className="text-sm">{promotion.name}</span>
                     <span className={cn("rounded-md px-2 py-0.5 text-[11px] font-medium", toneBgClass(promotion.tone))}>{promotion.badge}</span>
                   </div>
@@ -533,11 +533,11 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
               </div>
               <div className="mt-4 border-t border-border-shadcn pt-3">
                 <p className="mb-2 text-xs text-muted-foreground-shadcn">Gift card liability</p>
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-sm my-4">
                   <span className="text-muted-foreground-shadcn">Outstanding balance</span>
                   <span className="font-semibold">₫142M</span>
                 </div>
-                <div className="mt-1.5 flex items-center justify-between text-sm">
+                <div className="mt-1.5 flex items-center justify-between text-sm my-4">
                   <span className="text-muted-foreground-shadcn">Redeemed today</span>
                   <span className="font-semibold">₫6.3M</span>
                 </div>
@@ -549,21 +549,21 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
             <div className="rounded-xl border border-border-shadcn bg-card p-4">
               <h3 className="mb-3 font-heading text-sm font-semibold">{t("admin.executive_dashboard.alerts.title")}</h3>
               <div className="space-y-2">
-                <div className="flex items-start gap-2 rounded-md border border-border-shadcn p-3">
+                <div className="flex items-start gap-2 rounded-md border border-border-shadcn p-3 my-4">
                   <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-600" />
                   <div>
                     <p className="text-sm font-medium">{t("admin.executive_dashboard.alerts.occupancy_low_title")}</p>
                     <p className="text-xs text-muted-foreground-shadcn">{t("admin.executive_dashboard.alerts.occupancy_low_desc")}</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-2 rounded-md border border-border-shadcn p-3">
+                <div className="flex items-start gap-2 rounded-md border border-border-shadcn p-3 my-4">
                   <AlertTriangle className="mt-0.5 h-4 w-4 text-red-600" />
                   <div>
                     <p className="text-sm font-medium">{t("admin.executive_dashboard.alerts.stock_low_title")}</p>
                     <p className="text-xs text-muted-foreground-shadcn">{t("admin.executive_dashboard.alerts.stock_low_desc")}</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-2 rounded-md border border-border-shadcn p-3">
+                <div className="flex items-start gap-2 rounded-md border border-border-shadcn p-3 my-4">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
                   <div>
                     <p className="text-sm font-medium">{t("admin.executive_dashboard.alerts.system_ok_title")}</p>
@@ -590,7 +590,7 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
         <>
           <div className="rounded-xl border border-border-shadcn bg-card p-4">
             <h3 className="mb-3 font-heading text-sm font-semibold">Live screen status</h3>
-            <div className="grid gap-3 lg:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-2">
               {MANAGER_SCREENS.map((screen) => {
                 const pct =
                   screen.sold && screen.state !== "maintenance"
@@ -627,7 +627,7 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
             </div>
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-2">
+          <div className="grid gap-4 xl:grid-cols-2 my-4">
             <div className="rounded-xl border border-border-shadcn bg-card p-4">
               <h3 className="mb-3 font-heading text-sm font-semibold">Today&apos;s showtime schedule</h3>
               <div className="divide-y divide-border-shadcn">
@@ -658,7 +658,7 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
               <p className="mb-2 text-xs text-muted-foreground-shadcn">Top sellers today</p>
               <div className="space-y-1.5 text-sm">
                 {MANAGER_FNB_TOP.map((fnb) => (
-                  <div key={fnb.name} className="flex justify-between border-b border-border-shadcn pb-1.5 last:border-0">
+                  <div key={fnb.name} className="flex justify-between border-b border-border-shadcn pb-1.5 last:border-0 my-4">
                     <span>{fnb.name}</span>
                     <span className="text-muted-foreground-shadcn">{fnb.sold} sold</span>
                   </div>
@@ -667,7 +667,7 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
               <p className="mb-2 mt-4 text-xs text-muted-foreground-shadcn">Stock levels</p>
               <div className="space-y-2">
                 {MANAGER_FNB_STOCK.map((stock) => (
-                  <div key={stock.name}>
+                  <div key={stock.name} className=" my-4">
                     <div className="flex justify-between text-xs">
                       <span>{stock.name}</span>
                       <span className={cn("font-semibold", stock.text)}>{stock.pct}%</span>
@@ -685,7 +685,7 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
               <p className="mb-2 text-xs text-muted-foreground-shadcn">Active local promotions</p>
               <div className="space-y-2">
                 {MANAGER_PROMOTIONS.map((promotion) => (
-                  <div key={promotion.name} className="flex items-start justify-between gap-2">
+                  <div key={promotion.name} className="flex items-start justify-between gap-2 my-4">
                     <div className="min-w-0">
                       <p className="text-sm">{promotion.name}</p>
                       <p className="text-xs text-muted-foreground-shadcn">{promotion.sub}</p>
@@ -699,7 +699,7 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
               <p className="mb-2 mt-4 text-xs text-muted-foreground-shadcn">Pricing rules active</p>
               <div className="space-y-2">
                 {MANAGER_PRICING_RULES.map((rule) => (
-                  <div key={rule.name} className="flex items-center justify-between gap-2">
+                  <div key={rule.name} className="flex items-center justify-between gap-2 my-4">
                     <span className="text-sm">{rule.name}</span>
                     <span className={cn("rounded-md px-2 py-0.5 text-[11px] font-medium whitespace-nowrap", toneBgClass(rule.tone))}>
                       {rule.badge}
@@ -712,21 +712,21 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
             <div className="rounded-xl border border-border-shadcn bg-card p-4">
               <h3 className="mb-3 font-heading text-sm font-semibold">{t("admin.executive_dashboard.alerts.title")}</h3>
               <div className="space-y-2">
-                <div className="flex items-start gap-2 rounded-md border border-border-shadcn p-3">
+                <div className="flex items-start gap-2 rounded-md border border-border-shadcn p-3 my-4">
                   <AlertTriangle className="mt-0.5 h-4 w-4 text-red-600" />
                   <div>
                     <p className="text-sm font-medium">Screen 6 down — 2 shows cancelled</p>
                     <p className="text-xs text-muted-foreground-shadcn">Lamp replacement in progress, est. back 17:30</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-2 rounded-md border border-border-shadcn p-3">
+                <div className="flex items-start gap-2 rounded-md border border-border-shadcn p-3 my-4">
                   <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-600" />
                   <div>
                     <p className="text-sm font-medium">F&B spend/head below target</p>
                     <p className="text-xs text-muted-foreground-shadcn">Brief concession staff before 19:00 rush.</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-2 rounded-md border border-border-shadcn p-3">
+                <div className="flex items-start gap-2 rounded-md border border-border-shadcn p-3 my-4">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
                   <div>
                     <p className="text-sm font-medium">19:00 Wild Robot 2 fully sold</p>

@@ -27,6 +27,9 @@ import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { cinemaService } from "@/src/services/administration-service/cinema/cinema.service";
 import { CinemaOutputDto } from "@/src/services/administration-service/cinema/models/output.model";
 import { GetCinemaListInputDto, CreateCinemaInputDto, UpdateCinemaInputDto } from "@/src/services/administration-service/cinema/models/input.model";
+import { employeeService } from "@/src/services/administration-service/employee/employee.service";
+import { EmployeeOutputDto } from "@/src/services/administration-service/employee/models/output.model";
+import { screenService } from "@/src/services/administration-service/screen/screen.service";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { Select } from "antd";
 import vnCityDistricts from "@/src/@core/const/location/vn-city-districts.json";
@@ -48,6 +51,12 @@ type CityDistrictData = {
 export default function CinemaConfigPage() {
   const { t } = useLocalization();
   const [items, setItems] = useState<CinemaOutputDto[]>([]);
+  const [managers, setManagers] = useState<EmployeeOutputDto[]>([]);
+  const [managersLoaded, setManagersLoaded] = useState(false);
+  const [managerPage, setManagerPage] = useState(1);
+  const [managerHasMore, setManagerHasMore] = useState(true);
+  const MANAGER_PAGE_SIZE = 100;
+  const [screenCountByCinema, setScreenCountByCinema] = useState<Record<string, number>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -59,6 +68,7 @@ export default function CinemaConfigPage() {
     city: "",
     ward: "",
     address: "",
+    managerUserId: "",
     serviceNumber: "",
     status: "active" as any,
   });
@@ -107,7 +117,11 @@ export default function CinemaConfigPage() {
   const listMutation = useLTTMutation<PagedResultDto<CinemaOutputDto> | undefined, GetCinemaListInputDto>({
     mutationFn: (input) => cinemaService.getCinemaListAsync(input),
     onSuccess: (res) => {
-      if (res && res.items) setItems(res.items);
+      if (res && res.items) {
+        setItems(res.items);
+        ensureManagersLoaded();
+        void fetchScreenCounts(res.items);
+      }
     },
     onError: (err) => toast.error(err.message || t("admin.cinema_configuration.fetch_error"))
   });
@@ -141,9 +155,71 @@ export default function CinemaConfigPage() {
   });
 
   const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || removeMutation.isLoading;
+  const managersMutation = useLTTMutation({
+    mutationFn: (params: { page: number; append: boolean }) =>
+      employeeService.getEmployeeListAsync({ page: params.page, fetch: MANAGER_PAGE_SIZE }),
+    onSuccess: (res) => {
+      const managerList = (res?.items || []).filter((employee) => (employee.role || "").toLowerCase() === "manager");
+      const mutationParams = managersMutation.input as { page: number; append: boolean } | null;
+      const shouldAppend = Boolean(mutationParams?.append);
+
+      setManagers((prev) => {
+        if (!shouldAppend) {
+          return managerList;
+        }
+
+        const existingIds = new Set(prev.map((employee) => employee.id));
+        const merged = [...prev];
+        managerList.forEach((employee) => {
+          if (!existingIds.has(employee.id)) {
+            merged.push(employee);
+          }
+        });
+        return merged;
+      });
+
+      const receivedCount = res?.items?.length ?? 0;
+      setManagerHasMore(receivedCount === MANAGER_PAGE_SIZE);
+      setManagersLoaded(true);
+    },
+    onError: (err) => toast.error(err.message || t("admin.cinema_configuration.fetch_error")),
+  });
 
   const fetchData = () => {
     listMutation.mutation({ page, fetch, keyword: debouncedSearch });
+  };
+
+  const fetchScreenCounts = async (cinemas: CinemaOutputDto[]) => {
+    const pairs = await Promise.all(
+      cinemas.map(async (cinema) => {
+        try {
+          const result = await screenService.getScreenListAsync(cinema.id, { page: 1, fetch: 1 });
+          return [cinema.id, result.totalCount ?? result.items?.length ?? 0] as const;
+        } catch {
+          return [cinema.id, 0] as const;
+        }
+      })
+    );
+
+    setScreenCountByCinema(Object.fromEntries(pairs));
+  };
+
+  const ensureManagersLoaded = () => {
+    if (!managersLoaded && !managersMutation.isLoading) {
+      setManagerPage(1);
+      setManagerHasMore(true);
+      managersMutation.mutation({ page: 1, append: false });
+    }
+  };
+
+  const loadMoreManagers = () => {
+    if (managersMutation.isLoading || !managerHasMore) {
+      return;
+    }
+
+    const nextPage = managerPage + 1;
+    setManagerPage(nextPage);
+    managersMutation.mutation({ page: nextPage, append: true });
   };
 
   useEffect(() => {
@@ -171,24 +247,28 @@ export default function CinemaConfigPage() {
   };
 
   const openCreate = () => {
+    ensureManagersLoaded();
     setEditing(null);
     setForm({
       name: "",
       city: "",
       ward: "",
       address: "",
+      managerUserId: "",
       serviceNumber: "",
       status: "active",
     });
     setDialogOpen(true);
   };
   const openEdit = (item: CinemaOutputDto) => {
+    ensureManagersLoaded();
     setEditing(item);
     setForm({
       name: item.name,
       city: resolveCityValue(item.city),
       ward: item.ward || "",
       address: item.address || "",
+      managerUserId: item.managerUserId || "",
       serviceNumber: item.serviceNumber || "",
       status: item.status || "active",
     });
@@ -237,6 +317,25 @@ export default function CinemaConfigPage() {
     }
   };
 
+  const getManagerName = (cinema: CinemaOutputDto) => {
+    if (!cinema.managerUserId) {
+      return "-";
+    }
+
+    const matchedManager = managers.find((manager) =>
+      (manager.userId === cinema.managerUserId || manager.id === cinema.managerUserId) &&
+      manager.cinemaId === cinema.id
+    );
+    if (matchedManager?.name) {
+      return matchedManager.name;
+    }
+
+    const managerByUserId = managers.find(
+      (manager) => manager.userId === cinema.managerUserId || manager.id === cinema.managerUserId
+    );
+    return managerByUserId?.name || "-";
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -277,7 +376,8 @@ export default function CinemaConfigPage() {
       </div>
 
       <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm my-3">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-full text-sm table-auto">
           <thead>
             <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
               <th className="w-10 px-3 py-3">
@@ -287,17 +387,21 @@ export default function CinemaConfigPage() {
               <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.name")}</th>
               <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.city")}</th>
               <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.address")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.form.phone")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.manager_name") || "Manager Name"}</th>
               <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.screens")}</th>
               <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.status")}</th>
               <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.updated")}</th>
-              <th className="px-4 py-3 text-right font-semibold">{t("admin.cinema_configuration.table.actions")}</th>
+              <th className="sticky right-0 z-20 px-4 py-3 text-right font-semibold bg-muted-shadcn/95 border-l border-border-shadcn shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.2)]">
+                {t("admin.cinema_configuration.table.actions")}
+              </th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <DomainTableStateRow colSpan={9} state="loading" loadingText={t("admin.cinema_configuration.loading")} />
+              <DomainTableStateRow colSpan={11} state="loading" loadingText={t("admin.cinema_configuration.loading")} />
             ) : items.length === 0 ? (
-              <DomainTableStateRow colSpan={9} state="empty" emptyText={t("admin.cinema_configuration.empty")} />
+              <DomainTableStateRow colSpan={11} state="empty" emptyText={t("admin.cinema_configuration.empty")} />
             ) : (
               items.map((item, idx) => (
                 <tr
@@ -313,10 +417,12 @@ export default function CinemaConfigPage() {
                   <td className="px-4 py-3 text-muted-foreground-shadcn">{idx + 1}</td>
                   <td className="px-4 py-3 font-medium">{item.name}</td>
                   <td className="px-4 py-3">{item.city || "-"}</td>
-                  <td className="px-4 py-3 text-muted-foreground-shadcn max-w-xs truncate">
+                  <td className="px-4 py-3 text-muted-foreground-shadcn max-w-[220px] truncate">
                     {item.address}
                   </td>
-                  <td className="px-4 py-3">0</td>
+                  <td className="px-4 py-3 max-w-[140px] truncate">{item.serviceNumber || "-"}</td>
+                  <td className="px-4 py-3 max-w-[180px] truncate">{getManagerName(item)}</td>
+                  <td className="px-4 py-3">{screenCountByCinema[item.id] ?? 0}</td>
                   <td className="px-4 py-3">
                     <LTTBadge
                       className={`font-medium ${statusColors[item.status || "active"] || statusColors.active}`}
@@ -331,7 +437,7 @@ export default function CinemaConfigPage() {
                   <td className="px-4 py-3 text-muted-foreground-shadcn text-xs">
                     {item.updatedAt}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="sticky right-0 z-10 px-4 py-3 bg-card border-l border-border-shadcn shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.15)]">
                     <div className="flex justify-end gap-1">
                       <LTTButton
                         variant="ghost"
@@ -367,7 +473,8 @@ export default function CinemaConfigPage() {
               ))
             )}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
 
       <LTTDialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -446,6 +553,46 @@ export default function CinemaConfigPage() {
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
               />
+            </div>
+            <div className="space-y-2">
+              <LTTLabel>{t("admin.cinema_configuration.form.manager") || "Manager"}</LTTLabel>
+              <LTTSelect
+                value={form.managerUserId}
+                onValueChange={(value) => setForm({ ...form, managerUserId: value })}
+              >
+                <LTTSelectTrigger>
+                  <LTTSelectValue placeholder={t("admin.cinema_configuration.form.select_manager_placeholder") || "Select manager"} />
+                </LTTSelectTrigger>
+                <LTTSelectContent>
+                  {managersMutation.isLoading ? (
+                    <div className="px-3 py-2 text-xs text-muted-foreground-shadcn">{t("admin.cinema_configuration.loading")}</div>
+                  ) : managers.length === 0 ? (
+                    <div className="px-3 py-2 text-xs text-muted-foreground-shadcn">{t("admin.cinema_configuration.empty")}</div>
+                  ) : (
+                    <>
+                      {managers.map((manager) => (
+                        <LTTSelectItem key={manager.id} value={manager.userId || manager.id}>
+                          {manager.name}
+                        </LTTSelectItem>
+                      ))}
+                      {managerHasMore && (
+                        <div className="px-2 py-1 border-t border-border-shadcn">
+                          <LTTButton
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="w-full justify-center"
+                            onClick={loadMoreManagers}
+                            loading={managersMutation.isLoading}
+                          >
+                            {t("admin.common.load_more") || "Load more"}
+                          </LTTButton>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </LTTSelectContent>
+              </LTTSelect>
             </div>
             <div className="space-y-2">
               <LTTLabel>{t("admin.cinema_configuration.form.phone")}</LTTLabel>

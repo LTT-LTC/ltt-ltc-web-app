@@ -190,13 +190,17 @@ function clearAuthCookies(isCustomerRequest: boolean) {
 
 function shouldSkipAuthRefresh(failedRequestUrl?: string): boolean {
   const requestUrl = (failedRequestUrl ?? "").toLowerCase();
+  const isAdminMovieServiceRequest =
+    requestUrl.includes("/movie-service/manager/") ||
+    requestUrl.includes("/movie-service/admin/") ||
+    requestUrl.includes("/movie-service/staff/");
   const isManagerProductServiceRequest = requestUrl.includes("/product-service/manager/");
 
   // Public customer-facing data endpoints should never drive auth refresh/logout flow.
   // These endpoints can fail due to throttling (503/429) and must not affect session state.
   // Keep manager/admin protected routes retryable via refresh flow.
   return (
-    requestUrl.includes("/movie-service/") ||
+    (requestUrl.includes("/movie-service/") && !isAdminMovieServiceRequest) ||
     (requestUrl.includes("/product-service/") && !isManagerProductServiceRequest) ||
     requestUrl.includes("/administration-service/customer/news-and-offers") ||
     requestUrl.includes("/customer-service/movie") ||

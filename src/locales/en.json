@@ -20,6 +20,7 @@
       "active": "Active",
       "inactive": "Inactive",
       "all": "All",
+      "load_more": "Load more",
       "unsaved_changes_dialog": {
         "title": "You Have Unsaved Changes",
         "message_before": "You have unfinished changes. Exiting will",
@@ -909,6 +910,7 @@
         "name": "Cinema Name",
         "city": "City",
         "address": "Address",
+        "manager_name": "Manager Name",
         "screens": "Screens",
         "status": "Status",
         "updated": "Updated",
@@ -920,9 +922,11 @@
         "name": "Cinema Name *",
         "city": "City",
         "ward": "Ward",
+        "manager": "Manager",
         "status": "Status",
         "address": "Address",
         "phone": "Phone",
+        "select_manager_placeholder": "Select manager",
         "city_placeholder": "Select or search city",
         "ward_placeholder": "Select or search ward",
         "ward_placeholder_disabled": "Please select city first",
@@ -1297,7 +1301,51 @@
       "now_showing": "NOW SHOWING",
       "coming_soon": "COMING SOON",
       "special_screening": "SPECIAL SCREENING",
-      "view_details": "VIEW DETAILS"
+      "view_details": "VIEW DETAILS",
+      "movies_not_available_yet": "movies are not available yet."
+    },
+    "common": {
+      "movies": "Movies",
+      "retry": "Retry",
+      "trailer": "Trailer",
+      "trailer_not_available": "Trailer is not available yet."
+    },
+    "now_showing": {
+      "empty": "No now showing movies are available yet."
+    },
+    "coming_soon": {
+      "empty": "No coming soon movies are available yet."
+    },
+    "movie_detail": {
+      "back": "Back",
+      "loading": "Loading movie details...",
+      "not_found": "Movie not found.",
+      "go_home": "Go Home",
+      "book_tickets": "Book Tickets",
+      "watch_trailer": "Watch Trailer",
+      "movie_description": "Movie Description",
+      "no_description": "No description available.",
+      "cast": "Cast",
+      "cast_not_available": "Cast information is not available yet.",
+      "movie_info": "Movie Info",
+      "status": {
+        "now_showing": "Now Showing",
+        "coming_soon": "Coming Soon",
+        "ended": "Ended"
+      },
+      "labels": {
+        "director": "Director",
+        "genre": "Genre",
+        "studio": "Studio",
+        "release_date": "Release Date",
+        "running_time": "Running Time",
+        "status": "Status",
+        "rated": "Rated"
+      },
+      "errors": {
+        "movie_id_missing": "Movie ID is missing",
+        "load_failed": "Failed to load movie details"
+      }
     },
     "my_ltc": {
       "title": "My LTC",

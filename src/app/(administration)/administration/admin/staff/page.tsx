@@ -243,20 +243,43 @@ export default function StaffPage() {
       return;
     }
 
-    const payload = {
-      name: form.name,
-      email: form.email,
-      phoneNumber: form.phoneNumber,
-      code: form.code,
-      hireDate: form.hireDate || undefined,
-      cinemaId: form.role === "Admin" ? null : (form.cinemaId || null),
-      isActive: form.isActive,
-      role: form.role,
-    };
-
     if (editing) {
-      updateMutation.mutation({ id: editing.id, body: payload as UpdateEmployeeInputDto });
+      const previousRole = normalizeRole(editing);
+      const previousCinemaId = editing.cinemaId || editing.organizationUnitId || "";
+      const resolvedRole: EmployeeRole = form.role || previousRole;
+      const resolvedCinemaId = (form.cinemaId || previousCinemaId || "").trim();
+      const roleChanged = resolvedRole !== previousRole;
+      const cinemaChanged = resolvedCinemaId !== previousCinemaId;
+
+      const updatePayload: UpdateEmployeeInputDto = {
+        name: form.name,
+        email: form.email,
+        phoneNumber: form.phoneNumber,
+        code: form.code,
+        hireDate: form.hireDate || undefined,
+        isActive: form.isActive,
+      };
+
+      // Only send role/cinema mapping when it actually changes.
+      // This avoids triggering backend duplicate-manager validation on unrelated updates.
+      if (roleChanged) {
+        updatePayload.role = resolvedRole;
+      }
+      if (roleChanged || cinemaChanged) {
+        updatePayload.cinemaId = resolvedRole === "Admin" ? null : (resolvedCinemaId || null);
+      }
+
+      updateMutation.mutation({ id: editing.id, body: updatePayload });
     } else {
+      const payload: CreateEmployeeInputDto = {
+        name: form.name,
+        email: form.email,
+        phoneNumber: form.phoneNumber,
+        code: form.code,
+        hireDate: form.hireDate || undefined,
+        cinemaId: form.role === "Admin" ? null : (form.cinemaId || null),
+        role: form.role,
+      };
       createMutation.mutation(payload as CreateEmployeeInputDto);
     }
   };

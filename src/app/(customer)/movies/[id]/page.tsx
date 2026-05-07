@@ -9,10 +9,11 @@ import Footer from "../../_components/Footer";
 import LTTBadge from "@/src/@core/component/LTTBadge";
 import LTTCastCard from "@/src/@core/component/LTTCastCard";
 import LTTModal from "@/src/@core/component/AntD/LTTModal";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
 import { customerMovieService } from "@/src/services/customer-service/movie/movie.service";
 import { MovieDetailOutputDto } from "@/src/services/customer-service/movie/models/output.model";
 import { extractYoutubeVideoId } from "../../_components/movieTrailer";
-import { getMoviePoster, normalizeMovieStatus } from "../../_components/movieCatalog";
+import { getLocalizedMovieTitle, getMoviePoster, normalizeMovieStatus } from "../../_components/movieCatalog";
 
 const RATED_CONFIG: Record<string, { label: string; icon: string; color: string; bg: string }> = {
     "G": { label: "General Audiences", icon: "child_care", color: "text-green-700", bg: "bg-green-100 border-green-300" },
@@ -23,8 +24,9 @@ const RATED_CONFIG: Record<string, { label: string; icon: string; color: string;
 };
 
 const FALLBACK_BACKDROP = "/images/movie-current-banners/470x700-us.jpg";
+const DEFAULT_ACTOR_AVATAR = "/images/main/default_avatar.png";
 
-const formatDate = (value?: string) => {
+const formatDate = (value?: string, language = "vi") => {
     if (!value) return "-";
 
     const parsed = new Date(value);
@@ -32,7 +34,9 @@ const formatDate = (value?: string) => {
         return value;
     }
 
-    return new Intl.DateTimeFormat("vi-VN", {
+    const locale = language.toLowerCase().startsWith("en") ? "en-US" : "vi-VN";
+
+    return new Intl.DateTimeFormat(locale, {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
@@ -70,7 +74,7 @@ const getCastList = (movie: MovieDetailOutputDto): CastCardItem[] => {
         return movie.cast.map((item) => ({
             name: getCastName(item),
             role: getCastRole(item),
-            image: undefined,
+            image: DEFAULT_ACTOR_AVATAR,
         }));
     }
 
@@ -78,7 +82,7 @@ const getCastList = (movie: MovieDetailOutputDto): CastCardItem[] => {
         return movie.actorRoles.map((item) => ({
             name: item.actorName,
             role: item.roleName,
-            image: undefined,
+            image: DEFAULT_ACTOR_AVATAR,
         }));
     }
 
@@ -100,6 +104,7 @@ const getDirectorNames = (movie: MovieDetailOutputDto) => {
 };
 
 export default function MovieDetailPage() {
+    const { currentLanguage } = useLocalization();
     const params = useParams<{ id: string }>();
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -157,6 +162,7 @@ export default function MovieDetailPage() {
     const castList = movie ? getCastList(movie) : [];
     const directorNames = movie ? getDirectorNames(movie) : [];
     const genreNames = movie ? (movie.genreNames || movie.genres?.map((genre) => genre.name) || []) : [];
+    const localizedMovieTitle = movie ? getLocalizedMovieTitle(movie, currentLanguage) : "";
 
     useEffect(() => {
         if (searchParams.get("trailer") === "1" && trailerYoutubeId) {
@@ -199,7 +205,7 @@ export default function MovieDetailPage() {
                     ) : (
                         <div className="flex flex-col md:flex-row gap-8 lg:gap-12 items-center md:items-start">
                             <div className="shrink-0 w-52 lg:w-60 rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10">
-                                <img src={poster} alt={movie.title} className="w-full h-auto object-cover" />
+                                <img src={poster} alt={localizedMovieTitle} className="w-full h-auto object-cover" />
                             </div>
 
                             <div className="flex flex-col gap-5 text-center md:text-left flex-1 min-w-0">
@@ -216,7 +222,7 @@ export default function MovieDetailPage() {
                                 </div>
 
                                 <h1 className="text-3xl lg:text-5xl font-bold text-white m-0 leading-tight">
-                                    {movie.title}
+                                    {localizedMovieTitle}
                                 </h1>
 
                                 <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-300 justify-center md:justify-start">
@@ -226,7 +232,7 @@ export default function MovieDetailPage() {
                                     </span>
                                     <span className="flex items-center gap-1.5">
                                         <span className="material-symbols-outlined text-[16px] text-white/50">calendar_today</span>
-                                        {formatDate(movie.releaseDate || movie.premiereDate)}
+                                        {formatDate(movie.releaseDate || movie.premiereDate, currentLanguage)}
                                     </span>
                                     <span className="flex items-center gap-1.5">
                                         <span className="material-symbols-outlined text-[16px] text-white/50">video_library</span>
@@ -312,7 +318,7 @@ export default function MovieDetailPage() {
                                 <InfoRow icon="person" label="Director" value={directorNames.length > 0 ? directorNames.join(", ") : "-"} />
                                 <InfoRow icon="local_movies" label="Genre" value={genreNames.length > 0 ? genreNames.join(", ") : "-"} />
                                 <InfoRow icon="theaters" label="Studio" value={movie.studioName || movie.studio?.name || "-"} />
-                                <InfoRow icon="calendar_today" label="Release Date" value={formatDate(movie.releaseDate || movie.premiereDate)} />
+                                <InfoRow icon="calendar_today" label="Release Date" value={formatDate(movie.releaseDate || movie.premiereDate, currentLanguage)} />
                                 <InfoRow icon="schedule" label="Running Time" value={formatDuration(movie.durationMins)} />
                                 <InfoRow icon="translate" label="Status" value={statusLabel} />
                                 <InfoRow icon={ratedInfo.icon} label="Rated" value={`${movie.ratingCode || "-"} — ${movie.ratingName || ratedInfo.label}`} />
@@ -331,7 +337,7 @@ export default function MovieDetailPage() {
                 width={900}
                 destroyOnHidden
                 centered
-                title={movie ? `${movie.title} — Trailer` : "Trailer"}
+                title={movie ? `${localizedMovieTitle} — Trailer` : "Trailer"}
                 className="trailer-modal"
                 styles={{
                     body: { padding: 0 },
@@ -343,7 +349,7 @@ export default function MovieDetailPage() {
                         <iframe
                             className="absolute inset-0 w-full h-full"
                             src={`https://www.youtube.com/embed/${trailerYoutubeId}`}
-                            title={movie?.title ? `${movie.title} Trailer` : "Trailer"}
+                            title={movie ? `${localizedMovieTitle} Trailer` : "Trailer"}
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
                             referrerPolicy="strict-origin-when-cross-origin"
@@ -361,7 +367,7 @@ export default function MovieDetailPage() {
 
 function InfoRow({ icon, label, value }: { icon: string; label: string; value: string }) {
     return (
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-4 my-3">
             <span className="material-symbols-outlined text-primary text-[18px] mt-0.5">{icon}</span>
             <div className="min-w-0">
                 <p className="text-xs text-slate-400 m-0">{label}</p>

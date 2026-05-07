@@ -332,7 +332,7 @@ export default function FnbDialogs(props: FnbDialogsProps) {
                     <p className="text-sm text-muted-foreground-shadcn">Are you sure you want to delete this product?</p>
                     <LTTDialogFooter>
                         <LTTButton variant="outline" onClick={() => onProductDeleteDialogOpenChange(false)}>Cancel</LTTButton>
-                        <LTTButton variant="destructive" onClick={onConfirmDeleteProduct}>Delete</LTTButton>
+                        <LTTButton variant="default" onClick={onConfirmDeleteProduct}>Delete</LTTButton>
                     </LTTDialogFooter>
                 </LTTDialogContent>
             </LTTDialog>
@@ -343,7 +343,7 @@ export default function FnbDialogs(props: FnbDialogsProps) {
                     <p className="text-sm text-muted-foreground-shadcn">Are you sure you want to delete this category?</p>
                     <LTTDialogFooter>
                         <LTTButton variant="outline" onClick={() => onCategoryDeleteDialogOpenChange(false)}>Cancel</LTTButton>
-                        <LTTButton variant="destructive" onClick={onConfirmDeleteCategory}>Delete</LTTButton>
+                        <LTTButton variant="default" onClick={onConfirmDeleteCategory}>Delete</LTTButton>
                     </LTTDialogFooter>
                 </LTTDialogContent>
             </LTTDialog>
@@ -354,7 +354,7 @@ export default function FnbDialogs(props: FnbDialogsProps) {
                     <p className="text-sm text-muted-foreground-shadcn">Are you sure you want to delete this combo?</p>
                     <LTTDialogFooter>
                         <LTTButton variant="outline" onClick={() => onComboDeleteDialogOpenChange(false)}>Cancel</LTTButton>
-                        <LTTButton variant="destructive" onClick={onConfirmDeleteCombo}>Delete</LTTButton>
+                        <LTTButton variant="default" onClick={onConfirmDeleteCombo}>Delete</LTTButton>
                     </LTTDialogFooter>
                 </LTTDialogContent>
             </LTTDialog>
@@ -365,7 +365,7 @@ export default function FnbDialogs(props: FnbDialogsProps) {
                     <p className="text-sm text-muted-foreground-shadcn">Are you sure you want to delete this variant?</p>
                     <LTTDialogFooter>
                         <LTTButton variant="outline" onClick={() => onVariantDeleteDialogOpenChange(false)}>Cancel</LTTButton>
-                        <LTTButton variant="destructive" onClick={onConfirmDeleteVariant}>Delete</LTTButton>
+                        <LTTButton variant="default" onClick={onConfirmDeleteVariant}>Delete</LTTButton>
                     </LTTDialogFooter>
                 </LTTDialogContent>
             </LTTDialog>

@@ -16,7 +16,7 @@ const LTTCastCard: React.FC<LTTCastCardProps> = ({
     size = 72,
 }) => {
     return (
-        <div className="flex flex-col items-center gap-2 text-center w-20">
+        <div className="group flex flex-col items-center gap-2 text-center w-20">
             <LTTAvatar
                 src={image}
                 size={size}
@@ -25,10 +25,10 @@ const LTTCastCard: React.FC<LTTCastCardProps> = ({
                 fallbackText={name}
             />
             <div className="w-full">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white truncate m-0">
-                    {name}
+                <p className="cast-marquee text-sm font-semibold text-slate-900 dark:text-white m-0" title={name}>
+                    <span className="cast-marquee__inner">{name}</span>
                 </p>
-                <p className="text-xs text-slate-400 truncate m-0">
+                <p className="text-xs text-slate-400 truncate m-0" title={role}>
                     {role}
                 </p>
             </div>

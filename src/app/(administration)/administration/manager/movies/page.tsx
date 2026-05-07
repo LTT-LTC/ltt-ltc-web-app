@@ -489,14 +489,15 @@ export default function MoviesPage() {
   };
 
   const getRatingLabel = (movie: MovieOutputDto) => {
-    if (movie.ratingName) {
-      return movie.ratingName;
-    }
     if (movie.ratingCode) {
       return movie.ratingCode;
     }
     if (movie.ratingId) {
-      return ratings.find((rating) => rating.id === movie.ratingId)?.name || movie.ratingId;
+      const matchedRating = ratings.find((rating) => rating.id === movie.ratingId);
+      return matchedRating?.code || matchedRating?.name || movie.ratingId;
+    }
+    if (movie.ratingName) {
+      return movie.ratingName;
     }
     return "-";
   };
@@ -1193,7 +1194,9 @@ export default function MoviesPage() {
                         renderEmptyDropdownState(t("admin.manager_movies.entities.rating"))
                       ) : (
                         ratings.map((rating) => (
-                          <LTTSelectItem key={rating.id} value={rating.id}>{rating.name}</LTTSelectItem>
+                          <LTTSelectItem key={rating.id} value={rating.id}>
+                            {`${rating.code || "-"} - ${rating.name || "-"}`}
+                          </LTTSelectItem>
                         ))
                       )}
                     </LTTSelectContent>
@@ -1241,7 +1244,7 @@ export default function MoviesPage() {
             <div className="mt-6 space-y-2">
               <div className="flex items-center justify-between">
                 <LTTLabel className="text-sm font-medium">{t("admin.manager_movies.form.cast_and_roles")}</LTTLabel>
-                <LTTButton type="button" variant="outline" size="sm" onClick={addCastRow}>
+                <LTTButton type="button" variant="outline" size="sm" className="my-3" onClick={addCastRow}>
                   <Plus className="mr-2 h-4 w-4" /> {t("admin.manager_movies.form.add_actor")}
                 </LTTButton>
               </div>
@@ -1252,7 +1255,7 @@ export default function MoviesPage() {
                   </div>
                 ) : (
                   form.cast.map((item, index) => (
-                    <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center bg-background-shadcn rounded p-2 border border-border-shadcn">
+                    <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center bg-background-shadcn rounded p-2 border border-border-shadcn my-4">
                       <div className="flex flex-col gap-1 w-full">
                         <LTTLabel className="text-xs text-muted-foreground-shadcn">{t("admin.manager_movies.form.actor")}</LTTLabel>
                         <Combobox

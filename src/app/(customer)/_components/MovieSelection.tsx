@@ -27,7 +27,7 @@ const sectionKeyToLabel: Record<MovieSectionStatus, string> = {
 };
 
 const MovieSelection: React.FC = () => {
-    const { t } = useLocalization();
+    const { t, currentLanguage } = useLocalization();
     const router = useRouter();
     const { nowShowingMovies, comingSoonMovies, isLoading, error, reloadMovies } = useMovieCatalog();
     const [activeTab, setActiveTab] = useState<MovieSectionStatus>("now_showing");
@@ -43,9 +43,9 @@ const MovieSelection: React.FC = () => {
     const currentMovies = useMemo<MovieCardItem[]>(() => {
         const start = activePage * MOVIE_PAGE_SIZE;
         return activeMovies.slice(start, start + MOVIE_PAGE_SIZE).map((movie, index) =>
-            buildMovieCardItem(movie, start + index),
+            buildMovieCardItem(movie, start + index, currentLanguage),
         );
-    }, [activeMovies, activePage]);
+    }, [activeMovies, activePage, currentLanguage]);
     const trailerYoutubeId = useMemo(() => extractYoutubeVideoId(trailerUrl), [trailerUrl]);
 
     const handlePrevious = () => {
@@ -130,7 +130,7 @@ const MovieSelection: React.FC = () => {
                             className="inline-flex items-center gap-2 rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary hover:text-white transition-colors"
                         >
                             <span className="material-symbols-outlined text-[18px]">refresh</span>
-                            Retry
+                            {t("customer.common.retry") || "Retry"}
                         </button>
                     </div>
                 )}
@@ -141,7 +141,7 @@ const MovieSelection: React.FC = () => {
                             ? (t("customer.homepage.now_showing") || "Now Showing")
                             : (t("customer.homepage.coming_soon") || "Coming Soon")}
                         {" "}
-                        movies are not available yet.
+                        {t("customer.homepage.movies_not_available_yet") || "movies are not available yet."}
                     </div>
                 )}
 
@@ -158,7 +158,7 @@ const MovieSelection: React.FC = () => {
                                 runningTime={movie.runningTime}
                                 releaseDate={movie.releaseDate}
                                 onTrailer={movie.trailerUrl ? () => openTrailerModal(movie.title, movie.trailerUrl) : undefined}
-                                onViewDetail={() => router.push(`/movie-service/${movie.id}`)}
+                                onViewDetail={() => router.push(`/movies/${movie.id}`)}
                             />
                         ))}
                     </div>
@@ -173,7 +173,7 @@ const MovieSelection: React.FC = () => {
                 width={900}
                 destroyOnHidden
                 centered
-                title={trailerTitle ? `${trailerTitle} — Trailer` : "Trailer"}
+                title={trailerTitle ? `${trailerTitle} — ${t("customer.common.trailer") || "Trailer"}` : (t("customer.common.trailer") || "Trailer")}
                 className="trailer-modal"
                 styles={{
                     body: { padding: 0 },
@@ -185,14 +185,14 @@ const MovieSelection: React.FC = () => {
                         <iframe
                             className="absolute inset-0 w-full h-full"
                             src={`https://www.youtube.com/embed/${trailerYoutubeId}`}
-                            title={trailerTitle ? `${trailerTitle} Trailer` : "Trailer"}
+                            title={trailerTitle ? `${trailerTitle} ${t("customer.common.trailer") || "Trailer"}` : (t("customer.common.trailer") || "Trailer")}
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
                             referrerPolicy="strict-origin-when-cross-origin"
                         />
                     ) : (
                         <div className="absolute inset-0 flex items-center justify-center bg-slate-950 text-white/70">
-                            Trailer is not available yet.
+                            {t("customer.common.trailer_not_available") || "Trailer is not available yet."}
                         </div>
                     )}
                 </div>
