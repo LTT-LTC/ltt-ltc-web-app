@@ -1356,7 +1356,7 @@ export default function MoviesPage() {
           <div className="py-2 text-sm text-muted-foreground-shadcn leading-relaxed">
             {t("admin.manager_movies.exit_confirm.message_before")} <strong className="text-destructive">{t("admin.manager_movies.exit_confirm.message_highlight")}</strong>. {t("admin.manager_movies.exit_confirm.message_after")}
           </div>
-          <LTTDialogFooter className="gap-2">
+          <LTTDialogFooter className="gap-3">
             <LTTButton variant="outline" onClick={() => setExitConfirmOpen(false)} className="flex-1">
               {t("admin.manager_movies.exit_confirm.stay")}
             </LTTButton>
@@ -1382,7 +1382,7 @@ export default function MoviesPage() {
           <div className="py-2 text-sm text-muted-foreground-shadcn leading-relaxed">
             {t("admin.common.delete_confirm.message")}
           </div>
-          <LTTDialogFooter className="gap-2">
+          <LTTDialogFooter className="gap-3">
             <LTTButton
               variant="outline"
               onClick={() => setDeleteConfirmMovie(null)}

@@ -6,6 +6,16 @@ type LTTModalProps = ModalProps & {
 };
 
 const LTTModal = ({ children, loading = false, ...props }: LTTModalProps) => {
+  const okButtonProps = {
+    ...props.okButtonProps,
+    className: `${props.okButtonProps?.className ?? ""} mx-3`.trim(),
+  };
+
+  const cancelButtonProps = {
+    ...props.cancelButtonProps,
+    className: `${props.cancelButtonProps?.className ?? ""}`.trim(),
+  };
+
   return (
     <LTTSpin spinning={loading}>
       <Modal
@@ -15,6 +25,8 @@ const LTTModal = ({ children, loading = false, ...props }: LTTModalProps) => {
         open={props?.open}
         onOk={props?.onOk}
         onCancel={props?.onCancel}
+        okButtonProps={okButtonProps}
+        cancelButtonProps={cancelButtonProps}
         maskTransitionName="ant-fade"
       >
         {children}
