@@ -54,7 +54,7 @@ const LTTUnsavedChangesDialog = ({
                     <LTTButton variant="outline" onClick={() => onOpenChange(false)}>
                         {stayText}
                     </LTTButton>
-                    <LTTButton variant="destructive" onClick={handleExit} loading={loading}>
+                    <LTTButton variant="default" onClick={handleExit} loading={loading}>
                         {exitText}
                     </LTTButton>
                 </LTTDialogFooter>

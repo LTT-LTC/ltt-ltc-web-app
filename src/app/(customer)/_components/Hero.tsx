@@ -10,14 +10,7 @@ interface HeroBannerItem {
 }
 
 const defaultBanners: HeroBannerItem[] = [
-    { image: "/images/banners/980x448-kitkat_1.png" },
-    { image: "/images/banners/980x448_132.png" },
-    { image: "/images/banners/980x448_8__3.png" },
-    { image: "/images/banners/980wx448h_16__3.jpg" },
-    { image: "/images/banners/980_x_448_1__3.jpg" },
-    { image: "/images/banners/b_n_sao_c_a_980x448_1__1.png" },
-    { image: "/images/banners/lny_980_x_448_1.jpg" },
-    { image: "/images/banners/pnj_980x448_1.jpg" },
+    { image: "https://placehold.co/980x448/EEE/31343C?font=open-sans&text=No%20News%20And%20Offers" },
 ];
 const bannerPlaceholder = defaultBanners[0].image;
 

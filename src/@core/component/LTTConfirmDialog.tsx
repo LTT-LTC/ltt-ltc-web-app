@@ -30,7 +30,7 @@ const LTTConfirmDialog = ({
     confirmText,
     cancelText,
     onConfirm,
-    confirmVariant = "destructive",
+    confirmVariant = "default",
     loading = false,
 }: LTTConfirmDialogProps) => {
     const [open, setOpen] = useState(false);

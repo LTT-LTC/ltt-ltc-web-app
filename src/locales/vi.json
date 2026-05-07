@@ -20,6 +20,7 @@
       "active": "Hoạt động",
       "inactive": "Tạm dừng",
       "all": "Tất cả",
+      "load_more": "Tải thêm",
       "unsaved_changes_dialog": {
         "title": "Bạn có thay đổi chưa lưu",
         "message_before": "Bạn có thay đổi chưa hoàn tất. Thoát sẽ",
@@ -909,6 +910,7 @@
         "name": "Tên rạp",
         "city": "Thành phố",
         "address": "Địa chỉ",
+        "manager_name": "Quản lý",
         "screens": "Phòng chiếu",
         "status": "Trạng thái",
         "updated": "Cập nhật",
@@ -920,9 +922,11 @@
         "name": "Tên rạp *",
         "city": "Thành phố",
         "ward": "Xã/Phường",
+        "manager": "Quản lý",
         "status": "Trạng thái",
         "address": "Địa chỉ",
         "phone": "Điện thoại",
+        "select_manager_placeholder": "Chọn quản lý",
         "city_placeholder": "Chọn hoặc tìm thành phố",
         "ward_placeholder": "Chọn hoặc tìm xã/phường",
         "ward_placeholder_disabled": "Vui lòng chọn thành phố trước",
@@ -1297,7 +1301,51 @@
       "now_showing": "ĐANG CHIẾU",
       "coming_soon": "SẮP CHIẾU",
       "special_screening": "SUẤT ĐẶC BIỆT",
-      "view_details": "XEM CHI TIẾT"
+      "view_details": "XEM CHI TIẾT",
+      "movies_not_available_yet": "hiện chưa có phim."
+    },
+    "common": {
+      "movies": "Phim",
+      "retry": "Thử lại",
+      "trailer": "Trailer",
+      "trailer_not_available": "Trailer hiện chưa có sẵn."
+    },
+    "now_showing": {
+      "empty": "Hiện chưa có phim đang chiếu."
+    },
+    "coming_soon": {
+      "empty": "Hiện chưa có phim sắp chiếu."
+    },
+    "movie_detail": {
+      "back": "Quay lại",
+      "loading": "Đang tải chi tiết phim...",
+      "not_found": "Không tìm thấy phim.",
+      "go_home": "Về trang chủ",
+      "book_tickets": "Đặt vé",
+      "watch_trailer": "Xem trailer",
+      "movie_description": "Nội dung phim",
+      "no_description": "Chưa có mô tả phim.",
+      "cast": "Diễn viên",
+      "cast_not_available": "Chưa có thông tin diễn viên.",
+      "movie_info": "Thông tin phim",
+      "status": {
+        "now_showing": "Đang chiếu",
+        "coming_soon": "Sắp chiếu",
+        "ended": "Kết thúc"
+      },
+      "labels": {
+        "director": "Đạo diễn",
+        "genre": "Thể loại",
+        "studio": "Hãng phim",
+        "release_date": "Ngày phát hành",
+        "running_time": "Thời lượng",
+        "status": "Trạng thái",
+        "rated": "Phân loại"
+      },
+      "errors": {
+        "movie_id_missing": "Thiếu mã phim",
+        "load_failed": "Không thể tải chi tiết phim"
+      }
     },
     "my_ltc": {
       "title": "My LTC",
