@@ -392,7 +392,7 @@ export default function CinemaConfigPage() {
                 <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.screens")}</th>
                 <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.status")}</th>
                 <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.updated")}</th>
-                <th className="sticky right-0 z-20 px-4 py-3 text-right font-semibold bg-muted-shadcn/95 border-l border-border-shadcn shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.2)]">
+                <th className="sticky right-0 z-20 px-4 py-3 text-right font-semibold bg-muted-shadcn/95">
                   {t("admin.cinema_configuration.table.actions")}
                 </th>
               </tr>
@@ -437,7 +437,7 @@ export default function CinemaConfigPage() {
                     <td className="px-4 py-3 text-muted-foreground-shadcn text-xs">
                       {item.updatedAt}
                     </td>
-                    <td className="sticky right-0 z-10 px-4 py-3 bg-card border-l border-border-shadcn shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.15)]">
+                    <td className="sticky right-0 z-10 px-4 py-3 bg-card">
                       <div className="flex justify-end gap-1">
                         <LTTButton
                           variant="ghost"

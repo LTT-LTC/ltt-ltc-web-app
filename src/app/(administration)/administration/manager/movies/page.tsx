@@ -235,8 +235,6 @@ export default function MoviesPage() {
   const [ratings, setRatings] = useState<RatingOutputDto[]>([]);
   const [actors, setActors] = useState<ActorOutputDto[]>([]);
   const [roles, setRoles] = useState<RoleOutputDto[]>([]);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [page, setPage] = useState(1);
   const [fetch, setFetch] = useState(10);
@@ -393,22 +391,12 @@ export default function MoviesPage() {
     listMutation.mutation({
       page,
       fetch,
-      keyword: debouncedSearch,
+      keyword: "",
       // Status filter mapping if needed
     });
   };
 
   const totalPages = Math.max(1, Math.ceil((totalCount || items.length) / fetch));
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search), 300);
-    return () => clearTimeout(timer);
-  }, [search]);
-
-  useEffect(() => {
-    skipNextFetchRef.current = page !== 1;
-    setPage(1);
-  }, [debouncedSearch]);
 
   useEffect(() => {
     if (skipNextFetchRef.current && page !== 1) {
@@ -418,7 +406,7 @@ export default function MoviesPage() {
       skipNextFetchRef.current = false;
     }
     fetchData();
-  }, [page, fetch, debouncedSearch]);
+  }, [page, fetch]);
 
   const ensureGenresLoaded = () => {
     if (!genresLoaded && !genresMutation.isLoading) {
@@ -792,33 +780,23 @@ export default function MoviesPage() {
         </LTTButton>
       </div>
 
-      <LTTTabs value={tab} onValueChange={setTab}>
-        <LTTTabsList className="bg-muted-shadcn/50">
-          <LTTTabsTrigger value="all">
-            {t("admin.manager_movies.tabs.all", { count: items.length })}
-          </LTTTabsTrigger>
-          <LTTTabsTrigger value="now_showing">
-            {t("admin.manager_movies.tabs.now_showing", { count: items.filter((m) => m.status === "now_showing").length })}
-          </LTTTabsTrigger>
-          <LTTTabsTrigger value="coming_soon">
-            {t("admin.manager_movies.tabs.coming_soon", { count: items.filter((m) => m.status === "coming_soon").length })}
-          </LTTTabsTrigger>
-          <LTTTabsTrigger value="ended">
-            {t("admin.manager_movies.tabs.ended", { count: items.filter((m) => m.status === "ended").length })}
-          </LTTTabsTrigger>
-        </LTTTabsList>
-      </LTTTabs>
-
       <div className="flex items-center gap-3 py-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
-          <LTTInput
-            placeholder={t("admin.manager_movies.search_placeholder")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
+        <LTTTabs value={tab} onValueChange={setTab}>
+          <LTTTabsList className="bg-muted-shadcn/50">
+            <LTTTabsTrigger value="all">
+              {t("admin.manager_movies.tabs.all", { count: items.length })}
+            </LTTTabsTrigger>
+            <LTTTabsTrigger value="now_showing">
+              {t("admin.manager_movies.tabs.now_showing", { count: items.filter((m) => m.status === "now_showing").length })}
+            </LTTTabsTrigger>
+            <LTTTabsTrigger value="coming_soon">
+              {t("admin.manager_movies.tabs.coming_soon", { count: items.filter((m) => m.status === "coming_soon").length })}
+            </LTTTabsTrigger>
+            <LTTTabsTrigger value="ended">
+              {t("admin.manager_movies.tabs.ended", { count: items.filter((m) => m.status === "ended").length })}
+            </LTTTabsTrigger>
+          </LTTTabsList>
+        </LTTTabs>
         <LTTButton
           variant="outline"
           size="sm"
