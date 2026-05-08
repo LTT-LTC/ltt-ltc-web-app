@@ -167,7 +167,7 @@ export default function UserDropdown() {
               baseClassName="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 no-underline"
             >
               <span className="material-symbols-outlined text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-300">person</span>
-              {t("customer.my_ltc.nav.account_details")}
+              {t("common.profile")}
             </DropdownItem>
           </li>
           <li>
@@ -178,7 +178,7 @@ export default function UserDropdown() {
               baseClassName="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 no-underline"
             >
               <span className="material-symbols-outlined text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-300">dashboard</span>
-              {t("customer.my_ltc.nav.dashboard")}
+              {t("common.account_settings")}
             </DropdownItem>
           </li>
         </ul>

@@ -3,7 +3,7 @@ import { ApiResult } from "@/src/@core/http/models/ApiResult";
 import { GetCustomerShowtimeListInputDto } from "./models/input.model";
 import { CustomerShowtimeOutputDto } from "./models/output.model";
 
-const rootPath = "/customer-service/customer/showtime";
+const rootPath = "/administration-service/customer/showtimes";
 
 const getShowtimeListAsync = async (params: GetCustomerShowtimeListInputDto): Promise<CustomerShowtimeOutputDto[]> => {
     const response = await http.get<ApiResult<CustomerShowtimeOutputDto[]>>(rootPath, { params });

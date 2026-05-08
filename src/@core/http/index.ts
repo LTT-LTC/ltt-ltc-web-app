@@ -203,10 +203,9 @@ function shouldSkipAuthRefresh(failedRequestUrl?: string): boolean {
     (requestUrl.includes("/movie-service/") && !isAdminMovieServiceRequest) ||
     (requestUrl.includes("/product-service/") && !isManagerProductServiceRequest) ||
     requestUrl.includes("/administration-service/customer/news-and-offers") ||
-    requestUrl.includes("/customer-service/movie") ||
-    requestUrl.includes("/customer-service/cinema") ||
-    requestUrl.includes("/customer-service/showtime") ||
-    requestUrl.includes("/customer-service/product")
+    requestUrl.includes("/administration-service/customer/cinema") ||
+    requestUrl.includes("/administration-service/customer/showtimes") ||
+    requestUrl.includes("/customer-service/movie")
   );
 }
 

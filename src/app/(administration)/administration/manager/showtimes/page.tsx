@@ -66,8 +66,6 @@ const statusColor: Record<string, string> = {
   ended: "bg-muted-shadcn text-muted-foreground-shadcn border-muted-shadcn",
 };
 
-const normalizeMovieStatus = (status?: string) => (status || "").trim().toLowerCase();
-const allowedMovieStatuses = new Set(["now_showing", "coming_soon", "comming_soon"]);
 const toDateInput = (d: Date) => d.toISOString().slice(0, 10);
 const HOURS = Array.from({ length: 15 }, (_, i) => i + 8);
 const DAYS_VI = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
@@ -112,6 +110,25 @@ const normalizeDateString = (value?: string) => {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return "";
   return formatDateKey(parsed);
+};
+const toDayStartMs = (value?: string) => {
+  const normalized = normalizeDateString(value);
+  if (!normalized) return Number.NaN;
+  const ms = new Date(`${normalized}T00:00:00`).getTime();
+  return Number.isNaN(ms) ? Number.NaN : ms;
+};
+const isDistributionValidForDate = (item: MovieDistributionOutputDto, dateValue: string) => {
+  const target = toDayStartMs(dateValue);
+  if (Number.isNaN(target)) return false;
+  const start = item.licenseStartDate ? toDayStartMs(item.licenseStartDate) : Number.NEGATIVE_INFINITY;
+  const end = item.licenseEndDate ? toDayStartMs(item.licenseEndDate) : Number.POSITIVE_INFINITY;
+  return target >= start && target <= end;
+};
+const isDistributionNotExpired = (item: MovieDistributionOutputDto) => {
+  const today = toDayStartMs(toDateInput(new Date()));
+  if (Number.isNaN(today)) return false;
+  const end = item.licenseEndDate ? toDayStartMs(item.licenseEndDate) : Number.POSITIVE_INFINITY;
+  return today <= end;
 };
 const extractDate = (item: ShowtimeOutputDto) => {
   if (item.showDate) return normalizeDateString(item.showDate);
@@ -167,7 +184,7 @@ export default function ShowtimeSchedulerPage() {
   const [showtimeTotal, setShowtimeTotal] = useState(0);
   const [selectedMovieId, setSelectedMovieId] = useState("");
   const [search, setSearch] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState(toDateInput(new Date()));
   const [page, setPage] = useState(1);
   const [fetch, setFetch] = useState(10);
   const [calendarWeek, setCalendarWeek] = useState(new Date());
@@ -205,18 +222,20 @@ export default function ShowtimeSchedulerPage() {
     basePrice: "",
   });
 
+  const eligibleSchedulerDistributions = useMemo(
+    () => schedulerDistributions.filter((item) => isDistributionNotExpired(item)),
+    [schedulerDistributions]
+  );
   const eligibleMovies = useMemo(
     () => {
-      const distributedMovieIds = new Set(schedulerDistributions.map((item) => item.movieId));
-      return movies.filter(
-        (movie) =>
-          allowedMovieStatuses.has(normalizeMovieStatus(movie.status)) &&
-          distributedMovieIds.has(movie.id)
-      );
+      const distributedMovieIds = new Set(eligibleSchedulerDistributions.map((item) => item.movieId));
+      return movies.filter((movie) => distributedMovieIds.has(movie.id));
     },
-    [movies, schedulerDistributions]
+    [movies, eligibleSchedulerDistributions]
   );
-  const effectiveMovieId = selectedMovieId || eligibleMovies[0]?.id || "";
+  const effectiveMovieId = eligibleMovies.some((movie) => movie.id === selectedMovieId)
+    ? selectedMovieId
+    : (eligibleMovies[0]?.id || "");
   const selectedMovie = useMemo(
     () => movies.find((movie) => movie.id === form.movieId),
     [movies, form.movieId]
@@ -224,6 +243,15 @@ export default function ShowtimeSchedulerPage() {
   const selectedDistribution = useMemo(
     () => dialogDistributions.find((distribution) => distribution.id === form.movieDistributionId),
     [dialogDistributions, form.movieDistributionId]
+  );
+  const availableFormDistributions = useMemo(
+    () =>
+      dialogDistributions.filter(
+        (distribution) =>
+          distribution.movieId === form.movieId &&
+          isDistributionValidForDate(distribution, form.date || toDateInput(new Date()))
+      ),
+    [dialogDistributions, form.movieId, form.date]
   );
 
   const listShowtimeMutation = useLTTMutation<
@@ -292,7 +320,9 @@ export default function ShowtimeSchedulerPage() {
           next.format = formatsRes.items[0].name;
         }
         if (next.movieId && !next.movieDistributionId) {
-          const distribution = (distributionsRes.items || []).find((item) => item.movieId === next.movieId);
+          const distribution = (distributionsRes.items || []).find(
+            (item) => item.movieId === next.movieId && isDistributionValidForDate(item, next.date || toDateInput(new Date()))
+          );
           next.movieDistributionId = distribution?.id || "";
         }
         return next;
@@ -409,6 +439,16 @@ export default function ShowtimeSchedulerPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [managerCinemaId]);
 
+  useEffect(() => {
+    if (!dialogOpen || !form.movieId) return;
+    const selectedStillValid = availableFormDistributions.some((item) => item.id === form.movieDistributionId);
+    if (selectedStillValid) return;
+    setForm((current) => ({
+      ...current,
+      movieDistributionId: availableFormDistributions[0]?.id || "",
+    }));
+  }, [dialogOpen, form.movieId, form.movieDistributionId, availableFormDistributions]);
+
   const filteredShowtimes = useMemo(() => {
     const q = search.trim().toLowerCase();
     return showtimes.filter((item) => {
@@ -451,7 +491,9 @@ export default function ShowtimeSchedulerPage() {
 
   const openCreate = (prefillDate?: string, prefillTime?: string) => {
     const defaultMovie = selectedMovieId || eligibleMovies[0]?.id || "";
-    const defaultDistribution = dialogDistributions.find((item) => item.movieId === defaultMovie)?.id || "";
+    const showDate = prefillDate || toDateInput(new Date());
+    const defaultDistribution =
+      dialogDistributions.find((item) => item.movieId === defaultMovie && isDistributionValidForDate(item, showDate))?.id || "";
     setEditing(null);
     setEndTimeManuallyEdited(false);
     setForm({
@@ -459,7 +501,7 @@ export default function ShowtimeSchedulerPage() {
       cinemaId: managerCinemaId,
       screenId: "",
       movieDistributionId: defaultDistribution,
-      date: prefillDate || toDateInput(new Date()),
+      date: showDate,
       startTime: prefillTime || "",
       endTime: "",
       format: dialogFormats[0]?.name || "",
@@ -499,6 +541,11 @@ export default function ShowtimeSchedulerPage() {
     const basePrice = Number(form.basePrice);
     if (!basePrice || basePrice <= 0) {
       toast.error(t("admin.showtimes.form.validation.base_price_invalid"));
+      return;
+    }
+
+    if (!selectedDistribution || !isDistributionValidForDate(selectedDistribution, form.date)) {
+      toast.error(t("admin.showtimes.form.validation.distribution_invalid_for_show_date"));
       return;
     }
 
@@ -919,7 +966,9 @@ export default function ShowtimeSchedulerPage() {
               <LTTSelect
                 value={form.movieId}
                 onValueChange={(value) => {
-                  const distribution = dialogDistributions.find((item) => item.movieId === value);
+                  const distribution = dialogDistributions.find(
+                    (item) => item.movieId === value && isDistributionValidForDate(item, form.date || toDateInput(new Date()))
+                  );
                   const movie = movies.find((item) => item.id === value);
                   const autoEnd =
                     !endTimeManuallyEdited && form.startTime
@@ -963,7 +1012,26 @@ export default function ShowtimeSchedulerPage() {
 
             <div className="space-y-2">
               <LTTLabel>{t("admin.showtimes.form.show_date")}</LTTLabel>
-              <LTTInput type="date" value={form.date} onChange={(e) => setForm((current) => ({ ...current, date: e.target.value }))} />
+              <LTTInput
+                type="date"
+                value={form.date}
+                onChange={(e) => {
+                  const nextDate = e.target.value;
+                  setForm((current) => {
+                    const nextDistributions = dialogDistributions.filter(
+                      (item) => item.movieId === current.movieId && isDistributionValidForDate(item, nextDate)
+                    );
+                    const nextDistributionId = nextDistributions.some((item) => item.id === current.movieDistributionId)
+                      ? current.movieDistributionId
+                      : (nextDistributions[0]?.id || "");
+                    return {
+                      ...current,
+                      date: nextDate,
+                      movieDistributionId: nextDistributionId,
+                    };
+                  });
+                }}
+              />
               {selectedDistribution && (
                 <p className="text-xs text-muted-foreground-shadcn">
                   {t("admin.showtimes.form.distribution_window")}: {(selectedDistribution.licenseStartDate || "---").split("T")[0]} - {(selectedDistribution.licenseEndDate || "---").split("T")[0]}

@@ -3,7 +3,7 @@ import { ApiResult } from "@/src/@core/http/models/ApiResult";
 import { CustomerCinemaOutputDto } from "./models/output.model";
 import { GetCustomerCinemaListInputDto } from "./models/input.model";
 
-const rootPath = "/customer-service/customer/cinema";
+const rootPath = "/administration-service/customer/cinema";
 
 const getCinemaListAsync = async (params?: GetCustomerCinemaListInputDto): Promise<CustomerCinemaOutputDto[]> => {
     const response = await http.get<ApiResult<CustomerCinemaOutputDto[]>>(rootPath, {

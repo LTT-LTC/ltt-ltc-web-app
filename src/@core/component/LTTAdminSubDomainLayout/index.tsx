@@ -237,7 +237,7 @@ export default function LTTAdminSubDomainLayout({
                       href="/my-ltc/account-details"
                       baseClassName="flex items-center gap-3 px-3 py-2 font-medium text-foreground rounded-lg hover:bg-muted-shadcn text-sm no-underline"
                     >
-                      Thông tin cá nhân
+                      {t("common.profile")}
                     </DropdownItem>
                   </li>
                   <li>
@@ -247,7 +247,7 @@ export default function LTTAdminSubDomainLayout({
                       href="/my-ltc"
                       baseClassName="flex items-center gap-3 px-3 py-2 font-medium text-foreground rounded-lg hover:bg-muted-shadcn text-sm no-underline"
                     >
-                      Cài đặt tài khoản
+                      {t("common.account_settings")}
                     </DropdownItem>
                   </li>
                 </ul>
@@ -259,7 +259,7 @@ export default function LTTAdminSubDomainLayout({
                   className="flex items-center gap-3 px-3 py-2 font-medium text-foreground rounded-lg hover:bg-muted-shadcn text-sm text-left outline-none w-full"
                 >
                   <LogOut className="h-4 w-4" />
-                  Đăng xuất
+                  {t("common.logout")}
                 </button>
               </Dropdown>
             </div>
