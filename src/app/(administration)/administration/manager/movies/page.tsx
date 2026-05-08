@@ -133,6 +133,7 @@ const statusColor: Record<string, string> = {
 const Combobox = ({ value, onChange, options, placeholder, allowCreate = true }: {
   value: string; onChange: (v: string) => void; options: string[]; placeholder: string; allowCreate?: boolean;
 }) => {
+  const { t } = useLocalization();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const showCreate = allowCreate && search.trim() && !options.some((o) => o.toLowerCase() === search.trim().toLowerCase());
@@ -146,9 +147,9 @@ const Combobox = ({ value, onChange, options, placeholder, allowCreate = true }:
       </LTTPopoverTrigger>
       <LTTPopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start">
         <LTTCommand>
-          <LTTCommandInput placeholder="Tìm kiếm..." value={search} onValueChange={setSearch} />
+          <LTTCommandInput placeholder={t("admin.common.search") || "Search..."} value={search} onValueChange={setSearch} />
           <LTTCommandList>
-            <LTTCommandEmpty>Không tìm thấy</LTTCommandEmpty>
+            <LTTCommandEmpty>{t("admin.common.no_results") || "No results found."}</LTTCommandEmpty>
             <LTTCommandGroup>
               {options.map((opt) => (
                 <LTTCommandItem key={opt} value={opt} onSelect={() => { onChange(opt); setOpen(false); setSearch(""); }}>
@@ -158,7 +159,7 @@ const Combobox = ({ value, onChange, options, placeholder, allowCreate = true }:
               ))}
               {showCreate && (
                 <LTTCommandItem onSelect={() => { onChange(search.trim()); setOpen(false); setSearch(""); }}>
-                  <Plus className="mr-2 h-4 w-4" /> Thêm mới: <strong className="ml-1">{search.trim()}</strong>
+                  <Plus className="mr-2 h-4 w-4" /> {t("admin.common.add_new") || "Add new"}: <strong className="ml-1">{search.trim()}</strong>
                 </LTTCommandItem>
               )}
             </LTTCommandGroup>
@@ -174,6 +175,7 @@ const MultiSelect = ({ values, onChange, options, placeholder, displayOptions, a
   displayOptions?: Array<{ label: string, value: string }>;
   allowCreate?: boolean;
 }) => {
+  const { t } = useLocalization();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const toggle = (opt: string) => values.includes(opt) ? onChange(values.filter((v) => v !== opt)) : onChange([...values, opt]);
@@ -199,11 +201,11 @@ const MultiSelect = ({ values, onChange, options, placeholder, displayOptions, a
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </LTTButton>
       </LTTPopoverTrigger>
-      <LTTPopoverContent className="p-0 w-[--radix-popover-trigger-width]" align="start">
+      <LTTPopoverContent className="p-0 w-[--radix-popover-trigger-width] overflow-hidden" align="start">
         <LTTCommand>
-          <LTTCommandInput placeholder="Tìm kiếm..." value={search} onValueChange={setSearch} />
-          <LTTCommandList>
-            <LTTCommandEmpty>Không tìm thày</LTTCommandEmpty>
+          <LTTCommandInput placeholder={t("admin.common.search") || "Search..."} value={search} onValueChange={setSearch} />
+          <LTTCommandList className="max-h-56 overflow-y-auto overscroll-contain">
+            <LTTCommandEmpty>{t("admin.common.no_results") || "No results found."}</LTTCommandEmpty>
             <LTTCommandGroup>
               {options.map((opt) => {
                 const text = displayOptions?.find(x => x.value === opt)?.label || opt;
@@ -216,7 +218,7 @@ const MultiSelect = ({ values, onChange, options, placeholder, displayOptions, a
               })}
               {showCreate && (
                 <LTTCommandItem onSelect={() => { onChange([...values, search.trim()]); setSearch(""); }}>
-                  <Plus className="mr-2 h-4 w-4" /> Thêm mới: <strong className="ml-1">{search.trim()}</strong>
+                  <Plus className="mr-2 h-4 w-4" /> {t("admin.common.add_new") || "Add new"}: <strong className="ml-1">{search.trim()}</strong>
                 </LTTCommandItem>
               )}
             </LTTCommandGroup>
@@ -1251,7 +1253,7 @@ export default function MoviesPage() {
                             }
                           }}
                           options={actors.map(a => a.name)}
-                          placeholder="Chọn/Nhập diễn viên"
+                          placeholder={t("admin.manager_movies.form.select_or_enter_actor") || "Select/Enter actor"}
                           allowCreate={true}
                         />
                       </div>
@@ -1272,7 +1274,7 @@ export default function MoviesPage() {
                             }
                           }}
                           options={roles.map(r => r.name)}
-                          placeholder="Chọn/Nhập vai diễn"
+                          placeholder={t("admin.manager_movies.form.select_or_enter_role") || "Select/Enter role"}
                           allowCreate={true}
                         />
                       </div>

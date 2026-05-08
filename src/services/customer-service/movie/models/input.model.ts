@@ -3,6 +3,7 @@ export interface GetMovieListInputDto {
     studioId?: string;
     formatId?: string;
     keyword?: string;
+    status?: string;
     page: number;
     fetch: number;
 }

@@ -33,6 +33,24 @@ const LTTMovieCard: React.FC<LTTMovieCardProps> = ({
     onTrailer,
     onViewDetail,
 }) => {
+    const [mobileActionsOpen, setMobileActionsOpen] = React.useState(false);
+
+    const isMobileViewport = () => {
+        if (typeof window === "undefined") {
+            return false;
+        }
+
+        return window.matchMedia("(max-width: 1023px), (hover: none), (pointer: coarse)").matches;
+    };
+
+    const handleBannerClick = () => {
+        if (!isMobileViewport()) {
+            return;
+        }
+
+        setMobileActionsOpen((prev) => !prev);
+    };
+
     // Determine rank color
     const getRankColor = (r: number) => {
         if (r === 1) return "bg-red-600";
@@ -43,7 +61,10 @@ const LTTMovieCard: React.FC<LTTMovieCardProps> = ({
 
     return (
         <div className="group cursor-pointer h-full flex flex-col">
-            <div className="relative overflow-hidden aspect-2/3 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl transition-shadow duration-300">
+            <div
+                className="relative overflow-hidden aspect-2/3 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-xl transition-shadow duration-300"
+                onClick={handleBannerClick}
+            >
                 <img
                     alt={title}
                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
@@ -85,20 +106,31 @@ const LTTMovieCard: React.FC<LTTMovieCardProps> = ({
                     </div>
                 )}
 
-                <div className="absolute inset-0 bg-primary/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center p-4 text-center gap-3">
+                <div className={`absolute inset-0 bg-primary/80 transition-opacity flex flex-col items-center justify-center p-4 text-center gap-3 ${mobileActionsOpen
+                    ? "opacity-100 pointer-events-auto"
+                    : "opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto"
+                    }`}>
                     {description && (
                         <p className="text-white text-xs font-medium leading-tight line-clamp-4 mb-2">{description}</p>
                     )}
                     {onTrailer && (
                         <button
-                            onClick={(e) => { e.stopPropagation(); onTrailer(); }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setMobileActionsOpen(false);
+                                onTrailer();
+                            }}
                             className="bg-white text-primary px-4 py-2 rounded-full text-xs font-bold w-full uppercase hover:scale-105 transition-transform"
                         >
                             Trailer
                         </button>
                     )}
                     <button
-                        onClick={(e) => { e.stopPropagation(); onViewDetail?.(); }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setMobileActionsOpen(false);
+                            onViewDetail?.();
+                        }}
                         className="bg-transparent border border-white text-white px-4 py-2 rounded-full text-xs font-bold w-full uppercase hover:bg-white/10 transition-colors"
                     >
                         Detail
