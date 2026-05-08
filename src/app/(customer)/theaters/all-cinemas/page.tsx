@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import TopBar from "../../_components/TopBar";
 import Header from "../../_components/Header";
 import Footer from "../../_components/Footer";
+import PaginationControls from "../../_components/PaginationControls";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 import { customerCinemaService } from "@/src/services/customer-service/cinema/cinema.service";
 import { CustomerCinemaOutputDto } from "@/src/services/customer-service/cinema/models/output.model";
@@ -17,6 +18,7 @@ import { getLocalizedMovieTitle, getRatingTagClass } from "../../_components/mov
 dayjs.locale("vi");
 
 const DATE_RANGE_DAYS = 14;
+const SHOWTIME_PAGE_SIZE = 10;
 const FALLBACK_POSTER = "/images/movie-current-banners/470x700-us.jpg";
 const PROVINCES = [
   "Hồ Chí Minh",
@@ -83,6 +85,7 @@ export default function AllCinemasPage() {
   const [selectedCinemaId, setSelectedCinemaId] = useState("");
   const [selectedDate, setSelectedDate] = useState(dayjs());
   const [dateStart, setDateStart] = useState(dayjs());
+  const [showtimePage, setShowtimePage] = useState(1);
 
   const filteredCinemas = useMemo(() => cinemas, [cinemas]);
 
@@ -131,6 +134,16 @@ export default function AllCinemasPage() {
   const datesRows = useMemo(
     () => Array.from({ length: DATE_RANGE_DAYS }).map((_, index) => dateStart.add(index, "day")),
     [dateStart],
+  );
+  const totalShowtimePages = Math.max(1, Math.ceil(groupedShowtimes.length / SHOWTIME_PAGE_SIZE));
+  const currentShowtimePage = Math.min(showtimePage, totalShowtimePages);
+  const pagedGroupedShowtimes = useMemo(
+    () =>
+      groupedShowtimes.slice(
+        (currentShowtimePage - 1) * SHOWTIME_PAGE_SIZE,
+        currentShowtimePage * SHOWTIME_PAGE_SIZE,
+      ),
+    [groupedShowtimes, currentShowtimePage],
   );
 
   useEffect(() => {
@@ -193,6 +206,17 @@ export default function AllCinemasPage() {
 
     void fetchShowtimes();
   }, [selectedCinemaId, selectedDate, t]);
+
+  useEffect(() => {
+    // Keep pagination intuitive: whenever user changes cinema/date, go back page 1.
+    setShowtimePage(1);
+  }, [selectedCinemaId, selectedDate]);
+
+  useEffect(() => {
+    if (showtimePage > totalShowtimePages) {
+      setShowtimePage(totalShowtimePages);
+    }
+  }, [showtimePage, totalShowtimePages]);
 
   const canMoveDateBackward = dateStart.isAfter(dayjs(), "day");
 
@@ -350,7 +374,7 @@ export default function AllCinemasPage() {
                   <div className="text-center text-gray-400 text-sm py-8">{t("customer.all_cinemas.no_showtimes")}</div>
                 ) : (
                   <div className="space-y-6">
-                    {groupedShowtimes.map((movie) => (
+                    {pagedGroupedShowtimes.map((movie) => (
                       <div key={`${movie.movieId}-${movie.movieFormat}`} className="border-b border-gray-100 pb-6 last:border-0 last:pb-0">
                         <div className="flex gap-4">
                           <div className="w-[96px] shrink-0">
@@ -380,6 +404,14 @@ export default function AllCinemasPage() {
                         </div>
                       </div>
                     ))}
+                    <div className="pt-2 flex justify-end">
+                      <PaginationControls
+                        currentPage={currentShowtimePage}
+                        totalPages={totalShowtimePages}
+                        onPrevious={() => setShowtimePage((prev) => Math.max(1, prev - 1))}
+                        onNext={() => setShowtimePage((prev) => Math.min(totalShowtimePages, prev + 1))}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
