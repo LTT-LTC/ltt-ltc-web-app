@@ -7,7 +7,6 @@ import { useLocalization } from "@/src/@core/hooks/use-localization";
 import {
   type SeatLayout,
   type SeatLayoutSeat,
-  mockSeatTypes,
   type SeatType,
 } from "@/src/@core/const/mock/adminMockData";
 import {
@@ -46,7 +45,7 @@ export interface LTTSeatMapViewerProps {
    * Default `false` (standard 28 px cells).
    */
   compact?: boolean;
-  /** Optional list of seat types for the legend. Falls back to mockSeatTypes. */
+  /** Optional list of seat types for the legend. */
   seatTypes?: SeatType[];
   /** Show the legend strip below the grid. Default true. */
   showLegend?: boolean;
@@ -65,7 +64,7 @@ export default function LTTSeatMapViewer({
   readOnly = false,
   showScreen = true,
   compact = false,
-  seatTypes = mockSeatTypes,
+  seatTypes = [],
   showLegend = true,
   className,
 }: LTTSeatMapViewerProps) {
@@ -89,7 +88,42 @@ export default function LTTSeatMapViewer({
     return ids;
   }, [seatLayout]);
 
-  const activeSeatTypes = seatTypes.filter((st) => usedTypeIds.has(st.id));
+  const mergedSeatTypes = useMemo<SeatType[]>(() => {
+    const byId = new Map<number, SeatType>();
+
+    seatTypes.forEach((st) => {
+      byId.set(st.id, st);
+    });
+
+    seatLayout.rows.forEach((row) => {
+      row.seats.forEach((seat) => {
+        if (getCellType(seat) !== "seat" || !seat.seatTypeId) return;
+        const id = seat.seatTypeId;
+        if (!byId.has(id)) {
+          byId.set(id, {
+            id,
+            name: seat.seatTypeName || `Seat ${id}`,
+            description: "",
+            priceMultiplier: seat.seatPriceMultiplier ?? 1,
+            seatOccupied: seat.seatOccupied ?? 1,
+            orientation: seat.seatDisplayDirection ?? "square",
+            createdAt: "",
+            updatedAt: "",
+          });
+          return;
+        }
+
+        const current = byId.get(id)!;
+        if (seat.seatTypeName && current.name !== seat.seatTypeName) {
+          byId.set(id, { ...current, name: seat.seatTypeName });
+        }
+      });
+    });
+
+    return Array.from(byId.values());
+  }, [seatTypes, seatLayout]);
+
+  const activeSeatTypes = mergedSeatTypes.filter((st) => usedTypeIds.has(st.id));
 
   const collectDragCode = (code: string) => {
     if (!code) return;
@@ -143,7 +177,8 @@ export default function LTTSeatMapViewer({
     if (isBooked)   return "bg-gray-400 border-gray-500";
     if (isSelected) return "bg-primary-shadcn border-primary-shadcn scale-105 shadow-sm";
 
-    const colors = getSeatTypeColor(seat.seatTypeId);
+    const seatType = mergedSeatTypes.find((st) => st.id === (seat.seatTypeId ?? 0));
+    const colors = getSeatTypeColor(seat.seatTypeId, seatType?.name);
     return `${colors.bg} ${colors.border}`;
   };
 
@@ -406,7 +441,7 @@ export default function LTTSeatMapViewer({
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 rounded-xl border border-border-shadcn bg-muted-shadcn/20 px-5 py-2.5 text-xs">
           {/* Seat types */}
           {activeSeatTypes.map((st) => {
-            const colors = getSeatTypeColor(st.id);
+            const colors = getSeatTypeColor(st.id, st.name);
             return (
               <div key={st.id} className="flex items-center gap-1.5">
                 <div className={cn("h-3 w-3 rounded-sm", colors.bg)} />

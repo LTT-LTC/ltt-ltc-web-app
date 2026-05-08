@@ -891,7 +891,7 @@ export default function LTTScreenCreateWizard({
 
   const getSeatCellBgClass = (cell: GridCell) => {
     if (cell.type === "seat" || cell.type === "seat_continuation") {
-      return getSeatTypeColor(cell.seatTypeId).bg;
+      return getSeatTypeColor(cell.seatTypeId, getSeatType(cell.seatTypeId)?.name).bg;
     }
     if (cell.type === "walkway") return "bg-muted-shadcn";
     if (cell.type === "emergency_exit") return "bg-orange-100";
@@ -932,11 +932,20 @@ export default function LTTScreenCreateWizard({
       const mappedType =
         type === "seat_continuation" ? undefined : (type as SeatLayoutSeat["type"]);
 
+      const seatType = seatTypeId > 0 ? getSeatType(seatTypeId) : undefined;
       return {
         seatCode,
         x: 0,
         y: 0,
         seatTypeId,
+        ...(seatType
+          ? {
+              seatTypeName: seatType.name,
+              seatPriceMultiplier: seatType.priceMultiplier,
+              seatOccupied: seatType.seatOccupied,
+              seatDisplayDirection: seatType.orientation,
+            }
+          : {}),
         ...(mappedType ? { type: mappedType } : {}),
       };
     };
@@ -1046,7 +1055,7 @@ export default function LTTScreenCreateWizard({
             setActiveTool("select");
           }}
         >
-          <div className={cn("h-3.5 w-3.5 rounded shadow-sm", getSeatTypeColor(st.id).bg)} />
+          <div className={cn("h-3.5 w-3.5 rounded shadow-sm", getSeatTypeColor(st.id, st.name).bg)} />
           <span className="truncate">{st.name}</span>
           <span className="ml-auto opacity-60 text-[10px]">
             x{st.seatOccupied}
@@ -1127,7 +1136,7 @@ export default function LTTScreenCreateWizard({
                                 <span
                                   className={cn(
                                     "h-2.5 w-2.5 rounded-full",
-                                    getSeatTypeColor(b.id).bg || "bg-muted-foreground-shadcn"
+                                    getSeatTypeColor(b.id, b.name).bg || "bg-muted-foreground-shadcn"
                                   )}
                                 />
                                 {b.name}
@@ -1394,7 +1403,7 @@ export default function LTTScreenCreateWizard({
                         <div
                           className={cn(
                             "h-3.5 w-3.5 rounded-sm shadow-sm",
-                            getSeatTypeColor(st.id).bg
+                            getSeatTypeColor(st.id, st.name).bg
                           )}
                         />
                         <span className="text-muted-foreground-shadcn">

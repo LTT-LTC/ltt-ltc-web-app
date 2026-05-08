@@ -69,6 +69,10 @@ export interface SeatLayoutSeat {
   x: number;
   y: number;
   seatTypeId: number;
+  seatTypeName?: string;
+  seatPriceMultiplier?: number;
+  seatOccupied?: number;
+  seatDisplayDirection?: "horizontal" | "vertical" | "square";
   type?: "seat" | "walkway" | "emergency_exit" | "door" | "empty";
 }
 

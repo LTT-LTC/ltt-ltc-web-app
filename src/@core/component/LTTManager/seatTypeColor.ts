@@ -21,6 +21,22 @@ const getSeatTypeColorIndex = (seatTypeId?: number): number => {
   return Math.abs(id) % SEAT_TYPE_PALETTE.length;
 };
 
-export const getSeatTypeColor = (seatTypeId?: number): SeatTypeColor =>
-  SEAT_TYPE_PALETTE[getSeatTypeColorIndex(seatTypeId)] ?? SEAT_TYPE_PALETTE[0];
+const normalizeSeatTypeName = (name?: string): string => (name || "").trim().toLowerCase();
+
+export const getSeatTypeColor = (seatTypeId?: number, seatTypeName?: string): SeatTypeColor => {
+  const normalizedName = normalizeSeatTypeName(seatTypeName);
+
+  // Keep semantic colors stable across manager/customer regardless of backend id ordering.
+  if (normalizedName.includes("standard") || normalizedName.includes("economy")) {
+    return SEAT_TYPE_PALETTE[0];
+  }
+  if (normalizedName.includes("vip") || normalizedName.includes("premium")) {
+    return SEAT_TYPE_PALETTE[1];
+  }
+  if (normalizedName.includes("sweetbox") || normalizedName.includes("couple")) {
+    return SEAT_TYPE_PALETTE[2];
+  }
+
+  return SEAT_TYPE_PALETTE[getSeatTypeColorIndex(seatTypeId)] ?? SEAT_TYPE_PALETTE[0];
+};
 
