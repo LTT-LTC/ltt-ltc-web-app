@@ -297,7 +297,19 @@
       "movie_filter_placeholder": "Select movie to load showtimes",
       "calendar": {
         "today": "Today",
-        "hour": "Hour"
+        "hour": "Hour",
+        "all_movies": "All movies",
+        "screen": "Screen",
+        "no_screens": "No screens are available for this cinema yet.",
+        "range": {
+          "date": "Show by Date",
+          "week": "Show by Week",
+          "month": "Show by Month"
+        },
+        "month": {
+          "showtimes": "showtimes",
+          "more": "+{{count}} more"
+        }
       },
       "distribution": {
         "search_placeholder": "Search movie distribution...",
@@ -1358,6 +1370,7 @@
       "select_city": "Select Province/City",
       "cinemas_at": "Cinemas in {{city}}:",
       "loading_cinemas": "Loading cinemas...",
+      "no_cinemas": "No cinemas found in this province/city.",
       "schedule_title": "Movie Showtimes",
       "loading_showtimes": "Loading showtimes...",
       "no_showtimes": "No showtimes for this day.",

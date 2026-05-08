@@ -94,14 +94,15 @@ export default function AllCinemasPage() {
 
     showtimes.forEach((item) => {
       const key = `${item.movieId}__${item.movieFormat || "-"}`;
+      const movie = item.movie;
       const current = grouped.get(key) || {
         movieId: item.movieId,
-        movieTitle: item.movieTitle || "",
-        originalTitle: item.originalTitle || "",
-        posterUrl: item.posterUrl || FALLBACK_POSTER,
-        ratingCode: item.ratingCode || "",
+        movieTitle: movie?.title || "",
+        originalTitle: movie?.originalTitle || "",
+        posterUrl: movie?.posterUrl || FALLBACK_POSTER,
+        ratingCode: movie?.ratingCode || "",
         movieFormat: item.movieFormat || "",
-        durationMins: item.durationMins,
+        durationMins: movie?.durationMins ?? item.durationMins,
         slots: [],
       };
 
@@ -160,13 +161,9 @@ export default function AllCinemasPage() {
   }, [selectedProvince, t]);
 
   useEffect(() => {
-    if (filteredCinemas.length === 0) {
-      setSelectedCinemaId("");
-      return;
-    }
-
+    if (!selectedCinemaId) return;
     if (!filteredCinemas.some((item) => item.id === selectedCinemaId)) {
-      setSelectedCinemaId(filteredCinemas[0].id);
+      setSelectedCinemaId("");
     }
   }, [filteredCinemas, selectedCinemaId]);
 
@@ -258,7 +255,12 @@ export default function AllCinemasPage() {
             </h3>
             <div className="flex flex-wrap gap-3">
               {loadingCinema ? (
-                <p className="text-sm text-gray-500 m-0">{t("customer.all_cinemas.loading_cinemas")}</p>
+                <div className="w-full flex flex-col items-center justify-center py-6">
+                  <div className="loader" aria-label={t("customer.all_cinemas.loading_cinemas")} />
+                  <p className="text-sm text-gray-500 m-0 mt-6">{t("customer.all_cinemas.loading_cinemas")}</p>
+                </div>
+              ) : filteredCinemas.length === 0 ? (
+                <p className="text-sm text-gray-500 m-0">{t("customer.all_cinemas.no_cinemas")}</p>
               ) : filteredCinemas.map(c => (
                 <button
                   key={c.id}
@@ -382,6 +384,8 @@ export default function AllCinemasPage() {
             </>
           )}
 
+          {selectedCinema && (
+            <>
           {/* TICKET PRICE */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-6 overflow-x-auto">
             <h2 className="text-base font-bold text-gray-800 mb-6">Bảng Giá Vé</h2>
@@ -535,6 +539,8 @@ export default function AllCinemasPage() {
               </li>
             </ul>
           </div>
+            </>
+          )}
         </div>
       </main>
 

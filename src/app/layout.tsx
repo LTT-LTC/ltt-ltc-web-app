@@ -6,6 +6,7 @@ import { ConfigProvider } from "antd";
 import { StyleProvider } from "@ant-design/cssinjs";
 import "material-symbols/outlined.css";
 import "@/public/css/globals.css";
+import "@/public/css/pages/loading.css";
 import { useMessageInit } from "../@core/utils/message";
 import { Provider } from "react-redux";
 import { store } from "../stores";

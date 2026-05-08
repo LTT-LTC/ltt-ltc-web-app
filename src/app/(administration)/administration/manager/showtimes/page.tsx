@@ -45,6 +45,7 @@ import DomainTableStateRow from "@/src/app/(administration)/administration/_comp
 
 type MainTab = "scheduler" | "distribution";
 type SchedulerView = "table" | "calendar";
+type CalendarRange = "date" | "week" | "month";
 
 type ShowtimeFormState = {
   movieId: string;
@@ -69,16 +70,27 @@ const statusColor: Record<string, string> = {
 const toDateInput = (d: Date) => d.toISOString().slice(0, 10);
 const HOURS = Array.from({ length: 15 }, (_, i) => i + 8);
 const DAYS_VI = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
-const MOVIE_COLORS = [
-  "bg-red-500/80 border-red-600 text-white",
-  "bg-blue-500/80 border-blue-600 text-white",
-  "bg-emerald-500/80 border-emerald-600 text-white",
-  "bg-amber-500/80 border-amber-600 text-white",
-  "bg-purple-500/80 border-purple-600 text-white",
-  "bg-pink-500/80 border-pink-600 text-white",
-  "bg-cyan-500/80 border-cyan-600 text-white",
-  "bg-orange-500/80 border-orange-600 text-white",
+// Curated, theme-aware palette (uses the design system tokens defined in globals.css).
+// Each entry yields a visually distinct chip while staying inside the brand palette so
+// banners look at home with the rest of the UI even when many showtimes are displayed.
+const MOVIE_PALETTE = [
+  "bg-primary border-primary/80 text-primary-foreground",
+  "bg-blue-600 border-blue-700 text-white",
+  "bg-emerald-600 border-emerald-700 text-white",
+  "bg-violet-600 border-violet-700 text-white",
+  "bg-orange-600 border-orange-700 text-white",
+  "bg-rose-600 border-rose-700 text-white",
 ];
+const hashStringToIndex = (value: string, modulo: number) => {
+  let h = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    h = (h * 31 + value.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h) % Math.max(modulo, 1);
+};
+const getMovieColorClass = (movieId: string) =>
+  MOVIE_PALETTE[hashStringToIndex(movieId || "default", MOVIE_PALETTE.length)];
+const ALL_MOVIES_VALUE = "__all_movies__";
 const extractTime = (value?: string) => {
   if (!value) return "";
   if (/^\d{2}:\d{2}(:\d{2})?$/.test(value)) return value.slice(0, 5);
@@ -94,6 +106,21 @@ const getWeekDates = (baseDate: Date): Date[] => {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
+    return d;
+  });
+};
+// Returns 6 weeks (42 days) covering the full month, Monday-first, with leading/trailing
+// days from the previous/next month so the grid is always rectangular.
+const getMonthGrid = (anchor: Date): Date[] => {
+  const year = anchor.getFullYear();
+  const month = anchor.getMonth();
+  const first = new Date(year, month, 1);
+  const day = first.getDay();
+  const offset = (day === 0 ? 7 : day) - 1;
+  const start = new Date(year, month, 1 - offset);
+  return Array.from({ length: 42 }, (_, i) => {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
     return d;
   });
 };
@@ -136,15 +163,37 @@ const extractDate = (item: ShowtimeOutputDto) => {
   if (item.startTime?.includes("T")) return normalizeDateString(item.startTime);
   return "";
 };
-const resolveFormatLabel = (item: ShowtimeOutputDto) => {
+const resolveFormatMeta = (item: ShowtimeOutputDto) => {
   const raw = ((item as unknown as { movieFormat?: string }).movieFormat || item.format || "").trim();
-  if (!raw) return "-";
+  if (!raw) {
+    return {
+      format: "-",
+      language: "-",
+      caption: "-",
+    };
+  }
   try {
     const parsed = JSON.parse(raw) as { movie_format?: string; movie_language?: string; movie_caption?: string };
-    return parsed.movie_format || item.format || "-";
+    return {
+      format: parsed.movie_format || item.format || "-",
+      language: parsed.movie_language || "-",
+      caption: parsed.movie_caption || "-",
+    };
   } catch {
-    return item.format || raw || "-";
+    return {
+      format: item.format || raw || "-",
+      language: "-",
+      caption: "-",
+    };
   }
+};
+const formatHumanDate = (value?: string) => {
+  if (!value) return "-";
+  const dateOnly = normalizeDateString(value);
+  if (!dateOnly) return "-";
+  const [year, month, day] = dateOnly.split("-");
+  if (!year || !month || !day) return "-";
+  return `${day}/${month}/${year}`;
 };
 const resolveShowtimeStatus = (item: ShowtimeOutputDto): "scheduled" | "started" | "ended" => {
   const date = extractDate(item);
@@ -188,6 +237,9 @@ export default function ShowtimeSchedulerPage() {
   const [page, setPage] = useState(1);
   const [fetch, setFetch] = useState(10);
   const [calendarWeek, setCalendarWeek] = useState(new Date());
+  const [calendarRange, setCalendarRange] = useState<CalendarRange>("date");
+  const [calendarDate, setCalendarDate] = useState(new Date());
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
 
   const [distSearch, setDistSearch] = useState("");
   const [distributionItems, setDistributionItems] = useState<MovieDistributionOutputDto[]>([]);
@@ -233,9 +285,11 @@ export default function ShowtimeSchedulerPage() {
     },
     [movies, eligibleSchedulerDistributions]
   );
-  const effectiveMovieId = eligibleMovies.some((movie) => movie.id === selectedMovieId)
-    ? selectedMovieId
-    : (eligibleMovies[0]?.id || "");
+  const effectiveMovieId = selectedMovieId === ALL_MOVIES_VALUE
+    ? ALL_MOVIES_VALUE
+    : (eligibleMovies.some((movie) => movie.id === selectedMovieId)
+      ? selectedMovieId
+      : (eligibleMovies.length > 0 ? ALL_MOVIES_VALUE : ""));
   const selectedMovie = useMemo(
     () => movies.find((movie) => movie.id === form.movieId),
     [movies, form.movieId]
@@ -244,6 +298,10 @@ export default function ShowtimeSchedulerPage() {
     () => dialogDistributions.find((distribution) => distribution.id === form.movieDistributionId),
     [dialogDistributions, form.movieDistributionId]
   );
+  const movieById = useMemo(() => {
+    const entries = movies.map((movie) => [movie.id, movie] as const);
+    return new Map(entries);
+  }, [movies]);
   const availableFormDistributions = useMemo(
     () =>
       dialogDistributions.filter(
@@ -360,14 +418,51 @@ export default function ShowtimeSchedulerPage() {
     onError: (err) => toast.error(err.message || t("admin.showtimes.delete_error")),
   });
 
-  const fetchShowtimes = () => {
+  const fetchShowtimes = async () => {
     if (!managerCinemaId || !effectiveMovieId) return;
-    listShowtimeMutation.mutation({
-      movieId: effectiveMovieId,
-      cinemaId: managerCinemaId,
-      page,
-      fetch,
-    });
+
+    if (effectiveMovieId !== ALL_MOVIES_VALUE) {
+      listShowtimeMutation.mutation({
+        movieId: effectiveMovieId,
+        cinemaId: managerCinemaId,
+        page,
+        fetch,
+      });
+      return;
+    }
+
+    try {
+      const responses = await Promise.all(
+        eligibleMovies.map((movie) =>
+          showtimeService.getShowtimeListAsync({
+            movieId: movie.id,
+            cinemaId: managerCinemaId,
+            page: 1,
+            fetch: 1000,
+          })
+        )
+      );
+
+      const mergedMap = new Map<string, ShowtimeOutputDto>();
+      responses.forEach((response) => {
+        (response.items || []).forEach((item) => {
+          mergedMap.set(item.id, item);
+        });
+      });
+
+      const merged = Array.from(mergedMap.values()).sort((a, b) => {
+        const dateA = extractDate(a);
+        const dateB = extractDate(b);
+        if (dateA !== dateB) return dateA.localeCompare(dateB);
+        return toTimeInput(a.startTime).localeCompare(toTimeInput(b.startTime));
+      });
+
+      setShowtimes(merged);
+      setShowtimeTotal(merged.length);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t("admin.showtimes.fetch_error");
+      toast.error(message);
+    }
   };
 
   useEffect(() => {
@@ -417,7 +512,7 @@ export default function ShowtimeSchedulerPage() {
 
   useEffect(() => {
     if (!managerCinemaId || !effectiveMovieId || mainTab !== "scheduler") return;
-    fetchShowtimes();
+    void fetchShowtimes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [managerCinemaId, effectiveMovieId, page, fetch, mainTab]);
 
@@ -451,46 +546,69 @@ export default function ShowtimeSchedulerPage() {
 
   const filteredShowtimes = useMemo(() => {
     const q = search.trim().toLowerCase();
+    // The dateFilter input only renders in table mode; keep it scoped to that view so the
+    // calendar (week / month) is free to display items across multiple days.
+    const applyDateFilter = viewMode === "table";
     return showtimes.filter((item) => {
-      const matchSearch = !q || (item.movieTitle || "").toLowerCase().includes(q);
-      const matchDate = !dateFilter || extractDate(item) === dateFilter;
+      const titleSource =
+        item.movie?.title || item.movieTitle || movieById.get(item.movieId)?.title || "";
+      const matchSearch = !q || titleSource.toLowerCase().includes(q);
+      const matchDate = !applyDateFilter || !dateFilter || extractDate(item) === dateFilter;
       return matchSearch && matchDate;
     });
-  }, [showtimes, search, dateFilter]);
+  }, [showtimes, search, dateFilter, viewMode, movieById]);
 
   const weekDates = useMemo(() => getWeekDates(calendarWeek), [calendarWeek]);
+  const monthDates = useMemo(() => getMonthGrid(calendarMonth), [calendarMonth]);
   const todayKey = formatDateKey(new Date());
-  const movieColorMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    const uniqueMovies = [...new Set(filteredShowtimes.map((item) => item.movieId))];
-    uniqueMovies.forEach((id, idx) => {
-      map[id] = MOVIE_COLORS[idx % MOVIE_COLORS.length];
-    });
-    return map;
-  }, [filteredShowtimes]);
+  const dateViewKey = useMemo(() => formatDateKey(calendarDate), [calendarDate]);
   const calendarItems = useMemo(() => {
-    const weekKeys = weekDates.map(formatDateKey);
-    return filteredShowtimes.filter((item) => weekKeys.includes(extractDate(item)));
-  }, [filteredShowtimes, weekDates]);
-  const shiftWeek = (dir: number) => {
+    if (calendarRange === "date") {
+      return filteredShowtimes.filter((item) => extractDate(item) === dateViewKey);
+    }
+    if (calendarRange === "month") {
+      const monthKeys = new Set(monthDates.map(formatDateKey));
+      return filteredShowtimes.filter((item) => monthKeys.has(extractDate(item)));
+    }
+    const weekKeys = new Set(weekDates.map(formatDateKey));
+    return filteredShowtimes.filter((item) => weekKeys.has(extractDate(item)));
+  }, [filteredShowtimes, weekDates, monthDates, calendarRange, dateViewKey]);
+  const shiftRange = (dir: number) => {
+    if (calendarRange === "date") {
+      const d = new Date(calendarDate);
+      d.setDate(d.getDate() + dir);
+      setCalendarDate(d);
+      return;
+    }
+    if (calendarRange === "month") {
+      const d = new Date(calendarMonth);
+      d.setMonth(d.getMonth() + dir);
+      setCalendarMonth(d);
+      return;
+    }
     const d = new Date(calendarWeek);
     d.setDate(d.getDate() + dir * 7);
     setCalendarWeek(d);
   };
-  const goToday = () => setCalendarWeek(new Date());
+  const goToday = () => {
+    const today = new Date();
+    if (calendarRange === "date") setCalendarDate(today);
+    else if (calendarRange === "month") setCalendarMonth(today);
+    else setCalendarWeek(today);
+  };
+  const calendarRangeLabel = useMemo(() => {
+    if (calendarRange === "date") {
+      return calendarDate.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+    }
+    if (calendarRange === "month") {
+      return calendarMonth.toLocaleDateString("vi-VN", { month: "long", year: "numeric" });
+    }
+    return `${weekDates[0].toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })} - ${weekDates[6].toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}`;
+  }, [calendarRange, calendarDate, calendarMonth, weekDates]);
 
-  useEffect(() => {
-    if (viewMode !== "calendar") return;
-    if (calendarItems.length > 0) return;
-    const firstDate = filteredShowtimes[0] ? extractDate(filteredShowtimes[0]) : "";
-    if (!firstDate) return;
-    const parsed = new Date(firstDate);
-    if (Number.isNaN(parsed.getTime())) return;
-    setCalendarWeek(parsed);
-  }, [viewMode, calendarItems.length, filteredShowtimes]);
-
-  const openCreate = (prefillDate?: string, prefillTime?: string) => {
-    const defaultMovie = selectedMovieId || eligibleMovies[0]?.id || "";
+  const openCreate = (prefillDate?: string, prefillTime?: string, prefillScreenId?: string) => {
+    const sanitizedSelected = selectedMovieId && selectedMovieId !== ALL_MOVIES_VALUE ? selectedMovieId : "";
+    const defaultMovie = sanitizedSelected || eligibleMovies[0]?.id || "";
     const showDate = prefillDate || toDateInput(new Date());
     const defaultDistribution =
       dialogDistributions.find((item) => item.movieId === defaultMovie && isDistributionValidForDate(item, showDate))?.id || "";
@@ -499,7 +617,7 @@ export default function ShowtimeSchedulerPage() {
     setForm({
       movieId: defaultMovie,
       cinemaId: managerCinemaId,
-      screenId: "",
+      screenId: prefillScreenId || "",
       movieDistributionId: defaultDistribution,
       date: showDate,
       startTime: prefillTime || "",
@@ -583,6 +701,16 @@ export default function ShowtimeSchedulerPage() {
     return t("admin.showtimes.distribution.status.active");
   };
   const isLikelyGuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  // Prefer the BE-supplied virtual Movie object, then any legacy scalar title,
+  // then the locally-loaded movies map. The map fallback covers the brief
+  // window when movie-service is down or returns an empty body.
+  const resolveMovieTitle = (item: ShowtimeOutputDto): string => {
+    const fromVirtual = item.movie?.title;
+    if (fromVirtual) return fromVirtual;
+    if (item.movieTitle) return item.movieTitle;
+    const fromMap = movieById.get(item.movieId)?.title;
+    return fromMap || "-";
+  };
   const resolveScreenLabel = (item: ShowtimeOutputDto) => {
     const name = (item.screenName || "").trim();
     if (name && !isLikelyGuid(name)) return name;
@@ -599,6 +727,27 @@ export default function ShowtimeSchedulerPage() {
     const diff = end >= start ? end - start : 24 * 60 - start + end;
     return diff;
   };
+  const resolveMovieReleaseDate = (item: ShowtimeOutputDto) => {
+    const fromVirtual = item.movie?.releaseDate || item.movie?.premiereDate;
+    if (fromVirtual) return formatHumanDate(fromVirtual);
+    const movie = movieById.get(item.movieId);
+    return formatHumanDate(movie?.releaseDate || movie?.premiereDate);
+  };
+  const buildShowtimeDetailLines = (item: ShowtimeOutputDto) => {
+    const meta = resolveFormatMeta(item);
+    return [
+      `Movie: ${resolveMovieTitle(item)}`,
+      `Screen: ${resolveScreenLabel(item)}`,
+      `Date: ${formatHumanDate(extractDate(item))}`,
+      `Release: ${resolveMovieReleaseDate(item)}`,
+      `Format: ${meta.format}`,
+      `Time: ${toTimeInput(item.startTime)} - ${toTimeInput(item.endTime)}`,
+      `Language: ${meta.language}`,
+      `Subtitle: ${meta.caption}`,
+      `Price: ${formatPrice(item.basePrice || 0)}`,
+    ];
+  };
+  const buildShowtimeTitle = (item: ShowtimeOutputDto) => buildShowtimeDetailLines(item).join("\n");
   const resolveUpdatedAt = (item: ShowtimeOutputDto) => {
     const raw = (item as unknown as { updatedAt?: string; lastModificationTime?: string }).updatedAt
       || (item as unknown as { updatedAt?: string; lastModificationTime?: string }).lastModificationTime;
@@ -668,6 +817,7 @@ export default function ShowtimeSchedulerPage() {
                 <LTTSelectValue placeholder={t("admin.showtimes.movie_filter_placeholder")} />
               </LTTSelectTrigger>
               <LTTSelectContent>
+                <LTTSelectItem value={ALL_MOVIES_VALUE}>{t("admin.showtimes.calendar.all_movies")}</LTTSelectItem>
                 {eligibleMovies.map((movie) => (
                   <LTTSelectItem key={movie.id} value={movie.id}>{movie.title}</LTTSelectItem>
                 ))}
@@ -685,6 +835,7 @@ export default function ShowtimeSchedulerPage() {
                   <thead>
                     <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
                       <th className="px-4 py-3 text-left font-semibold">{t("admin.showtimes.table.screen")}</th>
+                      <th className="px-4 py-3 text-left font-semibold">{t("admin.showtimes.table.movie")}</th>
                       <th className="px-4 py-3 text-left font-semibold">{t("admin.showtimes.table.show_date")}</th>
                       <th className="px-4 py-3 text-left font-semibold">{t("admin.showtimes.table.time")}</th>
                       <th className="px-4 py-3 text-left font-semibold">{t("admin.showtimes.table.format")}</th>
@@ -696,18 +847,27 @@ export default function ShowtimeSchedulerPage() {
                   </thead>
                   <tbody>
                     {schedulerLoading ? (
-                      <DomainTableStateRow colSpan={8} state="loading" loadingText={t("admin.showtimes.loading")} />
+                      <DomainTableStateRow colSpan={9} state="loading" loadingText={t("admin.showtimes.loading")} />
                     ) : filteredShowtimes.length === 0 ? (
-                      <DomainTableStateRow colSpan={8} state="empty" emptyText={t("admin.showtimes.empty")} />
+                      <DomainTableStateRow colSpan={9} state="empty" emptyText={t("admin.showtimes.empty")} />
                     ) : (
                       filteredShowtimes.map((item) => (
-                        <tr key={item.id} className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors">
+                        <tr
+                          key={item.id}
+                          className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors"
+                          title={buildShowtimeTitle(item)}
+                        >
                           <td className="px-4 py-3">{resolveScreenLabel(item)}</td>
-                          <td className="px-4 py-3">{extractDate(item)}</td>
+                          <td className="px-4 py-3">{resolveMovieTitle(item)}</td>
+                          <td className="px-4 py-3">{formatHumanDate(extractDate(item))}</td>
                           <td className="px-4 py-3">
-                            {toTimeInput(item.startTime)} - {toTimeInput(item.endTime)} ({resolveDurationMinutes(item)}m)
+                            <div>{toTimeInput(item.startTime)} - {toTimeInput(item.endTime)} ({resolveDurationMinutes(item)}m)</div>
+                            <div className="text-xs text-muted-foreground-shadcn">{resolveFormatMeta(item).language} • {resolveFormatMeta(item).caption}</div>
                           </td>
-                          <td className="px-4 py-3">{resolveFormatLabel(item)}</td>
+                          <td className="px-4 py-3">
+                            <div>{resolveFormatMeta(item).format}</div>
+                            <div className="text-xs text-muted-foreground-shadcn">{formatHumanDate(extractDate(item))}</div>
+                          </td>
                           <td className="px-4 py-3">{formatPrice(item.basePrice || 0)}</td>
                           <td className="px-4 py-3">
                             <LTTBadge className={cn("font-medium", statusColor[resolveShowtimeStatus(item)] || statusColor.scheduled)}>
@@ -753,21 +913,27 @@ export default function ShowtimeSchedulerPage() {
             </>
           ) : (
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <LTTButton variant="outline" size="icon" className="h-8 w-8" onClick={() => shiftWeek(-1)}>
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <LTTTabs value={calendarRange} onValueChange={(value) => setCalendarRange(value as CalendarRange)}>
+                    <LTTTabsList className="h-9">
+                      <LTTTabsTrigger value="date" className="px-3 text-xs">{t("admin.showtimes.calendar.range.date")}</LTTTabsTrigger>
+                      <LTTTabsTrigger value="week" className="px-3 text-xs">{t("admin.showtimes.calendar.range.week")}</LTTTabsTrigger>
+                      <LTTTabsTrigger value="month" className="px-3 text-xs">{t("admin.showtimes.calendar.range.month")}</LTTTabsTrigger>
+                    </LTTTabsList>
+                  </LTTTabs>
+                  <LTTButton variant="outline" size="icon" className="h-8 w-8" onClick={() => shiftRange(-1)}>
                     <ChevronLeft className="h-4 w-4" />
                   </LTTButton>
                   <LTTButton variant="outline" size="sm" onClick={goToday} className="text-xs">
                     {t("admin.showtimes.calendar.today")}
                   </LTTButton>
-                  <LTTButton variant="outline" size="icon" className="h-8 w-8" onClick={() => shiftWeek(1)}>
+                  <LTTButton variant="outline" size="icon" className="h-8 w-8" onClick={() => shiftRange(1)}>
                     <ChevronRight className="h-4 w-4" />
                   </LTTButton>
                 </div>
                 <span className="text-sm font-medium text-muted-foreground-shadcn">
-                  {weekDates[0].toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })} -{" "}
-                  {weekDates[6].toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                  {calendarRangeLabel}
                 </span>
               </div>
 
@@ -778,8 +944,8 @@ export default function ShowtimeSchedulerPage() {
                     <span
                       key={movieId}
                       className={cn(
-                        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
-                        movieColorMap[movieId] || "bg-muted-shadcn text-foreground-shadcn border-border-shadcn"
+                        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium my-3",
+                        getMovieColorClass(movieId)
                       )}
                     >
                       {movie?.title || movieId}
@@ -788,57 +954,157 @@ export default function ShowtimeSchedulerPage() {
                 })}
               </div>
 
-              {calendarItems.length === 0 ? (
-                <div className="rounded-lg border border-border-shadcn bg-card p-4 text-sm text-muted-foreground-shadcn">
-                  {t("admin.showtimes.empty")}
-                </div>
-              ) : (
-                <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <div className="min-w-[800px]">
-                      <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border-shadcn bg-muted-shadcn/50">
+              {calendarRange === "week" && (
+                calendarItems.length === 0 ? (
+                  <div className="rounded-lg border border-border-shadcn bg-card p-4 text-sm text-muted-foreground-shadcn">
+                    {t("admin.showtimes.empty")}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <div className="min-w-[800px]">
+                        <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border-shadcn bg-muted-shadcn/50">
+                          <div className="px-2 py-2 text-xs font-medium text-muted-foreground-shadcn text-center">
+                            {t("admin.showtimes.calendar.hour")}
+                          </div>
+                          {weekDates.map((d, i) => {
+                            const key = formatDateKey(d);
+                            const isToday = key === todayKey;
+                            return (
+                              <div key={i} className={cn("px-2 py-2 text-center border-l border-border-shadcn", isToday && "bg-primary/10")}>
+                                <div className="text-xs text-muted-foreground-shadcn">{DAYS_VI[(i + 1) % 7 === 0 ? 0 : i + 1]}</div>
+                                <div className={cn("text-sm font-semibold", isToday && "text-primary")}>
+                                  {d.getDate()}/{d.getMonth() + 1}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        <div className="relative">
+                          {HOURS.map((hour) => (
+                            <div key={hour} className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border-shadcn last:border-0">
+                              <div className="px-2 py-3 text-xs text-muted-foreground-shadcn text-center border-r border-border-shadcn">
+                                {String(hour).padStart(2, "0")}:00
+                              </div>
+                              {weekDates.map((d, dayIndex) => {
+                                const dateKey = formatDateKey(d);
+                                const isToday = dateKey === todayKey;
+                                const showtimesInSlot = calendarItems.filter((item) => {
+                                  const itemDate = extractDate(item);
+                                  if (itemDate !== dateKey) return false;
+                                  const startMinutes = timeToMinutes(toTimeInput(item.startTime));
+                                  const slotStart = hour * 60;
+                                  return startMinutes >= slotStart && startMinutes < slotStart + 60;
+                                });
+
+                                return (
+                                  <div
+                                    key={dayIndex}
+                                    className={cn(
+                                      "relative border-l border-border-shadcn min-h-[52px] cursor-pointer hover:bg-muted-shadcn/20 transition-colors",
+                                      isToday && "bg-primary/5"
+                                    )}
+                                    onClick={() => openCreate(dateKey, `${String(hour).padStart(2, "0")}:00`)}
+                                  >
+                                    {showtimesInSlot.map((item) => {
+                                      const startMinutes = timeToMinutes(toTimeInput(item.startTime));
+                                      const endMinutes = timeToMinutes(toTimeInput(item.endTime));
+                                      const durationMinutes = Math.max(endMinutes - startMinutes, 30);
+                                      const topOffset = ((startMinutes - hour * 60) / 60) * 100;
+                                      const heightPercent = (durationMinutes / 60) * 100;
+
+                                      return (
+                                        <div
+                                          key={item.id}
+                                          className={cn(
+                                            "absolute left-0.5 right-0.5 rounded border px-1.5 py-1 overflow-hidden cursor-pointer z-10 shadow-sm",
+                                            getMovieColorClass(item.movieId),
+                                            resolveShowtimeStatus(item) === "ended" && "opacity-70"
+                                          )}
+                                          style={{ top: `${topOffset}%`, height: `${Math.max(heightPercent, 56)}%`, minHeight: "52px" }}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openEdit(item);
+                                          }}
+                                          title={buildShowtimeTitle(item)}
+                                        >
+                                          <div className="text-xs font-bold leading-tight whitespace-normal break-words">{resolveMovieTitle(item)}</div>
+                                          <div className="text-[11px] leading-tight opacity-95 whitespace-normal break-words">
+                                            {resolveScreenLabel(item)} • {resolveMovieReleaseDate(item)} • {resolveFormatMeta(item).format}
+                                          </div>
+                                          <div className="text-[11px] leading-tight opacity-95 whitespace-normal break-words">
+                                            {toTimeInput(item.startTime)} - {toTimeInput(item.endTime)} • {resolveFormatMeta(item).language} • {resolveFormatMeta(item).caption}
+                                          </div>
+                                          <div className="text-[11px] leading-tight opacity-95 whitespace-normal break-words">
+                                            {formatHumanDate(extractDate(item))} • {formatPrice(item.basePrice || 0)}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              )}
+
+              {calendarRange === "date" && (
+                screenOptions.length === 0 ? (
+                  <div className="rounded-lg border border-border-shadcn bg-card p-4 text-sm text-muted-foreground-shadcn">
+                    {t("admin.showtimes.calendar.no_screens")}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <div
+                        className="min-w-[800px] grid border-b border-border-shadcn bg-muted-shadcn/50"
+                        style={{ gridTemplateColumns: `60px repeat(${screenOptions.length}, minmax(0, 1fr))` }}
+                      >
                         <div className="px-2 py-2 text-xs font-medium text-muted-foreground-shadcn text-center">
                           {t("admin.showtimes.calendar.hour")}
                         </div>
-                        {weekDates.map((d, i) => {
-                          const key = formatDateKey(d);
-                          const isToday = key === todayKey;
-                          return (
-                            <div key={i} className={cn("px-2 py-2 text-center border-l border-border-shadcn", isToday && "bg-primary/10")}>
-                              <div className="text-xs text-muted-foreground-shadcn">{DAYS_VI[(i + 1) % 7 === 0 ? 0 : i + 1]}</div>
-                              <div className={cn("text-sm font-semibold", isToday && "text-primary")}>
-                                {d.getDate()}/{d.getMonth() + 1}
-                              </div>
+                        {screenOptions.map((screen) => (
+                          <div key={screen.id} className="px-2 py-2 text-center border-l border-border-shadcn">
+                            <div className="text-xs text-muted-foreground-shadcn">{t("admin.showtimes.calendar.screen")}</div>
+                            <div className="text-sm font-semibold">
+                              {screen.screenNumber}
                             </div>
-                          );
-                        })}
+                          </div>
+                        ))}
                       </div>
 
-                      <div className="relative">
+                      <div className="relative min-w-[800px]">
                         {HOURS.map((hour) => (
-                          <div key={hour} className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border-shadcn last:border-0">
+                          <div
+                            key={hour}
+                            className="grid border-b border-border-shadcn last:border-0"
+                            style={{ gridTemplateColumns: `60px repeat(${screenOptions.length}, minmax(0, 1fr))` }}
+                          >
                             <div className="px-2 py-3 text-xs text-muted-foreground-shadcn text-center border-r border-border-shadcn">
                               {String(hour).padStart(2, "0")}:00
                             </div>
-                            {weekDates.map((d, dayIndex) => {
-                              const dateKey = formatDateKey(d);
-                              const isToday = dateKey === todayKey;
+                            {screenOptions.map((screen) => {
                               const showtimesInSlot = calendarItems.filter((item) => {
-                                const itemDate = extractDate(item);
-                                if (itemDate !== dateKey) return false;
+                                if (item.screenId !== screen.id) return false;
                                 const startMinutes = timeToMinutes(toTimeInput(item.startTime));
                                 const slotStart = hour * 60;
                                 return startMinutes >= slotStart && startMinutes < slotStart + 60;
                               });
-
+                              const isTodayCell = dateViewKey === todayKey;
                               return (
                                 <div
-                                  key={dayIndex}
+                                  key={screen.id}
                                   className={cn(
                                     "relative border-l border-border-shadcn min-h-[52px] cursor-pointer hover:bg-muted-shadcn/20 transition-colors",
-                                    isToday && "bg-primary/5"
+                                    isTodayCell && "bg-primary/5"
                                   )}
-                                  onClick={() => openCreate(dateKey, `${String(hour).padStart(2, "0")}:00`)}
+                                  onClick={() => openCreate(dateViewKey, `${String(hour).padStart(2, "0")}:00`, screen.id)}
                                 >
                                   {showtimesInSlot.map((item) => {
                                     const startMinutes = timeToMinutes(toTimeInput(item.startTime));
@@ -851,20 +1117,26 @@ export default function ShowtimeSchedulerPage() {
                                       <div
                                         key={item.id}
                                         className={cn(
-                                          "absolute left-0.5 right-0.5 rounded border px-1 py-0.5 overflow-hidden cursor-pointer z-10",
-                                          movieColorMap[item.movieId] || "bg-slate-500/80 border-slate-600 text-white",
+                                          "absolute left-0.5 right-0.5 rounded border px-1.5 py-1 overflow-hidden cursor-pointer z-10 shadow-sm",
+                                          getMovieColorClass(item.movieId),
                                           resolveShowtimeStatus(item) === "ended" && "opacity-70"
                                         )}
-                                        style={{ top: `${topOffset}%`, height: `${Math.max(heightPercent, 40)}%`, minHeight: "20px" }}
+                                        style={{ top: `${topOffset}%`, height: `${Math.max(heightPercent, 56)}%`, minHeight: "52px" }}
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           openEdit(item);
                                         }}
-                                        title={`${item.movieTitle}\n${toTimeInput(item.startTime)} - ${toTimeInput(item.endTime)}\n${item.screenName || item.screenId}`}
+                                        title={buildShowtimeTitle(item)}
                                       >
-                                        <div className="text-[10px] font-bold leading-tight truncate">{item.movieTitle}</div>
-                                        <div className="text-[9px] opacity-90 leading-tight">
-                                          {toTimeInput(item.startTime)}-{toTimeInput(item.endTime)} ({resolveDurationMinutes(item)}m) • {resolveScreenLabel(item)}
+                                        <div className="text-xs font-bold leading-tight whitespace-normal break-words">{resolveMovieTitle(item)}</div>
+                                        <div className="text-[11px] leading-tight opacity-95 whitespace-normal break-words">
+                                          {resolveScreenLabel(item)} • {resolveMovieReleaseDate(item)} • {resolveFormatMeta(item).format}
+                                        </div>
+                                        <div className="text-[11px] leading-tight opacity-95 whitespace-normal break-words">
+                                          {toTimeInput(item.startTime)} - {toTimeInput(item.endTime)} • {resolveFormatMeta(item).language} • {resolveFormatMeta(item).caption}
+                                        </div>
+                                        <div className="text-[11px] leading-tight opacity-95 whitespace-normal break-words">
+                                          {formatHumanDate(extractDate(item))} • {formatPrice(item.basePrice || 0)}
                                         </div>
                                       </div>
                                     );
@@ -876,6 +1148,90 @@ export default function ShowtimeSchedulerPage() {
                         ))}
                       </div>
                     </div>
+                  </div>
+                )
+              )}
+
+              {calendarRange === "month" && (
+                <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden">
+                  <div className="grid grid-cols-7 border-b border-border-shadcn bg-muted-shadcn/50">
+                    {DAYS_VI.slice(1).concat(DAYS_VI[0]).map((label, i) => (
+                      <div key={i} className="px-2 py-2 text-center text-xs font-medium text-muted-foreground-shadcn border-l border-border-shadcn first:border-l-0">
+                        {label}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-7">
+                    {monthDates.map((d, idx) => {
+                      const key = formatDateKey(d);
+                      const isToday = key === todayKey;
+                      const isCurrentMonth = d.getMonth() === calendarMonth.getMonth();
+                      const dayItems = calendarItems
+                        .filter((item) => extractDate(item) === key)
+                        .sort((a, b) => timeToMinutes(toTimeInput(a.startTime)) - timeToMinutes(toTimeInput(b.startTime)));
+                      const visibleItems = dayItems.slice(0, 2);
+                      const hiddenCount = Math.max(dayItems.length - visibleItems.length, 0);
+                      return (
+                        <div
+                          key={idx}
+                          className={cn(
+                            "min-h-[110px] border-l border-t border-border-shadcn first:border-l-0 cursor-pointer hover:bg-muted-shadcn/30 transition-colors p-1.5 flex flex-col gap-1",
+                            !isCurrentMonth && "bg-muted-shadcn/30",
+                            isToday && "bg-primary/5"
+                          )}
+                          onClick={() => {
+                            setCalendarDate(d);
+                            setCalendarRange("date");
+                          }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className={cn(
+                              "text-xs font-semibold",
+                              !isCurrentMonth && "text-muted-foreground-shadcn",
+                              isToday && "text-primary"
+                            )}>
+                              {d.getDate()}/{d.getMonth() + 1}
+                            </span>
+                            {dayItems.length > 0 && (
+                              <span className="inline-flex items-center rounded-full bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-medium">
+                                {dayItems.length} {t("admin.showtimes.calendar.month.showtimes")}
+                              </span>
+                            )}
+                          </div>
+                          {visibleItems.map((item) => (
+                            <div
+                              key={item.id}
+                              className={cn(
+                                "rounded border px-1.5 py-1 text-xs leading-tight overflow-hidden shadow-sm",
+                                getMovieColorClass(item.movieId),
+                                resolveShowtimeStatus(item) === "ended" && "opacity-70"
+                              )}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEdit(item);
+                              }}
+                              title={buildShowtimeTitle(item)}
+                            >
+                              <div className="font-bold whitespace-normal break-words">{resolveMovieTitle(item)}</div>
+                              <div className="opacity-95 whitespace-normal break-words">
+                                {resolveScreenLabel(item)} • {resolveMovieReleaseDate(item)} • {resolveFormatMeta(item).format}
+                              </div>
+                              <div className="opacity-95 whitespace-normal break-words">
+                                {toTimeInput(item.startTime)} - {toTimeInput(item.endTime)} • {resolveFormatMeta(item).language} • {resolveFormatMeta(item).caption}
+                              </div>
+                              <div className="opacity-95 whitespace-normal break-words">
+                                {formatHumanDate(extractDate(item))} • {formatPrice(item.basePrice || 0)}
+                              </div>
+                            </div>
+                          ))}
+                          {hiddenCount > 0 && (
+                            <div className="text-[10px] text-muted-foreground-shadcn">
+                              {t("admin.showtimes.calendar.month.more", { count: String(hiddenCount) })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
