@@ -3,7 +3,9 @@
     "or": "Or",
     "logout": "Log out",
     "user": "User",
-    "all": "All"
+    "all": "All",
+    "profile": "Profile",
+    "account_settings": "Account settings"
   },
   "http": {
     "network_error": "Network error, please try again later.",
@@ -281,7 +283,8 @@
         "context_load_error": "Failed to load dialog context data.",
         "validation": {
           "required": "Please fill in all required showtime fields.",
-          "base_price_invalid": "Base price must be greater than 0."
+          "base_price_invalid": "Base price must be greater than 0.",
+          "distribution_invalid_for_show_date": "Selected movie license is not valid for this show date."
         }
       },
       "tabs": {

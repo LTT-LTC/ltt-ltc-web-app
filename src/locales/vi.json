@@ -3,7 +3,9 @@
     "or": "Hoặc",
     "logout": "Đăng xuất",
     "user": "Người dùng",
-    "all": "Tất cả"
+    "all": "Tất cả",
+    "profile": "Thông tin cá nhân",
+    "account_settings": "Cài đặt tài khoản"
   },
   "http": {
     "network_error": "Lỗi kết nối đến máy chủ, vui lòng thử lại sau.",
@@ -281,7 +283,8 @@
         "context_load_error": "Không thể tải dữ liệu hỗ trợ cho form suất chiếu.",
         "validation": {
           "required": "Vui lòng nhập đủ thông tin suất chiếu.",
-          "base_price_invalid": "Giá cơ bản phải lớn hơn 0."
+          "base_price_invalid": "Giá cơ bản phải lớn hơn 0.",
+          "distribution_invalid_for_show_date": "License phim đã chọn không hợp lệ với ngày chiếu này."
         }
       },
       "tabs": {
