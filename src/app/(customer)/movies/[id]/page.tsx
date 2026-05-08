@@ -13,18 +13,27 @@ import { useLocalization } from "@/src/@core/hooks/use-localization";
 import { customerMovieService } from "@/src/services/customer-service/movie/movie.service";
 import { MovieDetailOutputDto } from "@/src/services/customer-service/movie/models/output.model";
 import { extractYoutubeVideoId } from "../../_components/movieTrailer";
-import { getLocalizedMovieTitle, getMoviePoster, normalizeMovieStatus } from "../../_components/movieCatalog";
+import { getLocalizedMovieTitle, getMoviePoster, getRatingTagClass, normalizeMovieStatus } from "../../_components/movieCatalog";
 
-const RATED_CONFIG: Record<string, { label: string; icon: string; color: string; bg: string }> = {
-    "G": { label: "General Audiences", icon: "child_care", color: "text-green-700", bg: "bg-green-100 border-green-300" },
-    "PG": { label: "Parental Guidance", icon: "family_restroom", color: "text-blue-700", bg: "bg-blue-100 border-blue-300" },
-    "PG-13": { label: "Parents Strongly Cautioned", icon: "escalator_warning", color: "text-yellow-700", bg: "bg-yellow-100 border-yellow-300" },
-    "R": { label: "Restricted (17+)", icon: "18_up_rating", color: "text-orange-700", bg: "bg-orange-100 border-orange-300" },
-    "NC-17": { label: "Adults Only (18+)", icon: "no_adult_content", color: "text-red-700", bg: "bg-red-100 border-red-300" },
+const RATED_CONFIG: Record<string, { label: string; icon: string }> = {
+    "G": { label: "General Audiences", icon: "child_care" },
+    "P": { label: "General Audiences", icon: "child_care" },
+    "PG": { label: "Parental Guidance", icon: "family_restroom" },
+    "T13": { label: "Parents Strongly Cautioned", icon: "escalator_warning" },
+    "PG-13": { label: "Parents Strongly Cautioned", icon: "escalator_warning" },
+    "T16": { label: "Restricted (16+)", icon: "escalator_warning" },
+    "R": { label: "Restricted (17+)", icon: "18_up_rating" },
+    "T18": { label: "Adults Only (18+)", icon: "18_up_rating" },
+    "NC-17": { label: "Adults Only (18+)", icon: "no_adult_content" },
 };
 
 const FALLBACK_BACKDROP = "/images/movie-current-banners/470x700-us.jpg";
 const DEFAULT_ACTOR_AVATAR = "/images/main/default_avatar.png";
+const STATUS_BADGE_CLASS: Record<"now_showing" | "coming_soon" | "ended", string> = {
+    now_showing: "bg-primary text-primary-foreground border border-primary/80",
+    coming_soon: "bg-primary/15 text-primary border border-primary/35",
+    ended: "bg-muted text-muted-foreground border border-border-shadcn",
+};
 
 const formatDate = (value?: string, language = "vi") => {
     if (!value) return "-";
@@ -151,10 +160,12 @@ export default function MovieDetailPage() {
     }, [movieId]);
 
     const trailerYoutubeId = useMemo(() => extractYoutubeVideoId(movie?.trailerUrl), [movie?.trailerUrl]);
-    const ratedInfo = RATED_CONFIG[(movie?.ratingCode || "PG-13").toUpperCase()] ?? RATED_CONFIG["PG-13"];
-    const statusLabel = normalizeMovieStatus(movie?.status) === "now_showing"
+    const normalizedStatus = normalizeMovieStatus(movie?.status);
+    const normalizedRatingCode = (movie?.ratingCode || "PG-13").toUpperCase();
+    const ratedInfo = RATED_CONFIG[normalizedRatingCode] ?? RATED_CONFIG["PG-13"];
+    const statusLabel = normalizedStatus === "now_showing"
         ? "Now Showing"
-        : normalizeMovieStatus(movie?.status) === "coming_soon"
+        : normalizedStatus === "coming_soon"
             ? "Coming Soon"
             : "Ended";
     const poster = getMoviePoster(movie?.posterUrl, 0);
@@ -210,11 +221,11 @@ export default function MovieDetailPage() {
 
                             <div className="flex flex-col gap-5 text-center md:text-left flex-1 min-w-0">
                                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-bold bg-green-100 border-green-300 text-green-700">
+                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold shadow-sm ${STATUS_BADGE_CLASS[normalizedStatus]}`}>
                                         {statusLabel}
                                     </span>
                                     {movie.ratingCode && (
-                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-bold ${ratedInfo.bg} ${ratedInfo.color}`}>
+                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold shadow-sm ${getRatingTagClass(movie.ratingCode)}`}>
                                             <span className="material-symbols-outlined text-[16px]">{ratedInfo.icon}</span>
                                             {movie.ratingCode}
                                         </span>

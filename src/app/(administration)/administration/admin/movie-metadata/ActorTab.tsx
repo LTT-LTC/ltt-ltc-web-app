@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, User, RefreshCw } from "lucide-react";
+import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { Pencil, Trash2, User } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import {
@@ -30,7 +30,7 @@ import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 import AdminTablePagination from "../_components/AdminTablePagination";
 
-export default function ActorTab() {
+const ActorTab = forwardRef<{ openCreate: () => void; refresh: () => void }>((_, ref) => {
     const { t } = useLocalization();
     const [items, setItems] = useState<ActorOutputDto[]>([]);
     const [page, setPage] = useState(1);
@@ -122,6 +122,11 @@ export default function ActorTab() {
         setDialogOpen(true);
     };
 
+    useImperativeHandle(ref, () => ({
+        openCreate,
+        refresh: () => listMutation.mutation(),
+    }));
+
     const openEdit = (item: ActorOutputDto) => {
         setEditing(item);
         setForm({ name: item.name });
@@ -145,15 +150,6 @@ export default function ActorTab() {
 
     return (
         <div className="space-y-4">
-            <div className="flex justify-end gap-2">
-                <LTTButton variant="outline" className="gap-2" onClick={() => listMutation.mutation()} loading={listMutation.isLoading}>
-                    <RefreshCw className="h-4 w-4" /> {t("admin.movie_metadata.common.refresh")}
-                </LTTButton>
-                <LTTButton className="gap-2" onClick={openCreate}>
-                    <Plus className="h-4 w-4" /> {t("admin.movie_metadata.actors.add")}
-                </LTTButton>
-            </div>
-
             <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm my-3">
                 <table className="w-full text-sm">
                     <thead>
@@ -254,4 +250,8 @@ export default function ActorTab() {
             />
         </div>
     );
-}
+});
+
+ActorTab.displayName = "ActorTab";
+
+export default ActorTab;

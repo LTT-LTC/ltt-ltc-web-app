@@ -11,7 +11,7 @@ import {
     MOVIE_PAGE_SIZE,
     MovieCardItem,
     MovieSectionStatus,
-    useMovieCatalog,
+    useMovieCatalogSection,
 } from "./movieCatalog";
 import { extractYoutubeVideoId } from "./movieTrailer";
 import PaginationControls from "./PaginationControls";
@@ -29,20 +29,41 @@ const sectionKeyToLabel: Record<MovieSectionStatus, string> = {
 const MovieSelection: React.FC = () => {
     const { t, currentLanguage } = useLocalization();
     const router = useRouter();
-    const { nowShowingMovies, comingSoonMovies, isLoading, error, reloadMovies } = useMovieCatalog();
     const [activeTab, setActiveTab] = useState<MovieSectionStatus>("now_showing");
     const [pageByTab, setPageByTab] = useState<Record<MovieSectionStatus, number>>(emptyPageState);
     const [trailerOpen, setTrailerOpen] = useState(false);
     const [trailerTitle, setTrailerTitle] = useState("");
     const [trailerUrl, setTrailerUrl] = useState("");
 
+    const nowShowingPage = pageByTab.now_showing + 1;
+    const comingSoonPage = pageByTab.coming_soon + 1;
+    const {
+        movies: nowShowingMovies,
+        totalCount: nowShowingTotalCount,
+        isLoading: isNowShowingLoading,
+        error: nowShowingError,
+        reloadMovies: reloadNowShowingMovies,
+    } = useMovieCatalogSection("now_showing", nowShowingPage, MOVIE_PAGE_SIZE);
+    const {
+        movies: comingSoonMovies,
+        totalCount: comingSoonTotalCount,
+        isLoading: isComingSoonLoading,
+        error: comingSoonError,
+        reloadMovies: reloadComingSoonMovies,
+    } = useMovieCatalogSection("coming_soon", comingSoonPage, MOVIE_PAGE_SIZE);
+
     const activeMovies = activeTab === "now_showing" ? nowShowingMovies : comingSoonMovies;
-    const totalPages = Math.max(1, Math.ceil(activeMovies.length / MOVIE_PAGE_SIZE));
+    const activeTotalCount = activeTab === "now_showing" ? nowShowingTotalCount : comingSoonTotalCount;
+    const isLoading = activeTab === "now_showing" ? isNowShowingLoading : isComingSoonLoading;
+    const error = activeTab === "now_showing" ? nowShowingError : comingSoonError;
+    const reloadMovies = activeTab === "now_showing" ? reloadNowShowingMovies : reloadComingSoonMovies;
+
+    const totalPages = Math.max(1, Math.ceil(activeTotalCount / MOVIE_PAGE_SIZE));
     const activePage = Math.min(pageByTab[activeTab], totalPages - 1);
 
     const currentMovies = useMemo<MovieCardItem[]>(() => {
         const start = activePage * MOVIE_PAGE_SIZE;
-        return activeMovies.slice(start, start + MOVIE_PAGE_SIZE).map((movie, index) =>
+        return activeMovies.map((movie, index) =>
             buildMovieCardItem(movie, start + index, currentLanguage),
         );
     }, [activeMovies, activePage, currentLanguage]);
@@ -94,7 +115,7 @@ const MovieSelection: React.FC = () => {
                                     }`}
                             >
                                 {t(`customer.homepage.${status}`) || sectionKeyToLabel[status]}
-                                <span className="ml-2 opacity-75">({status === "now_showing" ? nowShowingMovies.length : comingSoonMovies.length})</span>
+                                <span className="ml-2 opacity-75">({status === "now_showing" ? nowShowingTotalCount : comingSoonTotalCount})</span>
                             </button>
                         ))}
                     </div>

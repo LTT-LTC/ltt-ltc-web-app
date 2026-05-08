@@ -68,7 +68,7 @@ export const getMoviePoster = (posterUrl: string | undefined, fallbackIndex: num
     return FALLBACK_POSTERS[fallbackIndex % FALLBACK_POSTERS.length];
 };
 
-const getRatingTagClass = (ratingCode?: string) => {
+export const getRatingTagClass = (ratingCode?: string) => {
     const normalized = ratingCode?.trim().toUpperCase();
 
     switch (normalized) {
@@ -164,6 +164,50 @@ export const useMovieCatalog = () => {
         movies,
         nowShowingMovies,
         comingSoonMovies,
+        isLoading,
+        error,
+        reloadMovies: loadMovies,
+    };
+};
+
+export const useMovieCatalogSection = (
+    status: MovieSectionStatus,
+    page: number,
+    fetch: number = MOVIE_PAGE_SIZE,
+) => {
+    const [movies, setMovies] = useState<MovieOutputDto[]>([]);
+    const [totalCount, setTotalCount] = useState(0);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const loadMovies = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await customerMovieService.getMovieListAsync({
+                page,
+                fetch,
+                status,
+            });
+            setMovies(response.items ?? []);
+            setTotalCount(response.totalCount ?? 0);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : "Failed to load movies";
+            setError(message);
+            toast.error(message);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [fetch, page, status]);
+
+    useEffect(() => {
+        void loadMovies();
+    }, [loadMovies]);
+
+    return {
+        movies,
+        totalCount,
         isLoading,
         error,
         reloadMovies: loadMovies,

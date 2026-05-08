@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Plus, Pencil, Trash2, Calendar, ShieldCheck, RefreshCw, Inbox } from "lucide-react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { Pencil, Trash2, Calendar, ShieldCheck, RefreshCw, Inbox } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import {
@@ -34,7 +34,7 @@ import {
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 import AdminTablePagination from "../_components/AdminTablePagination";
 
-export default function DistributionTable() {
+const DistributionTable = forwardRef<{ openCreate: () => void; refresh: () => void }>((_, ref) => {
     const { t, currentLanguage } = useLocalization();
     const [items, setItems] = useState<MovieDistributionOutputDto[]>([]);
     const [movies, setMovies] = useState<MovieOutputDto[]>([]);
@@ -145,6 +145,11 @@ export default function DistributionTable() {
         setDialogOpen(true);
     };
 
+    useImperativeHandle(ref, () => ({
+        openCreate,
+        refresh: fetchData,
+    }));
+
     const openEdit = (item: MovieDistributionOutputDto) => {
         if (!moviesLoaded && !moviesMutation.isLoading) {
             moviesMutation.mutation();
@@ -175,15 +180,6 @@ export default function DistributionTable() {
 
     return (
         <div className="space-y-4">
-            <div className="flex justify-end gap-2">
-                <LTTButton variant="outline" className="gap-2" onClick={fetchData} loading={listMutation.isLoading}>
-                    <RefreshCw className="h-4 w-4" /> {t("admin.movies.distribution.refresh")}
-                </LTTButton>
-                <LTTButton className="gap-2" onClick={openCreate}>
-                    <Plus className="h-4 w-4" /> {t("admin.movies.distribution.add")}
-                </LTTButton>
-            </div>
-
             <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm my-3">
                 <table className="w-full text-sm">
                     <thead>
@@ -281,7 +277,7 @@ export default function DistributionTable() {
                     </LTTDialogHeader>
                     <div className="py-4 space-y-4">
                         <div className="space-y-2">
-                            <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center justify-between gap-2 mb-3">
                                 <LTTLabel>{t("admin.movies.distribution.movie_label")}</LTTLabel>
                                 <LTTButton
                                     type="button"
@@ -319,7 +315,7 @@ export default function DistributionTable() {
                                 </LTTSelectContent>
                             </LTTSelect>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-4 my-3">
                             <div className="space-y-2">
                                 <LTTLabel>{t("admin.movies.distribution.license_start_date")}</LTTLabel>
                                 <LTTInput type="date" value={form.licenseStartDate} onChange={e => setForm({ ...form, licenseStartDate: e.target.value })} />
@@ -347,4 +343,8 @@ export default function DistributionTable() {
             </LTTDialog>
         </div>
     );
-}
+});
+
+DistributionTable.displayName = "DistributionTable";
+
+export default DistributionTable;
