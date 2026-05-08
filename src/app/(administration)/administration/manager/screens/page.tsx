@@ -40,6 +40,7 @@ import { useLocalization } from "@/src/@core/hooks/use-localization";
 import LTTScreenCreateWizard from "@/src/@core/component/LTTManager/LTTScreenCreateWizard";
 import { Screen, SeatType } from "@/src/@core/const/mock/adminMockData";
 import LTTSeatMapViewer from "@/src/@core/component/LTTManager/LTTSeatMapViewer";
+import { cinemaService } from "@/src/services/administration-service/cinema/cinema.service";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-100 text-green-700 border-green-200",
@@ -173,16 +174,49 @@ export default function ScreensConfigPage() {
   };
 
   useEffect(() => {
-    const accessToken = getCookie(ADMIN_ACCESS_TOKEN_KEY);
-    const userInfo = accessToken ? getUserInfoFromToken(accessToken) : null;
-    const cinemaId = userInfo?.cinemaId?.trim() || "";
-    if (!cinemaId) {
-      setCinemaMissing(true);
-      toast.error(t("admin.screens.cinema_claim_missing"));
-      return;
-    }
-    setSelectedCinemaId(cinemaId);
-  }, []);
+    let isCancelled = false;
+
+    const resolveManagerCinemaAsync = async () => {
+      const accessToken = getCookie(ADMIN_ACCESS_TOKEN_KEY);
+      const userInfo = accessToken ? getUserInfoFromToken(accessToken) : null;
+      const claimCinemaId = userInfo?.cinemaId?.trim() || "";
+
+      if (claimCinemaId) {
+        if (!isCancelled) {
+          setSelectedCinemaId(claimCinemaId);
+          setCinemaMissing(false);
+        }
+        return;
+      }
+
+      try {
+        const cinemaResult = await cinemaService.getCinemaListAsync({ page: 1, fetch: 1 });
+        const fallbackCinemaId = cinemaResult?.items?.[0]?.id?.trim() || "";
+        if (!fallbackCinemaId) {
+          if (!isCancelled) {
+            setCinemaMissing(true);
+            toast.error(t("admin.screens.cinema_claim_missing"));
+          }
+          return;
+        }
+
+        if (!isCancelled) {
+          setSelectedCinemaId(fallbackCinemaId);
+          setCinemaMissing(false);
+        }
+      } catch {
+        if (!isCancelled) {
+          setCinemaMissing(true);
+          toast.error(t("admin.screens.cinema_claim_missing"));
+        }
+      }
+    };
+
+    resolveManagerCinemaAsync();
+    return () => {
+      isCancelled = true;
+    };
+  }, [t]);
 
   useEffect(() => {
     if (selectedCinemaId) {

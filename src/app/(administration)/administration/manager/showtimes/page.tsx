@@ -18,6 +18,7 @@ import { MovieDistributionOutputDto, MovieOutputDto } from "@/src/services/admin
 import { FormatOutputDto } from "@/src/services/administration-service/movie/format/models/output.model";
 import { screenService } from "@/src/services/administration-service/screen/screen.service";
 import { ScreenOutputDto } from "@/src/services/administration-service/screen/models/output.model";
+import { cinemaService } from "@/src/services/administration-service/cinema/cinema.service";
 import { managerPricingRulesService } from "@/src/services/administration-service/manager/pricing-rules/pricing-rules.service";
 import { PricingRuleOutputDto } from "@/src/services/administration-service/pricing-rule/models/output.model";
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
@@ -340,14 +341,42 @@ export default function ShowtimeSchedulerPage() {
   };
 
   useEffect(() => {
-    const accessToken = getCookie(ADMIN_ACCESS_TOKEN_KEY);
-    const userInfo = accessToken ? getUserInfoFromToken(accessToken) : null;
-    const cinemaId = userInfo?.cinemaId?.trim() || "";
-    if (!cinemaId) {
-      toast.error(t("admin.showtimes.cinema_claim_missing"));
-      return;
-    }
-    setManagerCinemaId(cinemaId);
+    let isCancelled = false;
+
+    const resolveManagerCinemaAsync = async () => {
+      const accessToken = getCookie(ADMIN_ACCESS_TOKEN_KEY);
+      const userInfo = accessToken ? getUserInfoFromToken(accessToken) : null;
+      const claimCinemaId = userInfo?.cinemaId?.trim() || "";
+
+      if (claimCinemaId) {
+        if (!isCancelled) {
+          setManagerCinemaId(claimCinemaId);
+        }
+        return;
+      }
+
+      try {
+        const cinemaResult = await cinemaService.getCinemaListAsync({ page: 1, fetch: 1 });
+        const fallbackCinemaId = cinemaResult?.items?.[0]?.id?.trim() || "";
+        if (!fallbackCinemaId) {
+          toast.error(t("admin.showtimes.cinema_claim_missing"));
+          return;
+        }
+
+        if (!isCancelled) {
+          setManagerCinemaId(fallbackCinemaId);
+        }
+      } catch {
+        if (!isCancelled) {
+          toast.error(t("admin.showtimes.cinema_claim_missing"));
+        }
+      }
+    };
+
+    resolveManagerCinemaAsync();
+    return () => {
+      isCancelled = true;
+    };
   }, [t]);
 
   useEffect(() => {
