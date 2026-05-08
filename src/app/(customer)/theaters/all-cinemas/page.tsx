@@ -64,7 +64,9 @@ type GroupedMovieShowtime = {
   slots: Array<{ id: string; startTime: string; screenName: string }>;
 };
 
-const mapShowtimeDateInput = (value: Dayjs) => value.startOf("day").toISOString();
+// Send date-only to avoid timezone offset drift (GMT+7 users selecting 08/05
+// should always query 08/05 server-side, not 07/05T17:00:00Z).
+const mapShowtimeDateInput = (value: Dayjs) => value.format("YYYY-MM-DD");
 
 const formatClock = (value: string) => {
   const parsed = dayjs(value);
