@@ -1,22 +1,23 @@
 "use client";
 
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import React, { useState } from "react";
+import { ChevronDown, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTCheckbox } from "@/src/@core/component/LTTShadcnUI/LTTCheckbox";
 import { LTTBadge } from "@/src/@core/component/LTTShadcnUI/LTTBadge";
 import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 import AdminTablePagination from "@/src/app/(administration)/administration/admin/_components/AdminTablePagination";
-import { CategoryOutputDto, ComboDetailOutputDto, ComboOutputDto, ProductOutputDto, ProductVariantOutputDto } from "@/src/services/administration-service/product/models/output.model";
+import { CategoryOutputDto, ComboOutputDto, ProductOutputDto } from "@/src/services/administration-service/product/models/output.model";
 
-type FnbTab = "products" | "category" | "combos" | "variant";
+type FnbTab = "products" | "category" | "combos";
 
 interface FnbTabSectionsProps {
     activeTab: FnbTab;
     products: ProductOutputDto[];
     combos: ComboOutputDto[];
+    productById: Record<string, ProductOutputDto>;
     categoryById: Record<string, CategoryOutputDto>;
     filteredCategories: CategoryOutputDto[];
-    filteredVariants: ProductVariantOutputDto[];
     selectedProductIds: Set<string>;
     productTotal: number;
     productPage: number;
@@ -27,18 +28,9 @@ interface FnbTabSectionsProps {
     categoryTotal: number;
     categoryPage: number;
     categoryFetch: number;
-    variantTotal: number;
-    variantPage: number;
-    variantFetch: number;
-    variantProductId: string;
-    selectedComboForItem: string;
-    currentComboDetail?: ComboDetailOutputDto;
-    selectedComboItemId: string;
     isProductsLoading: boolean;
     isCategoriesLoading: boolean;
     isCombosLoading: boolean;
-    isComboDetailLoading: boolean;
-    isVariantsLoading: boolean;
     formatVnd: (amount: number) => string;
     onToggleAllProducts: () => void;
     onToggleProduct: (id: string) => void;
@@ -51,17 +43,10 @@ interface FnbTabSectionsProps {
     onOpenDeleteCategory: (id: string) => void;
     onCategoryPageChange: (nextPage: number) => void;
     onCategoryPageSizeChange: (nextSize: number) => void;
-    onOpenComboItems: (id: string) => void;
     onOpenEditCombo: (item: ComboOutputDto) => void;
     onOpenDeleteCombo: (id: string) => void;
     onComboPageChange: (nextPage: number) => void;
     onComboPageSizeChange: (nextSize: number) => void;
-    onOpenCreateComboItem: () => void;
-    onDeleteComboItem: (comboItemId: string) => void;
-    onOpenEditVariant: (item: ProductVariantOutputDto) => void;
-    onOpenDeleteVariant: (id: string) => void;
-    onVariantPageChange: (nextPage: number) => void;
-    onVariantPageSizeChange: (nextSize: number) => void;
 }
 
 export default function FnbTabSections(props: FnbTabSectionsProps) {
@@ -69,9 +54,9 @@ export default function FnbTabSections(props: FnbTabSectionsProps) {
         activeTab,
         products,
         combos,
+        productById,
         categoryById,
         filteredCategories,
-        filteredVariants,
         selectedProductIds,
         productTotal,
         productPage,
@@ -82,18 +67,9 @@ export default function FnbTabSections(props: FnbTabSectionsProps) {
         categoryTotal,
         categoryPage,
         categoryFetch,
-        variantTotal,
-        variantPage,
-        variantFetch,
-        variantProductId,
-        selectedComboForItem,
-        currentComboDetail,
-        selectedComboItemId,
         isProductsLoading,
         isCategoriesLoading,
         isCombosLoading,
-        isComboDetailLoading,
-        isVariantsLoading,
         formatVnd,
         onToggleAllProducts,
         onToggleProduct,
@@ -106,18 +82,25 @@ export default function FnbTabSections(props: FnbTabSectionsProps) {
         onOpenDeleteCategory,
         onCategoryPageChange,
         onCategoryPageSizeChange,
-        onOpenComboItems,
         onOpenEditCombo,
         onOpenDeleteCombo,
         onComboPageChange,
         onComboPageSizeChange,
-        onOpenCreateComboItem,
-        onDeleteComboItem,
-        onOpenEditVariant,
-        onOpenDeleteVariant,
-        onVariantPageChange,
-        onVariantPageSizeChange,
     } = props;
+
+    const [expandedComboIds, setExpandedComboIds] = useState<Set<string>>(new Set());
+
+    const toggleComboExpanded = (id: string) => {
+        setExpandedComboIds((current) => {
+            const next = new Set(current);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+    };
 
     return (
         <>
@@ -133,6 +116,7 @@ export default function FnbTabSections(props: FnbTabSectionsProps) {
                                             onCheckedChange={onToggleAllProducts}
                                         />
                                     </th>
+                                    <th className="px-4 py-3 text-left font-semibold">Image</th>
                                     <th className="px-4 py-3 text-left font-semibold">Name</th>
                                     <th className="px-4 py-3 text-left font-semibold">Category</th>
                                     <th className="px-4 py-3 text-right font-semibold">Base Price</th>
@@ -142,14 +126,22 @@ export default function FnbTabSections(props: FnbTabSectionsProps) {
                             </thead>
                             <tbody>
                                 {isProductsLoading ? (
-                                    <DomainTableStateRow colSpan={6} state="loading" loadingText="Loading products..." />
+                                    <DomainTableStateRow colSpan={7} state="loading" loadingText="Loading products..." />
                                 ) : products.length === 0 ? (
-                                    <DomainTableStateRow colSpan={6} state="empty" emptyText="No products found." />
+                                    <DomainTableStateRow colSpan={7} state="empty" emptyText="No products found." />
                                 ) : (
                                     products.map((item) => (
                                         <tr key={item.id} className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors">
                                             <td className="px-3 py-3">
                                                 <LTTCheckbox checked={selectedProductIds.has(item.id)} onCheckedChange={() => onToggleProduct(item.id)} />
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                {item.imageUrl ? (
+                                                    /* eslint-disable-next-line @next/next/no-img-element */
+                                                    <img src={item.imageUrl} alt={item.name} className="h-10 w-10 rounded-md object-cover" />
+                                                ) : (
+                                                    <div className="h-10 w-10 rounded-md border border-dashed border-border-shadcn" />
+                                                )}
                                             </td>
                                             <td className="px-4 py-3 font-medium">{item.name}</td>
                                             <td className="px-4 py-3">{categoryById[item.productCategoryId]?.name || "-"}</td>
@@ -265,6 +257,8 @@ export default function FnbTabSections(props: FnbTabSectionsProps) {
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
+                                    <th className="w-10 px-3 py-3"></th>
+                                    <th className="px-4 py-3 text-left font-semibold">Image</th>
                                     <th className="px-4 py-3 text-left font-semibold">Name</th>
                                     <th className="px-4 py-3 text-right font-semibold">Total Price</th>
                                     <th className="px-4 py-3 text-left font-semibold">Status</th>
@@ -273,39 +267,78 @@ export default function FnbTabSections(props: FnbTabSectionsProps) {
                             </thead>
                             <tbody>
                                 {isCombosLoading ? (
-                                    <DomainTableStateRow colSpan={4} state="loading" loadingText="Loading combos..." />
+                                    <DomainTableStateRow colSpan={6} state="loading" loadingText="Loading combos..." />
                                 ) : combos.length === 0 ? (
-                                    <DomainTableStateRow colSpan={4} state="empty" emptyText="No combos found." />
+                                    <DomainTableStateRow colSpan={6} state="empty" emptyText="No combos found." />
                                 ) : (
-                                    combos.map((item) => (
-                                        <tr key={item.id} className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors">
-                                            <td className="px-4 py-3 font-medium">{item.name}</td>
-                                            <td className="px-4 py-3 text-right font-semibold">{formatVnd(Number(item.totalPrice))}</td>
-                                            <td className="px-4 py-3">
-                                                <LTTBadge className={item.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}>
-                                                    {item.isActive ? "Active" : "Inactive"}
-                                                </LTTBadge>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex justify-end gap-1">
-                                                    <LTTButton variant="outline" size="sm" onClick={() => onOpenComboItems(item.id)}>
-                                                        View items
-                                                    </LTTButton>
-                                                    <LTTButton variant="ghost" size="icon" className="h-8 w-8" onClick={() => onOpenEditCombo(item)}>
-                                                        <Pencil className="h-4 w-4" />
-                                                    </LTTButton>
-                                                    <LTTButton
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 text-destructive hover:text-destructive"
-                                                        onClick={() => onOpenDeleteCombo(item.id)}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </LTTButton>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
+                                    combos.map((item) => {
+                                        const isExpanded = expandedComboIds.has(item.id);
+                                        return (
+                                            <React.Fragment key={item.id}>
+                                                <tr className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors">
+                                                    <td className="px-3 py-3">
+                                                        <LTTButton variant="ghost" size="icon" className="h-8 w-8" onClick={() => toggleComboExpanded(item.id)}>
+                                                            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                                                        </LTTButton>
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        {item.imageUrl ? (
+                                                            /* eslint-disable-next-line @next/next/no-img-element */
+                                                            <img src={item.imageUrl} alt={item.name} className="h-10 w-10 rounded-md object-cover" />
+                                                        ) : (
+                                                            <div className="h-10 w-10 rounded-md border border-dashed border-border-shadcn" />
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-3 font-medium">{item.name}</td>
+                                                    <td className="px-4 py-3 text-right font-semibold">{formatVnd(Number(item.totalPrice))}</td>
+                                                    <td className="px-4 py-3">
+                                                        <LTTBadge className={item.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}>
+                                                            {item.isActive ? "Active" : "Inactive"}
+                                                        </LTTBadge>
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex justify-end gap-1">
+                                                            <LTTButton variant="ghost" size="icon" className="h-8 w-8" onClick={() => onOpenEditCombo(item)}>
+                                                                <Pencil className="h-4 w-4" />
+                                                            </LTTButton>
+                                                            <LTTButton
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                                                onClick={() => onOpenDeleteCombo(item.id)}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </LTTButton>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {isExpanded && (
+                                                    <tr className="border-b border-border-shadcn bg-muted-shadcn/20">
+                                                        <td className="px-4 py-3" colSpan={6}>
+                                                            <div className="space-y-2">
+                                                                <p className="text-xs uppercase tracking-wide text-muted-foreground-shadcn">Bundled products</p>
+                                                                {item.products.length === 0 ? (
+                                                                    <p className="text-sm text-muted-foreground-shadcn">No products listed in this combo.</p>
+                                                                ) : (
+                                                                    <ul className="space-y-1">
+                                                                        {item.products.map((line) => {
+                                                                            const product = line.product ?? productById[line.productId];
+                                                                            return (
+                                                                                <li key={`${item.id}-${line.productId}`} className="flex items-center justify-between rounded-md border border-border-shadcn bg-card px-3 py-2 text-sm">
+                                                                                    <span className="font-medium">{product?.name ?? line.productId}</span>
+                                                                                    <span className="text-muted-foreground-shadcn">x {line.quantity}</span>
+                                                                                </li>
+                                                                            );
+                                                                        })}
+                                                                    </ul>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    })
                                 )}
                             </tbody>
                         </table>
@@ -317,105 +350,6 @@ export default function FnbTabSections(props: FnbTabSectionsProps) {
                         onPageChange={onComboPageChange}
                         onPageSizeChange={onComboPageSizeChange}
                         loading={isCombosLoading}
-                    />
-
-                    {selectedComboForItem && (
-                        <div className="rounded-lg border border-border-shadcn bg-card p-4 space-y-3">
-                            <div className="flex items-center justify-between">
-                                <h3 className="font-semibold">
-                                    Combo items: {combos.find((combo) => combo.id === selectedComboForItem)?.name || selectedComboForItem}
-                                </h3>
-                                <LTTButton size="sm" onClick={onOpenCreateComboItem}>
-                                    <Plus className="h-4 w-4 mr-1" /> Add item
-                                </LTTButton>
-                            </div>
-                            {isComboDetailLoading ? (
-                                <p className="text-sm text-muted-foreground-shadcn">Loading combo items...</p>
-                            ) : !currentComboDetail || currentComboDetail.comboItems.length === 0 ? (
-                                <p className="text-sm text-muted-foreground-shadcn">No combo items.</p>
-                            ) : (
-                                <div className="space-y-2">
-                                    {currentComboDetail.comboItems.map((item) => (
-                                        <div key={item.id} className="flex items-center justify-between border border-border-shadcn rounded-md p-2">
-                                            <div className="text-sm">
-                                                <span className="font-medium">{item.product?.name || item.productId}</span>
-                                                <span className="text-muted-foreground-shadcn"> x {item.quantity}</span>
-                                            </div>
-                                            <LTTButton
-                                                variant="ghost"
-                                                size="icon"
-                                                className="h-8 w-8 text-destructive hover:text-destructive"
-                                                onClick={() => onDeleteComboItem(item.id)}
-                                                loading={selectedComboItemId === item.id}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </LTTButton>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </>
-            )}
-
-            {activeTab === "variant" && (
-                <>
-                    <div className="rounded-lg border border-border-shadcn bg-card overflow-hidden shadow-sm my-3">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
-                                    <th className="px-4 py-3 text-left font-semibold">Name</th>
-                                    <th className="px-4 py-3 text-right font-semibold">Additional Price</th>
-                                    <th className="px-4 py-3 text-left font-semibold">Status</th>
-                                    <th className="px-4 py-3 text-right font-semibold">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {variantProductId === "all" ? (
-                                    <DomainTableStateRow colSpan={4} state="empty" emptyText="Choose a product to see variants." />
-                                ) : isVariantsLoading ? (
-                                    <DomainTableStateRow colSpan={4} state="loading" loadingText="Loading variants..." />
-                                ) : filteredVariants.length === 0 ? (
-                                    <DomainTableStateRow colSpan={4} state="empty" emptyText="No variants found." />
-                                ) : (
-                                    filteredVariants.map((item) => (
-                                        <tr key={item.id} className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors">
-                                            <td className="px-4 py-3 font-medium">{item.name}</td>
-                                            <td className="px-4 py-3 text-right font-semibold">{formatVnd(Number(item.additionalPrice))}</td>
-                                            <td className="px-4 py-3">
-                                                <LTTBadge className={item.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}>
-                                                    {item.isActive ? "Active" : "Inactive"}
-                                                </LTTBadge>
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="flex justify-end gap-1">
-                                                    <LTTButton variant="ghost" size="icon" className="h-8 w-8" onClick={() => onOpenEditVariant(item)}>
-                                                        <Pencil className="h-4 w-4" />
-                                                    </LTTButton>
-                                                    <LTTButton
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8 text-destructive hover:text-destructive"
-                                                        onClick={() => onOpenDeleteVariant(item.id)}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </LTTButton>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                    <AdminTablePagination
-                        totalCount={variantTotal}
-                        page={variantPage}
-                        pageSize={variantFetch}
-                        onPageChange={onVariantPageChange}
-                        onPageSizeChange={onVariantPageSizeChange}
-                        loading={isVariantsLoading}
                     />
                 </>
             )}

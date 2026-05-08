@@ -5,24 +5,34 @@ export interface GetProductListInputDto {
     fetch: number;
 }
 
+export interface ComboProductLineDto {
+    productId: string;
+    quantity: number;
+}
+
+/**
+ * Product create payload. The dialog can either upload a fresh image (`imageFile`)
+ * or reuse an existing Cloudinary URL (`imageUrl`). The service serialises the
+ * payload as multipart/form-data, so both fields appear directly in the FormData.
+ */
 export interface CreateProductInputDto {
     productCategoryId: string;
     name: string;
     description?: string;
     basePrice: number;
-    imageUrl?: string;
     isActive: boolean;
-    productType?: string;
+    imageFile?: File;
+    imageUrl?: string;
 }
 
 export interface UpdateProductInputDto {
-    productCategoryId?: string;
-    name?: string;
+    productCategoryId: string;
+    name: string;
     description?: string;
-    basePrice?: number;
+    basePrice: number;
+    isActive: boolean;
+    imageFile?: File;
     imageUrl?: string;
-    isActive?: boolean;
-    productType?: string;
 }
 
 export interface CreateCategoryInputDto {
@@ -31,34 +41,21 @@ export interface CreateCategoryInputDto {
     isActive: boolean;
 }
 
-export interface UpdateCategoryInputDto extends CreateCategoryInputDto {
-}
+export interface UpdateCategoryInputDto extends CreateCategoryInputDto { }
 
+/**
+ * Combo create payload. `products` is a list of `{productId, quantity}` rows;
+ * the service serialises them as `Products[i].ProductId` / `Products[i].Quantity`
+ * in multipart/form-data so .NET model-binding picks them up directly.
+ */
 export interface CreateComboInputDto {
     name: string;
     description?: string;
     totalPrice: number;
     isActive: boolean;
-    comboItems?: CreateComboItemInputDto[];
+    imageFile?: File;
+    imageUrl?: string;
+    products: ComboProductLineDto[];
 }
 
-export interface UpdateComboInputDto {
-    name: string;
-    description?: string;
-    totalPrice: number;
-    isActive: boolean;
-}
-
-export interface CreateComboItemInputDto {
-    productId: string;
-    quantity: number;
-}
-
-export interface CreateProductVariantInputDto {
-    name: string;
-    additionalPrice: number;
-    isActive: boolean;
-}
-
-export interface UpdateProductVariantInputDto extends CreateProductVariantInputDto {
-}
+export interface UpdateComboInputDto extends CreateComboInputDto { }

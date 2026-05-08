@@ -1,6 +1,7 @@
  "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import dayjs, { Dayjs } from "dayjs";
 import "dayjs/locale/vi";
 import { toast } from "sonner";
@@ -14,6 +15,7 @@ import { CustomerCinemaOutputDto } from "@/src/services/customer-service/cinema/
 import { customerShowtimeService } from "@/src/services/customer-service/showtime/showtime.service";
 import { CustomerShowtimeOutputDto } from "@/src/services/customer-service/showtime/models/output.model";
 import { getLocalizedMovieTitle, getRatingTagClass } from "../../_components/movieCatalog";
+import { newBookingId, saveBookingState } from "@/src/@core/booking/bookingState";
 
 dayjs.locale("vi");
 
@@ -63,7 +65,13 @@ type GroupedMovieShowtime = {
   ratingCode: string;
   movieFormat: string;
   durationMins?: number;
-  slots: Array<{ id: string; startTime: string; screenName: string }>;
+  slots: Array<{
+    id: string;
+    startTime: string;
+    screenName: string;
+    cinemaId: string;
+    screenId: string;
+  }>;
 };
 
 // Send date-only to avoid timezone offset drift (GMT+7 users selecting 08/05
@@ -77,6 +85,18 @@ const formatClock = (value: string) => {
 
 export default function AllCinemasPage() {
   const { t, currentLanguage } = useLocalization();
+  const router = useRouter();
+
+  const startBookingForSlot = (slot: GroupedMovieShowtime["slots"][number], movie: GroupedMovieShowtime) => {
+    const bookingId = newBookingId();
+    saveBookingState(bookingId, {
+      showtimeId: slot.id,
+      cinemaId: slot.cinemaId,
+      screenId: slot.screenId,
+      movieId: movie.movieId,
+    });
+    router.push(`/booking/${bookingId}/seats`);
+  };
   const [cinemas, setCinemas] = useState<CustomerCinemaOutputDto[]>([]);
   const [showtimes, setShowtimes] = useState<CustomerShowtimeOutputDto[]>([]);
   const [loadingCinema, setLoadingCinema] = useState(false);
@@ -115,6 +135,8 @@ export default function AllCinemasPage() {
         id: item.id,
         startTime: item.startTime,
         screenName: item.screenName || "",
+        cinemaId: item.cinemaId,
+        screenId: item.screenId,
       });
       grouped.set(key, current);
     });
@@ -392,9 +414,14 @@ export default function AllCinemasPage() {
                             <p className="text-base font-semibold text-gray-900 m-0 mb-3">{movie.movieFormat || "-"}</p>
                             <div className="flex flex-wrap gap-2">
                               {movie.slots.map((slot) => (
-                                <div key={slot.id} className="px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-800">
+                                <button
+                                  type="button"
+                                  key={slot.id}
+                                  onClick={() => startBookingForSlot(slot, movie)}
+                                  className="px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-800 hover:border-[#cd1e25] hover:bg-[#cd1e25] hover:text-white transition-colors"
+                                >
                                   {formatClock(slot.startTime)} - {slot.screenName || t("customer.all_cinemas.screen_unknown")}
-                                </div>
+                                </button>
                               ))}
                             </div>
                             <p className="text-sm text-gray-500 m-0 mt-3">

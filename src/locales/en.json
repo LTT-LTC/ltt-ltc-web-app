@@ -1395,6 +1395,106 @@
         "fetch_showtimes_error": "Failed to load showtimes"
       }
     },
+    "booking": {
+      "loading": "Preparing your booking session...",
+      "invalid_session": "Booking session not found. Please pick a showtime again.",
+      "room": "Room",
+      "stepper": {
+        "seats": "Seats",
+        "confirm_seats": "Review",
+        "extras": "F&B",
+        "summary": "Summary",
+        "payment": "Payment",
+        "processing": "Done"
+      },
+      "heading": {
+        "seats": "BOOK YOUR SEATS",
+        "confirm": "Confirm Your Seats",
+        "summary": "Order Summary",
+        "payment": "Choose a Payment Method"
+      },
+      "field": {
+        "cinema": "Cinema",
+        "screen": "Screen",
+        "movie": "Movie",
+        "format": "Format",
+        "showtime": "Showtime",
+        "duration": "Duration",
+        "seats": "Seats",
+        "ticket_total": "Ticket total",
+        "fnb": "Snacks & drinks",
+        "combos": "Combos"
+      },
+      "confirm": {
+        "subtitle": "Make sure everything looks right before continuing."
+      },
+      "summary": {
+        "subtitle": "Review your order before paying.",
+        "tickets": "Tickets",
+        "tickets_hint": "{{count}} ticket(s) selected",
+        "tickets_unit": "ticket(s)",
+        "items_unit": "item(s)",
+        "fnb": "Snacks & drinks",
+        "combos": "Combos",
+        "subtotal": "Subtotal",
+        "discount": "Discount",
+        "grand_total": "Grand total"
+      },
+      "extras": {
+        "products_heading": "Snacks & Drinks",
+        "combos_heading": "Combos",
+        "empty_products": "No products available right now.",
+        "empty_combos": "No combos available right now."
+      },
+      "payment": {
+        "subtitle": "How would you like to pay for this booking?",
+        "method_section": "PAYMENT METHOD"
+      },
+      "payment_method": {
+        "cash": {
+          "label": "Cash",
+          "hint": "Pay at the counter when you collect your tickets."
+        },
+        "card": {
+          "label": "Credit / Debit Card",
+          "hint": "Secure card payment processed online."
+        },
+        "momo": {
+          "label": "MoMo Wallet",
+          "hint": "Scan a QR with the MoMo app to complete payment."
+        },
+        "bank": {
+          "label": "Bank Transfer",
+          "hint": "Receive bank details after confirming the order."
+        }
+      },
+      "processing": {
+        "submitting_title": "Submitting your booking...",
+        "polling_title": "Waiting for payment confirmation...",
+        "subtitle": "Please don't close this tab. We are confirming your booking with the payment provider.",
+        "success_title": "Booking confirmed!",
+        "success_subtitle": "We are redirecting you to your transaction history.",
+        "failed_title": "We couldn't complete your booking",
+        "error": "Unexpected error. Please try again.",
+        "payment_ref": "Payment reference"
+      },
+      "cta": {
+        "back": "Back",
+        "next": "Continue",
+        "continue": "Continue",
+        "continue_to_summary": "Continue to summary",
+        "continue_to_payment": "Continue to payment",
+        "confirm": "Confirm seats",
+        "confirm_payment": "Confirm payment",
+        "go_back_to_seats": "Go back to seats",
+        "back_to_payment": "Back to payment",
+        "back_to_theaters": "Back to theaters"
+      },
+      "toast": {
+        "pick_seats": "Please pick at least one seat to continue.",
+        "fetch_extras_error": "Failed to load snacks and combos."
+      }
+    },
     "my_ltc": {
       "title": "My LTC",
       "nav": {

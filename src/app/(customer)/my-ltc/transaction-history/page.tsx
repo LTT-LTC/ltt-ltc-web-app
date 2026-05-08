@@ -1,84 +1,108 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import dayjs from 'dayjs';
+import { toast } from 'sonner';
 import LTTCard from '@/src/@core/component/AntD/LTTCard';
 import LTTTable from '@/src/@core/component/AntD/LTTTable';
 import LTTButton from '@/src/@core/component/AntD/LTTButton';
-import { customerMockData } from '../_mock/data';
+import { bookingService, PaymentOutputDto } from '@/src/services/administration-service/booking/booking.service';
 
-interface Transaction {
+interface TransactionRow {
     id: string;
     date: string;
     description: string;
     amount: string;
     type: string;
-    time: string;
-    points: string;
+    raw: PaymentOutputDto;
 }
 
-export default function TransactionHistoryPage() {
-    const { transactions } = customerMockData;
-    const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null);
-    const [transactionPagination, setTransactionPagination] = useState({ page: 1, fetch: 3 });
+const formatVnd = (amount: number) => `${Math.round(amount || 0).toLocaleString('vi-VN', { maximumFractionDigits: 0 })} ₫`;
 
-    const pagedTransactions = useMemo(() => {
-        const start = (transactionPagination.page - 1) * transactionPagination.fetch;
-        return transactions.slice(start, start + transactionPagination.fetch);
-    }, [transactions, transactionPagination]);
+const buildDescription = (item: PaymentOutputDto) => {
+    const parts: string[] = [];
+    if (item.movieTitle) parts.push(item.movieTitle);
+    if (item.cinemaName) parts.push(item.cinemaName);
+    if (item.customerName) parts.push(item.customerName);
+    return parts.join(' • ') || `Booking ${item.id}`;
+};
+
+export default function TransactionHistoryPage() {
+    const [pagination, setPagination] = useState({ page: 1, fetch: 5 });
+    const [items, setItems] = useState<PaymentOutputDto[]>([]);
+    const [totalCount, setTotalCount] = useState<number>(0);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [selected, setSelected] = useState<PaymentOutputDto | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        const fetchPage = async () => {
+            setLoading(true);
+            try {
+                const result = await bookingService.getBookingListAsync({ page: pagination.page, pageSize: pagination.fetch });
+                if (cancelled) return;
+                setItems(result.items || []);
+                setTotalCount(result.totalCount || 0);
+            } catch (e) {
+                if (!cancelled) {
+                    setItems([]);
+                    setTotalCount(0);
+                    toast.error(e instanceof Error ? e.message : 'Failed to load transactions');
+                }
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+        void fetchPage();
+        return () => {
+            cancelled = true;
+        };
+    }, [pagination.page, pagination.fetch]);
+
+    const dataSource = useMemo<TransactionRow[]>(() => {
+        return items.map((item) => ({
+            id: item.id,
+            date: item.createdAt ? dayjs(item.createdAt).format('DD/MM/YYYY HH:mm') : '-',
+            description: buildDescription(item),
+            amount: formatVnd(item.amount),
+            type: item.paymentMethod || '-',
+            raw: item,
+        }));
+    }, [items]);
 
     const columns = [
-        {
-            title: 'ID',
-            dataIndex: 'id',
-            key: 'id',
-            width: '20%',
-        },
-        {
-            title: 'Date',
-            dataIndex: 'date',
-            key: 'date',
-            width: '20%',
-        },
-        {
-            title: 'Description',
-            dataIndex: 'description',
-            key: 'description',
-            width: '40%',
-        },
-        {
-            title: 'Amount',
-            dataIndex: 'amount',
-            key: 'amount',
-            width: '20%',
-            render: (text: string) => <span className="font-bold text-gray-800">{text}</span>,
-        },
+        { title: 'Booking ID', dataIndex: 'id', key: 'id', width: '24%', render: (text: string) => <span className="font-mono text-xs">{text}</span> },
+        { title: 'Date', dataIndex: 'date', key: 'date', width: '20%' },
+        { title: 'Description', dataIndex: 'description', key: 'description', width: '36%' },
+        { title: 'Amount', dataIndex: 'amount', key: 'amount', width: '20%', render: (text: string) => <span className="font-bold text-gray-800">{text}</span> },
     ];
 
-    const handleRowClick = (record: Transaction) => {
-        setSelectedTxn(record);
+    const handleRowClick = (record: TransactionRow) => {
+        setSelected(record.raw);
     };
 
     return (
         <div className="w-full animate-fade-in-up">
             <LTTCard className="p-6 md:p-8 shadow-sm border border-gray-100 rounded-xl bg-white">
-                {!selectedTxn ? (
+                {!selected ? (
                     <>
                         <h2 className="text-2xl font-bold mb-8 border-b pb-4 text-gray-800">Transaction History</h2>
                         <LTTTable
                             columns={columns}
-                            dataSource={pagedTransactions}
+                            dataSource={dataSource}
                             rowKey="id"
+                            loading={loading}
                             className="border border-gray-100 rounded-lg shadow-sm cursor-pointer"
                             onRow={(record) => ({
-                                onClick: () => handleRowClick(record as Transaction),
+                                onClick: () => handleRowClick(record as TransactionRow),
                             })}
                             rowClassName="hover:bg-gray-50 transition-colors"
                             pagination={{
-                                totalCount: transactions.length,
-                                page: transactionPagination.page,
-                                fetch: transactionPagination.fetch,
+                                totalCount,
+                                page: pagination.page,
+                                fetch: pagination.fetch,
                                 onChange: (page: number, fetch: number) => {
-                                    setTransactionPagination({ page, fetch });
+                                    setPagination({ page, fetch });
                                 },
                             }}
                         />
@@ -88,7 +112,7 @@ export default function TransactionHistoryPage() {
                         <LTTButton
                             variant="outline"
                             className="w-fit text-[#cc3434] bg-white hover:bg-gray-50 !pl-0 border-none transition-colors"
-                            onClick={() => setSelectedTxn(null)}
+                            onClick={() => setSelected(null)}
                         >
                             <span className="flex items-center text-base">
                                 <span className="mr-2 text-xl font-bold">←</span> Quay lại Transaction History
@@ -98,34 +122,14 @@ export default function TransactionHistoryPage() {
                         <h2 className="text-2xl font-bold mb-4 border-b pb-4 text-gray-800">Transaction Details</h2>
 
                         <div className="flex flex-col gap-4">
-                            <div className="flex flex-col md:flex-row py-3">
-                                <span className="w-full md:w-1/3 text-gray-500 font-medium font-sm mb-1">Transaction ID</span>
-                                <span className="w-full md:w-2/3 text-gray-800 font-medium">{selectedTxn.id}</span>
-                            </div>
-                            <div className="flex flex-col md:flex-row py-3 border-t border-gray-100">
-                                <span className="w-full md:w-1/3 text-gray-500 font-medium font-sm mb-1">Date</span>
-                                <span className="w-full md:w-2/3 text-gray-800">{selectedTxn.date}</span>
-                            </div>
-                            <div className="flex flex-col md:flex-row py-3 border-t border-gray-100">
-                                <span className="w-full md:w-1/3 text-gray-500 font-medium font-sm mb-1">Description</span>
-                                <span className="w-full md:w-2/3 text-gray-800">{selectedTxn.description}</span>
-                            </div>
-                            <div className="flex flex-col md:flex-row py-3 border-t border-gray-100">
-                                <span className="w-full md:w-1/3 text-gray-500 font-medium font-sm mb-1">Amount</span>
-                                <span className="w-full md:w-2/3 text-gray-800 font-bold">{selectedTxn.amount}</span>
-                            </div>
-                            <div className="flex flex-col md:flex-row py-3 border-t border-gray-100">
-                                <span className="w-full md:w-1/3 text-gray-500 font-medium font-sm mb-1">Type</span>
-                                <span className="w-full md:w-2/3 text-gray-800">{selectedTxn.type}</span>
-                            </div>
-                            {selectedTxn.points && (
-                                <div className="flex flex-col md:flex-row py-3 border-t border-gray-100">
-                                    <span className="w-full md:w-1/3 text-gray-500 font-medium font-sm mb-1">Accumulated points</span>
-                                    <span className={`w-full md:w-2/3 font-bold ${selectedTxn.points.startsWith('+') ? 'text-green-600' : 'text-red-500'}`}>
-                                        {selectedTxn.points}
-                                    </span>
-                                </div>
-                            )}
+                            <DetailRow label="Booking ID" value={<span className="font-mono">{selected.id}</span>} first />
+                            <DetailRow label="Date" value={selected.createdAt ? dayjs(selected.createdAt).format('DD/MM/YYYY HH:mm') : '-'} />
+                            <DetailRow label="Movie" value={selected.movieTitle || '-'} />
+                            <DetailRow label="Cinema" value={selected.cinemaName || '-'} />
+                            <DetailRow label="Customer" value={selected.customerName || '-'} />
+                            <DetailRow label="Payment method" value={selected.paymentMethod || '-'} />
+                            <DetailRow label="Status" value={selected.status || '-'} />
+                            <DetailRow label="Amount" value={<span className="font-bold">{formatVnd(selected.amount)}</span>} />
                         </div>
                     </div>
                 )}
@@ -134,3 +138,11 @@ export default function TransactionHistoryPage() {
     );
 }
 
+function DetailRow({ label, value, first }: { label: string; value: React.ReactNode; first?: boolean }) {
+    return (
+        <div className={`flex flex-col md:flex-row py-3${first ? '' : ' border-t border-gray-100'}`}>
+            <span className="w-full md:w-1/3 text-gray-500 font-medium text-sm mb-1">{label}</span>
+            <span className="w-full md:w-2/3 text-gray-800">{value}</span>
+        </div>
+    );
+}

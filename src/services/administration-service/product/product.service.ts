@@ -7,14 +7,15 @@ import {
     CreateCategoryInputDto,
     CreateComboInputDto,
     UpdateCategoryInputDto,
-    UpdateComboInputDto
+    UpdateComboInputDto,
 } from "./models/input.model";
 import {
     ProductOutputDto,
     CategoryOutputDto,
-    ComboOutputDto
+    ComboOutputDto,
 } from "./models/output.model";
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
+import { buildProductFormData, buildComboFormData } from "./multipart";
 
 const rootpath = "/product-service";
 const productPath = "/product";
@@ -22,7 +23,7 @@ const comboPath = "/combo";
 const categoryPath = "/category";
 
 const getProductListAsync = async (params: GetProductListInputDto): Promise<PagedResultDto<ProductOutputDto>> => {
-    const response = await http.get<ApiResult<PagedResultDto<ProductOutputDto>>>(`${rootpath}${productPath}`, { params });
+    const response = await http.get<ApiResult<PagedResultDto<ProductOutputDto>>>(`${rootpath}${productPath}-all`, { params });
     return response.data.data;
 };
 
@@ -32,12 +33,14 @@ const getProductByIdAsync = async (id: string): Promise<ProductOutputDto> => {
 };
 
 const createProductAsync = async (body: CreateProductInputDto): Promise<ProductOutputDto> => {
-    const response = await http.post<ApiResult<ProductOutputDto>>(`${rootpath}${productPath}`, body);
+    const formData = buildProductFormData(body);
+    const response = await http.post<ApiResult<ProductOutputDto>>(`${rootpath}${productPath}`, formData);
     return response.data.data;
 };
 
 const updateProductAsync = async (id: string, body: UpdateProductInputDto): Promise<ProductOutputDto> => {
-    const response = await http.put<ApiResult<ProductOutputDto>>(`${rootpath}${productPath}/${id}`, body);
+    const formData = buildProductFormData(body);
+    const response = await http.put<ApiResult<ProductOutputDto>>(`${rootpath}${productPath}/${id}`, formData);
     return response.data.data;
 };
 
@@ -53,7 +56,7 @@ const getCategoryListAsync = async (): Promise<PagedResultDto<CategoryOutputDto>
 const getCategoryByIdAsync = async (id: string): Promise<CategoryOutputDto> => {
     const response = await http.get<ApiResult<CategoryOutputDto>>(`${rootpath}${categoryPath}/${id}`);
     return response.data.data;
-}
+};
 
 const createCategoryAsync = async (body: CreateCategoryInputDto): Promise<CategoryOutputDto> => {
     const response = await http.post<ApiResult<CategoryOutputDto>>(`${rootpath}${categoryPath}`, body);
@@ -67,7 +70,7 @@ const updateCategoryAsync = async (id: string, body: UpdateCategoryInputDto): Pr
 
 const deleteCategoryAsync = async (id: string): Promise<void> => {
     await http.delete<ApiResult<void>>(`${rootpath}${categoryPath}/${id}`);
-}
+};
 
 const getComboListAsync = async (): Promise<PagedResultDto<ComboOutputDto>> => {
     const response = await http.get<ApiResult<PagedResultDto<ComboOutputDto>>>(`${rootpath}${comboPath}-all`);
@@ -80,18 +83,20 @@ const getComboByIdAsync = async (id: string): Promise<ComboOutputDto> => {
 };
 
 const updateComboAsync = async (id: string, body: UpdateComboInputDto): Promise<ComboOutputDto> => {
-    const response = await http.put<ApiResult<ComboOutputDto>>(`${rootpath}${comboPath}/${id}`, body);
+    const formData = buildComboFormData(body);
+    const response = await http.put<ApiResult<ComboOutputDto>>(`${rootpath}${comboPath}/${id}`, formData);
     return response.data.data;
-}
+};
 
 const createComboAsync = async (body: CreateComboInputDto): Promise<ComboOutputDto> => {
-    const response = await http.post<ApiResult<ComboOutputDto>>(`${rootpath}${comboPath}`, body);
+    const formData = buildComboFormData(body);
+    const response = await http.post<ApiResult<ComboOutputDto>>(`${rootpath}${comboPath}`, formData);
     return response.data.data;
 };
 
 const deleteComboAsync = async (id: string): Promise<void> => {
     await http.delete<ApiResult<void>>(`${rootpath}${comboPath}/${id}`);
-}
+};
 
 export const productService = {
     getProductListAsync,
@@ -108,5 +113,5 @@ export const productService = {
     getComboByIdAsync,
     createComboAsync,
     updateComboAsync,
-    deleteComboAsync
+    deleteComboAsync,
 };
