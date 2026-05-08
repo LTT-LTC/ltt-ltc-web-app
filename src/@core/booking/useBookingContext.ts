@@ -11,6 +11,7 @@ import { customerMovieService } from "@/src/services/customer-service/movie/movi
 import { MovieDetailOutputDto } from "@/src/services/customer-service/movie/models/output.model";
 import {
     BookingState,
+    saveBookingState,
     loadBookingState,
 } from "@/src/@core/booking/bookingState";
 import { type SeatLayout } from "@/src/@core/const/mock/adminMockData";
@@ -24,6 +25,13 @@ export interface BookingContext {
     movie: MovieDetailOutputDto | null;
     loading: boolean;
     error: string | null;
+}
+
+export interface BookingBootstrap {
+    showtimeId?: string;
+    cinemaId?: string;
+    screenId?: string;
+    movieId?: string;
 }
 
 const DEFAULT_LAYOUT: SeatLayout = { rows: [] };
@@ -43,7 +51,7 @@ const tryParseSeatLayout = (raw?: string): SeatLayout => {
     }
 };
 
-export function useBookingContext(bookingId: string | undefined): BookingContext {
+export function useBookingContext(bookingId: string | undefined, bootstrap?: BookingBootstrap): BookingContext {
     const [bookingState, setBookingState] = useState<BookingState | null>(null);
     const [showtime, setShowtime] = useState<CustomerShowtimeOutputDto | null>(null);
     const [screen, setScreen] = useState<ScreenOutputDto | null>(null);
@@ -59,9 +67,19 @@ export function useBookingContext(bookingId: string | undefined): BookingContext
         }
 
         const cached = loadBookingState(bookingId);
-        setBookingState(cached);
+        const hydrated = cached?.showtimeId
+            ? cached
+            : (bootstrap?.showtimeId
+                ? saveBookingState(bookingId, {
+                    showtimeId: bootstrap.showtimeId,
+                    cinemaId: bootstrap.cinemaId,
+                    screenId: bootstrap.screenId,
+                    movieId: bootstrap.movieId,
+                })
+                : null);
+        setBookingState(hydrated);
 
-        if (!cached?.showtimeId) {
+        if (!hydrated?.showtimeId) {
             setLoading(false);
             return;
         }
@@ -72,7 +90,7 @@ export function useBookingContext(bookingId: string | undefined): BookingContext
             setError(null);
 
             try {
-                const showtimeDto = await customerShowtimeService.getShowtimeByIdAsync(cached.showtimeId!);
+                const showtimeDto = await customerShowtimeService.getShowtimeByIdAsync(hydrated.showtimeId!);
                 if (cancelled) return;
                 setShowtime(showtimeDto);
 
@@ -107,7 +125,7 @@ export function useBookingContext(bookingId: string | undefined): BookingContext
         return () => {
             cancelled = true;
         };
-    }, [bookingId]);
+    }, [bookingId, bootstrap?.showtimeId, bootstrap?.cinemaId, bootstrap?.screenId, bootstrap?.movieId]);
 
     const seatLayout = useMemo<SeatLayout | null>(() => {
         if (!screen) return null;

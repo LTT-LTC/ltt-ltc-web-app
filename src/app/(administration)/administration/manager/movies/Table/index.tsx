@@ -14,6 +14,7 @@ import LTTSelect from "@/src/@core/component/AntD/LTTSelect";
 import MoviesFilter from "../Filter";
 import Link from "next/link";
 import { AdminMovie, mockAdminMovies } from "../_mock/data";
+import { toLocalDateInput } from "@/src/@core/utils/date";
 
 const MoviesListPage = () => {
   const [items, setItems] = useState<AdminMovie[]>(mockAdminMovies);
@@ -68,7 +69,7 @@ const MoviesListPage = () => {
 
   const handleSave = () => {
     form.validateFields().then((values) => {
-      const now = new Date().toISOString().slice(0, 10);
+      const now = toLocalDateInput(new Date());
       if (editing) {
         setItems((p) =>
           p.map((i) =>

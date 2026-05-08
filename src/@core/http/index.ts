@@ -299,6 +299,12 @@ const onRequestInterceptor = (config: InternalAxiosRequestConfig) => {
   if (accessToken) {
     config.headers[AUTHORIZATION_KEY] = `${TOKEN_TYPE_KEY} ${accessToken}`;
   }
+
+  // Let browser/axios set multipart boundary automatically for FormData.
+  if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+    delete config.headers["Content-Type"];
+  }
+
   if (config.params) {
     config.paramsSerializer = {
       serialize: (params: Record<string, unknown>) =>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -22,6 +22,7 @@ import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTTextarea } from "@/src/@core/component/LTTShadcnUI/LTTTextarea";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import { LTTSelect, LTTSelectContent, LTTSelectItem, LTTSelectTrigger, LTTSelectValue } from "@/src/@core/component/LTTShadcnUI/LTTSelect";
+import { getSeatTypeColor } from "@/src/@core/component/LTTManager/seatTypeColor";
 
 import {
   type Screen,
@@ -46,6 +47,26 @@ type CellType =
 
 type BorderCellType = "empty" | "door" | "emergency_exit";
 
+const formatNowGmt7 = (): string => {
+  // Force timestamp rendering in GMT+7 and dd/MM/yyyy format.
+  const formatter = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Bangkok",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(new Date());
+  const pick = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((p) => p.type === type)?.value ?? "";
+
+  return `${pick("day")}/${pick("month")}/${pick("year")} ${pick("hour")}:${pick("minute")}:${pick("second")} GMT+7`;
+};
+
 interface GridCell {
   row: string;
   /** Seat number (compressed after recalc), not the physical index. */
@@ -57,14 +78,6 @@ interface GridCell {
   originCol?: number;
   originRow?: number;
 }
-
-const SEAT_TYPE_COLORS: Record<number, string> = {
-  1: "bg-blue-500",
-  2: "bg-amber-500",
-  3: "bg-pink-500",
-  4: "bg-purple-500",
-  5: "bg-green-500",
-};
 
 interface Props {
   onClose: () => void;
@@ -140,16 +153,59 @@ export default function LTTScreenCreateWizard({
     [seatTypes]
   );
 
+  const orderedSeatTypes = useMemo(() => {
+    const normalized = [...seatTypes];
+    const standardRegex = /\bstandard\b/i;
+
+    normalized.sort((left, right) => {
+      const leftOccupied = left.seatOccupied ?? 1;
+      const rightOccupied = right.seatOccupied ?? 1;
+
+      // Keep single-chair seat types above x2 (couple/bed) seat types.
+      if (leftOccupied !== rightOccupied) {
+        return leftOccupied - rightOccupied;
+      }
+
+      const leftIsStandard = standardRegex.test(left.name || "");
+      const rightIsStandard = standardRegex.test(right.name || "");
+
+      // If Standard exists in the same occupancy bucket, pin it first.
+      if (leftIsStandard !== rightIsStandard) {
+        return leftIsStandard ? -1 : 1;
+      }
+
+      return (left.name || "").localeCompare(right.name || "");
+    });
+
+    return normalized;
+  }, [seatTypes]);
+
+  const preferredSeatTypeId = useMemo(() => {
+    if (orderedSeatTypes.length === 0) return 1;
+    const standardSingle = orderedSeatTypes.find(
+      (seatType) =>
+        /\bstandard\b/i.test(seatType.name || "") && (seatType.seatOccupied ?? 1) === 1
+    );
+    if (standardSingle) return standardSingle.id;
+    const firstSingle = orderedSeatTypes.find((seatType) => (seatType.seatOccupied ?? 1) === 1);
+    return firstSingle?.id ?? orderedSeatTypes[0].id;
+  }, [orderedSeatTypes]);
+
   useEffect(() => {
     setSeatTypes(externalSeatTypes);
   }, [externalSeatTypes]);
 
   useEffect(() => {
     if (seatTypes.length === 0) return;
-    if (!seatTypes.some((x) => x.id === activeSeatTypeId)) {
-      setActiveSeatTypeId(seatTypes[0].id);
-    }
-  }, [seatTypes, activeSeatTypeId]);
+    setActiveSeatTypeId((current) => {
+      if (!seatTypes.some((x) => x.id === current)) return preferredSeatTypeId;
+      // Force default to Standard/single seat at initialization to avoid couple-seat defaults.
+      if (current !== preferredSeatTypeId && (current === 1 || current === 0)) {
+        return preferredSeatTypeId;
+      }
+      return current;
+    });
+  }, [seatTypes, preferredSeatTypeId]);
 
   /**
    * Recalculate seat codes:
@@ -280,7 +336,7 @@ export default function LTTScreenCreateWizard({
             row: rowLabel,
             col: c + 1,
             type,
-            seatTypeId: 1,
+            seatTypeId: preferredSeatTypeId,
             seatCode: type === "seat" ? `${rowLabel}${c + 1}` : "",
           });
         }
@@ -299,7 +355,7 @@ export default function LTTScreenCreateWizard({
       setBorderLeft(Array(numRows).fill("empty") as BorderCellType[]);
       setBorderRight(Array(numRows).fill("empty") as BorderCellType[]);
     },
-    [recalcSeatCodes]
+    [recalcSeatCodes, preferredSeatTypeId]
   );
 
   const handleRegenerateGrid = () => {
@@ -835,7 +891,7 @@ export default function LTTScreenCreateWizard({
 
   const getSeatCellBgClass = (cell: GridCell) => {
     if (cell.type === "seat" || cell.type === "seat_continuation") {
-      return SEAT_TYPE_COLORS[cell.seatTypeId] || "bg-blue-500";
+      return getSeatTypeColor(cell.seatTypeId).bg;
     }
     if (cell.type === "walkway") return "bg-muted-shadcn";
     if (cell.type === "emergency_exit") return "bg-orange-100";
@@ -941,10 +997,7 @@ export default function LTTScreenCreateWizard({
       return;
     }
 
-    const now = new Date()
-      .toLocaleString("sv-SE")
-      .slice(0, 16)
-      .replace("T", " ");
+    const now = formatNowGmt7();
 
     const screen: Screen = {
       id: initialData?.id ?? `scr-${Date.now()}`,
@@ -978,12 +1031,12 @@ export default function LTTScreenCreateWizard({
           {t("admin.seatmap.wizard.empty_seat_type_data")}
         </div>
       )}
-      {seatTypes.map((st) => (
+      {orderedSeatTypes.map((st) => (
         <button
           key={st.id}
           type="button"
           className={cn(
-            "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-all border",
+            "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-all border my-3",
             activeSeatTypeId === st.id && activeTool === "select"
               ? "border-primary-shadcn bg-primary-shadcn/5 text-primary-shadcn shadow-inner"
               : "border-transparent text-muted-foreground-shadcn hover:bg-muted-shadcn"
@@ -993,7 +1046,7 @@ export default function LTTScreenCreateWizard({
             setActiveTool("select");
           }}
         >
-          <div className={cn("h-3.5 w-3.5 rounded shadow-sm", SEAT_TYPE_COLORS[st.id])} />
+          <div className={cn("h-3.5 w-3.5 rounded shadow-sm", getSeatTypeColor(st.id).bg)} />
           <span className="truncate">{st.name}</span>
           <span className="ml-auto opacity-60 text-[10px]">
             x{st.seatOccupied}
@@ -1074,7 +1127,7 @@ export default function LTTScreenCreateWizard({
                                 <span
                                   className={cn(
                                     "h-2.5 w-2.5 rounded-full",
-                                    SEAT_TYPE_COLORS[b.id] || "bg-muted-foreground-shadcn"
+                                    getSeatTypeColor(b.id).bg || "bg-muted-foreground-shadcn"
                                   )}
                                 />
                                 {b.name}
@@ -1336,12 +1389,12 @@ export default function LTTScreenCreateWizard({
                       </span>
                     </div>
 
-                    {seatTypes.map((st) => (
+                    {orderedSeatTypes.map((st) => (
                       <div key={st.id} className="flex items-center gap-1.5">
                         <div
                           className={cn(
                             "h-3.5 w-3.5 rounded-sm shadow-sm",
-                            SEAT_TYPE_COLORS[st.id]
+                            getSeatTypeColor(st.id).bg
                           )}
                         />
                         <span className="text-muted-foreground-shadcn">
@@ -1402,7 +1455,7 @@ export default function LTTScreenCreateWizard({
                         />
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-3 my-3">
                         <div className="space-y-1.5">
                           <LTTLabel className="text-[10px]">{t("admin.seatmap.wizard.grid.rows")}</LTTLabel>
                           <LTTInput
@@ -1516,7 +1569,7 @@ export default function LTTScreenCreateWizard({
                   </div>
 
                   <div className="border-t border-border-shadcn pt-5 space-y-3">
-                    <LTTLabel className="text-xs font-bold uppercase tracking-wider text-muted-foreground-shadcn">
+                    <LTTLabel className="text-xs font-bold uppercase tracking-wider text-muted-foreground-shadcn my-3">
                       {t("admin.seatmap.wizard.tools.seat_type_apply")}
                     </LTTLabel>
                     {getSeatTypeToolList()}

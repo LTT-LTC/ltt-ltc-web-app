@@ -1398,6 +1398,13 @@
     "booking": {
       "loading": "Đang chuẩn bị phiên đặt vé...",
       "invalid_session": "Không tìm thấy phiên đặt vé. Vui lòng chọn lại suất chiếu.",
+      "leave_confirm": "Bạn có chắc chắn muốn rời phiên đặt vé này không? Các thay đổi có thể sẽ không được lưu.",
+      "exit_confirm": {
+        "title": "Rời phiên đặt vé?",
+        "message": "Nếu bạn rời đi ngay bây giờ, các lựa chọn đặt vé hiện tại sẽ bị hủy.",
+        "stay": "Ở lại",
+        "exit_discard": "Rời đi và hủy thay đổi"
+      },
       "room": "Phòng",
       "stepper": {
         "seats": "Chọn ghế",
@@ -1482,6 +1489,8 @@
         "back": "Quay lại",
         "next": "Tiếp tục",
         "continue": "Tiếp tục",
+        "choose_group_seats": "Chọn ghế theo nhóm",
+        "clear_selected_seats": "Xóa tất cả ghế đã chọn",
         "continue_to_summary": "Đến trang tóm tắt",
         "continue_to_payment": "Đến trang thanh toán",
         "confirm": "Xác nhận ghế",
@@ -1492,7 +1501,9 @@
       },
       "toast": {
         "pick_seats": "Vui lòng chọn ít nhất một ghế để tiếp tục.",
-        "fetch_extras_error": "Không thể tải đồ ăn và combo."
+        "fetch_extras_error": "Không thể tải đồ ăn và combo.",
+        "group_seats_not_found": "Không tìm thấy đủ ghế liền kề theo số lượng đã chọn.",
+        "drag_to_select_group": "Kéo chuột trên sơ đồ ghế để chọn khu vực ghế theo nhóm."
       }
     },
     "my_ltc": {

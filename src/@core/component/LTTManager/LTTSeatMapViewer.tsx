@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Footprints, AlertTriangle, DoorOpen } from "lucide-react";
 import { cn } from "@/src/@core/utils/cn";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
@@ -10,22 +10,13 @@ import {
   mockSeatTypes,
   type SeatType,
 } from "@/src/@core/const/mock/adminMockData";
-
-// ── Seat type colour palette ──────────────────────────────────────────────────
-const SEAT_TYPE_COLORS: Record<number, { bg: string; text: string; border: string }> = {
-  1: { bg: "bg-blue-500",   text: "text-white", border: "border-blue-600"   },
-  2: { bg: "bg-amber-500",  text: "text-white", border: "border-amber-600"  },
-  3: { bg: "bg-pink-500",   text: "text-white", border: "border-pink-600"   },
-  4: { bg: "bg-purple-500", text: "text-white", border: "border-purple-600" },
-  5: { bg: "bg-green-500",  text: "text-white", border: "border-green-600"  },
-};
-
-type CellType = "seat" | "walkway" | "emergency_exit" | "door" | "empty";
-
-function getCellType(seat: SeatLayoutSeat): CellType {
-  if (!seat.type || seat.type === "seat") return "seat";
-  return seat.type as CellType;
-}
+import {
+  extractSeatNumber,
+  getCellType,
+  getSeatMergeClasses,
+  resolveContinuationNumber,
+} from "@/src/@core/component/LTTManager/seatMapRenderHelpers";
+import { getSeatTypeColor } from "@/src/@core/component/LTTManager/seatTypeColor";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Props
@@ -39,6 +30,10 @@ export interface LTTSeatMapViewerProps {
   bookedSeats?: Set<string>;
   /** Called when a selectable seat is clicked (interactive mode). */
   onSeatClick?: (seatCode: string) => void;
+  /** Enable drag to select multiple available seats. */
+  dragSelectMode?: boolean;
+  /** Called when drag selection ends with collected seat codes. */
+  onDragSelectSeats?: (seatCodes: string[]) => void;
   /**
    * When true, seats cannot be clicked and hover effects are removed.
    * Used for staff heatmap and manager layout view.
@@ -65,6 +60,8 @@ export default function LTTSeatMapViewer({
   selectedSeats,
   bookedSeats,
   onSeatClick,
+  dragSelectMode = false,
+  onDragSelectSeats,
   readOnly = false,
   showScreen = true,
   compact = false,
@@ -77,6 +74,9 @@ export default function LTTSeatMapViewer({
   const cellText = compact ? "text-[7px]" : "text-[8px]";
   const gap      = "gap-0.5";
   const labelW   = compact ? "w-5" : "w-8";
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragCodes, setDragCodes] = useState<Set<string>>(new Set());
+  const dragCodesRef = useRef<Set<string>>(new Set());
 
   // Detect which seat types are actually used in this layout
   const usedTypeIds = useMemo(() => {
@@ -90,6 +90,41 @@ export default function LTTSeatMapViewer({
   }, [seatLayout]);
 
   const activeSeatTypes = seatTypes.filter((st) => usedTypeIds.has(st.id));
+
+  const collectDragCode = (code: string) => {
+    if (!code) return;
+    setDragCodes((prev) => {
+      if (prev.has(code)) return prev;
+      const next = new Set(prev);
+      next.add(code);
+      dragCodesRef.current = next;
+      return next;
+    });
+  };
+
+  const endDragSelection = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    const picked = Array.from(dragCodesRef.current);
+    if (picked.length > 0) {
+      onDragSelectSeats?.(picked);
+    }
+    dragCodesRef.current = new Set();
+    setDragCodes(new Set());
+  };
+
+  useEffect(() => {
+    if (!dragSelectMode) {
+      setIsDragging(false);
+      dragCodesRef.current = new Set();
+      setDragCodes(new Set());
+      return;
+    }
+
+    const onWindowMouseUp = () => endDragSelection();
+    window.addEventListener("mouseup", onWindowMouseUp);
+    return () => window.removeEventListener("mouseup", onWindowMouseUp);
+  }, [dragSelectMode, isDragging]);
 
   // ── Cell rendering helpers ────────────────────────────────────────────────
 
@@ -105,10 +140,10 @@ export default function LTTSeatMapViewer({
     const isBooked   = bookedSeats?.has(code);
     const isSelected = selectedSeats?.has(code);
 
-    if (isBooked)   return "bg-red-400 border-red-500";
+    if (isBooked)   return "bg-gray-400 border-gray-500";
     if (isSelected) return "bg-primary-shadcn border-primary-shadcn scale-105 shadow-sm";
 
-    const colors = SEAT_TYPE_COLORS[seat.seatTypeId] ?? SEAT_TYPE_COLORS[1];
+    const colors = getSeatTypeColor(seat.seatTypeId);
     return `${colors.bg} ${colors.border}`;
   };
 
@@ -122,7 +157,13 @@ export default function LTTSeatMapViewer({
     return "bg-muted-shadcn/40 border-dashed border-border-shadcn/60";
   };
 
-  const renderCellContent = (seat: SeatLayoutSeat) => {
+  const renderCellContent = (
+    seat: SeatLayoutSeat,
+    seats: SeatLayoutSeat[],
+    seatIndex: number,
+    fallbackRows: SeatLayout["rows"],
+    rowIndex?: number,
+  ) => {
     const ct = getCellType(seat);
 
     if (ct === "walkway")        return <Footprints  className={cn(compact ? "h-2.5 w-2.5" : "h-3 w-3", "text-muted-foreground-shadcn")} />;
@@ -130,9 +171,8 @@ export default function LTTSeatMapViewer({
     if (ct === "door")           return <DoorOpen className={cn(compact ? "h-2.5 w-2.5" : "h-3 w-3", "text-green-600")} />;
     if (ct === "empty")          return null;
 
-    if (!seat.seatCode) return null; // continuation cell – no number
-
-    const num = seat.seatCode.replace(/^[A-Z]+/, "");
+    const num = extractSeatNumber(seat.seatCode) || resolveContinuationNumber(seats, seatIndex, fallbackRows, rowIndex);
+    if (!num) return null;
     return <span className={cn(cellText, "font-bold text-white")}>{num}</span>;
   };
 
@@ -175,7 +215,7 @@ export default function LTTSeatMapViewer({
       )}
 
       {/* Grid */}
-      <div className={cn("flex flex-col items-center select-none overflow-x-auto", gap)}>
+      <div className={cn("flex flex-col items-center select-none overflow-x-auto my-3", gap)}>
         {hasBorderWrap ? (
           <>
             {/* Top border row */}
@@ -192,7 +232,7 @@ export default function LTTSeatMapViewer({
                   )}
                   title={getCellType(seat) !== "empty" ? getCellType(seat) : undefined}
                 >
-                  {renderCellContent(seat)}
+                  {renderCellContent(seat, topBorderRow.seats, i, outerRows)}
                 </div>
               ))}
             </div>
@@ -219,7 +259,7 @@ export default function LTTSeatMapViewer({
                       getBorderCellBgClass(leftBorder),
                     )}
                   >
-                    {renderCellContent(leftBorder)}
+                    {renderCellContent(leftBorder, row.seats, 0, innerRows, rowIdx)}
                   </div>
 
                   {/* Inner seat cells */}
@@ -230,23 +270,42 @@ export default function LTTSeatMapViewer({
                     const isSelected = !!selectedSeats?.has(code);
                     const isClickable = !readOnly && ct === "seat" && !isBooked && !!code;
 
+                    const mergeClasses = getSeatMergeClasses(innerSeats, sIdx);
+                    const isDragPicked = dragCodes.has(code);
+
                     return (
                       <button
                         key={`${rowIdx}-${sIdx}`}
                         disabled={!isClickable && readOnly}
-                        onClick={() => isClickable && onSeatClick?.(code)}
+                        onClick={() => {
+                          if (!dragSelectMode && isClickable) onSeatClick?.(code);
+                        }}
+                        onMouseDown={() => {
+                          if (!dragSelectMode || !isClickable) return;
+                          setIsDragging(true);
+                          dragCodesRef.current = new Set([code]);
+                          setDragCodes(new Set([code]));
+                        }}
+                        onMouseEnter={() => {
+                          if (!dragSelectMode || !isDragging || !isClickable) return;
+                          collectDragCode(code);
+                        }}
+                        onMouseUp={() => {
+                          if (dragSelectMode) endDragSelection();
+                        }}
                         className={cn(
                           cellSize,
-                          "rounded-sm flex items-center justify-center border-2 transition-all",
+                          "rounded-sm flex items-center justify-center border-1 transition-all",
                           getSeatBgClass(seat, code),
                           ct === "seat" && !readOnly && !isBooked && code
                             ? "cursor-pointer hover:scale-110 hover:shadow-md active:scale-95"
                             : ct === "seat" ? "cursor-default" : "cursor-default",
-                          isSelected && "ring-2 ring-white ring-offset-1",
+                          (isSelected || isDragPicked) && "ring-2 ring-white ring-offset-1",
+                          mergeClasses,
                         )}
                         title={code || ct}
                       >
-                        {renderCellContent(seat)}
+                        {renderCellContent(seat, innerSeats, sIdx, innerRows, rowIdx)}
                       </button>
                     );
                   })}
@@ -259,7 +318,7 @@ export default function LTTSeatMapViewer({
                       getBorderCellBgClass(rightBorder),
                     )}
                   >
-                    {renderCellContent(rightBorder)}
+                    {renderCellContent(rightBorder, row.seats, row.seats.length - 1, innerRows, rowIdx)}
                   </div>
                 </div>
               );
@@ -279,7 +338,7 @@ export default function LTTSeatMapViewer({
                   )}
                   title={getCellType(seat) !== "empty" ? getCellType(seat) : undefined}
                 >
-                  {renderCellContent(seat)}
+                  {renderCellContent(seat, bottomBorderRow.seats, i, outerRows)}
                 </div>
               ))}
             </div>
@@ -288,7 +347,7 @@ export default function LTTSeatMapViewer({
           // Simple layout (no border wrap — legacy / mock data format)
           outerRows.map((row, rowIdx) => (
             <div key={rowIdx} className={cn("flex items-center", gap)}>
-              <span className={cn(cellSize, "shrink-0 flex items-center justify-end pr-1 text-[10px] font-bold text-muted-foreground-shadcn")}>
+              <span className={cn(cellSize, "shrink-0 flex items-center justify-end pr-1 text-[10px] font-bold text-muted-foreground-shadcn my-3")}>
                 {row.row}
               </span>
               {row.seats.map((seat, sIdx) => {
@@ -298,23 +357,42 @@ export default function LTTSeatMapViewer({
                 const isSelected = !!selectedSeats?.has(code);
                 const isClickable = !readOnly && ct === "seat" && !isBooked && !!code;
 
+                const mergeClasses = getSeatMergeClasses(row.seats, sIdx);
+                const isDragPicked = dragCodes.has(code);
+
                 return (
                   <button
                     key={`${rowIdx}-${sIdx}`}
                     disabled={!isClickable}
-                    onClick={() => isClickable && onSeatClick?.(code)}
+                    onClick={() => {
+                      if (!dragSelectMode && isClickable) onSeatClick?.(code);
+                    }}
+                    onMouseDown={() => {
+                      if (!dragSelectMode || !isClickable) return;
+                      setIsDragging(true);
+                      dragCodesRef.current = new Set([code]);
+                      setDragCodes(new Set([code]));
+                    }}
+                    onMouseEnter={() => {
+                      if (!dragSelectMode || !isDragging || !isClickable) return;
+                      collectDragCode(code);
+                    }}
+                    onMouseUp={() => {
+                      if (dragSelectMode) endDragSelection();
+                    }}
                     className={cn(
                       cellSize,
-                      "rounded-sm flex items-center justify-center border-2 transition-all",
+                      "rounded-sm flex items-center justify-center border-1 transition-all",
                       getSeatBgClass(seat, code),
                       isClickable
                         ? "cursor-pointer hover:scale-110 hover:shadow-md active:scale-95"
                         : "cursor-default",
-                      isSelected && "ring-2 ring-white ring-offset-1",
+                      (isSelected || isDragPicked) && "ring-2 ring-white ring-offset-1",
+                      mergeClasses,
                     )}
                     title={code || ct}
                   >
-                    {renderCellContent(seat)}
+                    {renderCellContent(seat, row.seats, sIdx, outerRows, rowIdx)}
                   </button>
                 );
               })}
@@ -328,7 +406,7 @@ export default function LTTSeatMapViewer({
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 rounded-xl border border-border-shadcn bg-muted-shadcn/20 px-5 py-2.5 text-xs">
           {/* Seat types */}
           {activeSeatTypes.map((st) => {
-            const colors = SEAT_TYPE_COLORS[st.id] ?? SEAT_TYPE_COLORS[1];
+            const colors = getSeatTypeColor(st.id);
             return (
               <div key={st.id} className="flex items-center gap-1.5">
                 <div className={cn("h-3 w-3 rounded-sm", colors.bg)} />
@@ -347,7 +425,7 @@ export default function LTTSeatMapViewer({
                 <span className="text-muted-foreground-shadcn">{t("admin.seatmap.viewer.legend.selected")}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="h-3 w-3 rounded-sm bg-red-400" />
+                <div className="h-3 w-3 rounded-sm bg-gray-400" />
                 <span className="text-muted-foreground-shadcn">{t("admin.seatmap.viewer.legend.booked")}</span>
               </div>
             </>
@@ -360,7 +438,7 @@ export default function LTTSeatMapViewer({
                 <span className="text-muted-foreground-shadcn">{t("admin.seatmap.viewer.legend.available")}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="h-3 w-3 rounded-sm bg-red-400" />
+                <div className="h-3 w-3 rounded-sm bg-gray-400" />
                 <span className="text-muted-foreground-shadcn">{t("admin.seatmap.viewer.legend.booked")}</span>
               </div>
             </>

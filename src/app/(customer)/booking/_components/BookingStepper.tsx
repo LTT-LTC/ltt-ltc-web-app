@@ -27,14 +27,16 @@ export default function BookingStepper({ activeStep }: BookingStepperProps) {
 
     return (
         <div className="w-full bg-white border border-gray-100 rounded-xl shadow-sm px-4 py-4 mb-6">
-            <ol className="flex w-full items-center gap-2">
+            <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr_auto_1fr] items-start gap-x-1 sm:gap-x-2">
                 {STEP_ORDER.map((step, index) => {
                     const isCompleted = index < activeIndex;
                     const isActive = index === activeIndex;
                     const isUpcoming = index > activeIndex;
+                    const connectorDone = index < activeIndex;
+
                     return (
-                        <li key={step} className="flex items-center flex-1 min-w-0">
-                            <div className="flex flex-col items-center flex-1 min-w-0">
+                        <div key={step} className="contents">
+                            <div className="flex min-w-0 flex-col items-center">
                                 <div
                                     className={cn(
                                         "h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors",
@@ -47,7 +49,7 @@ export default function BookingStepper({ activeStep }: BookingStepperProps) {
                                 </div>
                                 <span
                                     className={cn(
-                                        "text-[11px] mt-1.5 text-center px-1 truncate w-full",
+                                        "text-[11px] mt-1.5 text-center leading-4 w-full max-w-[110px] sm:max-w-[130px]",
                                         isActive ? "text-[#cd1e25] font-semibold" : "text-gray-500",
                                     )}
                                 >
@@ -55,17 +57,19 @@ export default function BookingStepper({ activeStep }: BookingStepperProps) {
                                 </span>
                             </div>
                             {index < STEP_ORDER.length - 1 && (
-                                <div
-                                    className={cn(
-                                        "h-0.5 flex-1 -mt-5 mx-1 rounded-full",
-                                        isCompleted ? "bg-emerald-500" : "bg-gray-200",
-                                    )}
-                                />
+                                <div className="flex items-center pt-4">
+                                    <div
+                                        className={cn(
+                                            "h-0.5 w-full rounded-full transition-colors",
+                                            connectorDone ? "bg-emerald-500" : "bg-gray-200",
+                                        )}
+                                    />
+                                </div>
                             )}
-                        </li>
+                        </div>
                     );
                 })}
-            </ol>
+            </div>
         </div>
     );
 }

@@ -20,6 +20,7 @@ import {
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import { LTTTextarea } from "@/src/@core/component/LTTShadcnUI/LTTTextarea";
+import { formatDateTimeGmt7 } from "@/src/@core/utils/date";
 import { toast } from "sonner";
 import { Incident, mockIncidents, mockStaff } from "@/src/@core/const/mock/adminMockData";
 
@@ -116,7 +117,7 @@ export default function CRMPage() {
       toast.error("Tiêu đề không được để trống");
       return;
     }
-    const now = new Date().toLocaleString("sv-SE").slice(0, 16).replace("T", " ");
+    const now = formatDateTimeGmt7();
     if (editing) {
       setItems((p) =>
         p.map((i) => (i.id === editing.id ? { ...i, ...form, updatedAt: now } : i))
@@ -139,7 +140,7 @@ export default function CRMPage() {
   };
 
   const updateStatus = (id: string, status: Incident["status"]) => {
-    const now = new Date().toLocaleString("sv-SE").slice(0, 16).replace("T", " ");
+    const now = formatDateTimeGmt7();
     setItems((p) =>
       p.map((i) => (i.id === id ? { ...i, status, updatedAt: now } : i))
     );

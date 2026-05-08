@@ -1,21 +1,24 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import dayjs from "dayjs";
+import { Eraser, Pointer } from "lucide-react";
 import { toast } from "sonner";
 import LTTSeatMapViewer from "@/src/@core/component/LTTManager/LTTSeatMapViewer";
 import { mockSeatTypes, type SeatLayoutSeat } from "@/src/@core/const/mock/adminMockData";
+import { getCellType } from "@/src/@core/component/LTTManager/seatMapRenderHelpers";
 import MovieTicket from "@/src/@core/component/customer/MovieTicket";
 import { useBookingContext } from "@/src/@core/booking/useBookingContext";
 import { saveBookingState } from "@/src/@core/booking/bookingState";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
+import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 
 const buildSeatTypeIndex = (rows: { seats: SeatLayoutSeat[] }[]): Record<string, number> => {
     const index: Record<string, number> = {};
     rows.forEach((row) => {
         row.seats.forEach((seat) => {
-            if (seat.seatCode) {
+            if (getCellType(seat) === "seat" && seat.seatCode) {
                 index[seat.seatCode] = seat.seatTypeId ?? 1;
             }
         });
@@ -40,17 +43,53 @@ export default function SeatPickPage() {
     const { t } = useLocalization();
     const params = useParams<{ bookingId: string }>();
     const bookingId = params.bookingId;
+    const searchParams = useSearchParams();
     const router = useRouter();
 
-    const { bookingState, showtime, screen, seatLayout, cinema, movie, loading, error } = useBookingContext(bookingId);
+    const bootstrap = useMemo(
+        () => ({
+            showtimeId: searchParams.get("showtimeId") || undefined,
+            cinemaId: searchParams.get("cinemaId") || undefined,
+            screenId: searchParams.get("screenId") || undefined,
+            movieId: searchParams.get("movieId") || undefined,
+        }),
+        [searchParams]
+    );
+
+    const { bookingState, showtime, screen, seatLayout, cinema, movie, loading, error } = useBookingContext(bookingId, bootstrap);
 
     const [selected, setSelected] = useState<Set<string>>(new Set());
+    const [groupDragMode, setGroupDragMode] = useState<boolean>(false);
+
+    const bookedSeats = useMemo(() => {
+        if (!showtime) return new Set<string>();
+
+        const rawBooked =
+            ((showtime as unknown as { bookedSeatCodes?: unknown }).bookedSeatCodes as unknown) ??
+            ((showtime as unknown as { bookedSeats?: unknown }).bookedSeats as unknown) ??
+            [];
+
+        if (!Array.isArray(rawBooked)) return new Set<string>();
+
+        const values = rawBooked
+            .map((item) => {
+                if (typeof item === "string") return item.trim();
+                if (item && typeof item === "object" && "seatCode" in item) {
+                    const seatCode = (item as { seatCode?: unknown }).seatCode;
+                    return typeof seatCode === "string" ? seatCode.trim() : "";
+                }
+                return "";
+            })
+            .filter((x): x is string => !!x);
+
+        return new Set(values);
+    }, [showtime]);
 
     useEffect(() => {
         if (bookingState?.seats?.length) {
-            setSelected(new Set(bookingState.seats));
+            setSelected(new Set(bookingState.seats.filter((seatCode) => !bookedSeats.has(seatCode))));
         }
-    }, [bookingState?.seats]);
+    }, [bookingState?.seats, bookedSeats]);
 
     const seatTypeIndex = useMemo(() => {
         if (!seatLayout?.rows) return {};
@@ -67,6 +106,7 @@ export default function SeatPickPage() {
     }, [selected, seatTypeIndex, basePrice]);
 
     const toggleSeat = (seatCode: string) => {
+        if (bookedSeats.has(seatCode)) return;
         setSelected((current) => {
             const next = new Set(current);
             if (next.has(seatCode)) {
@@ -76,6 +116,27 @@ export default function SeatPickPage() {
             }
             return next;
         });
+    };
+
+    const clearAllSelected = () => {
+        setSelected(new Set());
+    };
+
+    const chooseGroupSeats = () => {
+        setGroupDragMode(true);
+        toast.message(t("customer.booking.toast.drag_to_select_group"));
+    };
+
+    const applyDraggedSeats = (seatCodes: string[]) => {
+        if (!seatCodes.length) return;
+        setSelected((current) => {
+            const next = new Set(current);
+            seatCodes.forEach((code) => {
+                if (!bookedSeats.has(code)) next.add(code);
+            });
+            return next;
+        });
+        setGroupDragMode(false);
     };
 
     const handleNext = () => {
@@ -127,10 +188,28 @@ export default function SeatPickPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
                 <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
+                    <div className="mb-4 flex flex-wrap items-center gap-2">
+                        <LTTButton type="button" variant={groupDragMode ? "default" : "outline"} className="gap-2" onClick={chooseGroupSeats}>
+                            <Pointer className="h-4 w-4" />
+                            {t("customer.booking.cta.choose_group_seats")}
+                        </LTTButton>
+                        <LTTButton type="button" variant="outline" className="gap-2" onClick={clearAllSelected} disabled={selected.size === 0}>
+                            <Eraser className="h-4 w-4" />
+                            {t("customer.booking.cta.clear_selected_seats")}
+                        </LTTButton>
+                        {groupDragMode && (
+                            <p className="text-xs text-muted-foreground-shadcn">
+                                {t("customer.booking.toast.drag_to_select_group")}
+                            </p>
+                        )}
+                    </div>
                     <LTTSeatMapViewer
                         seatLayout={seatLayout}
                         selectedSeats={selected}
+                        bookedSeats={bookedSeats}
                         onSeatClick={toggleSeat}
+                        dragSelectMode={groupDragMode}
+                        onDragSelectSeats={applyDraggedSeats}
                         showLegend
                     />
                 </div>

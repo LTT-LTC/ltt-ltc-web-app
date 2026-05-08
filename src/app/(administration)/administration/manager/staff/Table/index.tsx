@@ -13,6 +13,7 @@ import LTTSelect from "@/src/@core/component/AntD/LTTSelect";
 import { Form, notification } from "antd";
 import Link from "next/link";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
+import { toLocalDateInput } from "@/src/@core/utils/date";
 
 import { columns } from "./table.type";
 import StaffFilter from "../Filter";
@@ -75,7 +76,7 @@ const StaffListPage = () => {
         setItems((prev) => prev.map((i) => i.id === editingItem.id ? { ...i, ...payload } : i));
         notification.success({ message: t("admin.staff.toast.update_success") });
       } else {
-        setItems((prev) => [...prev, { ...payload, id: Date.now().toString(), joinedAt: new Date().toISOString().slice(0, 10), lastLogin: "" }]);
+        setItems((prev) => [...prev, { ...payload, id: Date.now().toString(), joinedAt: toLocalDateInput(new Date()), lastLogin: "" }]);
         notification.success({ message: t("admin.staff.toast.create_success") });
       }
       setIsModalOpen(false);

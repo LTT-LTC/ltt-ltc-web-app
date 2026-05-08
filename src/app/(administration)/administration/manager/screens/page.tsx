@@ -152,8 +152,10 @@ export default function ScreensConfigPage() {
             : direction.includes("vertical")
               ? "vertical"
               : "square";
+        const normalizedId = Number(item.id);
         return {
-          id: idx + 1,
+          // Keep real seat type id from backend to avoid mapping standard/couple incorrectly.
+          id: Number.isFinite(normalizedId) ? normalizedId : idx + 1,
           name: item.name,
           description: item.description || "",
           priceMultiplier: item.priceMultiplier,
@@ -518,11 +520,11 @@ export default function ScreensConfigPage() {
       />
 
       <LTTDialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <LTTDialogContent className="sm:max-w-6xl">
+        <LTTDialogContent className="sm:max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
           <LTTDialogHeader>
             <LTTDialogTitle>{editing ? t("admin.screens.form.edit_title") : t("admin.screens.form.create_title")}</LTTDialogTitle>
           </LTTDialogHeader>
-          <div className="grid max-h-[80vh] gap-4 overflow-y-auto py-2 pr-1 sm:grid-cols-2">
+          <div className="grid flex-1 gap-4 overflow-y-auto py-2 pr-1 sm:grid-cols-2">
             <div className="space-y-2">
               <LTTLabel>{t("admin.screens.form.screen_number")}</LTTLabel>
               <LTTInput
@@ -553,55 +555,55 @@ export default function ScreensConfigPage() {
                 </LTTSelectContent>
               </LTTSelect>
             </div>
-            <div className="space-y-2 sm:col-span-2">
+            <div className="space-y-2">
               <LTTLabel>{t("admin.screens.form.seat_map")}</LTTLabel>
-              <div className="flex flex-wrap gap-2">
-                <LTTSelect
-                  value={form.seatMapId}
-                  onValueChange={(v: string) => {
-                    const picked = seatMaps.find((m) => m.id === v);
-                    setForm((prev) => ({
-                      ...prev,
-                      seatMapId: v,
-                      seatLayout: picked?.seatLayout || "",
-                      seatCount: picked?.seatCount || 0,
-                    }));
-                  }}
-                >
-                  <LTTSelectTrigger className="min-w-[220px]"><LTTSelectValue placeholder={t("admin.screens.form.seat_map_placeholder")} /></LTTSelectTrigger>
-                  <LTTSelectContent>
-                    {seatMaps.map((map) => (
-                      <LTTSelectItem key={map.id} value={map.id}>{map.name}</LTTSelectItem>
-                    ))}
-                  </LTTSelectContent>
-                </LTTSelect>
-                <LTTButton variant="outline" onClick={handleOpenDesignDialog}>
-                  {t("admin.screens.form.design_new")}
-                </LTTButton>
-                <LTTButton
-                  variant="outline"
-                  className="gap-2"
-                  onClick={() => seatTypeListMutation.mutation({ page: 1, fetch: 200 })}
-                  loading={seatTypeListMutation.isLoading}
-                >
-                  <RefreshCw className="h-4 w-4" /> {t("admin.screens.form.refresh_seat_types")}
-                </LTTButton>
-                <LTTButton
-                  variant="outline"
-                  className="gap-2"
-                  onClick={() => {
-                    if (!selectedCinemaId) return;
-                    seatMapListMutation.mutation({
-                      cinemaId: selectedCinemaId,
-                      page: 1,
-                      fetch: 200,
-                    });
-                  }}
-                  loading={seatMapListMutation.isLoading}
-                >
-                  <RefreshCw className="h-4 w-4" /> {t("admin.screens.form.refresh_seat_maps")}
-                </LTTButton>
-              </div>
+              <LTTSelect
+                value={form.seatMapId}
+                onValueChange={(v: string) => {
+                  const picked = seatMaps.find((m) => m.id === v);
+                  setForm((prev) => ({
+                    ...prev,
+                    seatMapId: v,
+                    seatLayout: picked?.seatLayout || "",
+                    seatCount: picked?.seatCount || 0,
+                  }));
+                }}
+              >
+                <LTTSelectTrigger className="w-full"><LTTSelectValue placeholder={t("admin.screens.form.seat_map_placeholder")} /></LTTSelectTrigger>
+                <LTTSelectContent>
+                  {seatMaps.map((map) => (
+                    <LTTSelectItem key={map.id} value={map.id}>{map.name}</LTTSelectItem>
+                  ))}
+                </LTTSelectContent>
+              </LTTSelect>
+            </div>
+            <div className="flex flex-wrap gap-2 sm:col-span-2">
+              <LTTButton variant="outline" onClick={handleOpenDesignDialog}>
+                {t("admin.screens.form.design_new")}
+              </LTTButton>
+              <LTTButton
+                variant="outline"
+                className="gap-2"
+                onClick={() => seatTypeListMutation.mutation({ page: 1, fetch: 200 })}
+                loading={seatTypeListMutation.isLoading}
+              >
+                <RefreshCw className="h-4 w-4" /> {t("admin.screens.form.refresh_seat_types")}
+              </LTTButton>
+              <LTTButton
+                variant="outline"
+                className="gap-2"
+                onClick={() => {
+                  if (!selectedCinemaId) return;
+                  seatMapListMutation.mutation({
+                    cinemaId: selectedCinemaId,
+                    page: 1,
+                    fetch: 200,
+                  });
+                }}
+                loading={seatMapListMutation.isLoading}
+              >
+                <RefreshCw className="h-4 w-4" /> {t("admin.screens.form.refresh_seat_maps")}
+              </LTTButton>
               {createdSeatMapId && <p className="text-xs text-muted-foreground-shadcn">{t("admin.screens.form.created_seatmap_hint")}</p>}
               {editing && form.seatLayout && !form.seatMapId && (
                 <p className="text-xs text-muted-foreground-shadcn">{t("admin.screens.form.custom_snapshot_hint")}</p>

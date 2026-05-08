@@ -31,7 +31,7 @@ type PaginationParams = { page?: number; fetch?: number; keyword?: string };
 const normalizeListParams = (params?: PaginationParams): PaginationParams => ({
   page: params?.page ?? 1,
   fetch: params?.fetch ?? 10,
-  ...(params?.keyword !== undefined ? { keyword: params.keyword } : {}),
+  ...(params?.keyword?.trim() ? { keyword: params.keyword.trim() } : {}),
 });
 
 const getProductListAsync = async (params: GetProductListInputDto): Promise<PagedResultDto<ProductOutputDto>> => {

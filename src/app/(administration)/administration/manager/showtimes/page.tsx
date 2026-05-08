@@ -9,6 +9,7 @@ import { ADMIN_ACCESS_TOKEN_KEY } from "@/src/@core/const";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { cn } from "@/src/@core/utils/cn";
+import { toLocalDateInput } from "@/src/@core/utils/date";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { showtimeService } from "@/src/services/administration-service/showtime/showtime.service";
 import { CreateShowtimeInputDto } from "@/src/services/administration-service/showtime/models/input.model";
@@ -67,7 +68,7 @@ const statusColor: Record<string, string> = {
   ended: "bg-muted-shadcn text-muted-foreground-shadcn border-muted-shadcn",
 };
 
-const toDateInput = (d: Date) => d.toISOString().slice(0, 10);
+const toDateInput = (d: Date) => toLocalDateInput(d);
 const HOURS = Array.from({ length: 15 }, (_, i) => i + 8);
 const DAYS_VI = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 // Curated, theme-aware palette (uses the design system tokens defined in globals.css).

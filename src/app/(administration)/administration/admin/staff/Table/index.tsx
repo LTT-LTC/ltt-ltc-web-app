@@ -12,6 +12,7 @@ import LTTInput from "@/src/@core/component/AntD/LTTInput";
 import LTTSelect from "@/src/@core/component/AntD/LTTSelect";
 import { Form, notification } from "antd";
 import Link from "next/link";
+import { toLocalDateInput } from "@/src/@core/utils/date";
 
 import { columns } from "./table.type";
 import StaffFilter from "../Filter";
@@ -73,7 +74,7 @@ const StaffListPage = () => {
         setItems((prev) => prev.map((i) => i.id === editingItem.id ? { ...i, ...payload } : i));
         notification.success({ message: "Cập nhật thành công" });
       } else {
-        setItems((prev) => [...prev, { ...payload, id: Date.now().toString(), joinedAt: new Date().toISOString().slice(0, 10), lastLogin: "" }]);
+        setItems((prev) => [...prev, { ...payload, id: Date.now().toString(), joinedAt: toLocalDateInput(new Date()), lastLogin: "" }]);
         notification.success({ message: "Tạo mới thành công" });
       }
       setIsModalOpen(false);

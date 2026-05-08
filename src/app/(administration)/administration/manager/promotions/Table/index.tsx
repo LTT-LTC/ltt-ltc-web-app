@@ -15,6 +15,7 @@ import LTTSelect from "@/src/@core/component/AntD/LTTSelect";
 import LTTTable from "@/src/@core/component/AntD/LTTTable";
 import { Promotion, mockPromotions } from "../_mock/data";
 import LTTConfirmDialog from "@/src/@core/component/LTTConfirmDialog";
+import { toLocalDateInput } from "@/src/@core/utils/date";
 
 const typeLabel: Record<Promotion["type"], string> = {
   percentage: "Giảm %",
@@ -210,7 +211,7 @@ const PromotionsListPage = () => {
             id: `p-${Date.now()}`,
             ...payload,
             usedCount: 0,
-            createdAt: new Date().toISOString().slice(0, 10),
+            createdAt: toLocalDateInput(new Date()),
           },
           ...prev,
         ]);

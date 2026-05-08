@@ -9,6 +9,13 @@ import DomainTableStateRow from "@/src/app/(administration)/administration/_comp
 import AdminTablePagination from "@/src/app/(administration)/administration/admin/_components/AdminTablePagination";
 import { CategoryOutputDto, ComboOutputDto, ProductOutputDto } from "@/src/services/administration-service/product/models/output.model";
 
+const toSafeImageUrl = (value?: string) => {
+    const raw = value?.trim();
+    if (!raw) return "";
+    if (/^https?:\/\//i.test(raw) || raw.startsWith("/")) return raw;
+    return "";
+};
+
 type FnbTab = "products" | "category" | "combos";
 
 interface FnbTabSectionsProps {
@@ -136,9 +143,9 @@ export default function FnbTabSections(props: FnbTabSectionsProps) {
                                                 <LTTCheckbox checked={selectedProductIds.has(item.id)} onCheckedChange={() => onToggleProduct(item.id)} />
                                             </td>
                                             <td className="px-4 py-3">
-                                                {item.imageUrl ? (
+                                                {toSafeImageUrl(item.imageUrl) ? (
                                                     /* eslint-disable-next-line @next/next/no-img-element */
-                                                    <img src={item.imageUrl} alt={item.name} className="h-10 w-10 rounded-md object-cover" />
+                                                    <img src={toSafeImageUrl(item.imageUrl)} alt={item.name} className="h-10 w-10 rounded-md object-cover" />
                                                 ) : (
                                                     <div className="h-10 w-10 rounded-md border border-dashed border-border-shadcn" />
                                                 )}
@@ -282,9 +289,9 @@ export default function FnbTabSections(props: FnbTabSectionsProps) {
                                                         </LTTButton>
                                                     </td>
                                                     <td className="px-4 py-3">
-                                                        {item.imageUrl ? (
+                                                        {toSafeImageUrl(item.imageUrl) ? (
                                                             /* eslint-disable-next-line @next/next/no-img-element */
-                                                            <img src={item.imageUrl} alt={item.name} className="h-10 w-10 rounded-md object-cover" />
+                                                            <img src={toSafeImageUrl(item.imageUrl)} alt={item.name} className="h-10 w-10 rounded-md object-cover" />
                                                         ) : (
                                                             <div className="h-10 w-10 rounded-md border border-dashed border-border-shadcn" />
                                                         )}
