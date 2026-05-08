@@ -1,0 +1,163 @@
+"use client";
+
+import React, { useEffect, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import dayjs from "dayjs";
+import { toast } from "sonner";
+import LTTSeatMapViewer from "@/src/@core/component/LTTManager/LTTSeatMapViewer";
+import { mockSeatTypes, type SeatLayoutSeat } from "@/src/@core/const/mock/adminMockData";
+import MovieTicket from "@/src/@core/component/customer/MovieTicket";
+import { useBookingContext } from "@/src/@core/booking/useBookingContext";
+import { saveBookingState } from "@/src/@core/booking/bookingState";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
+
+const buildSeatTypeIndex = (rows: { seats: SeatLayoutSeat[] }[]): Record<string, number> => {
+    const index: Record<string, number> = {};
+    rows.forEach((row) => {
+        row.seats.forEach((seat) => {
+            if (seat.seatCode) {
+                index[seat.seatCode] = seat.seatTypeId ?? 1;
+            }
+        });
+    });
+    return index;
+};
+
+const formatShowtimeLabel = (start?: string, end?: string) => {
+    const fmt = (value?: string) => {
+        if (!value) return "";
+        const parsed = dayjs(value);
+        return parsed.isValid() ? parsed.format("DD/MM/YYYY HH:mm") : value;
+    };
+    const left = fmt(start);
+    const right = fmt(end);
+    if (!left) return "—";
+    if (!right) return left;
+    return `${left} ~ ${right}`;
+};
+
+export default function SeatPickPage() {
+    const { t } = useLocalization();
+    const params = useParams<{ bookingId: string }>();
+    const bookingId = params.bookingId;
+    const router = useRouter();
+
+    const { bookingState, showtime, screen, seatLayout, cinema, movie, loading, error } = useBookingContext(bookingId);
+
+    const [selected, setSelected] = useState<Set<string>>(new Set());
+
+    useEffect(() => {
+        if (bookingState?.seats?.length) {
+            setSelected(new Set(bookingState.seats));
+        }
+    }, [bookingState?.seats]);
+
+    const seatTypeIndex = useMemo(() => {
+        if (!seatLayout?.rows) return {};
+        return buildSeatTypeIndex(seatLayout.rows);
+    }, [seatLayout]);
+
+    const basePrice = showtime?.ticketPrice ?? 0;
+    const ticketTotal = useMemo(() => {
+        return Array.from(selected).reduce((sum, code) => {
+            const typeId = seatTypeIndex[code] ?? 1;
+            const multiplier = mockSeatTypes.find((seatType) => seatType.id === typeId)?.priceMultiplier ?? 1;
+            return sum + basePrice * multiplier;
+        }, 0);
+    }, [selected, seatTypeIndex, basePrice]);
+
+    const toggleSeat = (seatCode: string) => {
+        setSelected((current) => {
+            const next = new Set(current);
+            if (next.has(seatCode)) {
+                next.delete(seatCode);
+            } else {
+                next.add(seatCode);
+            }
+            return next;
+        });
+    };
+
+    const handleNext = () => {
+        if (selected.size === 0) {
+            toast.error(t("customer.booking.toast.pick_seats"));
+            return;
+        }
+        if (!bookingId) {
+            return;
+        }
+        saveBookingState(bookingId, {
+            seats: Array.from(selected),
+            ticketTotal,
+            basePrice,
+        });
+        router.push(`/booking/${bookingId}/confirm-seats`);
+    };
+
+    if (loading) {
+        return (
+            <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-10 text-center text-gray-500">
+                {t("customer.booking.loading")}
+            </div>
+        );
+    }
+
+    if (error || !showtime || !screen || !seatLayout || seatLayout.rows.length === 0) {
+        return (
+            <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-10 text-center text-gray-500">
+                {t("customer.booking.invalid_session")}
+            </div>
+        );
+    }
+
+    const screenLabel = screen.screenNumber ? `${t("customer.booking.room")} ${screen.screenNumber}${screen.screenType ? ` (${screen.screenType})` : ""}` : "—";
+    const cinemaName = cinema?.name || "—";
+
+    return (
+        <div className="space-y-4">
+            <div className="bg-[#1f1f1f] text-white text-center py-3 rounded-t-lg font-bold tracking-widest">
+                {t("customer.booking.heading.seats")}
+            </div>
+            <div className="bg-gray-50 px-4 py-3 text-sm border border-gray-100 rounded-b-lg -mt-4">
+                <p className="font-semibold text-gray-800">
+                    {cinemaName} | {screenLabel}
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">{formatShowtimeLabel(showtime.startTime, showtime.endTime)}</p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
+                <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
+                    <LTTSeatMapViewer
+                        seatLayout={seatLayout}
+                        selectedSeats={selected}
+                        onSeatClick={toggleSeat}
+                        showLegend
+                    />
+                </div>
+
+                <div className="lg:sticky lg:top-4 lg:self-start">
+                    <MovieTicket
+                        movie={{
+                            title: movie?.title ?? showtime.movie?.title ?? "—",
+                            originalTitle: movie?.originalTitle ?? showtime.movie?.originalTitle,
+                            posterUrl: movie?.posterUrl ?? showtime.movie?.posterUrl,
+                            ageRating: movie?.ratingCode ?? showtime.movie?.ratingCode,
+                            durationMins: movie?.durationMins ?? showtime.movie?.durationMins ?? showtime.durationMins,
+                        }}
+                        format={showtime.movieFormat}
+                        cinemaName={cinemaName}
+                        screenLabel={screenLabel}
+                        showtimeLabel={formatShowtimeLabel(showtime.startTime, showtime.endTime)}
+                        selectedSeats={Array.from(selected)}
+                        basePrice={basePrice}
+                        ticketTotal={ticketTotal}
+                        primaryActionLabel={t("customer.booking.cta.next")}
+                        onPrimaryAction={handleNext}
+                        primaryDisabled={selected.size === 0}
+                        backTo="/theaters/all-cinemas"
+                    />
+                </div>
+            </div>
+        </div>
+    );
+}

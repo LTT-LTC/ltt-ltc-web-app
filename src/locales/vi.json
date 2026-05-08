@@ -1395,6 +1395,106 @@
         "fetch_showtimes_error": "Không thể tải lịch chiếu"
       }
     },
+    "booking": {
+      "loading": "Đang chuẩn bị phiên đặt vé...",
+      "invalid_session": "Không tìm thấy phiên đặt vé. Vui lòng chọn lại suất chiếu.",
+      "room": "Phòng",
+      "stepper": {
+        "seats": "Chọn ghế",
+        "confirm_seats": "Xác nhận",
+        "extras": "Đồ ăn",
+        "summary": "Tóm tắt",
+        "payment": "Thanh toán",
+        "processing": "Hoàn tất"
+      },
+      "heading": {
+        "seats": "ĐẶT VÉ TRỰC TUYẾN",
+        "confirm": "Xác nhận chỗ ngồi",
+        "summary": "Tóm tắt đơn hàng",
+        "payment": "Chọn phương thức thanh toán"
+      },
+      "field": {
+        "cinema": "Rạp",
+        "screen": "Phòng",
+        "movie": "Phim",
+        "format": "Định dạng",
+        "showtime": "Suất chiếu",
+        "duration": "Thời lượng",
+        "seats": "Ghế",
+        "ticket_total": "Tổng tiền vé",
+        "fnb": "Đồ ăn & nước uống",
+        "combos": "Combo"
+      },
+      "confirm": {
+        "subtitle": "Vui lòng kiểm tra lại trước khi tiếp tục."
+      },
+      "summary": {
+        "subtitle": "Xem lại đơn hàng trước khi thanh toán.",
+        "tickets": "Vé xem phim",
+        "tickets_hint": "Đã chọn {{count}} ghế",
+        "tickets_unit": "vé",
+        "items_unit": "phần",
+        "fnb": "Đồ ăn & nước uống",
+        "combos": "Combo",
+        "subtotal": "Tạm tính",
+        "discount": "Giảm giá",
+        "grand_total": "Tổng cộng"
+      },
+      "extras": {
+        "products_heading": "Đồ ăn & Nước uống",
+        "combos_heading": "Combo",
+        "empty_products": "Hiện chưa có sản phẩm nào.",
+        "empty_combos": "Hiện chưa có combo nào."
+      },
+      "payment": {
+        "subtitle": "Bạn muốn thanh toán bằng phương thức nào?",
+        "method_section": "PHƯƠNG THỨC THANH TOÁN"
+      },
+      "payment_method": {
+        "cash": {
+          "label": "Tiền mặt",
+          "hint": "Thanh toán tại quầy khi nhận vé."
+        },
+        "card": {
+          "label": "Thẻ ngân hàng",
+          "hint": "Thanh toán an toàn bằng thẻ qua cổng trực tuyến."
+        },
+        "momo": {
+          "label": "Ví MoMo",
+          "hint": "Quét mã QR bằng ứng dụng MoMo để thanh toán."
+        },
+        "bank": {
+          "label": "Chuyển khoản ngân hàng",
+          "hint": "Nhận thông tin chuyển khoản sau khi xác nhận đơn hàng."
+        }
+      },
+      "processing": {
+        "submitting_title": "Đang gửi yêu cầu đặt vé...",
+        "polling_title": "Đang chờ xác nhận thanh toán...",
+        "subtitle": "Vui lòng đừng đóng tab này. Chúng tôi đang xác nhận đơn hàng với cổng thanh toán.",
+        "success_title": "Đặt vé thành công!",
+        "success_subtitle": "Đang chuyển bạn đến lịch sử giao dịch.",
+        "failed_title": "Không thể hoàn tất đơn hàng",
+        "error": "Đã xảy ra lỗi. Vui lòng thử lại.",
+        "payment_ref": "Mã tham chiếu thanh toán"
+      },
+      "cta": {
+        "back": "Quay lại",
+        "next": "Tiếp tục",
+        "continue": "Tiếp tục",
+        "continue_to_summary": "Đến trang tóm tắt",
+        "continue_to_payment": "Đến trang thanh toán",
+        "confirm": "Xác nhận ghế",
+        "confirm_payment": "Xác nhận thanh toán",
+        "go_back_to_seats": "Quay lại chọn ghế",
+        "back_to_payment": "Quay lại thanh toán",
+        "back_to_theaters": "Quay lại danh sách rạp"
+      },
+      "toast": {
+        "pick_seats": "Vui lòng chọn ít nhất một ghế để tiếp tục.",
+        "fetch_extras_error": "Không thể tải đồ ăn và combo."
+      }
+    },
     "my_ltc": {
       "title": "My LTC",
       "nav": {

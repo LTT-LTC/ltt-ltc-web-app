@@ -18,29 +18,24 @@ import useLTTMutation from "@/src/@core/hooks/useLTTMutation";
 import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { managerFnbService } from "@/src/services/administration-service/manager/fnb/fnb.service";
 import {
+    ComboProductLineDto,
     CreateCategoryInputDto,
     CreateComboInputDto,
-    CreateComboItemInputDto,
     CreateProductInputDto,
-    CreateProductVariantInputDto,
     GetProductListInputDto,
     UpdateCategoryInputDto,
     UpdateComboInputDto,
     UpdateProductInputDto,
-    UpdateProductVariantInputDto,
 } from "@/src/services/administration-service/product/models/input.model";
 import {
     CategoryOutputDto,
-    ComboDetailOutputDto,
     ComboOutputDto,
-    ProductDetailOutputDto,
     ProductOutputDto,
-    ProductVariantOutputDto,
 } from "@/src/services/administration-service/product/models/output.model";
 import FnbTabSections from "./components/FnbTabSections";
 import FnbDialogs from "./components/FnbDialogs";
 
-type FnbTab = "products" | "category" | "combos" | "variant";
+type FnbTab = "products" | "category" | "combos";
 
 interface ProductFormState {
     name: string;
@@ -48,8 +43,8 @@ interface ProductFormState {
     basePrice: number;
     description: string;
     imageUrl: string;
+    imageFile?: File;
     isActive: boolean;
-    productType: string;
 }
 
 interface CategoryFormState {
@@ -63,12 +58,9 @@ interface ComboFormState {
     description: string;
     totalPrice: number;
     isActive: boolean;
-}
-
-interface VariantFormState {
-    name: string;
-    additionalPrice: number;
-    isActive: boolean;
+    imageUrl: string;
+    imageFile?: File;
+    products: ComboProductLineDto[];
 }
 
 const formatVnd = (amount: number) => `${amount.toLocaleString("vi-VN")}đ`;
@@ -79,8 +71,8 @@ const defaultProductForm = (categoryId = ""): ProductFormState => ({
     basePrice: 0,
     description: "",
     imageUrl: "",
+    imageFile: undefined,
     isActive: true,
-    productType: "Food",
 });
 
 const defaultCategoryForm: CategoryFormState = {
@@ -94,12 +86,9 @@ const defaultComboForm: ComboFormState = {
     description: "",
     totalPrice: 0,
     isActive: true,
-};
-
-const defaultVariantForm: VariantFormState = {
-    name: "",
-    additionalPrice: 0,
-    isActive: true,
+    imageUrl: "",
+    imageFile: undefined,
+    products: [],
 };
 
 export default function FnBPage() {
@@ -109,14 +98,11 @@ export default function FnBPage() {
         products: false,
         category: false,
         combos: false,
-        variant: false,
     });
 
     const [products, setProducts] = useState<ProductOutputDto[]>([]);
     const [categories, setCategories] = useState<CategoryOutputDto[]>([]);
     const [combos, setCombos] = useState<ComboOutputDto[]>([]);
-    const [comboDetailMap, setComboDetailMap] = useState<Record<string, ComboDetailOutputDto>>({});
-    const [variantRows, setVariantRows] = useState<ProductVariantOutputDto[]>([]);
 
     const [productPage, setProductPage] = useState(1);
     const [productFetch, setProductFetch] = useState(10);
@@ -127,17 +113,12 @@ export default function FnBPage() {
     const [categoryPage, setCategoryPage] = useState(1);
     const [categoryFetch, setCategoryFetch] = useState(10);
     const [categoryTotal, setCategoryTotal] = useState(0);
-    const [variantPage, setVariantPage] = useState(1);
-    const [variantFetch, setVariantFetch] = useState(10);
-    const [variantTotal, setVariantTotal] = useState(0);
 
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [categorySearch, setCategorySearch] = useState("");
     const [comboSearch, setComboSearch] = useState("");
-    const [variantSearch, setVariantSearch] = useState("");
     const [categoryFilter, setCategoryFilter] = useState("all");
-    const [variantProductId, setVariantProductId] = useState("all");
     const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
 
     const [productDialogOpen, setProductDialogOpen] = useState(false);
@@ -146,32 +127,20 @@ export default function FnBPage() {
     const [categoryDeleteDialogOpen, setCategoryDeleteDialogOpen] = useState(false);
     const [comboDialogOpen, setComboDialogOpen] = useState(false);
     const [comboDeleteDialogOpen, setComboDeleteDialogOpen] = useState(false);
-    const [comboItemDialogOpen, setComboItemDialogOpen] = useState(false);
-    const [variantDialogOpen, setVariantDialogOpen] = useState(false);
-    const [variantDeleteDialogOpen, setVariantDeleteDialogOpen] = useState(false);
 
     const [editingProduct, setEditingProduct] = useState<ProductOutputDto | null>(null);
     const [editingCategory, setEditingCategory] = useState<CategoryOutputDto | null>(null);
     const [editingCombo, setEditingCombo] = useState<ComboOutputDto | null>(null);
-    const [editingVariant, setEditingVariant] = useState<ProductVariantOutputDto | null>(null);
 
     const [singleProductDeleteId, setSingleProductDeleteId] = useState("");
     const [singleCategoryDeleteId, setSingleCategoryDeleteId] = useState("");
     const [singleComboDeleteId, setSingleComboDeleteId] = useState("");
-    const [singleVariantDeleteId, setSingleVariantDeleteId] = useState("");
-    const [selectedComboForItem, setSelectedComboForItem] = useState<string>("");
-    const [selectedComboItemId, setSelectedComboItemId] = useState<string>("");
 
     const [productForm, setProductForm] = useState<ProductFormState>(defaultProductForm());
     const [categoryForm, setCategoryForm] = useState<CategoryFormState>(defaultCategoryForm);
     const [comboForm, setComboForm] = useState<ComboFormState>(defaultComboForm);
-    const [variantForm, setVariantForm] = useState<VariantFormState>(defaultVariantForm);
-    const [comboItemForm, setComboItemForm] = useState<CreateComboItemInputDto>({
-        productId: "",
-        quantity: 1,
-    });
 
-    const LOCAL_STATE_KEY = "manager-fnb-local-state-v1";
+    const LOCAL_STATE_KEY = "manager-fnb-local-state-v2";
 
     const listProductsMutation = useLTTMutation<PagedResultDto<ProductOutputDto> | undefined, GetProductListInputDto>({
         mutationFn: (input) => managerFnbService.getProductListAsync(input),
@@ -191,7 +160,6 @@ export default function FnBPage() {
 
             if (nextCategories.length === 0) {
                 setCategoryFilter("all");
-                setVariantProductId("all");
                 return;
             }
 
@@ -211,25 +179,6 @@ export default function FnBPage() {
             setComboTotal(result?.totalCount || 0);
         },
         onError: (err) => toast.error(err.message || "Failed to fetch combos."),
-    });
-
-    const getComboDetailMutation = useLTTMutation<ComboDetailOutputDto | undefined, string>({
-        mutationFn: (comboId) => managerFnbService.getComboByIdAsync(comboId),
-        onSuccess: (detail) => {
-            if (!detail) {
-                return;
-            }
-            setComboDetailMap((current) => ({ ...current, [detail.id]: detail }));
-        },
-        onError: (err) => toast.error(err.message || "Failed to fetch combo items."),
-    });
-
-    const getProductDetailMutation = useLTTMutation<ProductDetailOutputDto | undefined, string>({
-        mutationFn: (productId) => managerFnbService.getProductByIdAsync(productId),
-        onSuccess: (detail) => {
-            setVariantRows(detail?.productVariants || []);
-        },
-        onError: (err) => toast.error(err.message || "Failed to fetch variants."),
     });
 
     function fetchProducts(page: number) {
@@ -309,30 +258,6 @@ export default function FnBPage() {
         onError: (err) => toast.error(err.message || "Failed to update combo."),
     });
 
-    const createVariantMutation = useLTTMutation<ProductVariantOutputDto | undefined, CreateProductVariantInputDto>({
-        mutationFn: (body) => managerFnbService.createProductVariantAsync(variantProductId, body),
-        onSuccess: () => {
-            toast.success("Variant created.");
-            setVariantDialogOpen(false);
-            if (variantProductId !== "all") {
-                getProductDetailMutation.mutation(variantProductId);
-            }
-        },
-        onError: (err) => toast.error(err.message || "Failed to create variant."),
-    });
-
-    const updateVariantMutation = useLTTMutation<ProductVariantOutputDto | undefined, UpdateProductVariantInputDto>({
-        mutationFn: (body) => managerFnbService.updateProductVariantAsync(variantProductId, editingVariant?.id || "", body),
-        onSuccess: () => {
-            toast.success("Variant updated.");
-            setVariantDialogOpen(false);
-            if (variantProductId !== "all") {
-                getProductDetailMutation.mutation(variantProductId);
-            }
-        },
-        onError: (err) => toast.error(err.message || "Failed to update variant."),
-    });
-
     useEffect(() => {
         const timer = setTimeout(() => setDebouncedSearch(search), 300);
         return () => clearTimeout(timer);
@@ -349,33 +274,25 @@ export default function FnBPage() {
                 search: string;
                 categorySearch: string;
                 comboSearch: string;
-                variantSearch: string;
                 categoryFilter: string;
-                variantProductId: string;
                 productPage: number;
                 productFetch: number;
                 comboPage: number;
                 comboFetch: number;
                 categoryPage: number;
                 categoryFetch: number;
-                variantPage: number;
-                variantFetch: number;
             }>;
             if (local.activeTab) setActiveTab(local.activeTab);
             if (local.search !== undefined) setSearch(local.search);
             if (local.categorySearch !== undefined) setCategorySearch(local.categorySearch);
             if (local.comboSearch !== undefined) setComboSearch(local.comboSearch);
-            if (local.variantSearch !== undefined) setVariantSearch(local.variantSearch);
             if (local.categoryFilter !== undefined) setCategoryFilter(local.categoryFilter);
-            if (local.variantProductId !== undefined) setVariantProductId(local.variantProductId);
             if (local.productPage !== undefined) setProductPage(local.productPage);
             if (local.productFetch !== undefined) setProductFetch(local.productFetch);
             if (local.comboPage !== undefined) setComboPage(local.comboPage);
             if (local.comboFetch !== undefined) setComboFetch(local.comboFetch);
             if (local.categoryPage !== undefined) setCategoryPage(local.categoryPage);
             if (local.categoryFetch !== undefined) setCategoryFetch(local.categoryFetch);
-            if (local.variantPage !== undefined) setVariantPage(local.variantPage);
-            if (local.variantFetch !== undefined) setVariantFetch(local.variantFetch);
         } catch {
             // Ignore invalid persisted state.
         }
@@ -389,36 +306,16 @@ export default function FnBPage() {
                 search,
                 categorySearch,
                 comboSearch,
-                variantSearch,
                 categoryFilter,
-                variantProductId,
                 productPage,
                 productFetch,
                 comboPage,
                 comboFetch,
                 categoryPage,
                 categoryFetch,
-                variantPage,
-                variantFetch,
             }),
         );
-    }, [
-        activeTab,
-        search,
-        categorySearch,
-        comboSearch,
-        variantSearch,
-        categoryFilter,
-        variantProductId,
-        productPage,
-        productFetch,
-        comboPage,
-        comboFetch,
-        categoryPage,
-        categoryFetch,
-        variantPage,
-        variantFetch,
-    ]);
+    }, [activeTab, search, categorySearch, comboSearch, categoryFilter, productPage, productFetch, comboPage, comboFetch, categoryPage, categoryFetch]);
 
     useEffect(() => {
         if (activeTab === "products" && !loadedTabs.products) {
@@ -433,13 +330,7 @@ export default function FnBPage() {
             fetchCombos(comboPage);
             setLoadedTabs((current) => ({ ...current, combos: true }));
         }
-        if (activeTab === "variant" && !loadedTabs.variant) {
-            setLoadedTabs((current) => ({ ...current, variant: true }));
-            if (variantProductId !== "all") {
-                getProductDetailMutation.mutation(variantProductId);
-            }
-        }
-    }, [activeTab, loadedTabs, productPage, comboPage, categoryPage, categoryFetch, categorySearch, variantProductId]);
+    }, [activeTab, loadedTabs, productPage, comboPage, categoryPage, categoryFetch, categorySearch]);
 
     useEffect(() => {
         if (!loadedTabs.products || activeTab !== "products") {
@@ -463,19 +354,15 @@ export default function FnBPage() {
     }, [loadedTabs.category, activeTab, categoryPage, categoryFetch, categorySearch]);
 
     useEffect(() => {
-        if (!loadedTabs.variant || activeTab !== "variant") {
+        if (categories.length === 0 || combos.length === 0 || products.length > 0) {
             return;
         }
-        if (variantProductId !== "all") {
-            getProductDetailMutation.mutation(variantProductId);
-        } else {
-            setVariantRows([]);
-        }
-    }, [loadedTabs.variant, activeTab, variantProductId]);
-
-    useEffect(() => {
-        setVariantPage(1);
-    }, [variantSearch, variantProductId]);
+        listProductsMutation.mutation({
+            page: 1,
+            fetch: 100,
+            keyword: "",
+        });
+    }, [categories.length, combos.length, products.length]);
 
     const categoryById = useMemo(
         () => categories.reduce<Record<string, CategoryOutputDto>>((acc, item) => {
@@ -484,25 +371,15 @@ export default function FnBPage() {
         }, {}),
         [categories],
     );
+    const productById = useMemo(
+        () => products.reduce<Record<string, ProductOutputDto>>((acc, item) => {
+            acc[item.id] = item;
+            return acc;
+        }, {}),
+        [products],
+    );
 
     const filteredCategories = useMemo(() => categories, [categories]);
-
-    const filteredVariants = useMemo(() => {
-        if (!variantSearch.trim()) {
-            return variantRows;
-        }
-        const query = variantSearch.trim().toLowerCase();
-        return variantRows.filter((variant) => variant.name.toLowerCase().includes(query));
-    }, [variantRows, variantSearch]);
-
-    const pagedVariants = useMemo(() => {
-        const start = (variantPage - 1) * variantFetch;
-        return filteredVariants.slice(start, start + variantFetch);
-    }, [filteredVariants, variantPage, variantFetch]);
-
-    useEffect(() => {
-        setVariantTotal(filteredVariants.length);
-    }, [filteredVariants]);
 
     const isAnyLoading = listProductsMutation.isLoading || listCategoriesMutation.isLoading || listCombosMutation.isLoading;
 
@@ -524,8 +401,8 @@ export default function FnBPage() {
             basePrice: Number(item.basePrice),
             description: item.description || "",
             imageUrl: item.imageUrl || "",
+            imageFile: undefined,
             isActive: item.isActive,
-            productType: item.productType || "Food",
         });
         setProductDialogOpen(true);
     };
@@ -545,9 +422,9 @@ export default function FnBPage() {
             name: productForm.name.trim(),
             description: productForm.description.trim() || undefined,
             basePrice: productForm.basePrice,
-            imageUrl: productForm.imageUrl.trim() || undefined,
             isActive: productForm.isActive,
-            productType: productForm.productType.trim() || undefined,
+            imageFile: productForm.imageFile,
+            imageUrl: productForm.imageUrl.trim() || undefined,
         };
 
         if (editingProduct) {
@@ -611,6 +488,12 @@ export default function FnBPage() {
             description: item.description || "",
             totalPrice: Number(item.totalPrice),
             isActive: item.isActive,
+            imageUrl: item.imageUrl || "",
+            imageFile: undefined,
+            products: (item.products || []).map((line) => ({
+                productId: line.productId,
+                quantity: Math.max(1, line.quantity),
+            })),
         });
         setComboDialogOpen(true);
     };
@@ -625,65 +508,19 @@ export default function FnBPage() {
             description: comboForm.description.trim() || undefined,
             totalPrice: comboForm.totalPrice,
             isActive: comboForm.isActive,
-            comboItems: [],
+            imageFile: comboForm.imageFile,
+            imageUrl: comboForm.imageUrl.trim() || undefined,
+            products: comboForm.products
+                .filter((line) => line.productId && line.quantity > 0)
+                .map((line) => ({ productId: line.productId, quantity: line.quantity })),
         };
 
         if (editingCombo) {
-            const updatePayload: UpdateComboInputDto = {
-                name: payload.name,
-                description: payload.description,
-                totalPrice: payload.totalPrice,
-                isActive: payload.isActive,
-            };
-            updateComboMutation.mutation({ id: editingCombo.id, body: updatePayload });
+            updateComboMutation.mutation({ id: editingCombo.id, body: payload });
             return;
         }
 
         createComboMutation.mutation(payload);
-    };
-
-    const openCreateVariant = () => {
-        if (variantProductId === "all") {
-            toast.error("Select a product first.");
-            return;
-        }
-        setEditingVariant(null);
-        setVariantForm(defaultVariantForm);
-        setVariantDialogOpen(true);
-    };
-
-    const openEditVariant = (item: ProductVariantOutputDto) => {
-        setEditingVariant(item);
-        setVariantForm({
-            name: item.name,
-            additionalPrice: Number(item.additionalPrice),
-            isActive: item.isActive,
-        });
-        setVariantDialogOpen(true);
-    };
-
-    const saveVariant = () => {
-        if (variantProductId === "all") {
-            toast.error("Select a product first.");
-            return;
-        }
-        if (!variantForm.name.trim()) {
-            toast.error("Variant name is required.");
-            return;
-        }
-
-        const payload: CreateProductVariantInputDto = {
-            name: variantForm.name.trim(),
-            additionalPrice: variantForm.additionalPrice,
-            isActive: variantForm.isActive,
-        };
-
-        if (editingVariant) {
-            updateVariantMutation.mutation(payload as UpdateProductVariantInputDto);
-            return;
-        }
-
-        createVariantMutation.mutation(payload);
     };
 
     const toggleProductSelection = (id: string) => {
@@ -706,28 +543,6 @@ export default function FnBPage() {
         toast.success("Selected products deleted.");
     };
 
-    const onAddComboItem = async () => {
-        if (!selectedComboForItem) {
-            toast.error("Select a combo first.");
-            return;
-        }
-        if (!comboItemForm.productId) {
-            toast.error("Select a product.");
-            return;
-        }
-        if (comboItemForm.quantity < 1) {
-            toast.error("Quantity must be at least 1.");
-            return;
-        }
-        await managerFnbService.addComboItemAsync(selectedComboForItem, comboItemForm);
-        getComboDetailMutation.mutation(selectedComboForItem);
-        setComboItemDialogOpen(false);
-        setComboItemForm({ productId: "", quantity: 1 });
-        toast.success("Combo item added.");
-    };
-
-    const currentComboDetail = selectedComboForItem ? comboDetailMap[selectedComboForItem] : undefined;
-
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -737,7 +552,6 @@ export default function FnBPage() {
                         if (activeTab === "products") openCreateProduct();
                         if (activeTab === "category") openCreateCategory();
                         if (activeTab === "combos") openCreateCombo();
-                        if (activeTab === "variant") openCreateVariant();
                     }}
                     className="gap-2"
                 >
@@ -750,7 +564,6 @@ export default function FnBPage() {
                     <LTTTabsTrigger value="products">Products</LTTTabsTrigger>
                     <LTTTabsTrigger value="category">Category</LTTTabsTrigger>
                     <LTTTabsTrigger value="combos">Combos</LTTTabsTrigger>
-                    <LTTTabsTrigger value="variant">Variant</LTTTabsTrigger>
                 </LTTTabsList>
             </LTTTabs>
 
@@ -759,7 +572,7 @@ export default function FnBPage() {
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground-shadcn" />
                     <LTTInput
                         placeholder="Search..."
-                        value={activeTab === "products" ? search : activeTab === "category" ? categorySearch : activeTab === "combos" ? comboSearch : variantSearch}
+                        value={activeTab === "products" ? search : activeTab === "category" ? categorySearch : comboSearch}
                         onChange={(e) => {
                             if (activeTab === "products") {
                                 setSearch(e.target.value);
@@ -767,12 +580,9 @@ export default function FnBPage() {
                             } else if (activeTab === "category") {
                                 setCategorySearch(e.target.value);
                                 setCategoryPage(1);
-                            } else if (activeTab === "combos") {
+                            } else {
                                 setComboSearch(e.target.value);
                                 setComboPage(1);
-                            } else {
-                                setVariantSearch(e.target.value);
-                                setVariantPage(1);
                             }
                         }}
                         className="pl-9"
@@ -801,28 +611,6 @@ export default function FnBPage() {
                     </LTTSelect>
                 )}
 
-                {activeTab === "variant" && (
-                    <LTTSelect
-                        value={variantProductId}
-                        onValueChange={(value: string) => {
-                            setVariantProductId(value);
-                            setVariantPage(1);
-                        }}
-                    >
-                        <LTTSelectTrigger className="w-64">
-                            <LTTSelectValue placeholder="Choose product" />
-                        </LTTSelectTrigger>
-                        <LTTSelectContent>
-                            <LTTSelectItem value="all">Choose product</LTTSelectItem>
-                            {products.map((product) => (
-                                <LTTSelectItem key={product.id} value={product.id}>
-                                    {product.name}
-                                </LTTSelectItem>
-                            ))}
-                        </LTTSelectContent>
-                    </LTTSelect>
-                )}
-
                 <LTTButton
                     variant="outline"
                     className="gap-2"
@@ -841,7 +629,6 @@ export default function FnBPage() {
                             setLoadedTabs((current) => ({ ...current, combos: true }));
                             fetchCombos(1);
                         }
-                        if (activeTab === "variant" && variantProductId !== "all") getProductDetailMutation.mutation(variantProductId);
                     }}
                 >
                     <RefreshCw className="h-4 w-4" /> Refresh
@@ -852,9 +639,9 @@ export default function FnBPage() {
                 activeTab={activeTab}
                 products={products}
                 combos={combos}
+                productById={productById}
                 categoryById={categoryById}
                 filteredCategories={filteredCategories}
-                filteredVariants={pagedVariants}
                 selectedProductIds={selectedProductIds}
                 productTotal={productTotal}
                 productPage={productPage}
@@ -865,18 +652,9 @@ export default function FnBPage() {
                 categoryTotal={categoryTotal}
                 categoryPage={categoryPage}
                 categoryFetch={categoryFetch}
-                variantTotal={variantTotal}
-                variantPage={variantPage}
-                variantFetch={variantFetch}
-                variantProductId={variantProductId}
-                selectedComboForItem={selectedComboForItem}
-                currentComboDetail={currentComboDetail}
-                selectedComboItemId={selectedComboItemId}
                 isProductsLoading={listProductsMutation.isLoading}
                 isCategoriesLoading={listCategoriesMutation.isLoading}
                 isCombosLoading={listCombosMutation.isLoading}
-                isComboDetailLoading={getComboDetailMutation.isLoading}
-                isVariantsLoading={getProductDetailMutation.isLoading}
                 formatVnd={formatVnd}
                 onToggleAllProducts={() =>
                     setSelectedProductIds(
@@ -907,10 +685,6 @@ export default function FnBPage() {
                     setCategoryFetch(nextSize);
                     setCategoryPage(1);
                 }}
-                onOpenComboItems={(id) => {
-                    setSelectedComboForItem(id);
-                    getComboDetailMutation.mutation(id);
-                }}
                 onOpenEditCombo={openEditCombo}
                 onOpenDeleteCombo={(id) => {
                     setSingleComboDeleteId(id);
@@ -921,30 +695,6 @@ export default function FnBPage() {
                     setComboFetch(nextSize);
                     setComboPage(1);
                 }}
-                onOpenCreateComboItem={() => {
-                    setComboItemForm({
-                        productId: products[0]?.id || "",
-                        quantity: 1,
-                    });
-                    setComboItemDialogOpen(true);
-                }}
-                onDeleteComboItem={async (comboItemId) => {
-                    setSelectedComboItemId(comboItemId);
-                    await managerFnbService.deleteComboItemAsync(selectedComboForItem, comboItemId);
-                    toast.success("Combo item deleted.");
-                    getComboDetailMutation.mutation(selectedComboForItem);
-                    setSelectedComboItemId("");
-                }}
-                onOpenEditVariant={openEditVariant}
-                onOpenDeleteVariant={(id) => {
-                    setSingleVariantDeleteId(id);
-                    setVariantDeleteDialogOpen(true);
-                }}
-                onVariantPageChange={(nextPage) => setVariantPage(nextPage)}
-                onVariantPageSizeChange={(nextSize) => {
-                    setVariantFetch(nextSize);
-                    setVariantPage(1);
-                }}
             />
 
             <FnbDialogs
@@ -953,44 +703,30 @@ export default function FnBPage() {
                 editingProduct={editingProduct}
                 editingCategory={editingCategory}
                 editingCombo={editingCombo}
-                editingVariant={editingVariant}
                 productForm={productForm}
                 categoryForm={categoryForm}
                 comboForm={comboForm}
-                variantForm={variantForm}
-                comboItemForm={comboItemForm}
                 productDialogOpen={productDialogOpen}
                 categoryDialogOpen={categoryDialogOpen}
                 comboDialogOpen={comboDialogOpen}
-                variantDialogOpen={variantDialogOpen}
-                comboItemDialogOpen={comboItemDialogOpen}
                 productDeleteDialogOpen={productDeleteDialogOpen}
                 categoryDeleteDialogOpen={categoryDeleteDialogOpen}
                 comboDeleteDialogOpen={comboDeleteDialogOpen}
-                variantDeleteDialogOpen={variantDeleteDialogOpen}
                 isProductSaving={createProductMutation.isLoading || updateProductMutation.isLoading}
                 isCategorySaving={createCategoryMutation.isLoading || updateCategoryMutation.isLoading}
                 isComboSaving={createComboMutation.isLoading || updateComboMutation.isLoading}
-                isVariantSaving={createVariantMutation.isLoading || updateVariantMutation.isLoading}
                 onProductDialogOpenChange={setProductDialogOpen}
                 onCategoryDialogOpenChange={setCategoryDialogOpen}
                 onComboDialogOpenChange={setComboDialogOpen}
-                onVariantDialogOpenChange={setVariantDialogOpen}
-                onComboItemDialogOpenChange={setComboItemDialogOpen}
                 onProductDeleteDialogOpenChange={setProductDeleteDialogOpen}
                 onCategoryDeleteDialogOpenChange={setCategoryDeleteDialogOpen}
                 onComboDeleteDialogOpenChange={setComboDeleteDialogOpen}
-                onVariantDeleteDialogOpenChange={setVariantDeleteDialogOpen}
                 setProductForm={(updater) => setProductForm((prev) => updater(prev))}
                 setCategoryForm={(updater) => setCategoryForm((prev) => updater(prev))}
                 setComboForm={(updater) => setComboForm((prev) => updater(prev))}
-                setVariantForm={(updater) => setVariantForm((prev) => updater(prev))}
-                setComboItemForm={(updater) => setComboItemForm((prev) => updater(prev))}
                 onSaveProduct={saveProduct}
                 onSaveCategory={saveCategory}
                 onSaveCombo={saveCombo}
-                onSaveVariant={saveVariant}
-                onAddComboItem={onAddComboItem}
                 onConfirmDeleteProduct={async () => {
                     await managerFnbService.deleteProductAsync(singleProductDeleteId);
                     setProductDeleteDialogOpen(false);
@@ -1008,12 +744,6 @@ export default function FnBPage() {
                     setComboDeleteDialogOpen(false);
                     fetchCombos(comboPage);
                     toast.success("Combo deleted.");
-                }}
-                onConfirmDeleteVariant={async () => {
-                    await managerFnbService.deleteProductVariantAsync(variantProductId, singleVariantDeleteId);
-                    setVariantDeleteDialogOpen(false);
-                    getProductDetailMutation.mutation(variantProductId);
-                    toast.success("Variant deleted.");
                 }}
             />
         </div>

@@ -1,12 +1,14 @@
 export interface ProductOutputDto {
     id: string;
+    tenantId?: string;
     productCategoryId: string;
     name: string;
     description?: string;
     basePrice: number;
     imageUrl?: string;
     isActive: boolean;
-    productType?: string;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface CategoryOutputDto {
@@ -16,34 +18,26 @@ export interface CategoryOutputDto {
     isActive: boolean;
 }
 
-export interface ComboOutputDto {
-    id: string;
-    name: string;
-    description?: string;
-    totalPrice: number;
-    isActive: boolean;
-}
-
-export interface ProductVariantOutputDto {
-    id: string;
-    productId: string;
-    name: string;
-    additionalPrice: number;
-    isActive: boolean;
-}
-
-export interface ProductDetailOutputDto extends ProductOutputDto {
-    productVariants: ProductVariantOutputDto[];
-}
-
-export interface ComboItemOutputDto {
-    id: string;
-    comboId: string;
+export interface ComboProductLineOutputDto {
     productId: string;
     quantity: number;
     product?: ProductOutputDto;
 }
 
-export interface ComboDetailOutputDto extends ComboOutputDto {
-    comboItems: ComboItemOutputDto[];
+export interface ComboOutputDto {
+    id: string;
+    tenantId?: string;
+    name: string;
+    description?: string;
+    imageUrl?: string;
+    totalPrice: number;
+    isActive: boolean;
+    createdAt?: string;
+    updatedAt?: string;
+    products: ComboProductLineOutputDto[];
+}
+
+export interface MediaUploadOutputDto {
+    url: string;
+    publicId: string;
 }
