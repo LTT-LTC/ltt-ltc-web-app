@@ -528,6 +528,35 @@ export default function LTTScreenCreateWizard({
 
   const actualSeatCount = grid.flat().filter((c) => c.type === "seat").length;
 
+  const layoutSummary = (() => {
+    const seatCells = grid.flat().filter((c) => c.type === "seat");
+    const breakdown = new Map<number, number>();
+    for (const cell of seatCells) {
+      breakdown.set(cell.seatTypeId, (breakdown.get(cell.seatTypeId) || 0) + 1);
+    }
+    const seatTypeBreakdown = Array.from(breakdown.entries()).map(([id, count]) => ({
+      id,
+      name: getSeatType(id)?.name || `#${id}`,
+      count,
+    }));
+    const innerExits = grid.flat().filter((c) => c.type === "emergency_exit").length;
+    const innerEntrances = grid.flat().filter((c) => c.type === "door").length;
+    const borders: BorderCellType[] = [
+      ...borderTop,
+      ...borderBottom,
+      ...borderLeft,
+      ...borderRight,
+    ];
+    const borderExits = borders.filter((c) => c === "emergency_exit").length;
+    const borderEntrances = borders.filter((c) => c === "door").length;
+    return {
+      totalSeats: seatCells.length,
+      seatTypeBreakdown,
+      exits: innerExits + borderExits,
+      entrances: innerEntrances + borderEntrances,
+    };
+  })();
+
   const placeSeat = (g: GridCell[][], rIdx: number, cIdx: number, seatTypeId: number) => {
     const st = getSeatType(seatTypeId);
     const occupied = st?.seatOccupied || 1;
@@ -1001,6 +1030,61 @@ export default function LTTScreenCreateWizard({
               <div className="grid gap-6 sm:grid-cols-2 max-w-2xl mx-auto py-4">
                 {isSeatMapMode ? (
                   <>
+                    <div className="sm:col-span-2 rounded-lg border border-border-shadcn bg-muted-shadcn/30 p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <LTTLabel className="text-sm font-semibold">
+                          {t("admin.seatmap.wizard.summary.title")}
+                        </LTTLabel>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="rounded-md border border-border-shadcn bg-card px-3 py-2">
+                          <p className="text-[11px] uppercase tracking-wide text-muted-foreground-shadcn">
+                            {t("admin.seatmap.wizard.summary.total_seats")}
+                          </p>
+                          <p className="text-2xl font-bold text-primary-shadcn">{layoutSummary.totalSeats}</p>
+                        </div>
+                        <div className="rounded-md border border-border-shadcn bg-card px-3 py-2">
+                          <p className="text-[11px] uppercase tracking-wide text-muted-foreground-shadcn">
+                            {t("admin.seatmap.wizard.summary.entrances")}
+                          </p>
+                          <p className="text-2xl font-bold">{layoutSummary.entrances}</p>
+                        </div>
+                        <div className="rounded-md border border-border-shadcn bg-card px-3 py-2">
+                          <p className="text-[11px] uppercase tracking-wide text-muted-foreground-shadcn">
+                            {t("admin.seatmap.wizard.summary.exits")}
+                          </p>
+                          <p className="text-2xl font-bold">{layoutSummary.exits}</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-[11px] uppercase tracking-wide text-muted-foreground-shadcn">
+                          {t("admin.seatmap.wizard.summary.seat_types")}
+                        </p>
+                        {layoutSummary.seatTypeBreakdown.length === 0 ? (
+                          <p className="text-xs text-muted-foreground-shadcn">
+                            {t("admin.seatmap.wizard.summary.no_seats")}
+                          </p>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            {layoutSummary.seatTypeBreakdown.map((b) => (
+                              <span
+                                key={b.id}
+                                className="inline-flex items-center gap-2 rounded-full border border-border-shadcn bg-card px-3 py-1 text-xs font-medium"
+                              >
+                                <span
+                                  className={cn(
+                                    "h-2.5 w-2.5 rounded-full",
+                                    SEAT_TYPE_COLORS[b.id] || "bg-muted-foreground-shadcn"
+                                  )}
+                                />
+                                {b.name}
+                                <span className="text-muted-foreground-shadcn">({b.count})</span>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                     <div className="space-y-2 sm:col-span-2">
                       <LTTLabel>{t("admin.seatmap.wizard.form.name_label")}</LTTLabel>
                       <LTTInput

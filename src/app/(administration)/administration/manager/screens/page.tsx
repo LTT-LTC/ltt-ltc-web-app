@@ -75,6 +75,7 @@ export default function ScreensConfigPage() {
     screenType: "2D",
     seatCount: 0,
     seatMapId: "",
+    seatLayout: "",
     status: "active",
   });
 
@@ -124,14 +125,15 @@ export default function ScreensConfigPage() {
   const loading = listMutation.isLoading || createMutation.isLoading || updateMutation.isLoading || removeMutation.isLoading;
   const saveLoading = createMutation.isLoading || updateMutation.isLoading;
   const selectedSeatMap = seatMaps.find((x) => x.id === form.seatMapId);
+  const effectiveSeatLayout = form.seatLayout || selectedSeatMap?.seatLayout || "";
   const parsedSelectedSeatLayout = useMemo(() => {
-    if (!selectedSeatMap?.seatLayout) return null;
+    if (!effectiveSeatLayout) return null;
     try {
-      return JSON.parse(selectedSeatMap.seatLayout) as { rows?: unknown[] };
+      return JSON.parse(effectiveSeatLayout) as { rows?: unknown[] };
     } catch {
       return null;
     }
-  }, [selectedSeatMap]);
+  }, [effectiveSeatLayout]);
 
   const seatMapListMutation = useLTTMutation<PagedResultDto<SeatMapOutputDto> | undefined, { cinemaId: string; page: number; fetch: number; keyword?: string }>({
     mutationFn: ({ cinemaId, page, fetch, keyword }) => seatMapService.getSeatMapListAsync(cinemaId, { page, fetch, keyword }),
@@ -245,6 +247,7 @@ export default function ScreensConfigPage() {
       screenType: "2D",
       seatCount: 0,
       seatMapId: "",
+      seatLayout: "",
       status: "active",
     });
     setCreatedSeatMapId("");
@@ -260,15 +263,27 @@ export default function ScreensConfigPage() {
       screenNumber: item.screenNumber,
       screenType: item.screenType || "2D",
       seatCount: item.seatCount || 0,
-      seatMapId: item.seatMapId || "",
+      seatMapId: "",
+      seatLayout: item.seatLayout || "",
       status: item.status || "active",
     });
-    setCreatedSeatMapId(item.seatMapId || "");
+    setCreatedSeatMapId("");
     setDialogOpen(true);
     if (selectedCinemaId) {
       seatMapListMutation.mutation({ cinemaId: selectedCinemaId, page: 1, fetch: 200 });
     }
   };
+
+  // When seat maps load (or change) while editing, try to match the screen's snapshot
+  // layout against an existing seat map so the dropdown reflects the originating template.
+  useEffect(() => {
+    if (!editing || !form.seatLayout) return;
+    if (form.seatMapId) return;
+    const matched = seatMaps.find((m) => (m.seatLayout || "") === form.seatLayout);
+    if (matched) {
+      setForm((prev) => ({ ...prev, seatMapId: matched.id }));
+    }
+  }, [editing, seatMaps, form.seatLayout, form.seatMapId]);
 
   const save = async () => {
     if (!selectedCinemaId) {
@@ -281,20 +296,33 @@ export default function ScreensConfigPage() {
       return;
     }
 
-    if (!form.seatMapId) {
+    const layoutFromPick = selectedSeatMap?.seatLayout || "";
+    const seatCountFromPick = selectedSeatMap?.seatCount || 0;
+    const layoutToSend = layoutFromPick || form.seatLayout;
+    const seatCountToSend = seatCountFromPick || form.seatCount;
+
+    if (!layoutToSend) {
       toast.error(t("admin.screens.validation.seat_map_required"));
       return;
     }
-    const linkedSeatCount = selectedSeatMap?.seatCount || 0;
-    if (linkedSeatCount <= 0) {
+
+    if (seatCountToSend <= 0) {
       toast.error(t("admin.screens.validation.seat_count_invalid"));
       return;
     }
 
+    const body: CreateScreenInputDto | UpdateScreenInputDto = {
+      screenNumber: form.screenNumber,
+      screenType: form.screenType,
+      status: form.status,
+      seatLayout: layoutToSend,
+      seatCount: seatCountToSend,
+    };
+
     if (editing) {
-      updateMutation.mutation({ cinemaId: selectedCinemaId, id: editing.id, body: { ...form, seatCount: linkedSeatCount } });
+      updateMutation.mutation({ cinemaId: selectedCinemaId, id: editing.id, body });
     } else {
-      createMutation.mutation({ cinemaId: selectedCinemaId, body: { ...form, seatCount: linkedSeatCount } });
+      createMutation.mutation({ cinemaId: selectedCinemaId, body });
     }
   };
 
@@ -307,7 +335,12 @@ export default function ScreensConfigPage() {
       seatCount: payload.seatCount,
     });
     setCreatedSeatMapId(created.id);
-    setForm((prev) => ({ ...prev, seatMapId: created.id }));
+    setForm((prev) => ({
+      ...prev,
+      seatMapId: created.id,
+      seatLayout: created.seatLayout || "",
+      seatCount: created.seatCount || prev.seatCount,
+    }));
     setDesignDialogOpen(false);
     if (selectedCinemaId) {
       seatMapListMutation.mutation({ cinemaId: selectedCinemaId, page: 1, fetch: 200 });
@@ -432,7 +465,11 @@ export default function ScreensConfigPage() {
                   <td className="px-4 py-3 font-medium">{t("admin.screens.table.screen_label", { number: item.screenNumber })}</td>
                   <td className="px-4 py-3">{item.screenType}</td>
                   <td className="px-4 py-3">{item.seatCount}</td>
-                  <td className="px-4 py-3">{item.seatMapName || t("admin.screens.status.empty")}</td>
+                  <td className="px-4 py-3">
+                    {item.seatLayout
+                      ? t("admin.screens.table.layout_configured")
+                      : t("admin.screens.status.empty")}
+                  </td>
                   <td className="px-4 py-3">
                     <LTTBadge
                       className={`font-medium ${statusColors[item.status || "active"] || statusColors.active}`}
@@ -481,11 +518,11 @@ export default function ScreensConfigPage() {
       />
 
       <LTTDialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <LTTDialogContent className="sm:max-w-lg">
+        <LTTDialogContent className="sm:max-w-6xl">
           <LTTDialogHeader>
             <LTTDialogTitle>{editing ? t("admin.screens.form.edit_title") : t("admin.screens.form.create_title")}</LTTDialogTitle>
           </LTTDialogHeader>
-          <div className="grid max-h-[70vh] gap-4 overflow-y-auto py-2 pr-1 sm:grid-cols-2">
+          <div className="grid max-h-[80vh] gap-4 overflow-y-auto py-2 pr-1 sm:grid-cols-2">
             <div className="space-y-2">
               <LTTLabel>{t("admin.screens.form.screen_number")}</LTTLabel>
               <LTTInput
@@ -518,9 +555,20 @@ export default function ScreensConfigPage() {
             </div>
             <div className="space-y-2 sm:col-span-2">
               <LTTLabel>{t("admin.screens.form.seat_map")}</LTTLabel>
-              <div className="flex gap-2">
-                <LTTSelect value={form.seatMapId} onValueChange={(v: string) => setForm({ ...form, seatMapId: v })}>
-                  <LTTSelectTrigger><LTTSelectValue placeholder={t("admin.screens.form.seat_map_placeholder")} /></LTTSelectTrigger>
+              <div className="flex flex-wrap gap-2">
+                <LTTSelect
+                  value={form.seatMapId}
+                  onValueChange={(v: string) => {
+                    const picked = seatMaps.find((m) => m.id === v);
+                    setForm((prev) => ({
+                      ...prev,
+                      seatMapId: v,
+                      seatLayout: picked?.seatLayout || "",
+                      seatCount: picked?.seatCount || 0,
+                    }));
+                  }}
+                >
+                  <LTTSelectTrigger className="min-w-[220px]"><LTTSelectValue placeholder={t("admin.screens.form.seat_map_placeholder")} /></LTTSelectTrigger>
                   <LTTSelectContent>
                     {seatMaps.map((map) => (
                       <LTTSelectItem key={map.id} value={map.id}>{map.name}</LTTSelectItem>
@@ -532,13 +580,15 @@ export default function ScreensConfigPage() {
                 </LTTButton>
                 <LTTButton
                   variant="outline"
+                  className="gap-2"
                   onClick={() => seatTypeListMutation.mutation({ page: 1, fetch: 200 })}
                   loading={seatTypeListMutation.isLoading}
                 >
-                  <RefreshCw className="h-4 w-4" />
+                  <RefreshCw className="h-4 w-4" /> {t("admin.screens.form.refresh_seat_types")}
                 </LTTButton>
                 <LTTButton
                   variant="outline"
+                  className="gap-2"
                   onClick={() => {
                     if (!selectedCinemaId) return;
                     seatMapListMutation.mutation({
@@ -549,21 +599,24 @@ export default function ScreensConfigPage() {
                   }}
                   loading={seatMapListMutation.isLoading}
                 >
-                  <RefreshCw className="h-4 w-4" />
+                  <RefreshCw className="h-4 w-4" /> {t("admin.screens.form.refresh_seat_maps")}
                 </LTTButton>
               </div>
               {createdSeatMapId && <p className="text-xs text-muted-foreground-shadcn">{t("admin.screens.form.created_seatmap_hint")}</p>}
+              {editing && form.seatLayout && !form.seatMapId && (
+                <p className="text-xs text-muted-foreground-shadcn">{t("admin.screens.form.custom_snapshot_hint")}</p>
+              )}
             </div>
-            {selectedSeatMap && (
+            {(selectedSeatMap || (editing && form.seatLayout)) && (
               <div className="space-y-2 sm:col-span-2 rounded-md border border-border-shadcn p-3">
                 <div className="flex items-center justify-between">
                   <LTTLabel>{t("admin.screens.form.preview_title")}</LTTLabel>
                   <span className="text-xs text-muted-foreground-shadcn">
-                    {selectedSeatMap.name}
+                    {selectedSeatMap?.name ?? t("admin.screens.form.custom_snapshot_label")}
                   </span>
                 </div>
                 {parsedSelectedSeatLayout ? (
-                  <div className="max-h-[360px] overflow-auto">
+                  <div className="max-h-[480px] overflow-auto">
                     <LTTSeatMapViewer
                       seatLayout={parsedSelectedSeatLayout as any}
                       readOnly

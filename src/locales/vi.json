@@ -369,6 +369,7 @@
         "screen_type": "Loại màn hình",
         "seat_count": "Số lượng ghế",
         "seat_layout": "Bố trí ghế",
+        "layout_configured": "Đã thiết lập",
         "status": "Trạng thái",
         "actions": "Thao tác",
         "screen_label": "Phòng {{number}}"
@@ -392,7 +393,11 @@
         "seat_map": "Sơ đồ ghế *",
         "seat_map_placeholder": "Chọn sơ đồ ghế",
         "design_new": "Thiết kế mới",
+        "refresh_seat_types": "Tải lại loại ghế",
+        "refresh_seat_maps": "Tải lại sơ đồ ghế",
         "created_seatmap_hint": "Đã tạo sơ đồ mới và chọn sẵn.",
+        "custom_snapshot_hint": "Phòng chiếu này đang dùng bố cục ghế tùy chỉnh. Chọn một sơ đồ mẫu hoặc thiết kế mới để thay thế.",
+        "custom_snapshot_label": "Bố cục tùy chỉnh",
         "preview_title": "Xem trước sơ đồ ghế đã chọn",
         "preview_unavailable": "Không thể hiển thị xem trước sơ đồ ghế.",
         "cancel": "Hủy",
@@ -411,7 +416,7 @@
       "validation": {
         "cinema_required": "Vui lòng chọn rạp trước khi tạo hoặc cập nhật phòng chiếu",
         "screen_number_invalid": "Số phòng chiếu không hợp lệ",
-        "seat_map_required": "Vui lòng chọn sơ đồ ghế.",
+        "seat_map_required": "Vui lòng chọn một sơ đồ ghế hoặc thiết kế sơ đồ mới.",
         "seat_count_invalid": "Sơ đồ ghế đã chọn không hợp lệ (SeatCount <= 0)."
       }
     },
@@ -483,6 +488,14 @@
           "name_required": "Vui lòng nhập tên sơ đồ ghế"
         },
         "empty_seat_type_data": "Chưa có dữ liệu loại ghế. Vui lòng làm mới danh sách seat type.",
+        "summary": {
+          "title": "Tóm tắt sơ đồ",
+          "total_seats": "Tổng số ghế",
+          "seat_types": "Loại ghế trong sơ đồ",
+          "entrances": "Cửa ra vào",
+          "exits": "Lối thoát hiểm",
+          "no_seats": "Chưa có ghế nào được đặt."
+        },
         "form": {
           "name_label": "Tên sơ đồ ghế *",
           "name_placeholder": "Ví dụ: Seat map phòng 1",

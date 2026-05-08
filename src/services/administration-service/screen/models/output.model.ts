@@ -3,9 +3,6 @@ export interface ScreenOutputDto {
     cinemaId: string;
     screenNumber: number;
     screenType?: string;
-    seatMapId?: string;
-    seatMapName?: string;
-    seatMapDescription?: string;
     seatLayout?: string;
     seatCount: number;
     status?: string;
