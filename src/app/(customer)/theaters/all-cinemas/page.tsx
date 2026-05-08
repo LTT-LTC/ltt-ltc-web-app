@@ -1,65 +1,228 @@
-'use client';
+ "use client";
 
-import React, { useState, useEffect } from 'react';
-import TopBar from '../../_components/TopBar';
-import Header from '../../_components/Header';
-import Footer from '../../_components/Footer';
-import dayjs from 'dayjs';
-import 'dayjs/locale/vi';
+import React, { useEffect, useMemo, useState } from "react";
+import dayjs, { Dayjs } from "dayjs";
+import "dayjs/locale/vi";
+import { toast } from "sonner";
+import TopBar from "../../_components/TopBar";
+import Header from "../../_components/Header";
+import Footer from "../../_components/Footer";
+import { useLocalization } from "@/src/@core/hooks/use-localization";
+import { customerCinemaService } from "@/src/services/customer-service/cinema/cinema.service";
+import { CustomerCinemaOutputDto } from "@/src/services/customer-service/cinema/models/output.model";
+import { customerShowtimeService } from "@/src/services/customer-service/showtime/showtime.service";
+import { CustomerShowtimeOutputDto } from "@/src/services/customer-service/showtime/models/output.model";
+import { getLocalizedMovieTitle, getRatingTagClass } from "../../_components/movieCatalog";
 
-dayjs.locale('vi');
+dayjs.locale("vi");
 
-// --- CONSTANTS ---
-const PROVINCES = ['Hồ Chí Minh', 'Hà Nội', 'Đà Nẵng', 'Cần Thơ', 'Đồng Nai', 'Hải Phòng', 'Quảng Ninh', 'Bà Rịa-Vũng Tàu', 'Bình Định', 'Bình Dương', 'Đắk Lắk', 'Trà Vinh', 'Yên Bái', 'Vĩnh Long', 'Kiên Giang', 'Hậu Giang', 'Hà Tĩnh', 'Phú Yên', 'Đồng Tháp', 'Bạc Liêu', 'Hưng Yên', 'Khánh Hòa', 'Kon Tum', 'Lạng Sơn', 'Nghệ An', 'Phú Thọ', 'Quảng Ngãi', 'Sóc Trăng', 'Sơn La', 'Tây Ninh', 'Thái Nguyên', 'Tiền Giang'];
-
-interface CinemaDetail {
-  id: string;
-  name: string;
-  address: string;
-  city: string;
-}
-
-const MOCK_CINEMAS: CinemaDetail[] = [
-  {
-    id: '1',
-    name: 'LTC Landmark 81',
-    city: 'Hồ Chí Minh',
-    address: 'Tầng B1, Landmark 81, 720A Điện Biên Phủ, P. 22, Q. Bình Thạnh',
-  },
-  {
-    id: '2',
-    name: 'LTC Vincom Đồng Khởi',
-    city: 'Hồ Chí Minh',
-    address: 'Tầng 3, Vincom Center Đồng Khởi, Q.1',
-  },
-  {
-    id: '3',
-    name: 'LTC Hùng Vương Plaza',
-    city: 'Hồ Chí Minh',
-    address: 'Tầng 7, Hùng Vương Plaza, 126 Hồng Bàng, Q.5',
-  }
+const DATE_RANGE_DAYS = 14;
+const FALLBACK_POSTER = "/images/movie-current-banners/470x700-us.jpg";
+const PROVINCES = [
+  "Hồ Chí Minh",
+  "Hà Nội",
+  "Đà Nẵng",
+  "Cần Thơ",
+  "Đồng Nai",
+  "Hải Phòng",
+  "Quảng Ninh",
+  "Bà Rịa-Vũng Tàu",
+  "Bình Định",
+  "Bình Dương",
+  "Đắk Lắk",
+  "Trà Vinh",
+  "Yên Bái",
+  "Vĩnh Long",
+  "Kiên Giang",
+  "Hậu Giang",
+  "Hà Tĩnh",
+  "Phú Yên",
+  "Đồng Tháp",
+  "Bạc Liêu",
+  "Hưng Yên",
+  "Khánh Hòa",
+  "Kon Tum",
+  "Lạng Sơn",
+  "Nghệ An",
+  "Phú Thọ",
+  "Quảng Ngãi",
+  "Sóc Trăng",
+  "Sơn La",
+  "Tây Ninh",
+  "Thái Nguyên",
+  "Tiền Giang",
 ];
 
-export default function AllCinemasPage() {
-  const [selectedProvince, setSelectedProvince] = useState('Hồ Chí Minh');
-  const [selectedCinema, setSelectedCinema] = useState<CinemaDetail | null>(null);
-  const [selectedDate, setSelectedDate] = useState(dayjs());
+type GroupedMovieShowtime = {
+  movieId: string;
+  movieTitle: string;
+  originalTitle: string;
+  posterUrl: string;
+  ratingCode: string;
+  movieFormat: string;
+  durationMins?: number;
+  slots: Array<{ id: string; startTime: string; screenName: string }>;
+};
 
-  const filteredCinemas = MOCK_CINEMAS.filter(c => c.city === selectedProvince);
-  const datesRows = Array.from({ length: 14 }).map((_, i) => dayjs().add(i, 'day'));
+const mapShowtimeDateInput = (value: Dayjs) => value.startOf("day").toISOString();
+
+const formatClock = (value: string) => {
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed.format("HH:mm") : value;
+};
+
+export default function AllCinemasPage() {
+  const { t, currentLanguage } = useLocalization();
+  const [cinemas, setCinemas] = useState<CustomerCinemaOutputDto[]>([]);
+  const [showtimes, setShowtimes] = useState<CustomerShowtimeOutputDto[]>([]);
+  const [loadingCinema, setLoadingCinema] = useState(false);
+  const [loadingShowtime, setLoadingShowtime] = useState(false);
+  const [selectedProvince, setSelectedProvince] = useState("Hồ Chí Minh");
+  const [selectedCinemaId, setSelectedCinemaId] = useState("");
+  const [selectedDate, setSelectedDate] = useState(dayjs());
+  const [dateStart, setDateStart] = useState(dayjs());
+
+  const filteredCinemas = useMemo(() => cinemas, [cinemas]);
+
+  const selectedCinema = useMemo(
+    () => filteredCinemas.find((item) => item.id === selectedCinemaId) || null,
+    [filteredCinemas, selectedCinemaId],
+  );
+
+  const groupedShowtimes = useMemo<GroupedMovieShowtime[]>(() => {
+    const grouped = new Map<string, GroupedMovieShowtime>();
+
+    showtimes.forEach((item) => {
+      const key = `${item.movieId}__${item.movieFormat || "-"}`;
+      const current = grouped.get(key) || {
+        movieId: item.movieId,
+        movieTitle: item.movieTitle || "",
+        originalTitle: item.originalTitle || "",
+        posterUrl: item.posterUrl || FALLBACK_POSTER,
+        ratingCode: item.ratingCode || "",
+        movieFormat: item.movieFormat || "",
+        durationMins: item.durationMins,
+        slots: [],
+      };
+
+      current.slots.push({
+        id: item.id,
+        startTime: item.startTime,
+        screenName: item.screenName || "",
+      });
+      grouped.set(key, current);
+    });
+
+    return Array.from(grouped.values())
+      .map((movie) => ({
+        ...movie,
+        slots: movie.slots.sort((a, b) => dayjs(a.startTime).valueOf() - dayjs(b.startTime).valueOf()),
+      }))
+      .sort((a, b) => {
+        const left = a.slots[0]?.startTime || "";
+        const right = b.slots[0]?.startTime || "";
+        return dayjs(left).valueOf() - dayjs(right).valueOf();
+      });
+  }, [showtimes]);
+
+  const datesRows = useMemo(
+    () => Array.from({ length: DATE_RANGE_DAYS }).map((_, index) => dateStart.add(index, "day")),
+    [dateStart],
+  );
 
   useEffect(() => {
-    const provinceCinemas = MOCK_CINEMAS.filter(c => c.city === selectedProvince);
-    if (provinceCinemas.length > 0) {
-      if (selectedProvince === 'Hồ Chí Minh') {
-        setSelectedCinema(provinceCinemas.find(c => c.id === '2') || provinceCinemas[0]);
-      } else {
-        setSelectedCinema(provinceCinemas[0]);
-      }
-    } else {
-      setSelectedCinema(null);
+    if (!selectedProvince) {
+      setCinemas([]);
+      return;
     }
-  }, [selectedProvince]);
+
+    const fetchCinemas = async () => {
+      setLoadingCinema(true);
+      setSelectedCinemaId("");
+      setShowtimes([]);
+      try {
+        const data = await customerCinemaService.getCinemaListAsync({
+          city: selectedProvince,
+          keyword: selectedProvince,
+          page: 1,
+          pageSize: 100,
+        });
+        setCinemas(data);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : t("customer.all_cinemas.messages.fetch_cinemas_error");
+        toast.error(message);
+      } finally {
+        setLoadingCinema(false);
+      }
+    };
+
+    void fetchCinemas();
+  }, [selectedProvince, t]);
+
+  useEffect(() => {
+    if (filteredCinemas.length === 0) {
+      setSelectedCinemaId("");
+      return;
+    }
+
+    if (!filteredCinemas.some((item) => item.id === selectedCinemaId)) {
+      setSelectedCinemaId(filteredCinemas[0].id);
+    }
+  }, [filteredCinemas, selectedCinemaId]);
+
+  useEffect(() => {
+    if (!selectedCinemaId) {
+      setShowtimes([]);
+      return;
+    }
+
+    const fetchShowtimes = async () => {
+      setLoadingShowtime(true);
+      try {
+        const data = await customerShowtimeService.getShowtimeListAsync({
+          cinemaId: selectedCinemaId,
+          date: mapShowtimeDateInput(selectedDate),
+        });
+        setShowtimes(data);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : t("customer.all_cinemas.messages.fetch_showtimes_error");
+        toast.error(message);
+      } finally {
+        setLoadingShowtime(false);
+      }
+    };
+
+    void fetchShowtimes();
+  }, [selectedCinemaId, selectedDate, t]);
+
+  const canMoveDateBackward = dateStart.isAfter(dayjs(), "day");
+
+  const moveDateWindow = (direction: "prev" | "next") => {
+    if (direction === "prev") {
+      if (!canMoveDateBackward) {
+        return;
+      }
+      const nextStart = dateStart.subtract(7, "day");
+      const minDate = dayjs().startOf("day");
+      setDateStart(nextStart.isBefore(minDate) ? minDate : nextStart);
+      return;
+    }
+
+    setDateStart((prev) => prev.add(7, "day"));
+  };
+
+  const getShowtimeTitle = (movie: GroupedMovieShowtime) => {
+    const localizedTitle = getLocalizedMovieTitle(
+      { title: movie.movieTitle || "", originalTitle: movie.originalTitle || "" },
+      currentLanguage,
+    );
+
+    if (!movie.movieTitle || !movie.originalTitle || movie.movieTitle === movie.originalTitle) {
+      return localizedTitle || movie.movieTitle || movie.originalTitle || "-";
+    }
+
+    return `${movie.movieTitle} - ${movie.originalTitle}`;
+  };
 
   return (
     <div className="bg-white min-h-screen flex flex-col font-sans text-gray-800">
@@ -68,13 +231,13 @@ export default function AllCinemasPage() {
 
       <main className="flex-grow">
         <div className="max-w-6xl mx-auto px-4 py-8">
-          <h1 className="text-2xl font-bold mb-6 text-gray-800">Tất Cả Rạp Chiếu</h1>
+          <h1 className="text-2xl font-bold mb-6 text-gray-800">{t("customer.all_cinemas.title")}</h1>
 
           {/* LOCATION SELECTOR */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-6">
             <h2 className="text-base font-bold text-gray-800 flex items-center mb-6">
               <span className="material-symbols-outlined text-[#E50914] mr-2">location_on</span>
-              Chọn Tỉnh/Thành Phố
+              {t("customer.all_cinemas.select_city")}
             </h2>
 
             <div className="flex flex-wrap gap-x-6 gap-y-4 border-b border-gray-100 pb-6 mb-6">
@@ -90,15 +253,19 @@ export default function AllCinemasPage() {
               ))}
             </div>
 
-            <h3 className="text-sm font-medium text-gray-800 mb-4">Rạp tại {selectedProvince}:</h3>
+            <h3 className="text-sm font-medium text-gray-800 mb-4">
+              {t("customer.all_cinemas.cinemas_at", { city: selectedProvince || "-" })}
+            </h3>
             <div className="flex flex-wrap gap-3">
-              {filteredCinemas.map(c => (
+              {loadingCinema ? (
+                <p className="text-sm text-gray-500 m-0">{t("customer.all_cinemas.loading_cinemas")}</p>
+              ) : filteredCinemas.map(c => (
                 <button
                   key={c.id}
-                  onClick={() => setSelectedCinema(c)}
-                  className={`px-4 py-2 border rounded-md text-[13px] transition-colors cursor-pointer ${selectedCinema?.id === c.id
-                      ? 'bg-[#cd1e25] border-[#cd1e25] text-white hover:bg-[#b01a20]'
-                      : 'bg-white border-gray-300 text-gray-700 hover:border-[#cd1e25] hover:text-[#cd1e25]'
+                  onClick={() => setSelectedCinemaId(c.id)}
+                  className={`px-4 py-2 border rounded-md text-[13px] transition-colors cursor-pointer ${selectedCinemaId === c.id
+                    ? 'bg-[#cd1e25] border-[#cd1e25] text-white hover:bg-[#b01a20]'
+                    : 'bg-white border-gray-300 text-gray-700 hover:border-[#cd1e25] hover:text-[#cd1e25]'
                     }`}
                 >
                   {c.name}
@@ -112,9 +279,13 @@ export default function AllCinemasPage() {
               {/* CINEMA INFOS */}
               <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-6">
                 <h2 className="text-lg font-bold text-[#cd1e25] mb-1">{selectedCinema.name}</h2>
-                <div className="text-[13px] text-gray-500 mb-6 flex items-center">
+                <div className="text-[13px] text-gray-500 mb-2 flex items-center">
                   <span className="material-symbols-outlined text-[16px] mr-1">location_on</span>
                   {selectedCinema.address}
+                </div>
+                <div className="text-[13px] text-gray-500 mb-6 flex items-center">
+                  <span className="material-symbols-outlined text-[16px] mr-1">call</span>
+                  {selectedCinema.phoneNumber || "-"}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-48 md:h-56">
@@ -128,33 +299,85 @@ export default function AllCinemasPage() {
               <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-6">
                 <h2 className="text-base font-bold text-gray-800 flex items-center mb-6">
                   <span className="material-symbols-outlined text-[#cd1e25] mr-2">schedule</span>
-                  Lịch Chiếu Phim
+                  {t("customer.all_cinemas.schedule_title")}
                 </h2>
 
-                <div className="flex gap-2 border-b border-gray-200 pb-4 mb-8 overflow-x-auto no-scrollbar">
+                <div className="flex items-center justify-between gap-3 border-b border-gray-200 pb-4 mb-6">
+                  <button
+                    type="button"
+                    onClick={() => moveDateWindow("prev")}
+                    disabled={!canMoveDateBackward}
+                    className="h-9 w-9 rounded-full border border-gray-300 text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+                  </button>
+                  <div className="flex gap-2 overflow-x-auto no-scrollbar flex-1">
                   {datesRows.map((date, idx) => {
                     const isSelected = selectedDate.isSame(date, 'day');
                     const dayOfWeek = date.day() === 0 ? 'CN' : `T${date.day() + 1}`;
                     return (
-                      <button
+                        <button
                         key={idx}
                         onClick={() => setSelectedDate(date)}
                         className={`flex flex-col items-center justify-center min-w-[50px] h-[65px] border rounded transition-colors cursor-pointer ${isSelected
-                            ? 'border-[#cd1e25] bg-red-50/20'
-                            : 'border-transparent hover:border-gray-200 bg-white hover:bg-gray-50'
+                          ? 'border-[#cd1e25] bg-red-50/20'
+                          : 'border-transparent hover:border-gray-200 bg-white hover:bg-gray-50'
                           }`}
                       >
                         <span className={`text-[11px] font-bold ${isSelected ? 'text-[#cd1e25]' : 'text-gray-800'}`}>{dayOfWeek}</span>
                         <span className={`text-[17px] font-bold leading-tight ${isSelected ? 'text-[#cd1e25]' : 'text-gray-800'}`}>{date.date()}</span>
                         <span className={`text-[11px] ${isSelected ? 'text-[#cd1e25]' : 'text-gray-400'}`}>T{date.month() + 1}</span>
-                      </button>
+                        </button>
                     );
                   })}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => moveDateWindow("next")}
+                    className="h-9 w-9 rounded-full border border-gray-300 text-gray-700"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+                  </button>
                 </div>
 
-                <div className="text-center text-gray-400 text-sm py-8">
-                  Không có suất chiếu cho ngày này.
-                </div>
+                {loadingShowtime ? (
+                  <div className="text-center text-gray-400 text-sm py-8">{t("customer.all_cinemas.loading_showtimes")}</div>
+                ) : groupedShowtimes.length === 0 ? (
+                  <div className="text-center text-gray-400 text-sm py-8">{t("customer.all_cinemas.no_showtimes")}</div>
+                ) : (
+                  <div className="space-y-6">
+                    {groupedShowtimes.map((movie) => (
+                      <div key={`${movie.movieId}-${movie.movieFormat}`} className="border-b border-gray-100 pb-6 last:border-0 last:pb-0">
+                        <div className="flex gap-4">
+                          <div className="w-[96px] shrink-0">
+                            <div className="relative w-full rounded-md overflow-hidden bg-gray-100">
+                              {movie.ratingCode && (
+                                <span className={`absolute left-2 top-2 px-2 py-1 rounded text-xs font-bold ${getRatingTagClass(movie.ratingCode)}`}>
+                                  {movie.ratingCode}
+                                </span>
+                              )}
+                              <img src={movie.posterUrl || FALLBACK_POSTER} alt={movie.movieTitle} className="w-full h-[136px] object-cover" />
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-xl font-bold text-gray-900 m-0 mb-1">{getShowtimeTitle(movie)}</h3>
+                            <p className="text-base font-semibold text-gray-900 m-0 mb-3">{movie.movieFormat || "-"}</p>
+                            <div className="flex flex-wrap gap-2">
+                              {movie.slots.map((slot) => (
+                                <div key={slot.id} className="px-3 py-2 border border-gray-200 rounded-md text-sm text-gray-800">
+                                  {formatClock(slot.startTime)} - {slot.screenName || t("customer.all_cinemas.screen_unknown")}
+                                </div>
+                              ))}
+                            </div>
+                            <p className="text-sm text-gray-500 m-0 mt-3">
+                              {t("customer.all_cinemas.duration_label")}: {movie.durationMins || 0} {t("customer.all_cinemas.minutes")}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </>
           )}

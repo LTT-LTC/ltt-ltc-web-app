@@ -20,6 +20,9 @@
       "active": "Hoạt động",
       "inactive": "Tạm dừng",
       "all": "Tất cả",
+      "search": "Tìm kiếm...",
+      "no_results": "Không có kết quả phù hợp.",
+      "add_new": "Thêm mới",
       "load_more": "Tải thêm",
       "unsaved_changes_dialog": {
         "title": "Bạn có thay đổi chưa lưu",
@@ -1345,6 +1348,22 @@
       "errors": {
         "movie_id_missing": "Thiếu mã phim",
         "load_failed": "Không thể tải chi tiết phim"
+      }
+    },
+    "all_cinemas": {
+      "title": "Tất Cả Rạp Chiếu",
+      "select_city": "Chọn Tỉnh/Thành Phố",
+      "cinemas_at": "Rạp tại {{city}}:",
+      "loading_cinemas": "Đang tải danh sách rạp...",
+      "schedule_title": "Lịch Chiếu Phim",
+      "loading_showtimes": "Đang tải lịch chiếu...",
+      "no_showtimes": "Không có suất chiếu cho ngày này.",
+      "screen_unknown": "Chưa rõ phòng chiếu",
+      "duration_label": "Thời lượng",
+      "minutes": "phút",
+      "messages": {
+        "fetch_cinemas_error": "Không thể tải danh sách rạp",
+        "fetch_showtimes_error": "Không thể tải lịch chiếu"
       }
     },
     "my_ltc": {
