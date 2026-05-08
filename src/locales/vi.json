@@ -297,7 +297,19 @@
       "movie_filter_placeholder": "Chọn phim để tải lịch chiếu",
       "calendar": {
         "today": "Hôm nay",
-        "hour": "Giờ"
+        "hour": "Giờ",
+        "all_movies": "Tất cả phim",
+        "screen": "Phòng",
+        "no_screens": "Hiện tại chưa có phòng chiếu nào cho rạp này.",
+        "range": {
+          "date": "Theo ngày",
+          "week": "Theo tuần",
+          "month": "Theo tháng"
+        },
+        "month": {
+          "showtimes": "suất chiếu",
+          "more": "+{{count}} suất khác"
+        }
       },
       "distribution": {
         "search_placeholder": "Tìm kiếm phân phối phim...",
@@ -1358,6 +1370,7 @@
       "select_city": "Chọn Tỉnh/Thành Phố",
       "cinemas_at": "Rạp tại {{city}}:",
       "loading_cinemas": "Đang tải danh sách rạp...",
+      "no_cinemas": "Không tìm thấy rạp nào ở tỉnh/thành phố này.",
       "schedule_title": "Lịch Chiếu Phim",
       "loading_showtimes": "Đang tải lịch chiếu...",
       "no_showtimes": "Không có suất chiếu cho ngày này.",

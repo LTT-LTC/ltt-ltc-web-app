@@ -1,3 +1,5 @@
+import type { ShowtimeMovieDto } from "@/src/services/administration-service/showtime/models/output.model";
+
 export interface CustomerShowtimeOutputDto {
     id: string;
     cinemaId: string;
@@ -8,11 +10,13 @@ export interface CustomerShowtimeOutputDto {
     ticketPrice: number;
     formatId: string;
     status?: string;
-    movieTitle?: string;
-    originalTitle?: string;
     movieFormat?: string;
     screenName?: string;
-    posterUrl?: string;
     durationMins?: number;
-    ratingCode?: string;
+    /**
+     * Virtual Movie object composed by the admin BE from a runtime call to
+     * the movie microservice. Null when the upstream lookup failed; consumers
+     * should fall back to `customerMovieService.getMovieByIdAsync` if needed.
+     */
+    movie?: ShowtimeMovieDto;
 }
