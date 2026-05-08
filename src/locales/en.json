@@ -20,6 +20,9 @@
       "active": "Active",
       "inactive": "Inactive",
       "all": "All",
+      "search": "Search...",
+      "no_results": "No results found.",
+      "add_new": "Add new",
       "load_more": "Load more",
       "unsaved_changes_dialog": {
         "title": "You Have Unsaved Changes",
@@ -1345,6 +1348,22 @@
       "errors": {
         "movie_id_missing": "Movie ID is missing",
         "load_failed": "Failed to load movie details"
+      }
+    },
+    "all_cinemas": {
+      "title": "All Cinemas",
+      "select_city": "Select Province/City",
+      "cinemas_at": "Cinemas in {{city}}:",
+      "loading_cinemas": "Loading cinemas...",
+      "schedule_title": "Movie Showtimes",
+      "loading_showtimes": "Loading showtimes...",
+      "no_showtimes": "No showtimes for this day.",
+      "screen_unknown": "Unknown screen",
+      "duration_label": "Duration",
+      "minutes": "mins",
+      "messages": {
+        "fetch_cinemas_error": "Failed to load cinemas",
+        "fetch_showtimes_error": "Failed to load showtimes"
       }
     },
     "my_ltc": {

@@ -1205,7 +1205,7 @@ export default function MoviesPage() {
                     onChange={(vals) => setForm({ ...form, genreListId: vals })}
                     options={genres.map(g => g.id)}
                     displayOptions={genres.map(g => ({ label: g.name, value: g.id }))}
-                    placeholder="Chọn thể loại..."
+                    placeholder={t("admin.manager_movies.form.genre")}
                     allowCreate={false}
                   />
                 </div>
@@ -1253,7 +1253,7 @@ export default function MoviesPage() {
                             }
                           }}
                           options={actors.map(a => a.name)}
-                          placeholder={t("admin.manager_movies.form.select_or_enter_actor") || "Select/Enter actor"}
+                          placeholder={t("admin.manager_movies.form.select_actor_placeholder")}
                           allowCreate={true}
                         />
                       </div>
@@ -1274,7 +1274,7 @@ export default function MoviesPage() {
                             }
                           }}
                           options={roles.map(r => r.name)}
-                          placeholder={t("admin.manager_movies.form.select_or_enter_role") || "Select/Enter role"}
+                          placeholder={t("admin.manager_movies.form.select_role_placeholder")}
                           allowCreate={true}
                         />
                       </div>
