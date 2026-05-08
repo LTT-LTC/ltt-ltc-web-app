@@ -95,7 +95,13 @@ export default function AllCinemasPage() {
       screenId: slot.screenId,
       movieId: movie.movieId,
     });
-    router.push(`/booking/${bookingId}/seats`);
+    const query = new URLSearchParams({
+      showtimeId: slot.id,
+      cinemaId: slot.cinemaId,
+      screenId: slot.screenId,
+      movieId: movie.movieId,
+    });
+    router.push(`/booking/${bookingId}/seats?${query.toString()}`);
   };
   const [cinemas, setCinemas] = useState<CustomerCinemaOutputDto[]>([]);
   const [showtimes, setShowtimes] = useState<CustomerShowtimeOutputDto[]>([]);
@@ -352,16 +358,18 @@ export default function AllCinemasPage() {
                   {t("customer.all_cinemas.schedule_title")}
                 </h2>
 
-                <div className="flex items-center justify-between gap-3 border-b border-gray-200 pb-4 mb-6">
+                <div className="border-b border-gray-200 pb-4 mb-6">
+                  <div className="mx-auto flex w-full max-w-5xl items-center justify-center gap-3">
                   <button
                     type="button"
                     onClick={() => moveDateWindow("prev")}
                     disabled={!canMoveDateBackward}
-                    className="h-9 w-9 rounded-full border border-gray-300 text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-300 text-gray-700 transition-colors hover:border-[#cd1e25] hover:text-[#cd1e25] disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+                    <span className="material-symbols-outlined block text-[18px] leading-none">chevron_left</span>
                   </button>
-                  <div className="flex gap-2 overflow-x-auto no-scrollbar flex-1">
+                  <div className="flex flex-1 justify-center">
+                  <div className="flex gap-2 overflow-x-auto no-scrollbar">
                   {datesRows.map((date, idx) => {
                     const isSelected = selectedDate.isSame(date, 'day');
                     const dayOfWeek = date.day() === 0 ? 'CN' : `T${date.day() + 1}`;
@@ -381,13 +389,15 @@ export default function AllCinemasPage() {
                     );
                   })}
                   </div>
+                  </div>
                   <button
                     type="button"
                     onClick={() => moveDateWindow("next")}
-                    className="h-9 w-9 rounded-full border border-gray-300 text-gray-700"
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-300 text-gray-700 transition-colors hover:border-[#cd1e25] hover:text-[#cd1e25]"
                   >
-                    <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+                    <span className="material-symbols-outlined block text-[18px] leading-none">chevron_right</span>
                   </button>
+                  </div>
                 </div>
 
                 {loadingShowtime ? (

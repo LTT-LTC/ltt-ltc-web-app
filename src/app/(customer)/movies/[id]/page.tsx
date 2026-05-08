@@ -14,6 +14,9 @@ import { customerMovieService } from "@/src/services/customer-service/movie/movi
 import { MovieDetailOutputDto } from "@/src/services/customer-service/movie/models/output.model";
 import { extractYoutubeVideoId } from "../../_components/movieTrailer";
 import { getLocalizedMovieTitle, getMoviePoster, getRatingTagClass, normalizeMovieStatus } from "../../_components/movieCatalog";
+import { CustomerShowtimeOutputDto } from "@/src/services/customer-service/showtime/models/output.model";
+import { newBookingId, saveBookingState } from "@/src/@core/booking/bookingState";
+import BookingShowtimePickerModal from "@/src/@core/component/customer/BookingShowtimePickerModal";
 
 const RATED_CONFIG: Record<string, { label: string; icon: string }> = {
     "G": { label: "General Audiences", icon: "child_care" },
@@ -122,6 +125,7 @@ export default function MovieDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [trailerOpen, setTrailerOpen] = useState(false);
+    const [bookingModalOpen, setBookingModalOpen] = useState(false);
 
     useEffect(() => {
         let active = true;
@@ -174,6 +178,25 @@ export default function MovieDetailPage() {
     const directorNames = movie ? getDirectorNames(movie) : [];
     const genreNames = movie ? (movie.genreNames || movie.genres?.map((genre) => genre.name) || []) : [];
     const localizedMovieTitle = movie ? getLocalizedMovieTitle(movie, currentLanguage) : "";
+
+    const startBookingForShowtime = (showtime: CustomerShowtimeOutputDto) => {
+        const bookingId = newBookingId();
+        saveBookingState(bookingId, {
+            showtimeId: showtime.id,
+            cinemaId: showtime.cinemaId,
+            screenId: showtime.screenId,
+            movieId: showtime.movieId,
+        });
+
+        const query = new URLSearchParams({
+            showtimeId: showtime.id,
+            cinemaId: showtime.cinemaId,
+            screenId: showtime.screenId,
+            movieId: showtime.movieId,
+        });
+        setBookingModalOpen(false);
+        router.push(`/booking/${bookingId}/seats?${query.toString()}`);
+    };
 
     useEffect(() => {
         if (searchParams.get("trailer") === "1" && trailerYoutubeId) {
@@ -265,7 +288,10 @@ export default function MovieDetailPage() {
                                 </p>
 
                                 <div className="flex flex-wrap gap-3 justify-center md:justify-start mt-1">
-                                    <button className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold bg-primary text-white hover:brightness-110 active:scale-[0.97] transition-all cursor-pointer border-none">
+                                    <button
+                                        onClick={() => setBookingModalOpen(true)}
+                                        className="inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold bg-primary text-white hover:brightness-110 active:scale-[0.97] transition-all cursor-pointer border-none"
+                                    >
                                         <span className="material-symbols-outlined text-[20px]">confirmation_number</span>
                                         Book Tickets
                                     </button>
@@ -341,6 +367,14 @@ export default function MovieDetailPage() {
 
             <Footer />
 
+            <BookingShowtimePickerModal
+                open={bookingModalOpen}
+                movieId={movieId}
+                movieTitle={localizedMovieTitle}
+                onClose={() => setBookingModalOpen(false)}
+                onSelectShowtime={startBookingForShowtime}
+            />
+
             <LTTModal
                 open={trailerOpen}
                 onCancel={() => setTrailerOpen(false)}
@@ -387,3 +421,4 @@ function InfoRow({ icon, label, value }: { icon: string; label: string; value: s
         </div>
     );
 }
+

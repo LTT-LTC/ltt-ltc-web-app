@@ -12,6 +12,7 @@ import LTTTabs from "@/src/@core/component/AntD/LTTTabs";
 import LTTModal from "@/src/@core/component/AntD/LTTModal";
 import LTTFormItem from "@/src/@core/component/AntD/LTTFormItem";
 import { LTTInput, LTTInputTextArea } from "@/src/@core/component/AntD/LTTInput";
+import { formatDateTimeGmt7 } from "@/src/@core/utils/date";
 
 import { columns } from "../table.type";
 import SeatmapFilter from "../Filter";
@@ -99,7 +100,7 @@ const SeatTypesPage = () => {
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
-      const now = new Date().toLocaleString("sv-SE").slice(0, 16).replace("T", " ");
+      const now = formatDateTimeGmt7();
       
       const payload = {
         name: values.name,

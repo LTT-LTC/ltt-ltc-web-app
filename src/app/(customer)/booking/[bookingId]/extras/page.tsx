@@ -16,7 +16,7 @@ import {
 } from "@/src/services/customer-service/product/product.service";
 
 const QtyStepper = ({ qty, onChange }: { qty: number; onChange: (delta: number) => void }) => (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1 shrink-0">
         <button
             type="button"
             onClick={() => onChange(-1)}
@@ -25,7 +25,7 @@ const QtyStepper = ({ qty, onChange }: { qty: number; onChange: (delta: number) 
         >
             <Minus className="h-3 w-3" />
         </button>
-        <span className="w-7 text-center text-sm font-bold">{qty}</span>
+        <span className="w-7 text-center text-sm font-bold tabular-nums">{qty}</span>
         <button
             type="button"
             onClick={() => onChange(1)}
@@ -178,8 +178,8 @@ export default function BookingExtrasPage() {
                             {products.map((product) => {
                                 const qty = productQty.get(product.id) || 0;
                                 return (
-                                    <div key={product.id} className="flex gap-3 rounded-lg border border-gray-200 p-3 hover:border-[#cd1e25] transition-colors">
-                                        <div className="w-16 h-16 rounded-md bg-gray-100 overflow-hidden shrink-0 flex items-center justify-center">
+                                    <div key={product.id} className="flex gap-3 rounded-lg border border-gray-200 p-3 hover:border-[#cd1e25] transition-colors min-h-[112px]">
+                                        <div className="w-16 h-16 rounded-md bg-gray-100 overflow-hidden shrink-0 flex items-center justify-center mt-0.5">
                                             {product.imageUrl ? (
                                                 /* eslint-disable-next-line @next/next/no-img-element */
                                                 <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
@@ -187,13 +187,13 @@ export default function BookingExtrasPage() {
                                                 <span className="text-[10px] text-gray-500 text-center p-1">{product.name}</span>
                                             )}
                                         </div>
-                                        <div className="flex-1 min-w-0">
+                                        <div className="flex-1 min-w-0 flex flex-col">
                                             <h4 className="font-semibold text-sm line-clamp-1 text-gray-900">{product.name}</h4>
                                             {product.description && (
-                                                <p className="text-xs text-gray-500 line-clamp-2">{product.description}</p>
+                                                <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{product.description}</p>
                                             )}
-                                            <div className="mt-1 flex items-center justify-between">
-                                                <span className="font-bold text-[#cd1e25] text-sm">{formatVND(Number(product.basePrice) || 0)}</span>
+                                            <div className="mt-auto pt-2 flex items-center justify-between gap-2">
+                                                <span className="font-bold text-[#cd1e25] text-sm whitespace-nowrap">{formatVND(Number(product.basePrice) || 0)}</span>
                                                 <QtyStepper qty={qty} onChange={(d) => setQty(productQty, setProductQty, product.id, d)} />
                                             </div>
                                         </div>
@@ -213,7 +213,7 @@ export default function BookingExtrasPage() {
                             {combos.map((combo) => {
                                 const qty = comboQty.get(combo.id) || 0;
                                 return (
-                                    <div key={combo.id} className="flex gap-3 rounded-lg border border-gray-200 p-3 hover:border-[#cd1e25] transition-colors">
+                                    <div key={combo.id} className="flex gap-3 rounded-lg border border-gray-200 p-3 hover:border-[#cd1e25] transition-colors min-h-[132px]">
                                         <div className="w-20 h-20 rounded-md bg-gray-100 overflow-hidden shrink-0 flex items-center justify-center">
                                             {combo.imageUrl ? (
                                                 /* eslint-disable-next-line @next/next/no-img-element */
@@ -222,10 +222,10 @@ export default function BookingExtrasPage() {
                                                 <span className="text-[10px] text-gray-500 text-center p-1">{combo.name}</span>
                                             )}
                                         </div>
-                                        <div className="flex-1 min-w-0">
+                                        <div className="flex-1 min-w-0 flex flex-col">
                                             <h4 className="font-semibold text-sm text-gray-900">{combo.name}</h4>
                                             {combo.description && (
-                                                <p className="text-xs text-gray-500 line-clamp-2">{combo.description}</p>
+                                                <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{combo.description}</p>
                                             )}
                                             {combo.products && combo.products.length > 0 && (
                                                 <ul className="mt-1 text-[10px] text-gray-500 space-y-0.5">
@@ -236,8 +236,8 @@ export default function BookingExtrasPage() {
                                                     ))}
                                                 </ul>
                                             )}
-                                            <div className="mt-1.5 flex items-center justify-between">
-                                                <span className="font-bold text-[#cd1e25] text-sm">{formatVND(Number(combo.totalPrice) || 0)}</span>
+                                            <div className="mt-auto pt-2 flex items-center justify-between gap-2">
+                                                <span className="font-bold text-[#cd1e25] text-sm whitespace-nowrap">{formatVND(Number(combo.totalPrice) || 0)}</span>
                                                 <QtyStepper qty={qty} onChange={(d) => setQty(comboQty, setComboQty, combo.id, d)} />
                                             </div>
                                         </div>

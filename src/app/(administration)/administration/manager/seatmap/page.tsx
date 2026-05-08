@@ -40,6 +40,7 @@ import { useLocalization } from "@/src/@core/hooks/use-localization";
 import { getCookie } from "@/src/@core/utils/cookie";
 import { ADMIN_ACCESS_TOKEN_KEY } from "@/src/@core/const";
 import { getUserInfoFromToken } from "@/src/@core/utils/jwt";
+import { formatDateTimeValueGmt7 } from "@/src/@core/utils/date";
 import { SeatType } from "@/src/@core/const/mock/adminMockData";
 import { cinemaService } from "@/src/services/administration-service/cinema/cinema.service";
 
@@ -74,8 +75,8 @@ export default function SeatMapPage() {
     screenType: "2D",
     seatLayout: item.seatLayout ? JSON.parse(item.seatLayout) : { rows: [] },
     seatCount: item.seatCount,
-    createdAt: item.createdAt || "",
-    updatedAt: item.updatedAt || "",
+    createdAt: formatDateTimeValueGmt7(item.createdAt),
+    updatedAt: formatDateTimeValueGmt7(item.updatedAt),
   });
 
   const listMutation = useLTTMutation<PagedResultDto<SeatMapOutputDto> | undefined, { cinemaId: string; page: number; fetch: number; keyword?: string }>({
@@ -132,8 +133,9 @@ export default function SeatMapPage() {
             : direction.includes("vertical")
               ? "vertical"
               : "square";
+        const normalizedId = Number(item.id);
         return {
-          id: idx + 1,
+          id: Number.isFinite(normalizedId) ? normalizedId : idx + 1,
           name: item.name,
           description: item.description || "",
           priceMultiplier: item.priceMultiplier,
@@ -348,10 +350,10 @@ export default function SeatMapPage() {
                   <td className="px-4 py-3">{item.description || "—"}</td>
                   <td className="px-4 py-3">{item.seatCount}</td>
                   <td className="px-4 py-3 text-muted-foreground-shadcn text-xs">
-                    {item.createdAt}
+                    {formatDateTimeValueGmt7(item.createdAt) || "—"}
                   </td>
                   <td className="px-4 py-3 text-muted-foreground-shadcn text-xs">
-                    {item.updatedAt}
+                    {formatDateTimeValueGmt7(item.updatedAt) || "—"}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">

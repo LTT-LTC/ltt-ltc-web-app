@@ -1,6 +1,6 @@
 /**
- * Persistent booking-flow state stored in localStorage so it survives Next.js
- * route transitions across `/booking/[bookingId]/seats|confirm-seats|extras|summary|payment|processing`.
+ * Persistent booking-flow state stored in sessionStorage so it survives route
+ * transitions within the same browser tab and is cleared when the tab closes.
  *
  * Mirrors the schema used by FE/ltc-film-hub's `bookingState.ts`, extended with
  * showtime/cinema/screen ids resolved on the showtime click and the
@@ -46,7 +46,21 @@ export interface BookingState {
 
 const STORAGE_KEY = (bookingId: string) => `ltc:booking:${bookingId || "tmp"}`;
 
-const isBrowser = (): boolean => typeof window !== "undefined" && typeof window.localStorage !== "undefined";
+const isBrowser = (): boolean => typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
+
+const readFromStorage = (key: string): string | null => {
+    if (!isBrowser()) return null;
+    const sessionValue = window.sessionStorage.getItem(key);
+    if (sessionValue) return sessionValue;
+
+    // One-time migration path for old localStorage entries.
+    const legacyValue = typeof window.localStorage !== "undefined" ? window.localStorage.getItem(key) : null;
+    if (legacyValue) {
+        window.sessionStorage.setItem(key, legacyValue);
+        window.localStorage.removeItem(key);
+    }
+    return legacyValue;
+};
 
 const emptyState = (bookingId: string): BookingState => ({
     bookingId,
@@ -64,7 +78,7 @@ export const loadBookingState = (bookingId: string): BookingState | null => {
         return null;
     }
     try {
-        const raw = window.localStorage.getItem(STORAGE_KEY(bookingId));
+        const raw = readFromStorage(STORAGE_KEY(bookingId));
         if (!raw) {
             return null;
         }
@@ -93,7 +107,7 @@ export const saveBookingState = (bookingId: string, patch: Partial<BookingState>
         bookingId,
         updatedAt: Date.now(),
     };
-    window.localStorage.setItem(STORAGE_KEY(bookingId), JSON.stringify(next));
+    window.sessionStorage.setItem(STORAGE_KEY(bookingId), JSON.stringify(next));
     return next;
 };
 
@@ -101,7 +115,10 @@ export const clearBookingState = (bookingId: string): void => {
     if (!isBrowser()) {
         return;
     }
-    window.localStorage.removeItem(STORAGE_KEY(bookingId));
+    window.sessionStorage.removeItem(STORAGE_KEY(bookingId));
+    if (typeof window.localStorage !== "undefined") {
+        window.localStorage.removeItem(STORAGE_KEY(bookingId));
+    }
 };
 
 /** Stable, URL-safe id used for new booking sessions. */

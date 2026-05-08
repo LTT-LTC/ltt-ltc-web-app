@@ -1398,6 +1398,13 @@
     "booking": {
       "loading": "Preparing your booking session...",
       "invalid_session": "Booking session not found. Please pick a showtime again.",
+      "leave_confirm": "Are you sure you want to leave this booking session? Your changes may not be saved.",
+      "exit_confirm": {
+        "title": "Leave booking session?",
+        "message": "If you leave now, your current booking selections will be discarded.",
+        "stay": "Stay",
+        "exit_discard": "Leave and discard"
+      },
       "room": "Room",
       "stepper": {
         "seats": "Seats",
@@ -1482,6 +1489,8 @@
         "back": "Back",
         "next": "Continue",
         "continue": "Continue",
+        "choose_group_seats": "Choose group seats",
+        "clear_selected_seats": "Clear selected seats",
         "continue_to_summary": "Continue to summary",
         "continue_to_payment": "Continue to payment",
         "confirm": "Confirm seats",
@@ -1492,7 +1501,9 @@
       },
       "toast": {
         "pick_seats": "Please pick at least one seat to continue.",
-        "fetch_extras_error": "Failed to load snacks and combos."
+        "fetch_extras_error": "Failed to load snacks and combos.",
+        "group_seats_not_found": "No adjacent seats are available for the selected group size.",
+        "drag_to_select_group": "Drag over seats to select your group area."
       }
     },
     "my_ltc": {

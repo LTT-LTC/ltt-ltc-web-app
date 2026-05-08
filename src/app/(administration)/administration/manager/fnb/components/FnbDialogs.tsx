@@ -28,6 +28,13 @@ import {
     ProductOutputDto,
 } from "@/src/services/administration-service/product/models/output.model";
 
+const toSafeImageUrl = (value?: string) => {
+    const raw = value?.trim();
+    if (!raw) return "";
+    if (/^https?:\/\//i.test(raw) || raw.startsWith("/")) return raw;
+    return "";
+};
+
 interface ProductFormState {
     name: string;
     productCategoryId: string;
@@ -133,8 +140,8 @@ export default function FnbDialogs(props: FnbDialogsProps) {
         [products],
     );
 
-    const productImagePreview = productForm.imageFile ? URL.createObjectURL(productForm.imageFile) : productForm.imageUrl;
-    const comboImagePreview = comboForm.imageFile ? URL.createObjectURL(comboForm.imageFile) : comboForm.imageUrl;
+    const productImagePreview = productForm.imageFile ? URL.createObjectURL(productForm.imageFile) : toSafeImageUrl(productForm.imageUrl);
+    const comboImagePreview = comboForm.imageFile ? URL.createObjectURL(comboForm.imageFile) : toSafeImageUrl(comboForm.imageUrl);
 
     const handleProductFile = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];

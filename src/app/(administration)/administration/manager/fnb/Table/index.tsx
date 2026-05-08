@@ -11,6 +11,7 @@ import LTTInput from "@/src/@core/component/AntD/LTTInput";
 import LTTSelect from "@/src/@core/component/AntD/LTTSelect";
 import { Form, notification, Input } from "antd";
 import Link from "next/link";
+import { toLocalDateInput } from "@/src/@core/utils/date";
 
 import { columns } from "./table.type";
 import FnbFilter from "../Filter";
@@ -66,7 +67,7 @@ const FnbListPage = () => {
   const onSubmit = async () => {
     try {
       const values = await form.validateFields();
-      const now = new Date().toISOString().slice(0, 10);
+      const now = toLocalDateInput(new Date());
       
       const payload = {
         ...values,

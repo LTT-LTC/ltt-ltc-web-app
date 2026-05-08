@@ -13,6 +13,7 @@ import LTTInput from "@/src/@core/component/AntD/LTTInput";
 import LTTModal from "@/src/@core/component/AntD/LTTModal";
 import LTTSelect from "@/src/@core/component/AntD/LTTSelect";
 import LTTTable from "@/src/@core/component/AntD/LTTTable";
+import { formatDateTimeGmt7 } from "@/src/@core/utils/date";
 import { AdminCinema, mockAdminCinemas } from "../_mock/data";
 
 const statusLabel: Record<AdminCinema["status"], string> = {
@@ -131,7 +132,7 @@ const CinemaListPage = () => {
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
-      const now = new Date().toLocaleString("sv-SE").slice(0, 16).replace("T", " ");
+      const now = formatDateTimeGmt7();
 
       if (editingItem) {
         setItems((prev) =>
