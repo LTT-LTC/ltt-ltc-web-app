@@ -9,7 +9,7 @@ export interface CreateScreenInputDto {
     screenNumber: number;
     screenType?: string;
     seatCount: number;
-    seatMapId: string;
+    seatLayout?: string;
     status?: string;
 }
 
@@ -17,7 +17,7 @@ export interface UpdateScreenInputDto {
     screenNumber: number;
     screenType?: string;
     seatCount: number;
-    seatMapId: string;
+    seatLayout?: string;
     status?: string;
 }
 

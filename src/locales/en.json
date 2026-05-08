@@ -369,6 +369,7 @@
         "screen_type": "Screen Type",
         "seat_count": "Seat Count",
         "seat_layout": "Seat Layout",
+        "layout_configured": "Configured",
         "status": "Status",
         "actions": "Actions",
         "screen_label": "Screen {{number}}"
@@ -392,7 +393,11 @@
         "seat_map": "Seat map *",
         "seat_map_placeholder": "Select seat map",
         "design_new": "Design new",
+        "refresh_seat_types": "Refresh seat types",
+        "refresh_seat_maps": "Refresh seat maps",
         "created_seatmap_hint": "Created and pre-selected new seat map.",
+        "custom_snapshot_hint": "This screen uses a custom seat layout snapshot. Pick a template or design a new one to replace it.",
+        "custom_snapshot_label": "Custom snapshot",
         "preview_title": "Selected seat map preview",
         "preview_unavailable": "Cannot render seat map preview.",
         "cancel": "Cancel",
@@ -411,7 +416,7 @@
       "validation": {
         "cinema_required": "Please select cinema before creating or updating a screen",
         "screen_number_invalid": "Invalid screen number",
-        "seat_map_required": "Please select a seat map.",
+        "seat_map_required": "Please select a seat map or design a new one.",
         "seat_count_invalid": "Selected seat map is invalid (SeatCount <= 0)."
       }
     },
@@ -483,6 +488,14 @@
           "name_required": "Please enter seat map name."
         },
         "empty_seat_type_data": "No seat type data. Please refresh seat type list.",
+        "summary": {
+          "title": "Layout summary",
+          "total_seats": "Total seats",
+          "seat_types": "Seat types in layout",
+          "entrances": "Entrances",
+          "exits": "Emergency exits",
+          "no_seats": "No seats placed yet."
+        },
         "form": {
           "name_label": "Seat map name *",
           "name_placeholder": "Example: Screen 1 seat map",
