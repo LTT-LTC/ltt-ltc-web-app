@@ -110,6 +110,7 @@ export default function LTTScreenCreateWizard({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
+  const [deleteToolConfirmOpen, setDeleteToolConfirmOpen] = useState(false);
 
   const [seatTypes, setSeatTypes] = useState<SeatType[]>(externalSeatTypes);
 
@@ -580,6 +581,11 @@ export default function LTTScreenCreateWizard({
   const handleConfirmExit = () => {
     sessionStorage.removeItem(SESSION_STORAGE_KEY);
     onClose();
+  };
+
+  const handleDeleteToolConfirm = () => {
+    setActiveTool("delete");
+    setDeleteToolConfirmOpen(false);
   };
 
   const actualSeatCount = grid.flat().filter((c) => c.type === "seat").length;
@@ -1589,7 +1595,7 @@ export default function LTTScreenCreateWizard({
                             ? "border-destructive bg-destructive/5 text-destructive"
                             : "border-transparent text-muted-foreground-shadcn hover:bg-muted-shadcn"
                         )}
-                        onClick={() => setActiveTool("delete")}
+                        onClick={() => setDeleteToolConfirmOpen(true)}
                       >
                         <Trash2 className="h-5 w-5" />
                         <span>{t("admin.seatmap.wizard.tools.delete_cell")}</span>
@@ -1641,6 +1647,27 @@ export default function LTTScreenCreateWizard({
         </LTTButton>
       )}
     </>
+  );
+
+  const deleteToolConfirmDialog = (
+    <LTTDialog open={deleteToolConfirmOpen} onOpenChange={setDeleteToolConfirmOpen}>
+      <LTTDialogContent className="sm:max-w-sm bg-white">
+        <LTTDialogHeader>
+          <LTTDialogTitle>{t("admin.seatmap.wizard.delete_confirm.title")}</LTTDialogTitle>
+        </LTTDialogHeader>
+        <div className="py-2 text-sm text-muted-foreground-shadcn leading-relaxed">
+          {t("admin.seatmap.wizard.delete_confirm.message")}
+        </div>
+        <LTTDialogFooter className="gap-3">
+          <LTTButton variant="outline" onClick={() => setDeleteToolConfirmOpen(false)} className="flex-1">
+            {t("admin.seatmap.wizard.delete_confirm.cancel")}
+          </LTTButton>
+          <LTTButton variant="destructive" onClick={handleDeleteToolConfirm} className="flex-1">
+            {t("admin.seatmap.wizard.delete_confirm.confirm")}
+          </LTTButton>
+        </LTTDialogFooter>
+      </LTTDialogContent>
+    </LTTDialog>
   );
 
   if (inline) {
@@ -1725,6 +1752,7 @@ export default function LTTScreenCreateWizard({
             </LTTDialogFooter>
           </LTTDialogContent>
         </LTTDialog>
+        {deleteToolConfirmDialog}
       </>
     );
   }
@@ -1814,6 +1842,7 @@ export default function LTTScreenCreateWizard({
           </LTTDialogFooter>
         </LTTDialogContent>
       </LTTDialog>
+      {deleteToolConfirmDialog}
     </>
   );
 }

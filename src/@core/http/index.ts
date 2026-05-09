@@ -147,6 +147,8 @@ function shouldUseCustomerAuthRefresh(failedRequestUrl?: string): boolean {
   const lower = requestUrl.toLowerCase();
   const isAdminCustomerServiceProxy =
     lower.includes("/customer-service/admin");
+  const isCustomerPublicAdministrationEndpoint =
+    lower.includes("/administration-service/customer/");
 
   if (typeof window !== "undefined") {
     const pathname = window.location.pathname;
@@ -165,6 +167,10 @@ function shouldUseCustomerAuthRefresh(failedRequestUrl?: string): boolean {
 
   if (isAdminCustomerServiceProxy) {
     return false;
+  }
+
+  if (isCustomerPublicAdministrationEndpoint) {
+    return true;
   }
 
   return lower.includes("/customer-service/");
@@ -205,6 +211,7 @@ function shouldSkipAuthRefresh(failedRequestUrl?: string): boolean {
     requestUrl.includes("/administration-service/customer/news-and-offers") ||
     requestUrl.includes("/administration-service/customer/cinema") ||
     requestUrl.includes("/administration-service/customer/showtimes") ||
+    requestUrl.includes("/administration-service/customer/screens") ||
     requestUrl.includes("/customer-service/movie")
   );
 }
