@@ -451,6 +451,8 @@
       "delete_dialog": {
         "title": "Xác nhận xóa",
         "message": "Bạn có chắc chắn muốn xóa {{count}} sơ đồ ghế? Hành động này không thể hoàn tác.",
+        "single_title": "Xác nhận xóa sơ đồ ghế",
+        "single_message": "Bạn có chắc chắn muốn xóa sơ đồ ghế này? Hành động này không thể hoàn tác.",
         "cancel": "Hủy",
         "confirm": "Xóa"
       },

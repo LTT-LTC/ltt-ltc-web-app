@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, CircleAlert, Info, List, Pencil, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { getCookie } from "@/src/@core/utils/cookie";
@@ -222,6 +222,16 @@ const addMinutes = (hhmm: string, mins: number) => {
 };
 const formatPrice = (n: number) => `${n.toLocaleString("vi-VN")}đ`;
 
+/** Same LTT loading GIF used by DomainTableStateRow for manager tables */
+function ShowtimeSchedulerLoadingPanel({ label }: { label: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-border-shadcn bg-card py-16 shadow-sm">
+      <img src="/images/main/LTTAppLoading.gif" alt="" className="h-10 w-10 object-contain" aria-hidden />
+      <span className="text-sm text-muted-foreground-shadcn">{label}</span>
+    </div>
+  );
+}
+
 export default function ShowtimeSchedulerPage() {
   const { t } = useLocalization();
   const [mainTab, setMainTab] = useState<MainTab>("scheduler");
@@ -241,6 +251,9 @@ export default function ShowtimeSchedulerPage() {
   const [calendarRange, setCalendarRange] = useState<CalendarRange>("date");
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [calendarMonth, setCalendarMonth] = useState(new Date());
+
+  const bulkShowtimesFetchGenRef = useRef(0);
+  const [bulkShowtimesLoading, setBulkShowtimesLoading] = useState(false);
 
   const [distSearch, setDistSearch] = useState("");
   const [distributionItems, setDistributionItems] = useState<MovieDistributionOutputDto[]>([]);
@@ -423,6 +436,8 @@ export default function ShowtimeSchedulerPage() {
     if (!managerCinemaId || !effectiveMovieId) return;
 
     if (effectiveMovieId !== ALL_MOVIES_VALUE) {
+      bulkShowtimesFetchGenRef.current += 1;
+      setBulkShowtimesLoading(false);
       listShowtimeMutation.mutation({
         movieId: effectiveMovieId,
         cinemaId: managerCinemaId,
@@ -432,6 +447,9 @@ export default function ShowtimeSchedulerPage() {
       return;
     }
 
+    const gen = bulkShowtimesFetchGenRef.current + 1;
+    bulkShowtimesFetchGenRef.current = gen;
+    setBulkShowtimesLoading(true);
     try {
       const responses = await Promise.all(
         eligibleMovies.map((movie) =>
@@ -443,6 +461,8 @@ export default function ShowtimeSchedulerPage() {
           })
         )
       );
+
+      if (gen !== bulkShowtimesFetchGenRef.current) return;
 
       const mergedMap = new Map<string, ShowtimeOutputDto>();
       responses.forEach((response) => {
@@ -463,6 +483,10 @@ export default function ShowtimeSchedulerPage() {
     } catch (error) {
       const message = error instanceof Error ? error.message : t("admin.showtimes.fetch_error");
       toast.error(message);
+    } finally {
+      if (gen === bulkShowtimesFetchGenRef.current) {
+        setBulkShowtimesLoading(false);
+      }
     }
   };
 
@@ -758,7 +782,8 @@ export default function ShowtimeSchedulerPage() {
     return parsed.toLocaleString();
   };
 
-  const schedulerLoading = listShowtimeMutation.isLoading || deleteShowtimeMutation.isLoading;
+  const schedulerLoading =
+    listShowtimeMutation.isLoading || deleteShowtimeMutation.isLoading || bulkShowtimesLoading;
   const saveLoading = createShowtimeMutation.isLoading || updateShowtimeMutation.isLoading;
   const contextLoading = loadDialogContextMutation.isLoading;
 
@@ -824,7 +849,7 @@ export default function ShowtimeSchedulerPage() {
                 ))}
               </LTTSelectContent>
             </LTTSelect>
-            <LTTButton type="button" variant="outline" className="gap-2" onClick={fetchShowtimes} loading={listShowtimeMutation.isLoading}>
+            <LTTButton type="button" variant="outline" className="gap-2" onClick={fetchShowtimes} loading={schedulerLoading}>
               <RefreshCw className="h-4 w-4" /> {t("admin.showtimes.refresh")}
             </LTTButton>
           </div>
@@ -909,7 +934,7 @@ export default function ShowtimeSchedulerPage() {
                   setFetch(nextSize);
                   setPage(1);
                 }}
-                loading={listShowtimeMutation.isLoading}
+                loading={schedulerLoading}
               />
             </>
           ) : (
@@ -955,6 +980,10 @@ export default function ShowtimeSchedulerPage() {
                 })}
               </div>
 
+              {schedulerLoading ? (
+                <ShowtimeSchedulerLoadingPanel label={t("admin.showtimes.loading")} />
+              ) : (
+                <>
               {calendarRange === "week" && (
                 calendarItems.length === 0 ? (
                   <div className="rounded-lg border border-border-shadcn bg-card p-4 text-sm text-muted-foreground-shadcn">
@@ -1235,6 +1264,8 @@ export default function ShowtimeSchedulerPage() {
                     })}
                   </div>
                 </div>
+              )}
+                </>
               )}
             </div>
           )}
