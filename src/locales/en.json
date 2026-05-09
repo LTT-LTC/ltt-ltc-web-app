@@ -557,6 +557,12 @@
           "message": "You have unfinished changes. Exiting will discard the current draft. Are you sure you want to exit?",
           "stay": "Stay editing",
           "exit_discard": "Exit & Discard"
+        },
+        "delete_confirm": {
+          "title": "Enable delete mode?",
+          "message": "Delete mode can remove seat cells from the map. Do you want to continue?",
+          "cancel": "Cancel",
+          "confirm": "Enable delete"
         }
       }
     },

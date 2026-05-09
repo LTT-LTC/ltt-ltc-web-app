@@ -557,6 +557,12 @@
           "message": "Bạn có thay đổi chưa hoàn tất. Thoát sẽ xóa toàn bộ bản nháp hiện tại. Bạn có chắc chắn muốn thoát?",
           "stay": "Ở lại chỉnh sửa",
           "exit_discard": "Thoát & Xóa nháp"
+        },
+        "delete_confirm": {
+          "title": "Bật chế độ xóa?",
+          "message": "Chế độ xóa có thể xóa các ô ghế trên sơ đồ. Bạn có muốn tiếp tục không?",
+          "cancel": "Hủy",
+          "confirm": "Bật chế độ xóa"
         }
       }
     },
