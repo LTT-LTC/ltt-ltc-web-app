@@ -10,7 +10,8 @@
   "http": {
     "network_error": "Network error, please try again later.",
     "unknown_error": "Unknown error, please contact administrators.",
-    "service_unavailable": "Service is temporarily unavailable. Please try again later."
+    "service_unavailable": "Service is temporarily unavailable. Please try again later.",
+    "session_timeout": "Session timeout, please login again."
   },
   "toast": {
     "error_default": "An error occurred while processing. Please contact administrators.",

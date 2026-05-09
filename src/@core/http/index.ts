@@ -28,7 +28,6 @@ import { getDefaultTenant, normalizeTenantForHeader } from "../utils/tenant";
 let isRefreshing = false;
 let refreshPromise: Promise<unknown> | null = null;
 let isRedirectingToLogin = false;
-let redirectCountdownTimer: ReturnType<typeof setInterval> | null = null;
 
 type RetryableRequestConfig = InternalAxiosRequestConfig & {
   _retry?: boolean;
@@ -194,6 +193,74 @@ function clearAuthCookies(isCustomerRequest: boolean) {
   removeCookie(refreshTokenKey);
 }
 
+function isCustomerRefreshLoginUrl(url?: string): boolean {
+  const u = (url ?? "").toLowerCase();
+  return u.includes("/customer-service/") && u.includes("refresh-login");
+}
+
+function isAdminRefreshLoginUrl(url?: string): boolean {
+  const u = (url ?? "").toLowerCase();
+  return u.includes("/administration-service/") && u.includes("refresh-login");
+}
+
+/**
+ * Pick customer vs administration login after session invalidation.
+ * Prefer current pathname for admin portal; then refresh-login URL shape; then API URL hints.
+ */
+function resolveLoginRedirectPath(originalRequestUrl?: string): string {
+  const url = (originalRequestUrl ?? "").toLowerCase();
+
+  if (isCustomerRefreshLoginUrl(originalRequestUrl)) {
+    return "/customer-login";
+  }
+  if (isAdminRefreshLoginUrl(originalRequestUrl)) {
+    return "/administration-login";
+  }
+
+  if (typeof window !== "undefined") {
+    const pathname = window.location.pathname;
+    if (
+      isAdminProtectedPath(pathname) ||
+      isAdminAuthPath(pathname) ||
+      pathname.startsWith("/employee") ||
+      pathname.startsWith("/manager") ||
+      pathname.startsWith("/staff") ||
+      pathname.startsWith("/pos")
+    ) {
+      return "/administration-login";
+    }
+    // Logged-in customer area → customer login even if the failing URL classifier is ambiguous.
+    if (
+      pathname.startsWith("/my-ltc") ||
+      pathname.startsWith("/customer-login") ||
+      pathname.startsWith("/customer-register")
+    ) {
+      return "/customer-login";
+    }
+  }
+
+  if (url.includes("/customer-service/") && !url.includes("/customer-service/admin")) {
+    return "/customer-login";
+  }
+  if (url.includes("/administration-service/")) {
+    return "/administration-login";
+  }
+
+  return shouldUseCustomerAuthRefresh(originalRequestUrl) ? "/customer-login" : "/administration-login";
+}
+
+function clearAuthCookiesForRequestDomain(originalRequestUrl?: string) {
+  if (isCustomerRefreshLoginUrl(originalRequestUrl)) {
+    clearAuthCookies(true);
+    return;
+  }
+  if (isAdminRefreshLoginUrl(originalRequestUrl)) {
+    clearAuthCookies(false);
+    return;
+  }
+  clearAuthCookies(shouldUseCustomerAuthRefresh(originalRequestUrl));
+}
+
 function shouldSkipAuthRefresh(failedRequestUrl?: string): boolean {
   const requestUrl = (failedRequestUrl ?? "").toLowerCase();
   const isAdminMovieServiceRequest =
@@ -221,32 +288,26 @@ function isSoftLogoutExemptCustomerRequest(failedRequestUrl?: string): boolean {
   return requestUrl.includes("/customer-service/customer/profile");
 }
 
-function startUnauthorizedRedirectCountdown(isCustomer: boolean) {
+const sessionTimeoutMessage = (): string =>
+  translate("http.session_timeout", "Session timeout, please login again.");
+
+/**
+ * After clearing tokens, send the user to the correct login route (customer vs administration).
+ */
+function redirectToLoginAfterSessionInvalid(originalRequestUrl?: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
   if (isRedirectingToLogin) {
     return;
   }
-
   isRedirectingToLogin = true;
-  const redirectUrl = isCustomer ? "/customer-login" : "/administration-login";
-  let seconds = 10;
-  const toastId = "unauthorized-redirect-countdown";
 
-  toast.error(`Session is not authorized for this endpoint. Redirecting in ${seconds}s...`, { id: toastId });
+  const redirectPath = resolveLoginRedirectPath(originalRequestUrl);
 
-  redirectCountdownTimer = setInterval(() => {
-    seconds -= 1;
-    if (seconds > 0) {
-      toast.error(`Session is not authorized for this endpoint. Redirecting in ${seconds}s...`, { id: toastId });
-      return;
-    }
+  toast.error(sessionTimeoutMessage(), { id: "session-expired-redirect" });
 
-    if (redirectCountdownTimer) {
-      clearInterval(redirectCountdownTimer);
-      redirectCountdownTimer = null;
-    }
-    toast.error("Redirecting to login...", { id: toastId });
-    window.location.href = redirectUrl;
-  }, 1000);
+  window.location.replace(redirectPath);
 }
 
 // Xử lý refresh token
@@ -331,19 +392,35 @@ const onResponseInterceptor = async (error: AxiosError) => {
   if (error.response && (error.response.status === HttpStatusCode.Unauthorized || error.response.status === HttpStatusCode.Forbidden)) {
     const requestConfig = error.config as RetryableRequestConfig | undefined;
     const requestUrl = requestConfig?.url;
+    const skipAuthRefresh = shouldSkipAuthRefresh(requestUrl);
+
+    // refresh-login itself failed: session cannot be renewed — clear cookies and redirect by auth domain.
+    if (
+      requestConfig &&
+      !requestConfig._retry &&
+      !requestConfig._skipAuthRefresh &&
+      !skipAuthRefresh &&
+      isRefreshLoginRequest(requestUrl)
+    ) {
+      http.defaults.headers.common[AUTHORIZATION_KEY] = "";
+      clearAuthCookiesForRequestDomain(requestUrl);
+      redirectToLoginAfterSessionInvalid(requestUrl);
+      return Promise.reject(normalizeHttpError(error.response?.data, sessionTimeoutMessage()));
+    }
+
     const isCustomerRequest = shouldUseCustomerAuthRefresh(requestUrl);
     const { accessTokenKey, refreshTokenKey } = getAuthCookieKeys(isCustomerRequest);
     const isSoftAuthFailureRequest = isSoftLogoutExemptCustomerRequest(requestUrl);
-    const skipAuthRefresh = shouldSkipAuthRefresh(requestUrl);
     const hasRefreshToken = Boolean(getCookie(refreshTokenKey));
     if (!requestConfig || requestConfig._retry || requestConfig._skipAuthRefresh || isAuthRefreshExcludedRequest(requestUrl) || skipAuthRefresh) {
       return Promise.reject(normalizeHttpError(error.response?.data));
     }
 
     if (!hasRefreshToken) {
-      clearAuthCookies(isCustomerRequest);
-      startUnauthorizedRedirectCountdown(isCustomerRequest);
-      return Promise.reject(normalizeHttpError(error.response?.data, "Session expired. Please login again."));
+      http.defaults.headers.common[AUTHORIZATION_KEY] = "";
+      clearAuthCookiesForRequestDomain(requestUrl);
+      redirectToLoginAfterSessionInvalid(requestUrl);
+      return Promise.reject(normalizeHttpError(error.response?.data, sessionTimeoutMessage()));
     }
 
     if (!isRefreshing) {
@@ -356,12 +433,15 @@ const onResponseInterceptor = async (error: AxiosError) => {
       try {
         newToken = await refreshPromise;
       } catch (refreshError) {
+        const refreshPayload =
+          (refreshError as AxiosError)?.response?.data ?? error.response?.data;
         if (!isSoftAuthFailureRequest) {
           http.defaults.headers.common[AUTHORIZATION_KEY] = "";
           clearAuthCookies(isCustomerRequest);
-          startUnauthorizedRedirectCountdown(isCustomerRequest);
+          redirectToLoginAfterSessionInvalid(requestUrl);
+          return Promise.reject(normalizeHttpError(refreshPayload, sessionTimeoutMessage()));
         }
-        return Promise.reject(normalizeHttpError((refreshError as AxiosError)?.response?.data ?? error.response?.data));
+        return Promise.reject(normalizeHttpError(refreshPayload));
       } finally {
         refreshPromise = null;
         isRefreshing = false;
@@ -371,10 +451,9 @@ const onResponseInterceptor = async (error: AxiosError) => {
         if (!isSoftAuthFailureRequest) {
           http.defaults.headers.common[AUTHORIZATION_KEY] = "";
           clearAuthCookies(isCustomerRequest);
-          // Refresh result is invalid; clear session cookies to force a clean login.
-          startUnauthorizedRedirectCountdown(isCustomerRequest);
+          redirectToLoginAfterSessionInvalid(requestUrl);
         }
-        return Promise.reject(normalizeHttpError(error.response?.data));
+        return Promise.reject(normalizeHttpError(error.response?.data, sessionTimeoutMessage()));
       }
 
       http.defaults.headers.common[AUTHORIZATION_KEY] =
