@@ -1069,7 +1069,8 @@
         "name_required": "Tên loại ghế không được để trống",
         "price_min": "Hệ số giá phải lớn hơn hoặc bằng 0.5",
         "seat_min": "Số chỗ ngồi phải lớn hơn hoặc bằng 1",
-        "direction_invalid": "Hướng xếp ghế chỉ cho phép Horizontal hoặc Vertical"
+        "direction_invalid": "Hướng xếp ghế chỉ cho phép Horizontal hoặc Vertical",
+        "seat_color_invalid": "Màu ghế phải là mã hex hợp lệ (#RRGGBB)"
       },
       "bulk_delete_success": "Xóa {{count}} loại ghế thành công",
       "bulk_delete_partial": "Xóa thành công {{successCount}}/{{count}} loại ghế",
@@ -1077,6 +1078,7 @@
         "name": "Tên loại ghế",
         "description": "Mô tả",
         "number_of_seat": "Số chỗ ngồi",
+        "seat_color": "Màu ghế",
         "price_multiplier": "Hệ số giá",
         "actions": "Thao tác"
       },
@@ -1090,6 +1092,10 @@
         "description": "Mô tả",
         "horizontal": "Horizontal",
         "vertical": "Vertical",
+        "seat_color": "Màu ghế (#hex)",
+        "seat_color_placeholder": "#RRGGBB",
+        "choose_seat_color": "Chọn màu ghế",
+        "preset_colors": "Màu có sẵn",
         "cancel": "Hủy",
         "save": "Lưu",
         "create": "Tạo mới"

@@ -22,7 +22,7 @@ import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import { LTTTextarea } from "@/src/@core/component/LTTShadcnUI/LTTTextarea";
 import { LTTLabel } from "@/src/@core/component/LTTShadcnUI/LTTLabel";
 import { LTTSelect, LTTSelectContent, LTTSelectItem, LTTSelectTrigger, LTTSelectValue } from "@/src/@core/component/LTTShadcnUI/LTTSelect";
-import { getSeatTypeColor } from "@/src/@core/component/LTTManager/seatTypeColor";
+import { getSeatTypeAppearance, isValidSeatColorHex } from "@/src/@core/component/LTTManager/seatTypeColor";
 
 import {
   type Screen,
@@ -594,6 +594,7 @@ export default function LTTScreenCreateWizard({
       id,
       name: getSeatType(id)?.name || `#${id}`,
       count,
+      seatColor: getSeatType(id)?.seatColor,
     }));
     const innerExits = grid.flat().filter((c) => c.type === "emergency_exit").length;
     const innerEntrances = grid.flat().filter((c) => c.type === "door").length;
@@ -889,15 +890,16 @@ export default function LTTScreenCreateWizard({
     return "bg-muted-shadcn/40 border-dashed border-border-shadcn/60 hover:bg-muted-shadcn/60";
   };
 
-  const getSeatCellBgClass = (cell: GridCell) => {
+  const getSeatCellAppearance = (cell: GridCell) => {
     if (cell.type === "seat" || cell.type === "seat_continuation") {
-      return getSeatTypeColor(cell.seatTypeId).bg;
+      const st = getSeatType(cell.seatTypeId);
+      return getSeatTypeAppearance(st?.seatColor, cell.seatTypeId, st?.name);
     }
-    if (cell.type === "walkway") return "bg-muted-shadcn";
-    if (cell.type === "emergency_exit") return "bg-orange-100";
-    if (cell.type === "door") return "bg-green-100";
-    if (cell.type === "empty") return "bg-muted-shadcn/50";
-    return "bg-muted-shadcn/50";
+    if (cell.type === "walkway") return { className: "bg-muted-shadcn" };
+    if (cell.type === "emergency_exit") return { className: "bg-orange-100" };
+    if (cell.type === "door") return { className: "bg-green-100" };
+    if (cell.type === "empty") return { className: "bg-muted-shadcn/50" };
+    return { className: "bg-muted-shadcn/50" };
   };
 
   const getSeatCellDisplay = (cell: GridCell) => {
@@ -932,11 +934,23 @@ export default function LTTScreenCreateWizard({
       const mappedType =
         type === "seat_continuation" ? undefined : (type as SeatLayoutSeat["type"]);
 
+      const seatType = seatTypeId > 0 ? getSeatType(seatTypeId) : undefined;
+      const snapshotColor =
+        seatType?.seatColor && isValidSeatColorHex(seatType.seatColor) ? seatType.seatColor.trim() : undefined;
       return {
         seatCode,
         x: 0,
         y: 0,
         seatTypeId,
+        ...(seatType
+          ? {
+              seatTypeName: seatType.name,
+              seatPriceMultiplier: seatType.priceMultiplier,
+              seatOccupied: seatType.seatOccupied,
+              seatDisplayDirection: seatType.orientation,
+            }
+          : {}),
+        ...(snapshotColor ? { seatColor: snapshotColor } : {}),
         ...(mappedType ? { type: mappedType } : {}),
       };
     };
@@ -1031,28 +1045,34 @@ export default function LTTScreenCreateWizard({
           {t("admin.seatmap.wizard.empty_seat_type_data")}
         </div>
       )}
-      {orderedSeatTypes.map((st) => (
-        <button
-          key={st.id}
-          type="button"
-          className={cn(
-            "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-all border my-3",
-            activeSeatTypeId === st.id && activeTool === "select"
-              ? "border-primary-shadcn bg-primary-shadcn/5 text-primary-shadcn shadow-inner"
-              : "border-transparent text-muted-foreground-shadcn hover:bg-muted-shadcn"
-          )}
-          onClick={() => {
-            setActiveSeatTypeId(st.id);
-            setActiveTool("select");
-          }}
-        >
-          <div className={cn("h-3.5 w-3.5 rounded shadow-sm", getSeatTypeColor(st.id).bg)} />
-          <span className="truncate">{st.name}</span>
-          <span className="ml-auto opacity-60 text-[10px]">
-            x{st.seatOccupied}
-          </span>
-        </button>
-      ))}
+      {orderedSeatTypes.map((st) => {
+        const typeAppearance = getSeatTypeAppearance(st.seatColor, st.id, st.name);
+        return (
+          <button
+            key={st.id}
+            type="button"
+            className={cn(
+              "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-all border my-3",
+              activeSeatTypeId === st.id && activeTool === "select"
+                ? "border-primary-shadcn bg-primary-shadcn/5 text-primary-shadcn shadow-inner"
+                : "border-transparent text-muted-foreground-shadcn hover:bg-muted-shadcn"
+            )}
+            onClick={() => {
+              setActiveSeatTypeId(st.id);
+              setActiveTool("select");
+            }}
+          >
+            <div
+              className={cn("h-3.5 w-3.5 rounded border shadow-sm", typeAppearance.className)}
+              style={typeAppearance.style}
+            />
+            <span className="truncate">{st.name}</span>
+            <span className="ml-auto opacity-60 text-[10px]">
+              x{st.seatOccupied}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 
@@ -1119,21 +1139,25 @@ export default function LTTScreenCreateWizard({
                           </p>
                         ) : (
                           <div className="flex flex-wrap gap-2">
-                            {layoutSummary.seatTypeBreakdown.map((b) => (
+                            {layoutSummary.seatTypeBreakdown.map((b) => {
+                              const chipAppearance = getSeatTypeAppearance(b.seatColor, b.id, b.name);
+                              return (
                               <span
                                 key={b.id}
                                 className="inline-flex items-center gap-2 rounded-full border border-border-shadcn bg-card px-3 py-1 text-xs font-medium"
                               >
                                 <span
                                   className={cn(
-                                    "h-2.5 w-2.5 rounded-full",
-                                    getSeatTypeColor(b.id).bg || "bg-muted-foreground-shadcn"
+                                    "h-2.5 w-2.5 shrink-0 rounded-full border",
+                                    chipAppearance.className,
                                   )}
+                                  style={chipAppearance.style}
                                 />
                                 {b.name}
                                 <span className="text-muted-foreground-shadcn">({b.count})</span>
                               </span>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -1305,7 +1329,7 @@ export default function LTTScreenCreateWizard({
                                   ? "border-dashed border-border-shadcn/70"
                                   : "border-transparent";
 
-                              const seatBg = getSeatCellBgClass(cell);
+                              const seatAppearance = getSeatCellAppearance(cell);
 
                               // Continuation merging: keep the "merged rectangle" feel for horizontal seats
                               let roundedClass = "rounded-sm";
@@ -1329,9 +1353,10 @@ export default function LTTScreenCreateWizard({
                               return (
                                 <div
                                   key={`${rIdx}-${cIdx}`}
+                                  style={seatAppearance.style}
                                   className={cn(
                                     "h-7 w-7 flex items-center justify-center cursor-pointer transition-all border shadow-sm hover:scale-105 active:scale-95",
-                                    seatBg,
+                                    seatAppearance.className,
                                     borderClass,
                                     roundedClass,
                                     cellIsInDrag && "ring-2 ring-primary-shadcn ring-offset-2"
@@ -1389,19 +1414,23 @@ export default function LTTScreenCreateWizard({
                       </span>
                     </div>
 
-                    {orderedSeatTypes.map((st) => (
+                    {orderedSeatTypes.map((st) => {
+                      const legendAppearance = getSeatTypeAppearance(st.seatColor, st.id, st.name);
+                      return (
                       <div key={st.id} className="flex items-center gap-1.5">
                         <div
                           className={cn(
-                            "h-3.5 w-3.5 rounded-sm shadow-sm",
-                            getSeatTypeColor(st.id).bg
+                            "h-3.5 w-3.5 rounded-sm border shadow-sm",
+                            legendAppearance.className,
                           )}
+                          style={legendAppearance.style}
                         />
                         <span className="text-muted-foreground-shadcn">
                           {st.name}
                         </span>
                       </div>
-                    ))}
+                      );
+                    })}
 
                     <div className="h-4 w-px bg-border-shadcn mx-2" />
 

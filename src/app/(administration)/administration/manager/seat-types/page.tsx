@@ -15,6 +15,8 @@ import { useLocalization } from "@/src/@core/hooks/use-localization";
 import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 import AdminTablePagination from "@/src/app/(administration)/administration/admin/_components/AdminTablePagination";
 
+const SEAT_COLOR_HEX = /^#[0-9A-Fa-f]{6}$/;
+
 export default function SeatTypesManagerPage() {
   const { t } = useLocalization();
   const [items, setItems] = useState<SeatTypeOutputDto[]>([]);
@@ -36,12 +38,14 @@ export default function SeatTypesManagerPage() {
 
   const loading = listMutation.isLoading;
 
+  const debouncedSearch = useDebouncedListQuery(search, (keyword) => {
+    listMutation.mutation({ page, fetch, keyword: keyword || undefined });
+  });
+
   const fetchData = (keyword?: string) => {
-    const effectiveKeyword = keyword ?? debouncedSearch;
+    const effectiveKeyword = keyword !== undefined ? keyword : debouncedSearch;
     listMutation.mutation({ page, fetch, keyword: effectiveKeyword || undefined });
   };
-
-  const debouncedSearch = useDebouncedListQuery(search, (keyword) => fetchData(keyword));
 
   useEffect(() => {
     fetchData("");
@@ -93,14 +97,15 @@ export default function SeatTypesManagerPage() {
               <th className="px-4 py-3 text-left font-semibold">{t("admin.seat_type.table.name")}</th>
               <th className="px-4 py-3 text-left font-semibold">{t("admin.seat_type.table.description")}</th>
               <th className="px-4 py-3 text-left font-semibold">{t("admin.seat_type.table.number_of_seat")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.seat_type.table.seat_color")}</th>
               <th className="px-4 py-3 text-left font-semibold">{t("admin.seat_type.table.price_multiplier")}</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <DomainTableStateRow colSpan={4} state="loading" loadingText={t("admin.common.loading")} />
+              <DomainTableStateRow colSpan={5} state="loading" loadingText={t("admin.common.loading")} />
             ) : filtered.length === 0 ? (
-              <DomainTableStateRow colSpan={4} state="empty" emptyText={t("admin.seat_type.empty")} />
+              <DomainTableStateRow colSpan={5} state="empty" emptyText={t("admin.seat_type.empty")} />
             ) : (
               filtered.map((item) => (
                 <tr
@@ -110,6 +115,20 @@ export default function SeatTypesManagerPage() {
                   <td className="px-4 py-3 font-medium">{item.name}</td>
                   <td className="px-4 py-3 text-muted-foreground-shadcn">{item.description}</td>
                   <td className="px-4 py-3">{item.numberOfSeat}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="h-6 w-6 shrink-0 rounded border border-border-shadcn"
+                        style={{
+                          backgroundColor:
+                            item.seatColor && SEAT_COLOR_HEX.test(item.seatColor) ? item.seatColor : "#E5E7EB",
+                        }}
+                      />
+                      <span className="font-mono text-xs text-muted-foreground-shadcn">
+                        {item.seatColor && SEAT_COLOR_HEX.test(item.seatColor) ? item.seatColor : "—"}
+                      </span>
+                    </div>
+                  </td>
                   <td className="px-4 py-3 font-semibold text-brand-600">x{item.priceMultiplier}</td>
                 </tr>
               ))

@@ -1069,7 +1069,8 @@
         "name_required": "Seat type name is required",
         "price_min": "Price multiplier must be greater than or equal to 0.5",
         "seat_min": "Number of seats must be greater than or equal to 1",
-        "direction_invalid": "Display direction must be Horizontal or Vertical"
+        "direction_invalid": "Display direction must be Horizontal or Vertical",
+        "seat_color_invalid": "Seat color must be a valid hex code (#RRGGBB)"
       },
       "bulk_delete_success": "Deleted {{count}} seat types successfully",
       "bulk_delete_partial": "Deleted {{successCount}}/{{count}} seat types",
@@ -1077,6 +1078,7 @@
         "name": "Seat Type Name",
         "description": "Description",
         "number_of_seat": "Number of Seats",
+        "seat_color": "Seat color",
         "price_multiplier": "Price Multiplier",
         "actions": "Actions"
       },
@@ -1090,6 +1092,10 @@
         "description": "Description",
         "horizontal": "Horizontal",
         "vertical": "Vertical",
+        "seat_color": "Seat color (#hex)",
+        "seat_color_placeholder": "#RRGGBB",
+        "choose_seat_color": "Choose seat color",
+        "preset_colors": "Preset colors",
         "cancel": "Cancel",
         "save": "Save",
         "create": "Create"

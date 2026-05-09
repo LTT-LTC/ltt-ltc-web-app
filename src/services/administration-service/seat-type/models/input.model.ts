@@ -10,6 +10,8 @@ export interface CreateSeatTypeInputDto {
     numberOfSeat: number;
     displayDirection?: string;
     priceMultiplier: number;
+    /** #RRGGBB hex for seat map display */
+    seatColor?: string;
 }
 
 export interface UpdateSeatTypeInputDto {
@@ -18,4 +20,5 @@ export interface UpdateSeatTypeInputDto {
     numberOfSeat: number;
     displayDirection?: string;
     priceMultiplier: number;
+    seatColor?: string;
 }

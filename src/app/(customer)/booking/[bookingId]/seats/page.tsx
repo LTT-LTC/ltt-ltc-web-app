@@ -6,7 +6,7 @@ import dayjs from "dayjs";
 import { Eraser, Pointer } from "lucide-react";
 import { toast } from "sonner";
 import LTTSeatMapViewer from "@/src/@core/component/LTTManager/LTTSeatMapViewer";
-import { mockSeatTypes, type SeatLayoutSeat } from "@/src/@core/const/mock/adminMockData";
+import { type SeatLayoutSeat, type SeatType } from "@/src/@core/const/mock/adminMockData";
 import { getCellType } from "@/src/@core/component/LTTManager/seatMapRenderHelpers";
 import MovieTicket from "@/src/@core/component/customer/MovieTicket";
 import { useBookingContext } from "@/src/@core/booking/useBookingContext";
@@ -24,6 +24,84 @@ const buildSeatTypeIndex = (rows: { seats: SeatLayoutSeat[] }[]): Record<string,
         });
     });
     return index;
+};
+
+const buildSeatOccupiedIndex = (rows: { seats: SeatLayoutSeat[] }[]): Record<string, number> => {
+    const index: Record<string, number> = {};
+    rows.forEach((row) => {
+        row.seats.forEach((seat, colIdx) => {
+            if (getCellType(seat) !== "seat" || !seat.seatCode) return;
+            const seatTypeId = seat.seatTypeId ?? 1;
+            let occupied = 1;
+            for (let i = colIdx + 1; i < row.seats.length; i += 1) {
+                const candidate = row.seats[i];
+                if (
+                    getCellType(candidate) === "seat" &&
+                    !candidate.seatCode &&
+                    (candidate.seatTypeId ?? 0) === seatTypeId
+                ) {
+                    occupied += 1;
+                    continue;
+                }
+                break;
+            }
+            index[seat.seatCode] = occupied;
+        });
+    });
+    return index;
+};
+
+const buildSeatMultiplierIndex = (rows: { seats: SeatLayoutSeat[] }[]): Record<string, number> => {
+    const index: Record<string, number> = {};
+    rows.forEach((row) => {
+        row.seats.forEach((seat) => {
+            if (getCellType(seat) !== "seat" || !seat.seatCode) return;
+            const configured = Number(seat.seatPriceMultiplier);
+            index[seat.seatCode] = Number.isFinite(configured) && configured > 0 ? configured : 1;
+        });
+    });
+    return index;
+};
+
+const buildViewerSeatTypes = (rows: { seats: SeatLayoutSeat[] }[]): SeatType[] => {
+    const byId = new Map<number, SeatType>();
+    rows.forEach((row) => {
+        row.seats.forEach((seat) => {
+            if (getCellType(seat) !== "seat" || !seat.seatTypeId) return;
+            const id = seat.seatTypeId;
+            const current = byId.get(id);
+            const direction = (seat.seatDisplayDirection || "").toLowerCase();
+            const orientation: SeatType["orientation"] = direction.includes("horizontal")
+                ? "horizontal"
+                : direction.includes("vertical")
+                    ? "vertical"
+                    : "square";
+            const candidate: SeatType = {
+                id,
+                name: seat.seatTypeName || current?.name || `Seat ${id}`,
+                description: current?.description || "",
+                priceMultiplier: seat.seatPriceMultiplier ?? current?.priceMultiplier ?? 1,
+                seatOccupied: seat.seatOccupied ?? current?.seatOccupied ?? 1,
+                orientation: current?.orientation || orientation,
+                seatColor: current?.seatColor || seat.seatColor,
+                createdAt: "",
+                updatedAt: "",
+            };
+            byId.set(id, candidate);
+        });
+    });
+    return Array.from(byId.values());
+};
+
+const buildSeatTypeMultiplierMap = (seatTypes: SeatType[]): Map<number, number> => {
+    const map = new Map<number, number>();
+    seatTypes.forEach((seatType) => {
+        const multiplier = Number(seatType.priceMultiplier);
+        if (Number.isFinite(multiplier) && multiplier > 0) {
+            map.set(seatType.id, multiplier);
+        }
+    });
+    return map;
 };
 
 const formatShowtimeLabel = (start?: string, end?: string) => {
@@ -95,15 +173,36 @@ export default function SeatPickPage() {
         if (!seatLayout?.rows) return {};
         return buildSeatTypeIndex(seatLayout.rows);
     }, [seatLayout]);
+    const seatOccupiedIndex = useMemo(() => {
+        if (!seatLayout?.rows) return {};
+        return buildSeatOccupiedIndex(seatLayout.rows);
+    }, [seatLayout]);
+    const seatMultiplierIndex = useMemo(() => {
+        if (!seatLayout?.rows) return {};
+        return buildSeatMultiplierIndex(seatLayout.rows);
+    }, [seatLayout]);
+    const viewerSeatTypes = useMemo<SeatType[]>(
+        () => (seatLayout?.rows ? buildViewerSeatTypes(seatLayout.rows) : []),
+        [seatLayout]
+    );
+    const seatTypeMultiplierMap = useMemo(
+        () => buildSeatTypeMultiplierMap(viewerSeatTypes),
+        [viewerSeatTypes]
+    );
 
     const basePrice = showtime?.ticketPrice ?? 0;
     const ticketTotal = useMemo(() => {
         return Array.from(selected).reduce((sum, code) => {
             const typeId = seatTypeIndex[code] ?? 1;
-            const multiplier = mockSeatTypes.find((seatType) => seatType.id === typeId)?.priceMultiplier ?? 1;
+            const configuredMultiplier =
+                seatTypeMultiplierMap.get(typeId) ??
+                seatMultiplierIndex[code] ??
+                1;
+            const occupiedMultiplier = seatOccupiedIndex[code] ?? 1;
+            const multiplier = Math.max(configuredMultiplier, occupiedMultiplier);
             return sum + basePrice * multiplier;
         }, 0);
-    }, [selected, seatTypeIndex, basePrice]);
+    }, [selected, seatTypeIndex, seatTypeMultiplierMap, seatMultiplierIndex, seatOccupiedIndex, basePrice]);
 
     const toggleSeat = (seatCode: string) => {
         if (bookedSeats.has(seatCode)) return;
@@ -205,6 +304,7 @@ export default function SeatPickPage() {
                     </div>
                     <LTTSeatMapViewer
                         seatLayout={seatLayout}
+                        seatTypes={viewerSeatTypes}
                         selectedSeats={selected}
                         bookedSeats={bookedSeats}
                         onSeatClick={toggleSeat}

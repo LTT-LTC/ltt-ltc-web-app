@@ -3,6 +3,8 @@ export interface SeatType {
   name: string;
   description: string;
   priceMultiplier: number;
+  /** Optional hex fill `#RRGGBB` from administration API or layout snapshot */
+  seatColor?: string;
   // How many grid cells this seat type takes in the seat map editor
   seatOccupied: number;
   // Visual orientation rules for the seat type editor
@@ -17,6 +19,7 @@ export const mockSeatTypes: SeatType[] = [
     name: "Standard",
     description: "Ghế tiêu chuẩn, thoải mái với đệm êm",
     priceMultiplier: 1.0,
+    seatColor: "#3B82F6",
     seatOccupied: 1,
     orientation: "square",
     createdAt: "2026-01-15 08:00",
@@ -27,6 +30,7 @@ export const mockSeatTypes: SeatType[] = [
     name: "VIP",
     description: "Ghế VIP với không gian rộng rãi, có tay vịn nâng",
     priceMultiplier: 1.5,
+    seatColor: "#F59E0B",
     seatOccupied: 1,
     orientation: "square",
     createdAt: "2026-01-15 08:00",
@@ -37,6 +41,7 @@ export const mockSeatTypes: SeatType[] = [
     name: "Sweetbox",
     description: "Ghế đôi dành cho cặp đôi, có bàn nhỏ phía trước",
     priceMultiplier: 2.0,
+    seatColor: "#EC4899",
     seatOccupied: 2,
     orientation: "horizontal",
     createdAt: "2026-01-15 08:00",
@@ -47,6 +52,7 @@ export const mockSeatTypes: SeatType[] = [
     name: "Premium",
     description: "Ghế cao cấp với chế độ ngả lưng, có gối và chăn",
     priceMultiplier: 2.5,
+    seatColor: "#A855F7",
     seatOccupied: 1,
     orientation: "square",
     createdAt: "2026-02-01 09:00",
@@ -57,6 +63,7 @@ export const mockSeatTypes: SeatType[] = [
     name: "Economy",
     description: "Ghế phổ thông, giá ưu đãi",
     priceMultiplier: 0.8,
+    seatColor: "#22C55E",
     seatOccupied: 1,
     orientation: "square",
     createdAt: "2026-03-01 09:00",
@@ -69,6 +76,12 @@ export interface SeatLayoutSeat {
   x: number;
   y: number;
   seatTypeId: number;
+  seatTypeName?: string;
+  /** Snapshot hex from seat type when layout was saved (`#RRGGBB`) */
+  seatColor?: string;
+  seatPriceMultiplier?: number;
+  seatOccupied?: number;
+  seatDisplayDirection?: "horizontal" | "vertical" | "square";
   type?: "seat" | "walkway" | "emergency_exit" | "door" | "empty";
 }
 
