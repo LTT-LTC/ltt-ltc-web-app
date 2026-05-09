@@ -57,6 +57,8 @@ export default function SeatMapPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [singleDeleteOpen, setSingleDeleteOpen] = useState(false);
+  const [singleDeleteId, setSingleDeleteId] = useState("");
   const [viewLayout, setViewLayout] = useState<Screen | null>(null);
   const [seatTypes, setSeatTypes] = useState<SeatType[]>([]);
 
@@ -120,6 +122,17 @@ export default function SeatMapPage() {
 
   const deleteMutation = useLTTMutation({
     mutationFn: (id: string) => seatMapService.deleteSeatMapAsync(id),
+  });
+
+  const singleDeleteMutation = useLTTMutation<void, string>({
+    mutationFn: (id: string) => seatMapService.deleteSeatMapAsync(id),
+    onSuccess: () => {
+      toast.success(t("admin.seatmap.delete_success"));
+      setSingleDeleteOpen(false);
+      setSingleDeleteId("");
+      fetchData();
+    },
+    onError: (err) => toast.error(err.message || t("admin.seatmap.fetch_error")),
   });
 
   const seatTypeMutation = useLTTMutation<PagedResultDto<SeatTypeOutputDto> | undefined, { page: number; fetch: number; keyword?: string }>({
@@ -238,11 +251,9 @@ export default function SeatMapPage() {
     });
   };
 
-  const handleDeleteOne = (id: string) => {
-    deleteMutation.mutation(id).then(() => {
-      toast.success(t("admin.seatmap.delete_success"));
-      fetchData();
-    });
+  const confirmSingleDelete = () => {
+    if (!singleDeleteId) return;
+    singleDeleteMutation.mutation(singleDeleteId);
   };
 
   const handleScreenCreated = (screen: Screen) => {
@@ -381,7 +392,10 @@ export default function SeatMapPage() {
                         size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         title={t("admin.seatmap.actions.delete")}
-                        onClick={() => handleDeleteOne(item.id)}
+                        onClick={() => {
+                          setSingleDeleteId(item.id);
+                          setSingleDeleteOpen(true);
+                        }}
                       >
                         <Trash2 className="h-4 w-4" />
                       </LTTButton>
@@ -422,6 +436,36 @@ export default function SeatMapPage() {
               {t("admin.seatmap.delete_dialog.cancel")}
             </LTTButton>
             <LTTButton variant="destructive" onClick={handleDeleteSelected}>
+              {t("admin.seatmap.delete_dialog.confirm")}
+            </LTTButton>
+          </LTTDialogFooter>
+        </LTTDialogContent>
+      </LTTDialog>
+
+      {/* Single row delete — matches screens / other manager tables */}
+      <LTTDialog
+        open={singleDeleteOpen}
+        onOpenChange={(open) => {
+          setSingleDeleteOpen(open);
+          if (!open) setSingleDeleteId("");
+        }}
+      >
+        <LTTDialogContent className="sm:max-w-sm">
+          <LTTDialogHeader>
+            <LTTDialogTitle>{t("admin.seatmap.delete_dialog.single_title")}</LTTDialogTitle>
+          </LTTDialogHeader>
+          <div className="py-4">
+            <p className="text-sm text-muted-foreground-shadcn">{t("admin.seatmap.delete_dialog.single_message")}</p>
+          </div>
+          <LTTDialogFooter>
+            <LTTButton variant="outline" onClick={() => setSingleDeleteOpen(false)}>
+              {t("admin.seatmap.delete_dialog.cancel")}
+            </LTTButton>
+            <LTTButton
+              variant="destructive"
+              onClick={confirmSingleDelete}
+              loading={singleDeleteMutation.isLoading}
+            >
               {t("admin.seatmap.delete_dialog.confirm")}
             </LTTButton>
           </LTTDialogFooter>
