@@ -10,7 +10,8 @@
   "http": {
     "network_error": "Lỗi kết nối đến máy chủ, vui lòng thử lại sau.",
     "unknown_error": "Lỗi không xác định, vui lòng liên hệ quản trị viên.",
-    "service_unavailable": "Dịch vụ tạm thời không khả dụng. Vui lòng thử lại sau."
+    "service_unavailable": "Dịch vụ tạm thời không khả dụng. Vui lòng thử lại sau.",
+    "session_timeout": "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại."
   },
   "toast": {
     "error_default": "Lỗi xảy ra trong quá trình xử lý, vui lòng liên hệ admin.",
