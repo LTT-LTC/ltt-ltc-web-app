@@ -190,6 +190,14 @@ export default function FnBPage() {
         });
     }
 
+    function fetchCategories(page: number, fetchSize = categoryFetch, keyword = categorySearch.trim()) {
+        listCategoriesMutation.mutation({
+            page,
+            fetch: fetchSize,
+            keyword: keyword || undefined,
+        });
+    }
+
     function fetchCombos(page: number) {
         listCombosMutation.mutation({
             page,
@@ -320,10 +328,13 @@ export default function FnBPage() {
     useEffect(() => {
         if (activeTab === "products" && !loadedTabs.products) {
             fetchProducts(productPage);
-            setLoadedTabs((current) => ({ ...current, products: true }));
+            if (!loadedTabs.category) {
+                fetchCategories(1, 200, "");
+            }
+            setLoadedTabs((current) => ({ ...current, products: true, category: true }));
         }
         if (activeTab === "category" && !loadedTabs.category) {
-            listCategoriesMutation.mutation({ page: categoryPage, fetch: categoryFetch, keyword: categorySearch.trim() || undefined });
+            fetchCategories(categoryPage);
             setLoadedTabs((current) => ({ ...current, category: true }));
         }
         if (activeTab === "combos" && !loadedTabs.combos) {
@@ -350,19 +361,8 @@ export default function FnBPage() {
         if (!loadedTabs.category || activeTab !== "category") {
             return;
         }
-        listCategoriesMutation.mutation({ page: categoryPage, fetch: categoryFetch, keyword: categorySearch.trim() || undefined });
+        fetchCategories(categoryPage);
     }, [loadedTabs.category, activeTab, categoryPage, categoryFetch, categorySearch]);
-
-    useEffect(() => {
-        if (categories.length === 0 || combos.length === 0 || products.length > 0) {
-            return;
-        }
-        listProductsMutation.mutation({
-            page: 1,
-            fetch: 100,
-            keyword: "",
-        });
-    }, [categories.length, combos.length, products.length]);
 
     const categoryById = useMemo(
         () => categories.reduce<Record<string, CategoryOutputDto>>((acc, item) => {
@@ -385,6 +385,7 @@ export default function FnBPage() {
 
     const openCreateProduct = () => {
         if (categories.length === 0) {
+            fetchCategories(1, 200, "");
             toast.error("Categories are required before creating products.");
             return;
         }
@@ -476,12 +477,18 @@ export default function FnBPage() {
     };
 
     const openCreateCombo = () => {
+        if (products.length === 0) {
+            listProductsMutation.mutation({ page: 1, fetch: 200, keyword: "" });
+        }
         setEditingCombo(null);
         setComboForm(defaultComboForm);
         setComboDialogOpen(true);
     };
 
     const openEditCombo = (item: ComboOutputDto) => {
+        if (products.length === 0) {
+            listProductsMutation.mutation({ page: 1, fetch: 200, keyword: "" });
+        }
         setEditingCombo(item);
         setComboForm({
             name: item.name,
@@ -623,7 +630,7 @@ export default function FnBPage() {
                         if (activeTab === "category") {
                             setLoadedTabs((current) => ({ ...current, category: true }));
                             setCategoryPage(1);
-                            listCategoriesMutation.mutation({ page: 1, fetch: categoryFetch, keyword: categorySearch.trim() || undefined });
+                            fetchCategories(1);
                         }
                         if (activeTab === "combos") {
                             setLoadedTabs((current) => ({ ...current, combos: true }));

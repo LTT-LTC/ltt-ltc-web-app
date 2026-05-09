@@ -31,6 +31,29 @@ import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
 
+const SEAT_COLOR_HEX = /^#[0-9A-Fa-f]{6}$/;
+const DEFAULT_SEAT_COLOR = "#2563EB";
+
+const normalizeSeatColorHex = (raw: string): string => {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  const withHash = trimmed.startsWith("#") ? trimmed : `#${trimmed}`;
+  return withHash.toUpperCase();
+};
+
+const PRESET_SEAT_COLORS = [
+  "#2563EB",
+  "#F59E0B",
+  "#EC4899",
+  "#A855F7",
+  "#22C55E",
+  "#EF4444",
+  "#14B8A6",
+  "#78716C",
+  "#1F2937",
+  "#EAB308",
+];
+
 export default function SeatTypesAdminPage() {
   const { t } = useLocalization();
   const [items, setItems] = useState<SeatTypeOutputDto[]>([]);
@@ -40,12 +63,14 @@ export default function SeatTypesAdminPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [editing, setEditing] = useState<SeatTypeOutputDto | null>(null);
 
+  const [seatColorPaletteOpen, setSeatColorPaletteOpen] = useState(false);
   const [form, setForm] = useState({
     name: "",
     description: "",
     numberOfSeat: 1,
     displayDirection: "HORIZONTAL",
     priceMultiplier: 1.0,
+    seatColor: DEFAULT_SEAT_COLOR,
   });
 
   const listMutation = useLTTMutation<PagedResultDto<SeatTypeOutputDto> | undefined, GetSeatTypeListInputDto>({
@@ -114,7 +139,9 @@ export default function SeatTypesAdminPage() {
       numberOfSeat: 1,
       displayDirection: "HORIZONTAL",
       priceMultiplier: 1.0,
+      seatColor: DEFAULT_SEAT_COLOR,
     });
+    setSeatColorPaletteOpen(false);
     setDialogOpen(true);
   };
 
@@ -126,7 +153,9 @@ export default function SeatTypesAdminPage() {
       numberOfSeat: item.numberOfSeat,
       displayDirection: item.displayDirection || "HORIZONTAL",
       priceMultiplier: item.priceMultiplier,
+      seatColor: item.seatColor?.trim() ? normalizeSeatColorHex(item.seatColor) : DEFAULT_SEAT_COLOR,
     });
+    setSeatColorPaletteOpen(false);
     setDialogOpen(true);
   };
 
@@ -151,10 +180,25 @@ export default function SeatTypesAdminPage() {
       return;
     }
 
+    const seatColorNorm = normalizeSeatColorHex(form.seatColor);
+    if (seatColorNorm && !SEAT_COLOR_HEX.test(seatColorNorm)) {
+      toast.error(t("admin.seat_type.validation.seat_color_invalid"));
+      return;
+    }
+
+    const body: CreateSeatTypeInputDto = {
+      name: form.name.trim(),
+      description: form.description.trim() || undefined,
+      numberOfSeat: form.numberOfSeat,
+      displayDirection: form.displayDirection,
+      priceMultiplier: form.priceMultiplier,
+      ...(seatColorNorm ? { seatColor: seatColorNorm } : {}),
+    };
+
     if (editing) {
-      updateMutation.mutation({ id: editing.id, body: form });
+      updateMutation.mutation({ id: editing.id, body });
     } else {
-      createMutation.mutation(form);
+      createMutation.mutation(body);
     }
   };
 
@@ -227,15 +271,16 @@ export default function SeatTypesAdminPage() {
               <th className="px-4 py-3 text-left font-semibold">{t("admin.seat_type.table.name")}</th>
               <th className="px-4 py-3 text-left font-semibold">{t("admin.seat_type.table.description")}</th>
               <th className="px-4 py-3 text-left font-semibold">{t("admin.seat_type.table.number_of_seat")}</th>
+              <th className="px-4 py-3 text-left font-semibold">{t("admin.seat_type.table.seat_color")}</th>
               <th className="px-4 py-3 text-left font-semibold">{t("admin.seat_type.table.price_multiplier")}</th>
               <th className="px-4 py-3 text-right font-semibold">{t("admin.seat_type.table.actions")}</th>
             </tr>
           </thead>
           <tbody>
             {listMutation.isLoading ? (
-              <DomainTableStateRow colSpan={6} state="loading" loadingText={t("admin.common.loading")} />
+              <DomainTableStateRow colSpan={7} state="loading" loadingText={t("admin.common.loading")} />
             ) : filtered.length === 0 ? (
-              <DomainTableStateRow colSpan={6} state="empty" emptyText={t("admin.seat_type.empty")} />
+              <DomainTableStateRow colSpan={7} state="empty" emptyText={t("admin.seat_type.empty")} />
             ) : (
               filtered.map((item) => (
                 <tr
@@ -251,6 +296,18 @@ export default function SeatTypesAdminPage() {
                   <td className="px-4 py-3 font-medium">{item.name}</td>
                   <td className="px-4 py-3 text-muted-foreground-shadcn">{item.description}</td>
                   <td className="px-4 py-3">{item.numberOfSeat}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="h-6 w-6 shrink-0 rounded border border-border-shadcn"
+                        style={{ backgroundColor: item.seatColor && SEAT_COLOR_HEX.test(item.seatColor) ? item.seatColor : "#E5E7EB" }}
+                        title={item.seatColor || undefined}
+                      />
+                      <span className="font-mono text-xs text-muted-foreground-shadcn">
+                        {item.seatColor && SEAT_COLOR_HEX.test(item.seatColor) ? item.seatColor : "—"}
+                      </span>
+                    </div>
+                  </td>
                   <td className="px-4 py-3 font-semibold text-brand-600">x{item.priceMultiplier}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-1">
@@ -286,7 +343,7 @@ export default function SeatTypesAdminPage() {
         </table>
       </div>
 
-      <LTTDialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <LTTDialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setSeatColorPaletteOpen(false); }}>
         <LTTDialogContent className="sm:max-w-lg">
           <LTTDialogHeader>
             <LTTDialogTitle>{editing ? t("admin.seat_type.form.edit_title") : t("admin.seat_type.form.create_title")}</LTTDialogTitle>
@@ -339,6 +396,57 @@ export default function SeatTypesAdminPage() {
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
               />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <LTTLabel>{t("admin.seat_type.form.seat_color")}</LTTLabel>
+              <div className="flex flex-wrap items-center gap-3">
+                <span
+                  className="h-10 w-10 shrink-0 rounded-md border border-border-shadcn shadow-inner"
+                  style={{
+                    backgroundColor:
+                      form.seatColor.trim() && SEAT_COLOR_HEX.test(normalizeSeatColorHex(form.seatColor))
+                        ? normalizeSeatColorHex(form.seatColor)
+                        : "#E5E7EB",
+                  }}
+                />
+                <LTTInput
+                  className="max-w-[140px] font-mono text-sm"
+                  placeholder={t("admin.seat_type.form.seat_color_placeholder")}
+                  value={form.seatColor}
+                  onChange={(e) => setForm({ ...form, seatColor: e.target.value })}
+                />
+                <input
+                  type="color"
+                  className="h-10 w-14 cursor-pointer rounded border border-border-shadcn bg-transparent p-0"
+                  value={
+                    form.seatColor.trim() && SEAT_COLOR_HEX.test(normalizeSeatColorHex(form.seatColor))
+                      ? normalizeSeatColorHex(form.seatColor)
+                      : DEFAULT_SEAT_COLOR
+                  }
+                  onChange={(e) => setForm({ ...form, seatColor: e.target.value.toUpperCase() })}
+                  aria-label={t("admin.seat_type.form.seat_color")}
+                />
+                <LTTButton type="button" variant="outline" size="sm" onClick={() => setSeatColorPaletteOpen((v) => !v)}>
+                  {t("admin.seat_type.form.choose_seat_color")}
+                </LTTButton>
+              </div>
+              {seatColorPaletteOpen && (
+                <div className="rounded-lg border border-border-shadcn bg-muted-shadcn/30 p-3">
+                  <p className="mb-2 text-xs font-medium text-muted-foreground-shadcn">{t("admin.seat_type.form.preset_colors")}</p>
+                  <div className="grid grid-cols-5 gap-2 sm:grid-cols-10">
+                    {PRESET_SEAT_COLORS.map((hex) => (
+                      <button
+                        key={hex}
+                        type="button"
+                        title={hex}
+                        className="h-8 w-full rounded border border-border-shadcn shadow-sm transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring"
+                        style={{ backgroundColor: hex }}
+                        onClick={() => setForm({ ...form, seatColor: hex })}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <LTTDialogFooter>

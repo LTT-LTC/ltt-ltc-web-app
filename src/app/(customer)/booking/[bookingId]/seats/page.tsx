@@ -13,8 +13,6 @@ import { useBookingContext } from "@/src/@core/booking/useBookingContext";
 import { saveBookingState } from "@/src/@core/booking/bookingState";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
-import { seatTypeService } from "@/src/services/administration-service/seat-type/seat-type.service";
-import type { SeatTypeOutputDto } from "@/src/services/administration-service/seat-type/models/output.model";
 
 const buildSeatTypeIndex = (rows: { seats: SeatLayoutSeat[] }[]): Record<string, number> => {
     const index: Record<string, number> = {};
@@ -65,6 +63,47 @@ const buildSeatMultiplierIndex = (rows: { seats: SeatLayoutSeat[] }[]): Record<s
     return index;
 };
 
+const buildViewerSeatTypes = (rows: { seats: SeatLayoutSeat[] }[]): SeatType[] => {
+    const byId = new Map<number, SeatType>();
+    rows.forEach((row) => {
+        row.seats.forEach((seat) => {
+            if (getCellType(seat) !== "seat" || !seat.seatTypeId) return;
+            const id = seat.seatTypeId;
+            const current = byId.get(id);
+            const direction = (seat.seatDisplayDirection || "").toLowerCase();
+            const orientation: SeatType["orientation"] = direction.includes("horizontal")
+                ? "horizontal"
+                : direction.includes("vertical")
+                    ? "vertical"
+                    : "square";
+            const candidate: SeatType = {
+                id,
+                name: seat.seatTypeName || current?.name || `Seat ${id}`,
+                description: current?.description || "",
+                priceMultiplier: seat.seatPriceMultiplier ?? current?.priceMultiplier ?? 1,
+                seatOccupied: seat.seatOccupied ?? current?.seatOccupied ?? 1,
+                orientation: current?.orientation || orientation,
+                seatColor: current?.seatColor || seat.seatColor,
+                createdAt: "",
+                updatedAt: "",
+            };
+            byId.set(id, candidate);
+        });
+    });
+    return Array.from(byId.values());
+};
+
+const buildSeatTypeMultiplierMap = (seatTypes: SeatType[]): Map<number, number> => {
+    const map = new Map<number, number>();
+    seatTypes.forEach((seatType) => {
+        const multiplier = Number(seatType.priceMultiplier);
+        if (Number.isFinite(multiplier) && multiplier > 0) {
+            map.set(seatType.id, multiplier);
+        }
+    });
+    return map;
+};
+
 const formatShowtimeLabel = (start?: string, end?: string) => {
     const fmt = (value?: string) => {
         if (!value) return "";
@@ -99,7 +138,6 @@ export default function SeatPickPage() {
 
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [groupDragMode, setGroupDragMode] = useState<boolean>(false);
-    const [seatTypes, setSeatTypes] = useState<SeatTypeOutputDto[]>([]);
 
     const bookedSeats = useMemo(() => {
         if (!showtime) return new Set<string>();
@@ -143,59 +181,14 @@ export default function SeatPickPage() {
         if (!seatLayout?.rows) return {};
         return buildSeatMultiplierIndex(seatLayout.rows);
     }, [seatLayout]);
-
-    useEffect(() => {
-        let cancelled = false;
-        const loadSeatTypes = async () => {
-            try {
-                const res = await seatTypeService.getSeatTypeListAsync({ page: 1, fetch: 200 });
-                if (!cancelled) setSeatTypes(res?.items ?? []);
-            } catch {
-                if (!cancelled) setSeatTypes([]);
-            }
-        };
-        void loadSeatTypes();
-        return () => {
-            cancelled = true;
-        };
-    }, []);
-
-    const seatTypeMultiplierMap = useMemo(() => {
-        const fromApi = new Map<number, number>();
-        seatTypes.forEach((seatType) => {
-            const id = Number(seatType.id);
-            if (!Number.isFinite(id)) return;
-            const multiplier = Number(seatType.priceMultiplier);
-            if (Number.isFinite(multiplier) && multiplier > 0) {
-                fromApi.set(id, multiplier);
-            }
-        });
-        return fromApi;
-    }, [seatTypes]);
-
-    const viewerSeatTypes = useMemo<SeatType[]>(() => {
-        if (seatTypes.length === 0) return [];
-        return seatTypes.map((seatType) => {
-            const id = Number(seatType.id);
-            const normalizedId = Number.isFinite(id) ? id : 0;
-            const direction = (seatType.displayDirection || "").toLowerCase();
-            const orientation: SeatType["orientation"] = direction.includes("horizontal")
-                ? "horizontal"
-                : direction.includes("vertical")
-                    ? "vertical"
-                    : "square";
-            return {
-                id: normalizedId,
-                name: seatType.name,
-                description: seatType.description || "",
-                priceMultiplier: Number(seatType.priceMultiplier) || 1,
-                seatOccupied: seatType.numberOfSeat > 0 ? seatType.numberOfSeat : 1,
-                orientation,
-                createdAt: "",
-                updatedAt: seatType.updatedAt || "",
-            };
-        });
-    }, [seatTypes]);
+    const viewerSeatTypes = useMemo<SeatType[]>(
+        () => (seatLayout?.rows ? buildViewerSeatTypes(seatLayout.rows) : []),
+        [seatLayout]
+    );
+    const seatTypeMultiplierMap = useMemo(
+        () => buildSeatTypeMultiplierMap(viewerSeatTypes),
+        [viewerSeatTypes]
+    );
 
     const basePrice = showtime?.ticketPrice ?? 0;
     const ticketTotal = useMemo(() => {

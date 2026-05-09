@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Footprints, AlertTriangle, DoorOpen } from "lucide-react";
 import { cn } from "@/src/@core/utils/cn";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
@@ -15,7 +15,7 @@ import {
   getSeatMergeClasses,
   resolveContinuationNumber,
 } from "@/src/@core/component/LTTManager/seatMapRenderHelpers";
-import { getSeatTypeColor } from "@/src/@core/component/LTTManager/seatTypeColor";
+import { getSeatTypeAppearance } from "@/src/@core/component/LTTManager/seatTypeColor";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Props
@@ -107,6 +107,7 @@ export default function LTTSeatMapViewer({
             priceMultiplier: seat.seatPriceMultiplier ?? 1,
             seatOccupied: seat.seatOccupied ?? 1,
             orientation: seat.seatDisplayDirection ?? "square",
+            seatColor: seat.seatColor,
             createdAt: "",
             updatedAt: "",
           });
@@ -114,8 +115,11 @@ export default function LTTSeatMapViewer({
         }
 
         const current = byId.get(id)!;
-        if (seat.seatTypeName && current.name !== seat.seatTypeName) {
-          byId.set(id, { ...current, name: seat.seatTypeName });
+        const nextName =
+          seat.seatTypeName && current.name !== seat.seatTypeName ? seat.seatTypeName : current.name;
+        const nextColor = current.seatColor || seat.seatColor;
+        if (nextName !== current.name || nextColor !== current.seatColor) {
+          byId.set(id, { ...current, name: nextName, seatColor: nextColor });
         }
       });
     });
@@ -162,24 +166,23 @@ export default function LTTSeatMapViewer({
 
   // ── Cell rendering helpers ────────────────────────────────────────────────
 
-  const getSeatBgClass = (seat: SeatLayoutSeat, code: string): string => {
+  const getSeatCellVisual = (seat: SeatLayoutSeat, code: string): { className: string; style?: CSSProperties } => {
     const ct = getCellType(seat);
 
-    if (ct === "walkway")        return "bg-muted-shadcn";
-    if (ct === "emergency_exit") return "bg-orange-100";
-    if (ct === "door")           return "bg-green-100";
-    if (ct === "empty")          return "bg-muted-shadcn/30 border-dashed border-border-shadcn/40";
+    if (ct === "walkway")        return { className: "bg-muted-shadcn" };
+    if (ct === "emergency_exit") return { className: "bg-orange-100" };
+    if (ct === "door")           return { className: "bg-green-100" };
+    if (ct === "empty")          return { className: "bg-muted-shadcn/30 border-dashed border-border-shadcn/40" };
 
-    // Seat
     const isBooked   = bookedSeats?.has(code);
     const isSelected = selectedSeats?.has(code);
 
-    if (isBooked)   return "bg-gray-400 border-gray-500";
-    if (isSelected) return "bg-primary-shadcn border-primary-shadcn scale-105 shadow-sm";
+    if (isBooked)   return { className: "bg-gray-400 border-gray-500" };
+    if (isSelected) return { className: "bg-primary-shadcn border-primary-shadcn scale-105 shadow-sm" };
 
     const seatType = mergedSeatTypes.find((st) => st.id === (seat.seatTypeId ?? 0));
-    const colors = getSeatTypeColor(seat.seatTypeId, seatType?.name);
-    return `${colors.bg} ${colors.border}`;
+    const hex = seat.seatColor ?? seatType?.seatColor;
+    return getSeatTypeAppearance(hex, seat.seatTypeId, seatType?.name);
   };
 
   // Dedicated helper for border-band cells (doors/exits/empty) —
@@ -307,11 +310,13 @@ export default function LTTSeatMapViewer({
 
                     const mergeClasses = getSeatMergeClasses(innerSeats, sIdx);
                     const isDragPicked = dragCodes.has(code);
+                    const seatVisual = getSeatCellVisual(seat, code);
 
                     return (
                       <button
                         key={`${rowIdx}-${sIdx}`}
                         disabled={!isClickable && readOnly}
+                        style={seatVisual.style}
                         onClick={() => {
                           if (!dragSelectMode && isClickable) onSeatClick?.(code);
                         }}
@@ -331,7 +336,7 @@ export default function LTTSeatMapViewer({
                         className={cn(
                           cellSize,
                           "rounded-sm flex items-center justify-center border-1 transition-all",
-                          getSeatBgClass(seat, code),
+                          seatVisual.className,
                           ct === "seat" && !readOnly && !isBooked && code
                             ? "cursor-pointer hover:scale-110 hover:shadow-md active:scale-95"
                             : ct === "seat" ? "cursor-default" : "cursor-default",
@@ -394,11 +399,13 @@ export default function LTTSeatMapViewer({
 
                 const mergeClasses = getSeatMergeClasses(row.seats, sIdx);
                 const isDragPicked = dragCodes.has(code);
+                const seatVisual = getSeatCellVisual(seat, code);
 
                 return (
                   <button
                     key={`${rowIdx}-${sIdx}`}
                     disabled={!isClickable}
+                    style={seatVisual.style}
                     onClick={() => {
                       if (!dragSelectMode && isClickable) onSeatClick?.(code);
                     }}
@@ -418,7 +425,7 @@ export default function LTTSeatMapViewer({
                     className={cn(
                       cellSize,
                       "rounded-sm flex items-center justify-center border-1 transition-all",
-                      getSeatBgClass(seat, code),
+                      seatVisual.className,
                       isClickable
                         ? "cursor-pointer hover:scale-110 hover:shadow-md active:scale-95"
                         : "cursor-default",
@@ -441,10 +448,13 @@ export default function LTTSeatMapViewer({
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 rounded-xl border border-border-shadcn bg-muted-shadcn/20 px-5 py-2.5 text-xs">
           {/* Seat types */}
           {activeSeatTypes.map((st) => {
-            const colors = getSeatTypeColor(st.id, st.name);
+            const appearance = getSeatTypeAppearance(st.seatColor, st.id, st.name);
             return (
               <div key={st.id} className="flex items-center gap-1.5">
-                <div className={cn("h-3 w-3 rounded-sm", colors.bg)} />
+                <div
+                  className={cn("h-3 w-3 rounded-sm border", appearance.className)}
+                  style={appearance.style}
+                />
                 <span className="text-muted-foreground-shadcn">{st.name}</span>
               </div>
             );

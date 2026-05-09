@@ -141,6 +141,7 @@ export default function SeatMapPage() {
           priceMultiplier: item.priceMultiplier,
           seatOccupied: item.numberOfSeat > 0 ? item.numberOfSeat : 1,
           orientation,
+          seatColor: item.seatColor,
           createdAt: "",
           updatedAt: item.updatedAt || "",
         };
