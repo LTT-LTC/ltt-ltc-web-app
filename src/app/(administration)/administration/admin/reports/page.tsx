@@ -185,7 +185,7 @@ export default function RevenueReportsPage() {
                   />
                   <Tooltip
                     contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
-                    formatter={(v: number) => formatFull(v)}
+                    formatter={(v) => formatFull(Number(v))}
                     labelFormatter={(l) => `Ngày ${l}`}
                   />
                   <Legend iconType="circle" />
@@ -206,7 +206,7 @@ export default function RevenueReportsPage() {
                   <YAxis tick={{ fontSize: 11, fill: "#888" }} tickFormatter={formatVND} axisLine={false} tickLine={false} />
                   <Tooltip
                     contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
-                    formatter={(v: number) => formatFull(v)}
+                    formatter={(v) => formatFull(Number(v))}
                     labelFormatter={(l) => `${l}:00`}
                   />
                   <Line
