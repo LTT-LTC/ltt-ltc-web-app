@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import TopBar from "../_components/TopBar";
 import Header from "../_components/Header";
 import Footer from "../_components/Footer";
@@ -13,10 +14,12 @@ import LTTModal from "@/src/@core/component/AntD/LTTModal";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 import { buildMovieCardItem, MOVIE_PAGE_SIZE, useMovieCatalog } from "../_components/movieCatalog";
 import { extractYoutubeVideoId } from "../_components/movieTrailer";
+import { SEAT_HOLD_EXPIRED_QUERY } from "@/src/@core/booking/seatHoldExpiredNavigation";
 
 export default function NowShowingPage() {
     const { t, currentLanguage } = useLocalization();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { nowShowingMovies, isLoading, error, reloadMovies } = useMovieCatalog();
     const [page, setPage] = useState(0);
     const [trailerOpen, setTrailerOpen] = useState(false);
@@ -33,6 +36,14 @@ export default function NowShowingPage() {
         [currentLanguage, currentPage, nowShowingMovies],
     );
     const trailerYoutubeId = useMemo(() => extractYoutubeVideoId(trailerUrl), [trailerUrl]);
+
+    useEffect(() => {
+        if (searchParams.get(SEAT_HOLD_EXPIRED_QUERY) !== "1") {
+            return;
+        }
+        toast.error(t("customer.booking.seat_hold_expired_new_session"));
+        router.replace("/now-showing", { scroll: false });
+    }, [router, searchParams, t]);
 
     const openTrailerModal = (title: string, url?: string) => {
         if (!url) {

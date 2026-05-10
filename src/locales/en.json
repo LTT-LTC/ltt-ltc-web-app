@@ -1450,6 +1450,7 @@
       "loading": "Preparing your booking session...",
       "invalid_session": "Booking session not found. Please pick a showtime again.",
       "seats_error_no_context": "This booking link is missing showtime details. Open the movie page and choose a showtime again.",
+      "seat_hold_expired_new_session": "Your seat hold has expired. Please start a new booking session.",
       "seats_error_showtime_load": "Could not load this showtime. Check your connection and try again.",
       "seats_error_layout": "Seat map is not configured for this screen. Try another showtime or contact support.",
       "leave_confirm": "Are you sure you want to leave this booking session? Your changes may not be saved.",
@@ -1475,6 +1476,7 @@
         "release_hold_failed": "Could not release seats. Try again.",
         "removed_toast": "Booking removed",
         "hold_expired_removed": "A booking expired because the seat hold timed out and was removed from your cart.",
+        "hold_expired_badge": "Hold expired",
         "loading_details": "Loading…",
         "movie_fallback": "Movie"
       },
@@ -1575,7 +1577,14 @@
         "card_holder_placeholder": "Enter cardholder name (no accents)",
         "card_holder_hint": "Use Latin letters only, without diacritics.",
         "card_expiry_label": "Release date",
-        "card_expiry_placeholder": "MM/YY"
+        "card_expiry_placeholder": "MM/YY",
+        "bank_label": "Issuing bank",
+        "bank_placeholder": "Select bank",
+        "bank_ncb": "NCB – Nam Á Bank",
+        "bank_jcb": "JCB",
+        "bank_bidv": "BIDV",
+        "bank_vcb": "Vietcombank (VCB)",
+        "card_prepare_failed": "Could not prepare VNPAY checkout"
       },
       "card_confirm": {
         "title": "Confirm card details",
@@ -1593,7 +1602,13 @@
         "placeholder": "Enter OTP",
         "submit": "Verify and continue",
         "refresh_warning": "After you verify, do not refresh this page until you are redirected.",
-        "invalid": "Enter a 4–6 digit code."
+        "invalid": "Enter the 6-digit OTP.",
+        "demo_card_hint": "Demo card payment on this site: use OTP 123456 after continuing.",
+        "countdown": "Code expires in {{seconds}}s",
+        "expired": "OTP timer expired. Tap Resend to get another countdown.",
+        "resend": "Resend OTP",
+        "demo_resend_toast": "Demo card — OTP is always 123456.",
+        "demo_invalid": "Invalid OTP. Use 123456 for this demo."
       },
       "payment_method": {
         "cash": {
@@ -1622,7 +1637,8 @@
         "failed_title": "We couldn't complete your booking",
         "error": "Unexpected error. Please try again.",
         "payment_ref": "Payment reference",
-        "otp_required": "Complete card verification (OTP) before continuing."
+        "otp_required": "Complete card verification (OTP) before continuing.",
+        "gateway_only": "Booking confirmation runs after VNPAY returns successfully. Use Pay by card or VNPAY from the payment step, or enable the dev mock flag NEXT_PUBLIC_BOOKING_PAYMENT_MOCK_SUCCESS=true on /processing."
       },
       "cta": {
         "back": "Back",

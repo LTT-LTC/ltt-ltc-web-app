@@ -41,6 +41,14 @@ function formatHoldTimeLeft(expiresAtMs: number | undefined, nowMs: number): str
     return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+/** Seat hold was active (timer persisted) and the deadline has passed. */
+function isSeatHoldExpired(state: BookingState, nowMs: number): boolean {
+    const exp = state.seatHoldExpiresAt;
+    if (typeof exp !== "number" || !Number.isFinite(exp)) return false;
+    if (!(state.seats?.length > 0)) return false;
+    return exp <= nowMs;
+}
+
 interface CartLineDetail {
     movieTitle: string;
     cinemaName: string;
@@ -131,13 +139,19 @@ function BookingCartSessionCard({
             : null;
 
     const holdExpiresAt = session.state.seatHoldExpiresAt;
+    const holdExpired = isSeatHoldExpired(session.state, nowMs);
     const holdLabel =
-        holdExpiresAt != null && session.state.seats?.length > 0
+        !holdExpired && holdExpiresAt != null && session.state.seats?.length > 0
             ? formatHoldTimeLeft(holdExpiresAt, nowMs)
             : null;
 
     return (
-        <div className="flex items-start gap-3 rounded-xl border border-border-shadcn bg-card p-4 shadow-sm">
+        <div
+            className={cn(
+                "flex items-start gap-3 rounded-xl border border-border-shadcn bg-card p-4 shadow-sm transition-opacity",
+                holdExpired && "opacity-[0.92]",
+            )}
+        >
             <div className="relative h-20 w-16 shrink-0 overflow-hidden rounded-lg bg-muted-shadcn">
                 {detail?.posterUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -165,7 +179,11 @@ function BookingCartSessionCard({
                             </span>
                         </div>
                         {extrasHint ? <p className="mt-1 text-[11px] text-muted-foreground-shadcn">{extrasHint}</p> : null}
-                        {holdLabel != null ? (
+                        {holdExpired ? (
+                            <span className="mt-2 inline-flex items-center rounded-md border border-muted-foreground/25 bg-muted-shadcn px-2.5 py-1 text-xs font-semibold text-muted-foreground-shadcn">
+                                {t("customer.booking.cart.hold_expired_badge")}
+                            </span>
+                        ) : holdLabel != null ? (
                             <span className="mt-2 inline-flex items-center rounded-md border-2 border-amber-300 bg-amber-50 px-3 py-1.5 text-sm font-extrabold tabular-nums tracking-tight text-amber-900 shadow-sm">
                                 {t("customer.booking.ticket.hold_timer", { time: holdLabel })}
                             </span>
@@ -216,26 +234,13 @@ export default function BookingCartPopover({ triggerClassName }: BookingCartPopo
         refreshSessions();
     }, [refreshSessions]);
 
-    /** Tick countdown labels and drop sessions whose seat hold has expired (matches booking flow timeout). */
+    /** Tick countdown labels. Seat-hold expiry clears local state only via explicit navigation from booking steps (avoids racing redirects). */
     useEffect(() => {
         const interval = window.setInterval(() => {
-            const now = Date.now();
-            setNowMs(now);
-            let cleared = 0;
-            for (const { bookingId, state } of listStoredBookingSessions()) {
-                const exp = state.seatHoldExpiresAt;
-                if (typeof exp === "number" && exp <= now) {
-                    clearBookingState(bookingId);
-                    cleared += 1;
-                }
-            }
-            if (cleared > 0) {
-                refreshSessions();
-                toast.info(t("customer.booking.cart.hold_expired_removed"));
-            }
+            setNowMs(Date.now());
         }, 1000);
         return () => window.clearInterval(interval);
-    }, [refreshSessions, t]);
+    }, []);
 
     useEffect(() => {
         const onStorage = (e: StorageEvent) => {

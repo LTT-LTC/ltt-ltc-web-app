@@ -50,6 +50,12 @@ export interface BookingState {
     /** Set after user submits OTP on the payment/otp step (before processing). */
     paymentOtpVerified?: boolean;
 
+    /** Signed VNPAY sandbox URL from payment-service; redirect after demo OTP (card flow). */
+    pendingVnpayPaymentUrl?: string;
+
+    /** Bank code sent as vnp_BankCode when creating the pending URL (card flow). */
+    selectedBankCode?: string;
+
     /** Epoch ms (UTC) when server-side temporary seat hold expires (confirm step onward). */
     seatHoldExpiresAt?: number;
 

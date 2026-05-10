@@ -17,6 +17,8 @@ import { getLocalizedMovieTitle, getMoviePoster, getRatingTagClass, normalizeMov
 import { CustomerShowtimeOutputDto } from "@/src/services/customer-service/showtime/models/output.model";
 import { newBookingId, saveBookingState } from "@/src/@core/booking/bookingState";
 import BookingShowtimePickerModal from "@/src/@core/component/customer/BookingShowtimePickerModal";
+import { toast } from "sonner";
+import { SEAT_HOLD_EXPIRED_QUERY } from "@/src/@core/booking/seatHoldExpiredNavigation";
 
 const RATED_CONFIG: Record<string, { label: string; icon: string }> = {
     "G": { label: "General Audiences", icon: "child_care" },
@@ -116,7 +118,7 @@ const getDirectorNames = (movie: MovieDetailOutputDto) => {
 };
 
 export default function MovieDetailPage() {
-    const { currentLanguage } = useLocalization();
+    const { currentLanguage, t } = useLocalization();
     const params = useParams<{ id: string }>();
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -162,6 +164,14 @@ export default function MovieDetailPage() {
             active = false;
         };
     }, [movieId]);
+
+    useEffect(() => {
+        if (searchParams.get(SEAT_HOLD_EXPIRED_QUERY) !== "1" || !movieId) {
+            return;
+        }
+        toast.error(t("customer.booking.seat_hold_expired_new_session"));
+        router.replace(`/movies/${movieId}`, { scroll: false });
+    }, [movieId, router, searchParams, t]);
 
     const trailerYoutubeId = useMemo(() => extractYoutubeVideoId(movie?.trailerUrl), [movie?.trailerUrl]);
     const normalizedStatus = normalizeMovieStatus(movie?.status);
