@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import dayjs from "dayjs";
-import { Loader2, Wallet } from "lucide-react";
+import { CheckCircle2, Loader2, Wallet } from "lucide-react";
 import MovieTicket, { formatVND } from "@/src/@core/component/customer/MovieTicket";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
@@ -23,7 +23,7 @@ import {
     LTTSelectValue,
 } from "@/src/@core/component/LTTShadcnUI/LTTSelect";
 import { useBookingContext } from "@/src/@core/booking/useBookingContext";
-import { saveBookingState } from "@/src/@core/booking/bookingState";
+import { clearBookingState, saveBookingState } from "@/src/@core/booking/bookingState";
 import { navigateAfterSeatHoldExpired } from "@/src/@core/booking/seatHoldExpiredNavigation";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 import {
@@ -109,7 +109,25 @@ export default function BookingPaymentPage() {
     const bookingId = params.bookingId;
     const router = useRouter();
 
+    const searchParams = useSearchParams();
+    const isVnpayReturn = searchParams.get("vnpay") === "1";
+    const vnpayStatus = searchParams.get("status");
+    const vnpaySuccess = isVnpayReturn && vnpayStatus === "success";
+
     const { bookingState, showtime, screen, cinema, movie, loading } = useBookingContext(bookingId);
+
+    const vnpayCleanedRef = useRef(false);
+
+    useEffect(() => {
+        if (!vnpaySuccess || !bookingId || vnpayCleanedRef.current) return;
+        vnpayCleanedRef.current = true;
+        (async () => {
+            if (showtime?.id) {
+                await customerShowtimeService.releaseSeatHoldAsync(showtime.id, bookingId).catch(() => {});
+            }
+            clearBookingState(bookingId);
+        })();
+    }, [vnpaySuccess, bookingId, showtime?.id]);
 
     const [cardNumberDisplay, setCardNumberDisplay] = useState("");
     const [holderName, setHolderName] = useState("");
@@ -194,6 +212,58 @@ export default function BookingPaymentPage() {
         return (
             <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-10 text-center text-gray-500">
                 {t("customer.booking.loading")}
+            </div>
+        );
+    }
+
+    if (vnpaySuccess) {
+        return (
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
+                <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-12 text-center space-y-5">
+                    <CheckCircle2 className="h-16 w-16 mx-auto text-emerald-500" />
+                    <h2 className="text-2xl font-bold text-gray-900">
+                        {t("customer.booking.processing.success_title")}
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                        {t("customer.booking.payment.vnpay_result.success_body")}
+                    </p>
+                    <div className="flex justify-center gap-3 pt-2">
+                        <LTTButton
+                            className="bg-[#cd1e25] hover:bg-[#a8181d] text-white"
+                            onClick={() => router.push("/my-ltc/transaction-history")}
+                        >
+                            {t("customer.booking.payment.vnpay_result.back_booking")}
+                        </LTTButton>
+                    </div>
+                </div>
+
+                {showtime && (
+                    <div className="lg:sticky lg:top-4 lg:self-start">
+                        <MovieTicket
+                            movie={{
+                                title: movie?.title ?? showtime.movie?.title ?? "—",
+                                originalTitle: movie?.originalTitle ?? showtime.movie?.originalTitle,
+                                posterUrl: movie?.posterUrl ?? showtime.movie?.posterUrl,
+                                ageRating: movie?.ratingCode ?? showtime.movie?.ratingCode,
+                                durationMins: movie?.durationMins ?? showtime.movie?.durationMins ?? showtime.durationMins,
+                            }}
+                            format={showtime.movieFormat}
+                            cinemaName={cinema?.name ?? "—"}
+                            screenLabel={
+                                screen?.screenNumber
+                                    ? `${t("customer.booking.room")} ${screen.screenNumber}${screen.screenType ? ` (${screen.screenType})` : ""}`
+                                    : "—"
+                            }
+                            showtimeLabel={formatShowtimeLabel(showtime.startTime, showtime.endTime, "—")}
+                            selectedSeats={bookingState?.seats ?? []}
+                            basePrice={bookingState?.basePrice}
+                            ticketTotal={bookingState?.ticketTotal ?? 0}
+                            extrasTotal={extrasTotal}
+                            discount={bookingState?.discountAmount ?? 0}
+                            skipBackConfirm
+                        />
+                    </div>
+                )}
             </div>
         );
     }

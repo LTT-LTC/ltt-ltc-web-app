@@ -14,7 +14,7 @@ export default function VnpayBookingSuccessPage() {
 
     useEffect(() => {
         if (!bookingId) return;
-        router.replace(`/booking/${bookingId}/processing?vnpay=1&status=success`);
+        router.replace(`/booking/${bookingId}/payment?vnpay=1&status=success`);
     }, [bookingId, router]);
 
     return (
