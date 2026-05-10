@@ -49,6 +49,8 @@ interface MovieTicketProps {
     holdExpiresAtMs?: number;
     /** Called when the hold timer reaches zero (e.g. navigate back to seat selection). */
     onSeatHoldExpired?: () => void;
+    /** When false, skip the inline expiry toast (caller shows messaging after navigation). */
+    holdExpiredToast?: boolean;
     primaryLoading?: boolean;
     backLoading?: boolean;
 }
@@ -77,6 +79,7 @@ export default function MovieTicket({
     skipBackConfirm,
     holdExpiresAtMs,
     onSeatHoldExpired,
+    holdExpiredToast = true,
     primaryLoading = false,
     backLoading = false,
 }: MovieTicketProps) {
@@ -102,7 +105,9 @@ export default function MovieTicket({
                 setHoldTimeLeftLabel("0:00");
                 if (!holdExpiredFired.current) {
                     holdExpiredFired.current = true;
-                    toast.error(t("customer.booking.ticket.hold_expired_toast"));
+                    if (holdExpiredToast) {
+                        toast.error(t("customer.booking.ticket.hold_expired_toast"));
+                    }
                     onSeatHoldExpired?.();
                 }
                 return;
@@ -121,7 +126,7 @@ export default function MovieTicket({
             window.cancelAnimationFrame(raf);
             window.clearInterval(id);
         };
-    }, [holdExpiresAtMs, onSeatHoldExpired, t]);
+    }, [holdExpiresAtMs, holdExpiredToast, onSeatHoldExpired, t]);
 
     const performBack = async () => {
         try {

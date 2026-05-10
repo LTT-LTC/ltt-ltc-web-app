@@ -15,8 +15,16 @@ import {
     LTTDialogHeader,
     LTTDialogTitle,
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
+import {
+    LTTSelect,
+    LTTSelectContent,
+    LTTSelectItem,
+    LTTSelectTrigger,
+    LTTSelectValue,
+} from "@/src/@core/component/LTTShadcnUI/LTTSelect";
 import { useBookingContext } from "@/src/@core/booking/useBookingContext";
 import { saveBookingState } from "@/src/@core/booking/bookingState";
+import { navigateAfterSeatHoldExpired } from "@/src/@core/booking/seatHoldExpiredNavigation";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 import {
     customerProductService,
@@ -26,6 +34,7 @@ import {
 import { customerBookingService } from "@/src/services/customer-service/booking/booking.service";
 import { vnpayPaymentService } from "@/src/services/payment-service/vnpay.service";
 import { toast } from "sonner";
+import { customerShowtimeService } from "@/src/services/customer-service/showtime/showtime.service";
 
 const CARD_DIGITS_MAX = 19;
 
@@ -71,6 +80,29 @@ const formatShowtimeLabel = (start?: string, end?: string, emptyPlaceholder = "â
 
 type PayMethod = "card" | "vnpay";
 
+const CARD_BANK_CODES = ["NCB", "JCB", "BIDV", "VCB"] as const;
+
+const CARD_BANK_LABEL_KEY: Record<(typeof CARD_BANK_CODES)[number], string> = {
+    NCB: "customer.booking.payment.bank_ncb",
+    JCB: "customer.booking.payment.bank_jcb",
+    BIDV: "customer.booking.payment.bank_bidv",
+    VCB: "customer.booking.payment.bank_vcb",
+};
+
+const readApiErrorDetail = (e: unknown): string => {
+    if (typeof e === "object" && e !== null && "response" in e) {
+        const data = (e as { response?: { data?: unknown } }).response?.data;
+        if (data && typeof data === "object") {
+            const d = data as Record<string, unknown>;
+            if (typeof d.message === "string") return d.message;
+            const err = d.error as Record<string, unknown> | undefined;
+            if (err && typeof err.message === "string") return String(err.message);
+        }
+    }
+    if (e instanceof Error) return e.message;
+    return "";
+};
+
 export default function BookingPaymentPage() {
     const { t } = useLocalization();
     const params = useParams<{ bookingId: string }>();
@@ -84,6 +116,7 @@ export default function BookingPaymentPage() {
     const [expiryDisplay, setExpiryDisplay] = useState("");
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [payMethod, setPayMethod] = useState<PayMethod>("card");
+    const [selectedBankCode, setSelectedBankCode] = useState<string>("");
     const [vnpayRedirecting, setVnpayRedirecting] = useState(false);
     const [cardConfirmLoading, setCardConfirmLoading] = useState(false);
 
@@ -185,7 +218,8 @@ export default function BookingPaymentPage() {
         isCardValid(cardDigits) &&
         holderTrim.length > 0 &&
         isAsciiPrintableName(holderTrim) &&
-        isValidExpiryMmYy(expiryNorm);
+        isValidExpiryMmYy(expiryNorm) &&
+        CARD_BANK_CODES.includes(selectedBankCode as (typeof CARD_BANK_CODES)[number]);
 
     const openConfirm = () => {
         if (!formValid || !bookingId) return;
@@ -197,17 +231,33 @@ export default function BookingPaymentPage() {
         setCardConfirmLoading(true);
         try {
             await customerBookingService.updateBookingPaymentMethodAsync(bookingId, "card");
+            const orderInfo = `${movieTitle} â€” ${bookingId}`.slice(0, 255);
+            const paymentUrl = await vnpayPaymentService.createVnPayPaymentUrlAsync({
+                bookingId,
+                amount: Math.round(grandTotal),
+                orderInfo,
+                locale: undefined,
+                bankCode: selectedBankCode,
+            });
             const lastFour = cardDigits.slice(-4);
             saveBookingState(bookingId, {
                 paymentMethod: "card",
                 cardHolderDisplay: holderTrim,
                 cardExpiryDisplay: expiryNorm,
                 cardLastFour: lastFour,
+                pendingVnpayPaymentUrl: paymentUrl,
+                selectedBankCode,
+                paymentOtpVerified: false,
             });
             setConfirmOpen(false);
             router.push(`/booking/${bookingId}/payment/otp`);
-        } catch {
-            toast.error(t("customer.booking.toast.payment_method_update_failed"));
+        } catch (e) {
+            const detail = readApiErrorDetail(e);
+            toast.error(
+                detail
+                    ? `${t("customer.booking.payment.card_prepare_failed")}: ${detail}`
+                    : t("customer.booking.payment.card_prepare_failed")
+            );
         } finally {
             setCardConfirmLoading(false);
         }
@@ -223,6 +273,16 @@ export default function BookingPaymentPage() {
 
     const movieTitle = movie?.title ?? showtime.movie?.title ?? emptyPh;
 
+    const pickPayMethod = (method: PayMethod) => {
+        setPayMethod(method);
+        if (method === "vnpay" && bookingId) {
+            saveBookingState(bookingId, {
+                pendingVnpayPaymentUrl: undefined,
+                selectedBankCode: undefined,
+            });
+        }
+    };
+
     const startVnpay = async () => {
         if (!bookingId || grandTotal <= 0 || vnpayRedirecting) return;
         setVnpayRedirecting(true);
@@ -237,8 +297,11 @@ export default function BookingPaymentPage() {
                 locale: undefined,
             });
             window.location.href = paymentUrl;
-        } catch {
-            toast.error(t("customer.booking.payment.vnpay_error"));
+        } catch (e) {
+            const detail = readApiErrorDetail(e);
+            toast.error(
+                detail ? `${t("customer.booking.payment.vnpay_error")} (${detail})` : t("customer.booking.payment.vnpay_error")
+            );
             setVnpayRedirecting(false);
         }
     };
@@ -254,7 +317,7 @@ export default function BookingPaymentPage() {
         return (
             <button
                 type="button"
-                onClick={() => setPayMethod(method)}
+                onClick={() => pickPayMethod(method)}
                 className={`w-full rounded-xl border-2 px-4 py-3.5 flex items-start gap-3 shadow-sm text-left transition-colors ${
                     active ? "border-[#cd1e25] bg-[#fff5f5]" : "border-gray-200 bg-white hover:border-gray-300"
                 }`}
@@ -345,6 +408,24 @@ export default function BookingPaymentPage() {
                                 className="font-mono"
                             />
                         </div>
+                        <div className="space-y-1.5 max-w-xs">
+                            <LTTLabel htmlFor="card-bank" className="text-sm font-semibold text-gray-800">
+                                {t("customer.booking.payment.bank_label")}
+                            </LTTLabel>
+                            <LTTSelect value={selectedBankCode} onValueChange={setSelectedBankCode}>
+                                <LTTSelectTrigger id="card-bank" className="w-full bg-white">
+                                    <LTTSelectValue placeholder={t("customer.booking.payment.bank_placeholder")} />
+                                </LTTSelectTrigger>
+                                <LTTSelectContent className="bg-white">
+                                    {CARD_BANK_CODES.map((code) => (
+                                        <LTTSelectItem key={code} value={code}>
+                                            {t(CARD_BANK_LABEL_KEY[code])}
+                                        </LTTSelectItem>
+                                    ))}
+                                </LTTSelectContent>
+                            </LTTSelect>
+                            <p className="text-xs text-gray-500">{t("customer.booking.otp.demo_card_hint")}</p>
+                        </div>
                     </div>
                 ) : (
                     <div className="pt-2 border-t border-dashed border-gray-200 space-y-2">
@@ -415,7 +496,17 @@ export default function BookingPaymentPage() {
                     backTo={`/booking/${bookingId}/summary`}
                     skipBackConfirm
                     holdExpiresAtMs={bookingState.seatHoldExpiresAt}
-                    onSeatHoldExpired={() => router.replace(`/booking/${bookingId}/seats`)}
+                    holdExpiredToast={false}
+                    onSeatHoldExpired={() =>
+                        navigateAfterSeatHoldExpired(router, {
+                            bookingId,
+                            movieId: bookingState.movieId ?? showtime.movieId,
+                            releaseHold:
+                                showtime.id && bookingId
+                                    ? () => customerShowtimeService.releaseSeatHoldAsync(showtime.id, bookingId)
+                                    : undefined,
+                        })
+                    }
                 />
             </div>
 

@@ -10,6 +10,7 @@ import MovieTicket, { formatVND } from "@/src/@core/component/customer/MovieTick
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 import { saveBookingState } from "@/src/@core/booking/bookingState";
+import { navigateAfterSeatHoldExpired } from "@/src/@core/booking/seatHoldExpiredNavigation";
 import { customerShowtimeService } from "@/src/services/customer-service/showtime/showtime.service";
 
 const formatShowtimeLabel = (start?: string, end?: string, emptyPlaceholder = "—") => {
@@ -78,14 +79,18 @@ export default function ConfirmSeatsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- seatsKey mirrors bookingState.seats
     }, [loading, error, bookingId, showtime?.id, seatsKey, router, t]);
 
-    const onSeatHoldExpired = useCallback(() => {
-        router.replace(`/booking/${bookingId}/seats`);
-    }, [bookingId, router]);
-
     const releaseHold = useCallback(async () => {
         if (!showtime?.id || !bookingId) return;
         await customerShowtimeService.releaseSeatHoldAsync(showtime.id, bookingId).catch(() => {});
     }, [showtime?.id, bookingId]);
+
+    const onSeatHoldExpired = useCallback(() => {
+        navigateAfterSeatHoldExpired(router, {
+            bookingId,
+            movieId: bookingState?.movieId ?? showtime?.movieId,
+            releaseHold,
+        });
+    }, [bookingId, router, bookingState?.movieId, showtime?.movieId, releaseHold]);
 
     const goBackToSeats = useCallback(() => {
         startNavTransition(() => {
@@ -217,6 +222,7 @@ export default function ConfirmSeatsPage() {
                     onBeforeBack={releaseHold}
                     skipBackConfirm
                     holdExpiresAtMs={bookingState.seatHoldExpiresAt}
+                    holdExpiredToast={false}
                     onSeatHoldExpired={onSeatHoldExpired}
                 />
             </div>

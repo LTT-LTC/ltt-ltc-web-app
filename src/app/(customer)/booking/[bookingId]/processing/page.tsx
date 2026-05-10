@@ -9,12 +9,6 @@ import { useBookingContext } from "@/src/@core/booking/useBookingContext";
 import { clearBookingState, saveBookingState } from "@/src/@core/booking/bookingState";
 import { customerShowtimeService } from "@/src/services/customer-service/showtime/showtime.service";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
-import {
-    customerBookingService,
-    type CreateBookingInputDto,
-    type CreateBookingItemInputDto,
-} from "@/src/services/customer-service/booking/booking.service";
-
 type ProcessingStatus = "idle" | "submitting" | "polling" | "succeeded" | "failed";
 
 export default function BookingProcessingPage() {
@@ -50,26 +44,6 @@ export default function BookingProcessingPage() {
 
         startedRef.current = true;
 
-        const items: CreateBookingItemInputDto[] = [];
-        bookingState.seats.forEach((seat) => {
-            items.push({ itemType: "SEAT", quantity: 1, referenceId: undefined, variantId: undefined });
-            void seat;
-        });
-        bookingState.fnb?.forEach((line) => {
-            items.push({ itemType: "PRODUCT", referenceId: line.id, quantity: line.quantity });
-        });
-        bookingState.combos?.forEach((line) => {
-            items.push({ itemType: "COMBO", referenceId: line.id, quantity: line.quantity });
-        });
-
-        const payload: CreateBookingInputDto = {
-            bookingId,
-            showtimeId: showtime.id,
-            paymentMethod: bookingState.paymentMethod,
-            discountAmount: bookingState.discountAmount,
-            items,
-        };
-
         const runSuccessTimers = (ref: string) => {
             setPaymentRef(ref);
             if (bookingId) {
@@ -98,17 +72,9 @@ export default function BookingProcessingPage() {
                 runSuccessTimers(`mock-${Date.now()}`);
                 return;
             }
-            try {
-                const booking = await customerBookingService.createBookingAsync(payload);
-                const ref = booking?.id || `pending-${Date.now()}`;
-                runSuccessTimers(ref);
-            } catch (e) {
-                if (showtime?.id && bookingId) {
-                    await customerShowtimeService.releaseSeatHoldAsync(showtime.id, bookingId).catch(() => {});
-                }
-                setStatus("failed");
-                setErrorMessage(e instanceof Error ? e.message : t("customer.booking.processing.error"));
-            }
+
+            setStatus("failed");
+            setErrorMessage(t("customer.booking.processing.gateway_only"));
         };
 
         void submit();

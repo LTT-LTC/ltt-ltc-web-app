@@ -1450,6 +1450,7 @@
       "loading": "Đang chuẩn bị phiên đặt vé...",
       "invalid_session": "Không tìm thấy phiên đặt vé. Vui lòng chọn lại suất chiếu.",
       "seats_error_no_context": "Liên kết đặt vé thiếu thông tin suất chiếu. Vui lòng vào trang phim và chọn suất lại.",
+      "seat_hold_expired_new_session": "Thời gian giữ ghế đã hết. Vui lòng bắt đầu phiên đặt vé mới.",
       "seats_error_showtime_load": "Không tải được suất chiếu. Kiểm tra kết nối và thử lại.",
       "seats_error_layout": "Chưa cấu hình sơ đồ ghế cho phòng chiếu này. Chọn suất khác hoặc liên hệ rạp.",
       "leave_confirm": "Bạn có chắc chắn muốn rời phiên đặt vé này không? Các thay đổi có thể sẽ không được lưu.",
@@ -1475,6 +1476,7 @@
         "release_hold_failed": "Không thể nhả giữ ghế. Thử lại.",
         "removed_toast": "Đã xóa phiên đặt vé",
         "hold_expired_removed": "Một phiên đặt vé đã hết giữ chỗ và đã được gỡ khỏi giỏ.",
+        "hold_expired_badge": "Đã hết giữ ghế",
         "loading_details": "Đang tải…",
         "movie_fallback": "Phim"
       },
@@ -1575,7 +1577,14 @@
         "card_holder_placeholder": "Nhập tên chủ thẻ (không dấu)",
         "card_holder_hint": "Chỉ dùng chữ Latin, không dấu.",
         "card_expiry_label": "Ngày phát hành",
-        "card_expiry_placeholder": "MM/YY"
+        "card_expiry_placeholder": "MM/YY",
+        "bank_label": "Ngân hàng phát hành",
+        "bank_placeholder": "Chọn ngân hàng",
+        "bank_ncb": "NCB – Nam Á Bank",
+        "bank_jcb": "JCB",
+        "bank_bidv": "BIDV",
+        "bank_vcb": "Vietcombank (VCB)",
+        "card_prepare_failed": "Không thể khởi tạo thanh toán VNPAY"
       },
       "card_confirm": {
         "title": "Xác nhận thông tin thẻ",
@@ -1593,7 +1602,13 @@
         "placeholder": "Nhập mã OTP",
         "submit": "Xác nhận và tiếp tục",
         "refresh_warning": "Sau khi xác nhận, vui lòng không tải lại trang cho đến khi được chuyển hướng.",
-        "invalid": "Nhập mã gồm 4–6 chữ số."
+        "invalid": "Nhập mã OTP gồm 6 chữ số.",
+        "demo_card_hint": "Thẻ demo trên trang này: nhập OTP 123456 sau khi tiếp tục.",
+        "countdown": "Mã hết hạn sau {{seconds}} giây",
+        "expired": "Hết thời gian OTP. Nhấn Gửi lại để đếm ngược lại.",
+        "resend": "Gửi lại OTP",
+        "demo_resend_toast": "Thẻ demo — OTP luôn là 123456.",
+        "demo_invalid": "OTP không đúng. Demo dùng mã 123456."
       },
       "payment_method": {
         "cash": {
@@ -1622,7 +1637,8 @@
         "failed_title": "Không thể hoàn tất đơn hàng",
         "error": "Đã xảy ra lỗi. Vui lòng thử lại.",
         "payment_ref": "Mã tham chiếu thanh toán",
-        "otp_required": "Vui lòng hoàn tất xác thực OTP trước khi tiếp tục."
+        "otp_required": "Vui lòng hoàn tất xác thực OTP trước khi tiếp tục.",
+        "gateway_only": "Đơn chỉ được xác nhận sau khi VNPAY trả về thành công. Hãy thanh toán qua Thẻ hoặc VNPAY ở bước thanh toán, hoặc bật biến dev NEXT_PUBLIC_BOOKING_PAYMENT_MOCK_SUCCESS=true cho trang /processing."
       },
       "cta": {
         "back": "Quay lại",

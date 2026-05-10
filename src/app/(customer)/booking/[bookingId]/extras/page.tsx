@@ -8,12 +8,14 @@ import { toast } from "sonner";
 import MovieTicket, { formatVND } from "@/src/@core/component/customer/MovieTicket";
 import { useBookingContext } from "@/src/@core/booking/useBookingContext";
 import { saveBookingState } from "@/src/@core/booking/bookingState";
+import { navigateAfterSeatHoldExpired } from "@/src/@core/booking/seatHoldExpiredNavigation";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 import {
     customerProductService,
     type CustomerComboOutputDto,
     type CustomerProductOutputDto,
 } from "@/src/services/customer-service/product/product.service";
+import { customerShowtimeService } from "@/src/services/customer-service/showtime/showtime.service";
 
 const QtyStepper = ({ qty, onChange }: { qty: number; onChange: (delta: number) => void }) => (
     <div className="flex items-center gap-1 shrink-0">
@@ -283,7 +285,17 @@ export default function BookingExtrasPage() {
                     backTo={`/booking/${bookingId}/confirm-seats`}
                     skipBackConfirm
                     holdExpiresAtMs={bookingState.seatHoldExpiresAt}
-                    onSeatHoldExpired={() => router.replace(`/booking/${bookingId}/seats`)}
+                    holdExpiredToast={false}
+                    onSeatHoldExpired={() =>
+                        navigateAfterSeatHoldExpired(router, {
+                            bookingId,
+                            movieId: bookingState.movieId ?? showtime.movieId,
+                            releaseHold:
+                                showtime.id && bookingId
+                                    ? () => customerShowtimeService.releaseSeatHoldAsync(showtime.id, bookingId)
+                                    : undefined,
+                        })
+                    }
                 />
             </div>
         </div>
