@@ -80,13 +80,14 @@ export const adminNavItems: NavItemConfig[] = [
     icon: Grid3X3,
     permissionKey: "admin:promotions",
   },
-  {
-    key: "reports",
-    label: "Revenue Report",
-    path: "/administration/admin/reports",
-    icon: BarChart3,
-    permissionKey: "admin:reports",
-  },
+  // Revenue Report tab disabled — revenue data is now shown on the Executive Dashboard.
+  // {
+  //   key: "reports",
+  //   label: "Revenue Report",
+  //   path: "/administration/admin/reports",
+  //   icon: BarChart3,
+  //   permissionKey: "admin:reports",
+  // },
   {
     key: "bookings",
     label: "Booking Management",
@@ -161,13 +162,14 @@ export const managerNavItems: NavItemConfig[] = [
     icon: Building2,
     permissionKey: "manager:screens",
   },
-  {
-    key: "reports",
-    label: "Revenue Report",
-    path: "/administration/manager/reports",
-    icon: BarChart3,
-    permissionKey: "manager:reports",
-  },
+  // Revenue Report tab disabled — revenue data is now shown on the Executive Dashboard.
+  // {
+  //   key: "reports",
+  //   label: "Revenue Report",
+  //   path: "/administration/manager/reports",
+  //   icon: BarChart3,
+  //   permissionKey: "manager:reports",
+  // },
   // {
   //   key: "crm",
   //   label: "CRM & Incident",

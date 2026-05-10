@@ -987,6 +987,7 @@
         "manager_name": "Quản lý",
         "screens": "Phòng chiếu",
         "status": "Trạng thái",
+        "created": "Tạo lúc",
         "updated": "Cập nhật",
         "actions": "Thao tác"
       },
@@ -1041,7 +1042,9 @@
         "from_date": "Từ ngày",
         "to_date": "Đến ngày",
         "cancel": "Hủy",
-        "apply": "Áp dụng"
+        "apply": "Áp dụng",
+        "refresh": "Làm mới dữ liệu",
+        "all_cinemas": "Tất cả rạp"
       },
       "kpis": {
         "revenue_today": "Doanh thu hôm nay",
@@ -1736,44 +1739,6 @@
         "no_active_card": "Không tìm thấy thẻ đang hoạt động.",
         "open_qr": "Xem mã QR",
         "qr_enlarged_alt": "Mã QR thành viên phóng to"
-      },
-      "transaction_history": {
-        "title": "Lịch sử giao dịch",
-        "list_fetch_error": "Không thể tải giao dịch. Vui lòng thử lại.",
-        "booking_detail_error": "Không thể tải chi tiết đặt vé.",
-        "venue_fetch_error": "Không thể tải chi tiết suất chiếu hoặc rạp.",
-        "columns": {
-          "booking_id": "Mã đặt vé",
-          "date": "Ngày giờ",
-          "description": "Mô tả",
-          "amount": "Số tiền",
-          "payment_method": "Phương thức thanh toán"
-        },
-        "detail": {
-          "title": "Chi tiết giao dịch",
-          "back": "Quay lại Lịch sử giao dịch",
-          "loading_booking": "Đang tải…",
-          "loading_venue": "Đang tải suất chiếu…",
-          "booking_id": "Mã đặt vé",
-          "paid_time": "Thời gian thanh toán",
-          "movie": "Phim",
-          "cinema": "Rạp",
-          "screen": "Phòng chiếu",
-          "format": "Định dạng",
-          "showtime": "Suất chiếu",
-          "showtime_id": "Mã suất chiếu",
-          "seats": "Ghế",
-          "payment_method": "Phương thức thanh toán",
-          "status": "Trạng thái",
-          "amount": "Số tiền",
-          "ticket_extras_discount": "Vé / thêm / giảm giá",
-          "fnb_title": "Đồ ăn uống (id × số lượng)",
-          "combos_title": "Combo (id × số lượng)"
-        },
-        "description": {
-          "booking_label": "Đặt vé",
-          "booking_ref": "Đặt vé {{id}}"
-        }
       }
     }
   },
