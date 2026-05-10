@@ -1324,16 +1324,18 @@
       "book_now": "Book Now"
     },
     "footer": {
+      "column_ltcinema": "LTCINEMA",
+      "stay_connected": "Stay Connected",
       "about_us": "About Us",
-      "use_giftcard": "Use Giftcode Card",
       "career": "Career Opportunities",
-      "contact": "Contact LTT",
+      "contact": "Contact LTC",
       "for_partners": "For Business Partners",
       "policy_legal": "Policy & Legal",
       "website_conditions": "Conditions of Website Use",
       "terms_of_use": "Terms of Use",
       "payment_policy": "Payment Policy",
       "privacy_policy": "Privacy Policy",
+      "cinema_rules": "Cinema Rules",
       "faq": "FAQ",
       "customer_service": "Customer Service",
       "hotline": "Hotline",
@@ -1428,6 +1430,11 @@
         "summary": "Summary",
         "payment": "Payment",
         "processing": "Done"
+      },
+      "progress": {
+        "step_of": "Step {{current}} of {{total}}",
+        "previous": "Previous",
+        "next": "Next"
       },
       "heading": {
         "seats": "BOOK YOUR SEATS",
@@ -1560,7 +1567,8 @@
           "dob": "Date of Birth",
           "email": "Email",
           "address": "Address",
-          "member_code": "Member Code"
+          "member_code": "Member Code",
+          "profile_qr": "Profile QR"
         },
         "placeholders": {
           "name": "Enter your full name",
@@ -1581,6 +1589,16 @@
           "email_required": "Please enter your email",
           "email_invalid": "Invalid email"
         }
+      },
+      "membership_card": {
+        "feature_available_soon": "This feature will be available soon.",
+        "request_new_card": "Request new card",
+        "update_information": "Update information",
+        "delete_card": "Delete card",
+        "card_management": "Card Management",
+        "no_active_card": "No active card found.",
+        "open_qr": "View QR code",
+        "qr_enlarged_alt": "Enlarged membership QR code"
       }
     }
   },

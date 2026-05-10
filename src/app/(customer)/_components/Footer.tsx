@@ -1,97 +1,136 @@
 "use client";
+
 import React from "react";
 import Link from "next/link";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 
+/** lucide-react does not export Facebook/YouTube brand icons in this project’s build; use inline SVGs. */
+function FacebookGlyph({ className, ...rest }: React.SVGProps<SVGSVGElement>) {
+    return (
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={className} {...rest}>
+            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+        </svg>
+    );
+}
+
+function YoutubeGlyph({ className, ...rest }: React.SVGProps<SVGSVGElement>) {
+    return (
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={className} {...rest}>
+            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+        </svg>
+    );
+}
+
+const linkClass =
+    "text-primary transition-colors hover:text-primary/80 text-sm";
+
 const Footer: React.FC = () => {
     const { t } = useLocalization();
+
     return (
         <footer className="bg-slate-900 text-slate-400">
-            {/* Top separator */}
-            <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+            <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
             <div className="py-8 sm:py-16">
-                <div className="w-[92%] lg:w-[70%] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-12 lg:gap-16">
-                    {/* Column 1: CinemaHome Vietnam */}
+                <div className="mx-auto grid w-[92%] max-w-6xl grid-cols-1 gap-10 lg:w-[70%] lg:grid-cols-3 lg:gap-16">
                     <div>
-                        <h4 className="text-white font-black uppercase text-sm border-b-2 border-primary pb-3 mb-6">LTCinema</h4>
+                        <h4 className="mb-6 border-b-2 border-primary pb-3 text-sm font-black uppercase tracking-wide text-white">
+                            {t("customer.footer.column_ltcinema")}
+                        </h4>
                         <ul className="space-y-4 text-sm">
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.about_us") || "About Us"}</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.use_giftcard") || "Use Giftcode Card"}</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.career") || "Career Opportunities"}</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.contact") || "Contact LTT"}</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.for_partners") || "For Business Partners"}</Link></li>
+                            <li>
+                                <Link href="/about-us" className={linkClass}>
+                                    {t("customer.footer.about_us")}
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/career-opportunities" className={linkClass}>
+                                    {t("customer.footer.career")}
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/contact-ltc" className={linkClass}>
+                                    {t("customer.footer.contact")}
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/for-business-partners" className={linkClass}>
+                                    {t("customer.footer.for_partners")}
+                                </Link>
+                            </li>
                         </ul>
                     </div>
 
-                    {/* Column 2: Policy & Legal */}
                     <div>
-                        <h4 className="text-white font-black uppercase text-sm border-b-2 border-primary pb-3 mb-6">{t("customer.footer.policy_legal") || "Policy & Legal"}</h4>
+                        <h4 className="mb-6 border-b-2 border-primary pb-3 text-sm font-black uppercase tracking-wide text-white">
+                            {t("customer.footer.policy_legal")}
+                        </h4>
                         <ul className="space-y-4 text-sm">
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.website_conditions") || "Conditions of Website Use"}</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.terms_of_use") || "Terms of Use"}</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.payment_policy") || "Payment Policy"}</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">{t("customer.footer.privacy_policy") || "Privacy Policy"}</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">Cinema Rules</Link></li>
-                            <li><Link href="#" className="text-primary hover:text-primary/80 transition-colors">F.A.Q.</Link></li>
+                            <li>
+                                <Link href="/condition-of-website-use" className={linkClass}>
+                                    {t("customer.footer.website_conditions")}
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/terms-of-use" className={linkClass}>
+                                    {t("customer.footer.terms_of_use")}
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/payment-policy" className={linkClass}>
+                                    {t("customer.footer.payment_policy")}
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/privacy-policy" className={linkClass}>
+                                    {t("customer.footer.privacy_policy")}
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/cinema-rules" className={linkClass}>
+                                    {t("customer.footer.cinema_rules")}
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/faq" className={linkClass}>
+                                    {t("customer.footer.faq")}
+                                </Link>
+                            </li>
                         </ul>
                     </div>
 
-                    {/* Column 3: Stay Connected */}
                     <div>
-                        <h4 className="text-white font-black uppercase text-sm border-b-2 border-primary pb-3 mb-6">Stay Connected</h4>
-                        <div className="flex gap-4 mb-8">
-                            <Link href="#" className="size-12 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-all">
-                                <svg viewBox="0 0 24 24" className="size-5 fill-current"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1V12h3l-.5 3H13v6.8c4.56-.93 8-4.96 8-9.8z"></path></svg>
-                            </Link>
-                            <Link href="#" className="size-12 rounded-full bg-white/10 flex items-center justify-center hover:bg-red-600 transition-all">
-                                <svg viewBox="0 0 24 24" className="size-5 fill-current"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"></path></svg>
-                            </Link>
-                            <Link href="#" className="size-12 rounded-full bg-white/10 flex items-center justify-center hover:bg-blue-400 transition-all font-bold text-lg">Z</Link>
-                        </div>
-                        {/*<div className="border border-white/10 rounded-lg p-5">*/}
-                        {/*    <p className="text-sm font-bold text-white mb-3">Subscribe to News</p>*/}
-                        {/*    <div className="flex">*/}
-                        {/*        <input type="email" placeholder="Email" className="bg-transparent border border-white/15 rounded-l-full py-2 px-4 text-sm focus:ring-1 focus:ring-primary outline-none flex-grow min-w-0" />*/}
-                        {/*        <button className="bg-slate-600 text-white text-xs px-5 py-2 rounded-r-full font-bold whitespace-nowrap hover:bg-primary transition-colors">SEND</button>*/}
-                        {/*    </div>*/}
-                        {/*</div>*/}
-                    </div>
-
-                    {/* Column 4: {t("customer.footer.customer_service") || "Customer Service"} */}
-                    <div>
-                        <h4 className="text-white font-black uppercase text-sm border-b-2 border-primary pb-3 mb-6">{t("customer.footer.customer_service") || "Customer Service"}</h4>
-                        <div className="space-y-6">
-                            <div className="flex items-start gap-3">
-                                <span className="material-symbols-outlined text-primary text-xl mt-0.5">headset_mic</span>
-                                <div>
-                                    <p className="text-white font-bold">{t("customer.footer.hotline") || "Hotline"}: 0123 456 789</p>
-                                    <p className="text-xs opacity-75 mt-1">Available 8:00 - 22:00 (Daily)</p>
-                                </div>
-                            </div>
-                            <div className="flex items-start gap-3">
-                                <span className="material-symbols-outlined text-primary text-xl mt-0.5">mail</span>
-                                <div>
-                                    <p className="text-white font-bold">Email support</p>
-                                    <p className="text-xs opacity-75 mt-1">email@support.cinema.com</p>
-                                </div>
-                            </div>
-                            <div className="flex items-start gap-3">
-                                <span className="material-symbols-outlined text-primary text-xl mt-0.5">pin_drop</span>
-                                <div>
-                                    <p className="text-white font-bold">Corporate Office</p>
-                                    <p className="text-xs opacity-75 mt-1">123 Cinematic Ave, District 1, HCMC</p>
-                                </div>
-                            </div>
+                        <h4 className="mb-6 border-b-2 border-primary pb-3 text-sm font-black uppercase tracking-wide text-white">
+                            {t("customer.footer.stay_connected")}
+                        </h4>
+                        <div className="flex gap-3">
+                            <a
+                                href="#"
+                                aria-label="Facebook"
+                                className="flex size-12 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-primary-shadcn hover:text-primary-shadcn-foreground"
+                            >
+                                <FacebookGlyph className="size-5" />
+                            </a>
+                            <a
+                                href="#"
+                                aria-label="YouTube"
+                                className="flex size-12 shrink-0 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-primary-shadcn hover:text-primary-shadcn-foreground"
+                            >
+                                <YoutubeGlyph className="size-5" />
+                            </a>
+                            <a
+                                href="#"
+                                aria-label="Zalo"
+                                className="flex size-12 shrink-0 items-center justify-center rounded-full bg-white/10 text-lg font-bold text-white transition-colors hover:bg-primary-shadcn hover:text-primary-shadcn-foreground"
+                            >
+                                Z
+                            </a>
                         </div>
                     </div>
                 </div>
 
-                {/* Bottom bar */}
-                <div className="w-[92%] lg:w-[70%] mx-auto mt-8 sm:mt-16 pt-6 sm:pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6">
-                    <div className="flex items-center gap-3">
-                        <p className="text-xs">&copy; 2026 LTT-LTCinema. All Rights Reserved.</p>
-                    </div>
+                <div className="mx-auto mt-10 flex w-[92%] max-w-6xl flex-col items-center gap-4 border-t border-white/10 pt-8 lg:w-[70%]">
+                    <p className="text-center text-xs">{t("customer.footer.copyright")}</p>
                 </div>
             </div>
         </footer>

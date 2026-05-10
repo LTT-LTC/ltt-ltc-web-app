@@ -1324,16 +1324,18 @@
       "book_now": "Đặt Ngay"
     },
     "footer": {
+      "column_ltcinema": "LTCINEMA",
+      "stay_connected": "Kết nối với chúng tôi",
       "about_us": "Về Chúng Tôi",
-      "use_giftcard": "Sử Dụng Thẻ Quà Tặng",
       "career": "Cơ Hội Nghề Nghiệp",
-      "contact": "Liên Hệ LTT",
+      "contact": "Liên Hệ LTC",
       "for_partners": "Dành Cho Đối Tác",
       "policy_legal": "Chính Sách & Pháp Lý",
       "website_conditions": "Điều Kiện Sử Dụng Website",
       "terms_of_use": "Điều Khoản Sử Dụng",
       "payment_policy": "Chính Sách Thanh Toán",
       "privacy_policy": "Chính Sách Bảo Mật",
+      "cinema_rules": "Nội Quy Rạp",
       "faq": "Câu Hỏi Thường Gặp",
       "customer_service": "Dịch Vụ Khách Hàng",
       "hotline": "Tổng Đài",
@@ -1428,6 +1430,11 @@
         "summary": "Tóm tắt",
         "payment": "Thanh toán",
         "processing": "Hoàn tất"
+      },
+      "progress": {
+        "step_of": "Bước {{current}} / {{total}}",
+        "previous": "Quay lại",
+        "next": "Tiếp theo"
       },
       "heading": {
         "seats": "ĐẶT VÉ TRỰC TUYẾN",
@@ -1560,7 +1567,8 @@
           "dob": "Ngày sinh",
           "email": "Email",
           "address": "Địa chỉ chi tiết",
-          "member_code": "Mã thành viên"
+          "member_code": "Mã thành viên",
+          "profile_qr": "Mã QR hồ sơ"
         },
         "placeholders": {
           "name": "Nhập họ và tên đầy đủ",
@@ -1581,6 +1589,16 @@
           "email_required": "Vui lòng nhập email",
           "email_invalid": "Email không hợp lệ"
         }
+      },
+      "membership_card": {
+        "feature_available_soon": "Tính năng sẽ sớm ra mắt.",
+        "request_new_card": "Yêu cầu thẻ mới",
+        "update_information": "Cập nhật thông tin",
+        "delete_card": "Xóa thẻ",
+        "card_management": "Quản lý thẻ",
+        "no_active_card": "Không tìm thấy thẻ đang hoạt động.",
+        "open_qr": "Xem mã QR",
+        "qr_enlarged_alt": "Mã QR thành viên phóng to"
       }
     }
   },

@@ -199,13 +199,11 @@ const MANAGER_PRICING_RULES = [
 const ADMIN_WORKFLOW_LINKS: WorkflowLink[] = [
   { key: "refund_requests", href: "/administration/admin/refunds", count: "312", tone: "warn" },
   { key: "booking_monitoring", href: "/administration/admin/bookings", count: "24", tone: "info" },
-  { key: "member_card_requests", href: "/administration/admin/member-card-request", count: "18", tone: "danger" },
 ];
 
 const MANAGER_WORKFLOW_LINKS: WorkflowLink[] = [
   { key: "refund_requests", href: "/administration/manager/refunds", count: "27", tone: "warn" },
   { key: "booking_monitoring", href: "/administration/manager/bookings", count: "11", tone: "info" },
-  { key: "member_card_requests_admin", href: "/administration/admin/member-card-request", count: "9", tone: "danger" },
 ];
 
 const toneTextClass = (tone: Tone): string =>

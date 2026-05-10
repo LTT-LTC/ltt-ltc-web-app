@@ -17,14 +17,26 @@ import {
     LTTDialogTitle,
 } from "@/src/@core/component/LTTShadcnUI/LTTDialog";
 
+/** Resolve step from URL; works with `trailingSlash: true` (`/booking/id/extras/`). */
 const STEP_FROM_PATH = (pathname: string): BookingStep => {
-    if (pathname.endsWith("/seats")) return "seats";
-    if (pathname.endsWith("/confirm-seats")) return "confirm-seats";
-    if (pathname.endsWith("/extras")) return "extras";
-    if (pathname.endsWith("/summary")) return "summary";
-    if (pathname.endsWith("/payment")) return "payment";
-    if (pathname.endsWith("/processing")) return "processing";
-    return "seats";
+    const segments = pathname.replace(/\/$/, "").split("/").filter(Boolean);
+    const last = segments[segments.length - 1];
+    switch (last) {
+        case "seats":
+            return "seats";
+        case "confirm-seats":
+            return "confirm-seats";
+        case "extras":
+            return "extras";
+        case "summary":
+            return "summary";
+        case "payment":
+            return "payment";
+        case "processing":
+            return "processing";
+        default:
+            return "seats";
+    }
 };
 
 export default function BookingLayout({ children }: { children: React.ReactNode }) {
