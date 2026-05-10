@@ -318,7 +318,8 @@
         "validation": {
           "required": "Please fill in all required showtime fields.",
           "base_price_invalid": "Base price must be greater than 0.",
-          "distribution_invalid_for_show_date": "Selected movie license is not valid for this show date."
+          "distribution_invalid_for_show_date": "Selected movie license is not valid for this show date.",
+          "seat_layout_required": "The selected screen has no seat layout. Configure the screen map before scheduling."
         }
       },
       "tabs": {

@@ -176,9 +176,16 @@ export function useBookingContext(bookingId: string | undefined, bootstrap?: Boo
     }, [bookingId]);
 
     const seatLayout = useMemo<SeatLayout | null>(() => {
-        if (!screen) return null;
-        return tryParseSeatLayout(screen.seatLayout);
-    }, [screen]);
+        const fromShowtime = tryParseSeatLayout(showtime?.seatLayout);
+        if (fromShowtime.rows.length > 0) {
+            return fromShowtime;
+        }
+        if (!screen?.seatLayout) {
+            return null;
+        }
+        const fromScreen = tryParseSeatLayout(screen.seatLayout);
+        return fromScreen.rows.length > 0 ? fromScreen : null;
+    }, [showtime?.seatLayout, screen?.seatLayout]);
 
     return {
         bookingState,

@@ -150,13 +150,12 @@ function SeatPickPageContent() {
     const bookedSeats = useMemo(() => {
         if (!showtime) return new Set<string>();
 
-        const rawHeld = showtime.heldSeatCodes;
+        const rawHeld = showtime.heldSeatCodes ?? [];
+        const rawSold = showtime.soldSeatCodes ?? [];
         const rawLegacy =
             ((showtime as unknown as { bookedSeatCodes?: unknown }).bookedSeatCodes as unknown) ??
             ((showtime as unknown as { bookedSeats?: unknown }).bookedSeats as unknown);
-        const rawBooked = Array.isArray(rawHeld) && rawHeld.length > 0 ? rawHeld : rawLegacy ?? [];
-
-        if (!Array.isArray(rawBooked)) return new Set<string>();
+        const rawBooked = [...rawHeld, ...rawSold, ...(Array.isArray(rawLegacy) ? rawLegacy : [])];
 
         const values = rawBooked
             .map((item) => {
@@ -361,7 +360,7 @@ function SeatPickPageContent() {
         );
     }
 
-    if (!screen || !seatLayout || seatLayout.rows.length === 0) {
+    if (!seatLayout || seatLayout.rows.length === 0) {
         return (
             <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-10 text-center text-gray-500">
                 {t("customer.booking.seats_error_layout")}
@@ -370,9 +369,9 @@ function SeatPickPageContent() {
     }
 
     const emptyPh = t("customer.booking.field.empty_placeholder");
-    const screenLabel = screen.screenNumber
+    const screenLabel = screen?.screenNumber
         ? `${t("customer.booking.room")} ${screen.screenNumber}${screen.screenType ? ` (${screen.screenType})` : ""}`
-        : emptyPh;
+        : showtime.screenName?.trim() || emptyPh;
     const cinemaName = cinema?.name || emptyPh;
     const showtimeLabel = formatShowtimeLabel(showtime.startTime, showtime.endTime, emptyPh);
 
