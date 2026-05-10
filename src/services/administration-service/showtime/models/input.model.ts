@@ -9,6 +9,8 @@ export interface CreateShowtimeInputDto {
     movieId: string;
     cinemaId: string;
     screenId: string;
+    /** JSON snapshot from the selected screen (required for booking when backend does not fall back to seat map). */
+    seatLayout?: string;
     distributionId: string;
     movieFormat?: string;
     showDate: string;

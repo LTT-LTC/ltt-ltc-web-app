@@ -318,7 +318,8 @@
         "validation": {
           "required": "Vui lòng nhập đủ thông tin suất chiếu.",
           "base_price_invalid": "Giá cơ bản phải lớn hơn 0.",
-          "distribution_invalid_for_show_date": "License phim đã chọn không hợp lệ với ngày chiếu này."
+          "distribution_invalid_for_show_date": "License phim đã chọn không hợp lệ với ngày chiếu này.",
+          "seat_layout_required": "Màn hình đã chọn chưa có sơ đồ ghế. Hãy cấu hình sơ đồ ghế cho màn trước khi lên lịch."
         }
       },
       "tabs": {

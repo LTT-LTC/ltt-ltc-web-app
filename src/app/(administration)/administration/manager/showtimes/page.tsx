@@ -692,10 +692,18 @@ export default function ShowtimeSchedulerPage() {
       return;
     }
 
+    const selectedScreen = screenOptions.find((s) => s.id === form.screenId);
+    const layoutSnapshot = selectedScreen?.seatLayout?.trim();
+    if (!layoutSnapshot) {
+      toast.error(t("admin.showtimes.form.validation.seat_layout_required"));
+      return;
+    }
+
     const body: CreateShowtimeInputDto = {
       movieId: form.movieId,
       cinemaId: form.cinemaId,
       screenId: form.screenId,
+      seatLayout: layoutSnapshot,
       distributionId: form.movieDistributionId,
       showDate: form.date,
       startTime: `${form.startTime}:00`,

@@ -49,6 +49,12 @@ export interface CustomerShowtimeOutputDto {
      */
     movie?: ShowtimeMovieDto;
 
+    /** Snapshot seat map JSON for this showtime (preferred over screen layout for booking). */
+    seatLayout?: string;
+
+    /** Seats persisted as sold in seat layout (after payment merge); uppercase on BE. */
+    soldSeatCodes?: string[];
+
     /** Seat codes currently held server-side (Redis); uppercase normalized on BE. */
     heldSeatCodes?: string[];
 }
