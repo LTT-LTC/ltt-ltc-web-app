@@ -2,7 +2,7 @@ import http from "@/src/@core/http";
 import { get } from "@/src/@core/utils/get";
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
 
-const paymentApiBase = get.rootPath("/payment-service/api/payment");
+const paymentApiBase = get.rootPath("/payment-service/customer/payment");
 
 export interface CreateVnPayPaymentUrlInputDto {
     bookingId: string;
@@ -25,7 +25,7 @@ const unwrap = <T>(payload: ApiResult<T> | T): T => {
 };
 
 /**
- * POST create-payment-url — uses shared http client (Bearer + X-Tenant) like other customer calls.
+ * POST create-payment-url on customer-scoped route — uses shared http client (Bearer + X-Tenant).
  */
 export const createVnPayPaymentUrlAsync = async (
     input: CreateVnPayPaymentUrlInputDto
