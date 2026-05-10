@@ -16,11 +16,11 @@ export const Index: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState("vi");
+  const [currentLanguage, setCurrentLanguage] = useState("en");
 
   useEffect(() => {
     const initI18n = async () => {
-      const lang = (localStorage.getItem(LANGUAGE_KEY) || "vi").toLowerCase();
+      const lang = (localStorage.getItem(LANGUAGE_KEY) || "en").toLowerCase();
       localStorage.setItem(LANGUAGE_KEY, lang);
 
       // Keep ABP culture cookie in sync for compatibility with endpoints that still read it.
@@ -35,7 +35,7 @@ export const Index: React.FC<{ children: React.ReactNode }> = ({
             en: { translation: { "Language": "English", ...enLocales } },
           },
           lng: lang,
-          fallbackLng: "vi",
+          fallbackLng: "en",
           interpolation: {
             escapeValue: false,
           },

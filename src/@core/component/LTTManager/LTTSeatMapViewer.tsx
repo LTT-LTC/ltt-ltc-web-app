@@ -174,7 +174,8 @@ export default function LTTSeatMapViewer({
     if (ct === "door")           return { className: "bg-green-100" };
     if (ct === "empty")          return { className: "bg-muted-shadcn/30 border-dashed border-border-shadcn/40" };
 
-    const isBooked   = bookedSeats?.has(code);
+    const codeKey = code.trim().toUpperCase();
+    const isBooked   = !!(bookedSeats?.has(codeKey) || bookedSeats?.has(code));
     const isSelected = selectedSeats?.has(code);
 
     if (isBooked)   return { className: "bg-gray-400 border-gray-500" };
@@ -304,7 +305,8 @@ export default function LTTSeatMapViewer({
                   {innerSeats.map((seat, sIdx) => {
                     const ct   = getCellType(seat);
                     const code = seat.seatCode;
-                    const isBooked   = !!bookedSeats?.has(code);
+                    const codeKey = code?.trim().toUpperCase() ?? "";
+                    const isBooked   = !!(code && (bookedSeats?.has(codeKey) || bookedSeats?.has(code)));
                     const isSelected = !!selectedSeats?.has(code);
                     const isClickable = !readOnly && ct === "seat" && !isBooked && !!code;
 
@@ -393,7 +395,8 @@ export default function LTTSeatMapViewer({
               {row.seats.map((seat, sIdx) => {
                 const ct   = getCellType(seat);
                 const code = seat.seatCode;
-                const isBooked   = !!bookedSeats?.has(code);
+                const codeKey = code?.trim().toUpperCase() ?? "";
+                const isBooked   = !!(code && (bookedSeats?.has(codeKey) || bookedSeats?.has(code)));
                 const isSelected = !!selectedSeats?.has(code);
                 const isClickable = !readOnly && ct === "seat" && !isBooked && !!code;
 

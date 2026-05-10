@@ -11,6 +11,7 @@ import { customerMovieService } from "@/src/services/customer-service/movie/movi
 import { MovieDetailOutputDto } from "@/src/services/customer-service/movie/models/output.model";
 import {
     BookingState,
+    BOOKING_STORAGE_KEY,
     saveBookingState,
     loadBookingState,
 } from "@/src/@core/booking/bookingState";
@@ -69,14 +70,14 @@ export function useBookingContext(bookingId: string | undefined, bootstrap?: Boo
         const cached = loadBookingState(bookingId);
         const hydrated = cached?.showtimeId
             ? cached
-            : (bootstrap?.showtimeId
-                ? saveBookingState(bookingId, {
+            : bootstrap?.showtimeId
+              ? saveBookingState(bookingId, {
                     showtimeId: bootstrap.showtimeId,
                     cinemaId: bootstrap.cinemaId,
                     screenId: bootstrap.screenId,
                     movieId: bootstrap.movieId,
                 })
-                : null);
+              : cached ?? null;
         setBookingState(hydrated);
 
         if (!hydrated?.showtimeId) {
@@ -126,6 +127,53 @@ export function useBookingContext(bookingId: string | undefined, bootstrap?: Boo
             cancelled = true;
         };
     }, [bookingId, bootstrap?.showtimeId, bootstrap?.cinemaId, bootstrap?.screenId, bootstrap?.movieId]);
+
+    /** When URL query params hydrate after first paint, merge showtime ids into stored session. */
+    useEffect(() => {
+        if (!bookingId || !bootstrap?.showtimeId) {
+            return;
+        }
+        const cur = loadBookingState(bookingId);
+        if (cur && !cur.showtimeId) {
+            saveBookingState(bookingId, {
+                showtimeId: bootstrap.showtimeId,
+                cinemaId: bootstrap.cinemaId,
+                screenId: bootstrap.screenId,
+                movieId: bootstrap.movieId,
+            });
+            setBookingState(loadBookingState(bookingId));
+        }
+    }, [bookingId, bootstrap?.showtimeId, bootstrap?.cinemaId, bootstrap?.screenId, bootstrap?.movieId]);
+
+    useEffect(() => {
+        if (!bookingId) {
+            return;
+        }
+
+        const refresh = () => {
+            setBookingState(loadBookingState(bookingId));
+        };
+
+        const onStorage = (e: StorageEvent) => {
+            if (e.key === BOOKING_STORAGE_KEY(bookingId)) {
+                refresh();
+            }
+        };
+
+        const onCustom = (ev: Event) => {
+            const detail = (ev as CustomEvent<{ bookingId?: string }>).detail;
+            if (detail?.bookingId === bookingId) {
+                refresh();
+            }
+        };
+
+        window.addEventListener("storage", onStorage);
+        window.addEventListener("ltc-booking-state-changed", onCustom as EventListener);
+        return () => {
+            window.removeEventListener("storage", onStorage);
+            window.removeEventListener("ltc-booking-state-changed", onCustom as EventListener);
+        };
+    }, [bookingId]);
 
     const seatLayout = useMemo<SeatLayout | null>(() => {
         if (!screen) return null;

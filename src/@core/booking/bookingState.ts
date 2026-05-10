@@ -17,7 +17,7 @@ export interface BookingComboLine {
     quantity: number;
 }
 
-export type BookingPaymentMethod = "cash" | "card" | "momo" | "bank";
+export type BookingPaymentMethod = "cash" | "card" | "momo" | "bank" | "vnpay";
 
 export interface BookingState {
     bookingId: string;
@@ -40,11 +40,22 @@ export interface BookingState {
     paymentMethod?: BookingPaymentMethod;
     paymentRef?: string;
 
+    /** Card metadata for confirmation / OTP steps — never store full PAN (only last four). */
+    cardHolderDisplay?: string;
+    cardExpiryDisplay?: string;
+    cardLastFour?: string;
+
+    /** Set after user submits OTP on the payment/otp step (before processing). */
+    paymentOtpVerified?: boolean;
+
+    /** Epoch ms (UTC) when server-side temporary seat hold expires (confirm step onward). */
+    seatHoldExpiresAt?: number;
+
     createdAt: number;
     updatedAt: number;
 }
 
-const STORAGE_KEY = (bookingId: string) => `ltc:booking:${bookingId || "tmp"}`;
+export const BOOKING_STORAGE_KEY = (bookingId: string) => `ltc:booking:${bookingId || "tmp"}`;
 
 const isBrowser = (): boolean => typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
 
@@ -78,7 +89,7 @@ export const loadBookingState = (bookingId: string): BookingState | null => {
         return null;
     }
     try {
-        const raw = readFromStorage(STORAGE_KEY(bookingId));
+        const raw = readFromStorage(BOOKING_STORAGE_KEY(bookingId));
         if (!raw) {
             return null;
         }
@@ -107,7 +118,8 @@ export const saveBookingState = (bookingId: string, patch: Partial<BookingState>
         bookingId,
         updatedAt: Date.now(),
     };
-    window.sessionStorage.setItem(STORAGE_KEY(bookingId), JSON.stringify(next));
+    window.sessionStorage.setItem(BOOKING_STORAGE_KEY(bookingId), JSON.stringify(next));
+    notifyBookingStateChanged(bookingId);
     return next;
 };
 
@@ -115,16 +127,31 @@ export const clearBookingState = (bookingId: string): void => {
     if (!isBrowser()) {
         return;
     }
-    window.sessionStorage.removeItem(STORAGE_KEY(bookingId));
+    window.sessionStorage.removeItem(BOOKING_STORAGE_KEY(bookingId));
     if (typeof window.localStorage !== "undefined") {
-        window.localStorage.removeItem(STORAGE_KEY(bookingId));
+        window.localStorage.removeItem(BOOKING_STORAGE_KEY(bookingId));
     }
+    notifyBookingStateChanged(bookingId);
 };
 
-/** Stable, URL-safe id used for new booking sessions. */
+export const notifyBookingStateChanged = (bookingId: string): void => {
+    if (!isBrowser()) {
+        return;
+    }
+    window.dispatchEvent(new CustomEvent("ltc-booking-state-changed", { detail: { bookingId } }));
+};
+
+/**
+ * New booking session id — must be a valid GUID string so customer API routes
+ * (`PUT .../booking/{id}/prepare-for-payment`, etc.) bind to `Guid id`.
+ */
 export const newBookingId = (): string => {
-    const random = typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID().replace(/-/g, "").slice(0, 16)
-        : Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
-    return `bk-${random}`;
+    if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+        return crypto.randomUUID();
+    }
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        const v = c === "x" ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+    });
 };

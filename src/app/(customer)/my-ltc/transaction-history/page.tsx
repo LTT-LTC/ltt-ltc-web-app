@@ -6,7 +6,10 @@ import { toast } from 'sonner';
 import LTTCard from '@/src/@core/component/AntD/LTTCard';
 import LTTTable from '@/src/@core/component/AntD/LTTTable';
 import LTTButton from '@/src/@core/component/AntD/LTTButton';
-import { bookingService, PaymentOutputDto } from '@/src/services/administration-service/booking/booking.service';
+import {
+    customerPaymentService,
+    PaymentOutputDto,
+} from '@/src/services/customer-service/payment/payment.service';
 
 interface TransactionRow {
     id: string;
@@ -19,12 +22,20 @@ interface TransactionRow {
 
 const formatVnd = (amount: number) => `${Math.round(amount || 0).toLocaleString('vi-VN', { maximumFractionDigits: 0 })} ₫`;
 
+const displayDate = (item: PaymentOutputDto) =>
+    item.paidTime ?? item.createdAt;
+
+const displayStatus = (item: PaymentOutputDto) => item.paymentStatus ?? item.status ?? '-';
+
 const buildDescription = (item: PaymentOutputDto) => {
     const parts: string[] = [];
     if (item.movieTitle) parts.push(item.movieTitle);
     if (item.cinemaName) parts.push(item.cinemaName);
     if (item.customerName) parts.push(item.customerName);
-    return parts.join(' • ') || `Booking ${item.id}`;
+    if (parts.length) return parts.join(' • ');
+    if (item.gatewayTransactionId) return `Giao dịch ${item.gatewayTransactionId}`;
+    if (item.bookingId) return `Đặt vé ${item.bookingId}`;
+    return `Thanh toán ${item.id}`;
 };
 
 export default function TransactionHistoryPage() {
@@ -32,14 +43,19 @@ export default function TransactionHistoryPage() {
     const [items, setItems] = useState<PaymentOutputDto[]>([]);
     const [totalCount, setTotalCount] = useState<number>(0);
     const [loading, setLoading] = useState<boolean>(true);
-    const [selected, setSelected] = useState<PaymentOutputDto | null>(null);
+    const [detailId, setDetailId] = useState<string | null>(null);
+    const [detailPayment, setDetailPayment] = useState<PaymentOutputDto | null>(null);
+    const [detailLoading, setDetailLoading] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
         const fetchPage = async () => {
             setLoading(true);
             try {
-                const result = await bookingService.getBookingListAsync({ page: pagination.page, pageSize: pagination.fetch });
+                const result = await customerPaymentService.getMyPaymentsAsync({
+                    page: pagination.page,
+                    fetch: pagination.fetch,
+                });
                 if (cancelled) return;
                 setItems(result.items || []);
                 setTotalCount(result.totalCount || 0);
@@ -59,10 +75,39 @@ export default function TransactionHistoryPage() {
         };
     }, [pagination.page, pagination.fetch]);
 
+    useEffect(() => {
+        if (!detailId) {
+            setDetailPayment(null);
+            setDetailLoading(false);
+            return;
+        }
+        let cancelled = false;
+        setDetailPayment(null);
+        setDetailLoading(true);
+        void customerPaymentService
+            .getMyPaymentByIdAsync(detailId)
+            .then((p) => {
+                if (!cancelled) setDetailPayment(p);
+            })
+            .catch((e) => {
+                if (!cancelled) {
+                    setDetailPayment(null);
+                    toast.error(e instanceof Error ? e.message : 'Failed to load payment details');
+                    setDetailId(null);
+                }
+            })
+            .finally(() => {
+                if (!cancelled) setDetailLoading(false);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [detailId]);
+
     const dataSource = useMemo<TransactionRow[]>(() => {
         return items.map((item) => ({
             id: item.id,
-            date: item.createdAt ? dayjs(item.createdAt).format('DD/MM/YYYY HH:mm') : '-',
+            date: displayDate(item) ? dayjs(displayDate(item)).format('DD/MM/YYYY HH:mm') : '-',
             description: buildDescription(item),
             amount: formatVnd(item.amount),
             type: item.paymentMethod || '-',
@@ -71,20 +116,30 @@ export default function TransactionHistoryPage() {
     }, [items]);
 
     const columns = [
-        { title: 'Booking ID', dataIndex: 'id', key: 'id', width: '24%', render: (text: string) => <span className="font-mono text-xs">{text}</span> },
+        {
+            title: 'Booking ID',
+            dataIndex: 'bookingId',
+            key: 'bookingId',
+            width: '24%',
+            render: (_: string, row: TransactionRow) => (
+                <span className="font-mono text-xs">{row.raw.bookingId ?? row.raw.id}</span>
+            ),
+        },
         { title: 'Date', dataIndex: 'date', key: 'date', width: '20%' },
         { title: 'Description', dataIndex: 'description', key: 'description', width: '36%' },
         { title: 'Amount', dataIndex: 'amount', key: 'amount', width: '20%', render: (text: string) => <span className="font-bold text-gray-800">{text}</span> },
     ];
 
     const handleRowClick = (record: TransactionRow) => {
-        setSelected(record.raw);
+        setDetailId(record.raw.id);
     };
+
+    const selected = detailPayment;
 
     return (
         <div className="w-full animate-fade-in-up">
             <LTTCard className="p-6 md:p-8 shadow-sm border border-gray-100 rounded-xl bg-white">
-                {!selected ? (
+                {!detailId ? (
                     <>
                         <h2 className="text-2xl font-bold mb-8 border-b pb-4 text-gray-800">Transaction History</h2>
                         <LTTTable
@@ -112,25 +167,42 @@ export default function TransactionHistoryPage() {
                         <LTTButton
                             variant="outline"
                             className="w-fit text-[#cc3434] bg-white hover:bg-gray-50 !pl-0 border-none transition-colors"
-                            onClick={() => setSelected(null)}
+                            onClick={() => setDetailId(null)}
                         >
                             <span className="flex items-center text-base">
                                 <span className="mr-2 text-xl font-bold">←</span> Quay lại Transaction History
                             </span>
                         </LTTButton>
 
-                        <h2 className="text-2xl font-bold mb-4 border-b pb-4 text-gray-800">Transaction Details</h2>
+                        {detailLoading || !selected ? (
+                            <p className="text-gray-600">{detailLoading ? 'Đang tải…' : ''}</p>
+                        ) : (
+                            <>
+                                <h2 className="text-2xl font-bold mb-4 border-b pb-4 text-gray-800">Transaction Details</h2>
 
-                        <div className="flex flex-col gap-4">
-                            <DetailRow label="Booking ID" value={<span className="font-mono">{selected.id}</span>} first />
-                            <DetailRow label="Date" value={selected.createdAt ? dayjs(selected.createdAt).format('DD/MM/YYYY HH:mm') : '-'} />
-                            <DetailRow label="Movie" value={selected.movieTitle || '-'} />
-                            <DetailRow label="Cinema" value={selected.cinemaName || '-'} />
-                            <DetailRow label="Customer" value={selected.customerName || '-'} />
-                            <DetailRow label="Payment method" value={selected.paymentMethod || '-'} />
-                            <DetailRow label="Status" value={selected.status || '-'} />
-                            <DetailRow label="Amount" value={<span className="font-bold">{formatVnd(selected.amount)}</span>} />
-                        </div>
+                                <div className="flex flex-col gap-4">
+                                    <DetailRow
+                                        label="Booking ID"
+                                        value={<span className="font-mono">{selected.bookingId ?? selected.id}</span>}
+                                        first
+                                    />
+                                    <DetailRow
+                                        label="Date"
+                                        value={
+                                            displayDate(selected)
+                                                ? dayjs(displayDate(selected)).format('DD/MM/YYYY HH:mm')
+                                                : '-'
+                                        }
+                                    />
+                                    <DetailRow label="Movie" value={selected.movieTitle || '-'} />
+                                    <DetailRow label="Cinema" value={selected.cinemaName || '-'} />
+                                    <DetailRow label="Customer" value={selected.customerName || '-'} />
+                                    <DetailRow label="Payment method" value={selected.paymentMethod || '-'} />
+                                    <DetailRow label="Status" value={displayStatus(selected)} />
+                                    <DetailRow label="Amount" value={<span className="font-bold">{formatVnd(selected.amount)}</span>} />
+                                </div>
+                            </>
+                        )}
                     </div>
                 )}
             </LTTCard>

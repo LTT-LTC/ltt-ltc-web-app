@@ -36,20 +36,20 @@ const LTTLanguageSwitch: React.FC<LTTLanguageSwitchProps> = ({ className, varian
                 isNeutral ? "bg-gray-100" : "bg-white/20"
             )}>
                 <div
-                    className={`absolute h-5 w-[34px] rounded-full shadow transition-transform duration-300 pointer-events-none ${isNeutral ? "bg-primary" : "bg-white"} ${isEN ? "translate-x-[34px]" : "translate-x-0"
+                    className={`absolute h-5 w-[34px] rounded-full shadow transition-transform duration-300 pointer-events-none ${isNeutral ? "bg-primary" : "bg-white"} ${isEN ? "translate-x-0" : "translate-x-[34px]"
                         }`}
                 />
-                <span
-                    className={`relative z-10 flex-1 text-center text-[11px] font-bold transition-colors duration-300 pointer-events-none ${isVI ? (isNeutral ? "text-white" : "text-primary") : (isNeutral ? "text-gray-600" : "text-white")
-                        }`}
-                >
-                    VI
-                </span>
                 <span
                     className={`relative z-10 flex-1 text-center text-[11px] font-bold transition-colors duration-300 pointer-events-none ${isEN ? (isNeutral ? "text-white" : "text-primary") : (isNeutral ? "text-gray-600" : "text-white")
                         }`}
                 >
                     EN
+                </span>
+                <span
+                    className={`relative z-10 flex-1 text-center text-[11px] font-bold transition-colors duration-300 pointer-events-none ${isVI ? (isNeutral ? "text-white" : "text-primary") : (isNeutral ? "text-gray-600" : "text-white")
+                        }`}
+                >
+                    VI
                 </span>
             </div>
         </button>

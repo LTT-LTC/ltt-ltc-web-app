@@ -1,32 +1,4 @@
-export interface ShowtimeMovieDto {
-    id: string;
-    movieId?: string;
-    title?: string;
-    originalTitle?: string;
-    durationMins?: number;
-    releaseDate?: string;
-    premiereDate?: string;
-    status?: string;
-    description?: string;
-    posterUrl?: string;
-    trailerUrl?: string;
-    studioId?: string;
-    studioName?: string;
-    studio?: { id: string; name: string };
-    ratingId?: string;
-    ratingCode?: string;
-    ratingName?: string;
-    genreNames?: string[];
-    genres?: { id: string; name: string }[];
-    actorRoles?: { actorName: string; roleName: string }[];
-    cast?: {
-        actor?: { id: string; name: string };
-        role?: { id: string; name: string } | null;
-        characterName?: string | null;
-        actorName?: string | null;
-        roleName?: string | null;
-    }[];
-}
+export type { ShowtimeMovieDto } from "@/src/services/customer-service/showtime/models/output.model";
 
 export interface ShowtimeOutputDto {
     id: string;

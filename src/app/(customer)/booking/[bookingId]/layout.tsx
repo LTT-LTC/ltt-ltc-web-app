@@ -21,6 +21,10 @@ import {
 const STEP_FROM_PATH = (pathname: string): BookingStep => {
     const segments = pathname.replace(/\/$/, "").split("/").filter(Boolean);
     const last = segments[segments.length - 1];
+    const prev = segments[segments.length - 2];
+    if (last === "otp" && prev === "payment") {
+        return "payment";
+    }
     switch (last) {
         case "seats":
             return "seats";
@@ -103,6 +107,10 @@ export default function BookingLayout({ children }: { children: React.ReactNode 
             document.removeEventListener("click", clickHandler, true);
         };
     }, [bookingBasePath]);
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [pathname]);
 
     return (
         <div className="bg-[#f5f6f8] text-slate-900 min-h-screen flex flex-col">

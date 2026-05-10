@@ -1,4 +1,33 @@
-import type { ShowtimeMovieDto } from "@/src/services/administration-service/showtime/models/output.model";
+/** Movie projection bundled with showtime responses (camelCase JSON). */
+export interface ShowtimeMovieDto {
+    id: string;
+    movieId?: string;
+    title?: string;
+    originalTitle?: string;
+    durationMins?: number;
+    releaseDate?: string;
+    premiereDate?: string;
+    status?: string;
+    description?: string;
+    posterUrl?: string;
+    trailerUrl?: string;
+    studioId?: string;
+    studioName?: string;
+    studio?: { id: string; name: string };
+    ratingId?: string;
+    ratingCode?: string;
+    ratingName?: string;
+    genreNames?: string[];
+    genres?: { id: string; name: string }[];
+    actorRoles?: { actorName: string; roleName: string }[];
+    cast?: {
+        actor?: { id: string; name: string };
+        role?: { id: string; name: string } | null;
+        characterName?: string | null;
+        actorName?: string | null;
+        roleName?: string | null;
+    }[];
+}
 
 export interface CustomerShowtimeOutputDto {
     id: string;
@@ -19,4 +48,13 @@ export interface CustomerShowtimeOutputDto {
      * should fall back to `customerMovieService.getMovieByIdAsync` if needed.
      */
     movie?: ShowtimeMovieDto;
+
+    /** Seat codes currently held server-side (Redis); uppercase normalized on BE. */
+    heldSeatCodes?: string[];
+}
+
+/** Response from `POST .../seat-hold`. */
+export interface HoldSeatsOutputDto {
+    heldUntilUtc: string;
+    holdDurationMinutes: number;
 }
