@@ -4,6 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { Plus, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
+import {
+    LTTDialog,
+    LTTDialogContent,
+    LTTDialogFooter,
+    LTTDialogHeader,
+    LTTDialogTitle,
+} from "@/src/@core/component/LTTShadcnUI/LTTDialog";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
 import {
     LTTSelect,
@@ -56,7 +63,6 @@ interface CategoryFormState {
 interface ComboFormState {
     name: string;
     description: string;
-    totalPrice: number;
     isActive: boolean;
     imageUrl: string;
     imageFile?: File;
@@ -64,6 +70,48 @@ interface ComboFormState {
 }
 
 const formatVnd = (amount: number) => `${amount.toLocaleString("vi-VN")}đ`;
+
+function computeComboTotalFromLines(
+    lines: ComboProductLineDto[],
+    productMap: Record<string, ProductOutputDto>,
+): number {
+    return lines.reduce((sum, line) => {
+        if (!line.productId) return sum;
+        const p = productMap[line.productId];
+        if (!p) return sum;
+        const qty = Math.max(1, Number(line.quantity) || 1);
+        return sum + Number(p.basePrice) * qty;
+    }, 0);
+}
+
+function buildProductSnapshot(f: ProductFormState): string {
+    return JSON.stringify({
+        name: f.name,
+        productCategoryId: f.productCategoryId,
+        basePrice: f.basePrice,
+        description: f.description,
+        imageUrl: f.imageUrl,
+        isActive: f.isActive,
+    });
+}
+
+function buildCategorySnapshot(f: CategoryFormState): string {
+    return JSON.stringify({
+        name: f.name,
+        description: f.description,
+        isActive: f.isActive,
+    });
+}
+
+function buildComboSnapshot(f: ComboFormState): string {
+    return JSON.stringify({
+        name: f.name,
+        description: f.description,
+        isActive: f.isActive,
+        imageUrl: f.imageUrl,
+        products: f.products.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+    });
+}
 
 const defaultProductForm = (categoryId = ""): ProductFormState => ({
     name: "",
@@ -84,7 +132,6 @@ const defaultCategoryForm: CategoryFormState = {
 const defaultComboForm: ComboFormState = {
     name: "",
     description: "",
-    totalPrice: 0,
     isActive: true,
     imageUrl: "",
     imageFile: undefined,
@@ -139,6 +186,12 @@ export default function FnBPage() {
     const [productForm, setProductForm] = useState<ProductFormState>(defaultProductForm());
     const [categoryForm, setCategoryForm] = useState<CategoryFormState>(defaultCategoryForm);
     const [comboForm, setComboForm] = useState<ComboFormState>(defaultComboForm);
+
+    const [initialProductSnapshot, setInitialProductSnapshot] = useState("");
+    const [initialCategorySnapshot, setInitialCategorySnapshot] = useState("");
+    const [initialComboSnapshot, setInitialComboSnapshot] = useState("");
+    const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
+    const [exitConfirmTarget, setExitConfirmTarget] = useState<"product" | "category" | "combo" | null>(null);
 
     const LOCAL_STATE_KEY = "manager-fnb-local-state-v2";
 
@@ -379,6 +432,59 @@ export default function FnBPage() {
         [products],
     );
 
+    const handleSafeProductDialogOpenChange = (nextOpen: boolean) => {
+        if (nextOpen) {
+            setProductDialogOpen(true);
+            return;
+        }
+        const dirty =
+            !!productForm.imageFile || initialProductSnapshot !== buildProductSnapshot(productForm);
+        if (dirty) {
+            setExitConfirmTarget("product");
+            setExitConfirmOpen(true);
+            return;
+        }
+        setProductDialogOpen(false);
+    };
+
+    const handleSafeCategoryDialogOpenChange = (nextOpen: boolean) => {
+        if (nextOpen) {
+            setCategoryDialogOpen(true);
+            return;
+        }
+        const dirty = initialCategorySnapshot !== buildCategorySnapshot(categoryForm);
+        if (dirty) {
+            setExitConfirmTarget("category");
+            setExitConfirmOpen(true);
+            return;
+        }
+        setCategoryDialogOpen(false);
+    };
+
+    const handleSafeComboDialogOpenChange = (nextOpen: boolean) => {
+        if (nextOpen) {
+            setComboDialogOpen(true);
+            return;
+        }
+        const dirty =
+            !!comboForm.imageFile || initialComboSnapshot !== buildComboSnapshot(comboForm);
+        if (dirty) {
+            setExitConfirmTarget("combo");
+            setExitConfirmOpen(true);
+            return;
+        }
+        setComboDialogOpen(false);
+    };
+
+    const confirmDiscardExit = () => {
+        const target = exitConfirmTarget;
+        setExitConfirmOpen(false);
+        setExitConfirmTarget(null);
+        if (target === "product") setProductDialogOpen(false);
+        else if (target === "category") setCategoryDialogOpen(false);
+        else if (target === "combo") setComboDialogOpen(false);
+    };
+
     const filteredCategories = useMemo(() => categories, [categories]);
 
     const isAnyLoading = listProductsMutation.isLoading || listCategoriesMutation.isLoading || listCombosMutation.isLoading;
@@ -390,13 +496,15 @@ export default function FnBPage() {
             return;
         }
         setEditingProduct(null);
-        setProductForm(defaultProductForm(categories[0].id));
+        const next = defaultProductForm(categories[0].id);
+        setProductForm(next);
+        setInitialProductSnapshot(buildProductSnapshot(next));
         setProductDialogOpen(true);
     };
 
     const openEditProduct = (item: ProductOutputDto) => {
         setEditingProduct(item);
-        setProductForm({
+        const next: ProductFormState = {
             name: item.name,
             productCategoryId: item.productCategoryId,
             basePrice: Number(item.basePrice),
@@ -404,7 +512,9 @@ export default function FnBPage() {
             imageUrl: item.imageUrl || "",
             imageFile: undefined,
             isActive: item.isActive,
-        });
+        };
+        setProductForm(next);
+        setInitialProductSnapshot(buildProductSnapshot(next));
         setProductDialogOpen(true);
     };
 
@@ -442,16 +552,19 @@ export default function FnBPage() {
     const openCreateCategory = () => {
         setEditingCategory(null);
         setCategoryForm(defaultCategoryForm);
+        setInitialCategorySnapshot(buildCategorySnapshot(defaultCategoryForm));
         setCategoryDialogOpen(true);
     };
 
     const openEditCategory = (item: CategoryOutputDto) => {
         setEditingCategory(item);
-        setCategoryForm({
+        const next: CategoryFormState = {
             name: item.name,
             description: item.description || "",
             isActive: item.isActive,
-        });
+        };
+        setCategoryForm(next);
+        setInitialCategorySnapshot(buildCategorySnapshot(next));
         setCategoryDialogOpen(true);
     };
 
@@ -482,6 +595,7 @@ export default function FnBPage() {
         }
         setEditingCombo(null);
         setComboForm(defaultComboForm);
+        setInitialComboSnapshot(buildComboSnapshot(defaultComboForm));
         setComboDialogOpen(true);
     };
 
@@ -490,10 +604,9 @@ export default function FnBPage() {
             listProductsMutation.mutation({ page: 1, fetch: 200, keyword: "" });
         }
         setEditingCombo(item);
-        setComboForm({
+        const next: ComboFormState = {
             name: item.name,
             description: item.description || "",
-            totalPrice: Number(item.totalPrice),
             isActive: item.isActive,
             imageUrl: item.imageUrl || "",
             imageFile: undefined,
@@ -501,7 +614,9 @@ export default function FnBPage() {
                 productId: line.productId,
                 quantity: Math.max(1, line.quantity),
             })),
-        });
+        };
+        setComboForm(next);
+        setInitialComboSnapshot(buildComboSnapshot(next));
         setComboDialogOpen(true);
     };
 
@@ -513,7 +628,7 @@ export default function FnBPage() {
         const payload: CreateComboInputDto = {
             name: comboForm.name.trim(),
             description: comboForm.description.trim() || undefined,
-            totalPrice: comboForm.totalPrice,
+            totalPrice: computeComboTotalFromLines(comboForm.products, productById),
             isActive: comboForm.isActive,
             imageFile: comboForm.imageFile,
             imageUrl: comboForm.imageUrl.trim() || undefined,
@@ -704,6 +819,40 @@ export default function FnBPage() {
                 }}
             />
 
+            <LTTDialog
+                open={exitConfirmOpen}
+                onOpenChange={(open) => {
+                    setExitConfirmOpen(open);
+                    if (!open) setExitConfirmTarget(null);
+                }}
+            >
+                <LTTDialogContent className="sm:max-w-sm">
+                    <LTTDialogHeader>
+                        <LTTDialogTitle>{t("admin.fnb.exit_confirm.title")}</LTTDialogTitle>
+                    </LTTDialogHeader>
+                    <div className="py-2 text-sm text-muted-foreground-shadcn leading-relaxed">
+                        {t("admin.fnb.exit_confirm.message_before")}{" "}
+                        <strong className="text-destructive">{t("admin.fnb.exit_confirm.message_highlight")}</strong>.{" "}
+                        {t("admin.fnb.exit_confirm.message_after")}
+                    </div>
+                    <LTTDialogFooter className="gap-3">
+                        <LTTButton
+                            variant="outline"
+                            onClick={() => {
+                                setExitConfirmOpen(false);
+                                setExitConfirmTarget(null);
+                            }}
+                            className="flex-1"
+                        >
+                            {t("admin.fnb.exit_confirm.stay")}
+                        </LTTButton>
+                        <LTTButton variant="destructive" onClick={confirmDiscardExit} className="flex-1">
+                            {t("admin.fnb.exit_confirm.exit")}
+                        </LTTButton>
+                    </LTTDialogFooter>
+                </LTTDialogContent>
+            </LTTDialog>
+
             <FnbDialogs
                 categories={categories}
                 products={products}
@@ -722,9 +871,10 @@ export default function FnBPage() {
                 isProductSaving={createProductMutation.isLoading || updateProductMutation.isLoading}
                 isCategorySaving={createCategoryMutation.isLoading || updateCategoryMutation.isLoading}
                 isComboSaving={createComboMutation.isLoading || updateComboMutation.isLoading}
-                onProductDialogOpenChange={setProductDialogOpen}
-                onCategoryDialogOpenChange={setCategoryDialogOpen}
-                onComboDialogOpenChange={setComboDialogOpen}
+                formatVnd={formatVnd}
+                onProductDialogOpenChange={handleSafeProductDialogOpenChange}
+                onCategoryDialogOpenChange={handleSafeCategoryDialogOpenChange}
+                onComboDialogOpenChange={handleSafeComboDialogOpenChange}
                 onProductDeleteDialogOpenChange={setProductDeleteDialogOpen}
                 onCategoryDeleteDialogOpenChange={setCategoryDeleteDialogOpen}
                 onComboDeleteDialogOpenChange={setComboDeleteDialogOpen}

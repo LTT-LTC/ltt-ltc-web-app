@@ -11,7 +11,7 @@ import { useLocalization } from "@/src/@core/hooks/use-localization";
 import NavArrowDownIcon from "@/src/@core/component/LTTIcon/iconoir/nav-arrow-down";
 import SearchIcon from "@/src/@core/component/LTTIcon/iconoir/search";
 import UserIcon from "@/src/@core/component/LTTIcon/iconoir/user";
-import CartIcon from "@/src/@core/component/LTTIcon/iconoir/cart";
+import BookingCartPopover from "@/src/app/(customer)/_components/BookingCartPopover";
 
 // --- Navigation data ---
 interface NavItem {
@@ -270,10 +270,7 @@ const Header: React.FC = () => {
 
                     {/* Right actions */}
                     <div className="flex items-center gap-2">
-                        {/* Cart */}
-                        <button className="hidden sm:flex items-center justify-center size-10 rounded-full hover:bg-primary/5 text-slate-500 hover:text-primary transition-all duration-200 cursor-pointer">
-                            <CartIcon className="!w-5 !h-5" />
-                        </button>
+                        <BookingCartPopover />
                         {/* User */}
                         <div className="hidden sm:flex items-center">
                             <UserDropdown />
