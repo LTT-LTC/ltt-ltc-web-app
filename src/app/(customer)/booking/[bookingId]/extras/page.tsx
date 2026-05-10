@@ -169,7 +169,7 @@ export default function BookingExtrasPage() {
     return (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
             <div className="space-y-6">
-                <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6">
+                <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-6 my-3">
                     <h2 className="text-lg font-bold text-gray-900 mb-4">{t("customer.booking.extras.products_heading")}</h2>
                     {products.length === 0 ? (
                         <p className="text-sm text-gray-500">{t("customer.booking.extras.empty_products")}</p>
