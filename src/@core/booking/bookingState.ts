@@ -1,10 +1,12 @@
 /**
- * Persistent booking-flow state stored in sessionStorage so it survives route
- * transitions within the same browser tab and is cleared when the tab closes.
+ * Persistent booking-flow state in **localStorage** so it survives tab/browser closes
+ * and customers can resume checkout later (same origin).
+ *
+ * Legacy reads: if localStorage has no entry for a booking key, we one-time migrate
+ * from sessionStorage (old behavior), then remove the sessionStorage copy.
  *
  * Mirrors the schema used by FE/ltc-film-hub's `bookingState.ts`, extended with
- * showtime/cinema/screen ids resolved on the showtime click and the
- * payment-related fields surfaced after the user picks a method.
+ * showtime/cinema/screen ids and payment-related fields.
  */
 
 export interface BookingFnbLine {
@@ -55,22 +57,29 @@ export interface BookingState {
     updatedAt: number;
 }
 
-export const BOOKING_STORAGE_KEY = (bookingId: string) => `ltc:booking:${bookingId || "tmp"}`;
+export const BOOKING_STORAGE_PREFIX = "ltc:booking:";
 
-const isBrowser = (): boolean => typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
+export const BOOKING_STORAGE_KEY = (bookingId: string) => `${BOOKING_STORAGE_PREFIX}${bookingId || "tmp"}`;
+
+const isBrowser = (): boolean =>
+    typeof window !== "undefined" &&
+    typeof window.localStorage !== "undefined";
 
 const readFromStorage = (key: string): string | null => {
     if (!isBrowser()) return null;
-    const sessionValue = window.sessionStorage.getItem(key);
-    if (sessionValue) return sessionValue;
 
-    // One-time migration path for old localStorage entries.
-    const legacyValue = typeof window.localStorage !== "undefined" ? window.localStorage.getItem(key) : null;
-    if (legacyValue) {
-        window.sessionStorage.setItem(key, legacyValue);
-        window.localStorage.removeItem(key);
+    const localValue = window.localStorage.getItem(key);
+    if (localValue) return localValue;
+
+    const legacySession =
+        typeof window.sessionStorage !== "undefined" ? window.sessionStorage.getItem(key) : null;
+    if (legacySession) {
+        window.localStorage.setItem(key, legacySession);
+        window.sessionStorage.removeItem(key);
+        return legacySession;
     }
-    return legacyValue;
+
+    return null;
 };
 
 const emptyState = (bookingId: string): BookingState => ({
@@ -118,7 +127,11 @@ export const saveBookingState = (bookingId: string, patch: Partial<BookingState>
         bookingId,
         updatedAt: Date.now(),
     };
-    window.sessionStorage.setItem(BOOKING_STORAGE_KEY(bookingId), JSON.stringify(next));
+    const key = BOOKING_STORAGE_KEY(bookingId);
+    window.localStorage.setItem(key, JSON.stringify(next));
+    if (typeof window.sessionStorage !== "undefined") {
+        window.sessionStorage.removeItem(key);
+    }
     notifyBookingStateChanged(bookingId);
     return next;
 };
@@ -127,9 +140,10 @@ export const clearBookingState = (bookingId: string): void => {
     if (!isBrowser()) {
         return;
     }
-    window.sessionStorage.removeItem(BOOKING_STORAGE_KEY(bookingId));
-    if (typeof window.localStorage !== "undefined") {
-        window.localStorage.removeItem(BOOKING_STORAGE_KEY(bookingId));
+    const key = BOOKING_STORAGE_KEY(bookingId);
+    window.localStorage.removeItem(key);
+    if (typeof window.sessionStorage !== "undefined") {
+        window.sessionStorage.removeItem(key);
     }
     notifyBookingStateChanged(bookingId);
 };

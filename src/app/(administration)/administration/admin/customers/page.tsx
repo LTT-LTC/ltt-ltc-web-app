@@ -172,10 +172,7 @@ export default function CustomersPage() {
                                             <div className="w-8 h-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600">
                                                 <User className="w-4 h-4" />
                                             </div>
-                                            <div>
-                                                <div className="font-bold">{c.name}</div>
-                                                <div className="text-[10px] text-muted-foreground-shadcn uppercase tracking-wider font-semibold">{c.profileQRUrl || t("admin.customer_management.member_fallback")}</div>
-                                            </div>
+                                            <div className="font-bold">{c.name}</div>
                                         </div>
                                     </td>
                                     <td className="px-4 py-3">
