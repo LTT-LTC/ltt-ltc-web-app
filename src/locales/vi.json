@@ -1415,6 +1415,9 @@
     "booking": {
       "loading": "Đang chuẩn bị phiên đặt vé...",
       "invalid_session": "Không tìm thấy phiên đặt vé. Vui lòng chọn lại suất chiếu.",
+      "seats_error_no_context": "Liên kết đặt vé thiếu thông tin suất chiếu. Vui lòng vào trang phim và chọn suất lại.",
+      "seats_error_showtime_load": "Không tải được suất chiếu. Kiểm tra kết nối và thử lại.",
+      "seats_error_layout": "Chưa cấu hình sơ đồ ghế cho phòng chiếu này. Chọn suất khác hoặc liên hệ rạp.",
       "leave_confirm": "Bạn có chắc chắn muốn rời phiên đặt vé này không? Các thay đổi có thể sẽ không được lưu.",
       "exit_confirm": {
         "title": "Rời phiên đặt vé?",
@@ -1440,7 +1443,7 @@
         "seats": "ĐẶT VÉ TRỰC TUYẾN",
         "confirm": "Xác nhận chỗ ngồi",
         "summary": "Tóm tắt đơn hàng",
-        "payment": "Chọn phương thức thanh toán"
+        "payment": "Thanh toán"
       },
       "field": {
         "cinema": "Rạp",
@@ -1452,10 +1455,29 @@
         "seats": "Ghế",
         "ticket_total": "Tổng tiền vé",
         "fnb": "Đồ ăn & nước uống",
-        "combos": "Combo"
+        "combos": "Combo",
+        "empty_placeholder": "—"
+      },
+      "ticket": {
+        "stub_title": "VÉ XEM PHIM",
+        "back": "Quay lại",
+        "hold_timer": "Thời gian giữ ghế còn: {{time}}",
+        "hold_expired_toast": "Thời gian giữ ghế đã hết. Vui lòng chọn ghế lại.",
+        "duration_mins": "{{mins}} phút",
+        "price_row_label": "Giá vé",
+        "price_per_seat": "{{price}} / ghế",
+        "no_seats_selected": "Chưa chọn",
+        "line_tickets": "Vé ({{count}})",
+        "total": "Tổng",
+        "footer_note": "Vé đã đặt không hoàn trả.",
+        "back_confirm_title": "Quay lại?",
+        "back_confirm_message": "Lựa chọn hiện tại sẽ được lưu tạm để bạn có thể quay lại sau. Bạn có chắc muốn rời khỏi trang?",
+        "back_confirm_stay": "Ở lại",
+        "back_confirm_leave": "Quay lại"
       },
       "confirm": {
-        "subtitle": "Vui lòng kiểm tra lại trước khi tiếp tục."
+        "subtitle": "Vui lòng kiểm tra lại trước khi tiếp tục.",
+        "securing_seats": "Đang giữ ghế cho bạn..."
       },
       "summary": {
         "subtitle": "Xem lại đơn hàng trước khi thanh toán.",
@@ -1473,11 +1495,52 @@
         "products_heading": "Đồ ăn & Nước uống",
         "combos_heading": "Combo",
         "empty_products": "Hiện chưa có sản phẩm nào.",
-        "empty_combos": "Hiện chưa có combo nào."
+        "empty_combos": "Hiện chưa có combo nào.",
+        "combo_line_item": "{{name}} × {{qty}}"
       },
       "payment": {
         "subtitle": "Bạn muốn thanh toán bằng phương thức nào?",
-        "method_section": "PHƯƠNG THỨC THANH TOÁN"
+        "subtitle_card_only": "Thanh toán an toàn bằng thẻ ghi nợ hoặc thẻ tín dụng.",
+        "subtitle_methods": "Thanh toán bằng thẻ trên trang này hoặc qua VNPAY (ATM, QR, thẻ quốc tế).",
+        "method_section": "PHƯƠNG THỨC THANH TOÁN",
+        "vnpay_label": "VNPAY",
+        "vnpay_hint": "Bạn sẽ được chuyển đến cổng VNPAY để hoàn tất. Số tiền khớp với tổng đơn đặt vé.",
+        "vnpay_pay": "Thanh toán VNPAY",
+        "vnpay_error": "Không thể mở cổng VNPAY. Vui lòng thử lại.",
+        "vnpay_result": {
+          "success_title": "Quay lại từ VNPAY",
+          "success_body": "Nếu thanh toán thành công, đơn hàng sẽ được xác nhận trong giây lát. Bạn có thể xem lại đơn bên dưới.",
+          "failure_title": "Chưa hoàn tất thanh toán",
+          "failure_body": "Giao dịch bị hủy hoặc chưa xác minh được. Bạn có thể thử lại từ bước thanh toán.",
+          "back_booking": "Về tóm tắt đơn",
+          "retry": "Thử thanh toán lại",
+          "home": "Trang chủ"
+        },
+        "card_number_label": "Số thẻ",
+        "card_number_placeholder": "Nhập số thẻ",
+        "card_holder_label": "Tên chủ thẻ",
+        "card_holder_placeholder": "Nhập tên chủ thẻ (không dấu)",
+        "card_holder_hint": "Chỉ dùng chữ Latin, không dấu.",
+        "card_expiry_label": "Ngày phát hành",
+        "card_expiry_placeholder": "MM/YY"
+      },
+      "card_confirm": {
+        "title": "Xác nhận thông tin thẻ",
+        "message": "Vui lòng kiểm tra lại thông tin thẻ trước khi tiếp tục.",
+        "card_number": "Số thẻ",
+        "card_holder": "Tên chủ thẻ",
+        "expiry": "Ngày phát hành",
+        "cancel": "Chỉnh sửa",
+        "confirm": "Tiếp tục"
+      },
+      "otp": {
+        "title": "Nhập mã xác thực",
+        "subtitle": "Chúng tôi đã gửi mã OTP đến điện thoại của bạn. Nhập mã bên dưới để hoàn tất thanh toán.",
+        "label": "Mã OTP",
+        "placeholder": "Nhập mã OTP",
+        "submit": "Xác nhận và tiếp tục",
+        "refresh_warning": "Sau khi xác nhận, vui lòng không tải lại trang cho đến khi được chuyển hướng.",
+        "invalid": "Nhập mã gồm 4–6 chữ số."
       },
       "payment_method": {
         "cash": {
@@ -1505,7 +1568,8 @@
         "success_subtitle": "Đang chuyển bạn đến lịch sử giao dịch.",
         "failed_title": "Không thể hoàn tất đơn hàng",
         "error": "Đã xảy ra lỗi. Vui lòng thử lại.",
-        "payment_ref": "Mã tham chiếu thanh toán"
+        "payment_ref": "Mã tham chiếu thanh toán",
+        "otp_required": "Vui lòng hoàn tất xác thực OTP trước khi tiếp tục."
       },
       "cta": {
         "back": "Quay lại",
@@ -1525,7 +1589,11 @@
         "pick_seats": "Vui lòng chọn ít nhất một ghế để tiếp tục.",
         "fetch_extras_error": "Không thể tải đồ ăn và combo.",
         "group_seats_not_found": "Không tìm thấy đủ ghế liền kề theo số lượng đã chọn.",
-        "drag_to_select_group": "Kéo chuột trên sơ đồ ghế để chọn khu vực ghế theo nhóm."
+        "drag_to_select_group": "Kéo chuột trên sơ đồ ghế để chọn khu vực ghế theo nhóm.",
+        "seat_hold_conflict": "Không thể giữ các ghế này. Có thể ghế đã được người khác chọn.",
+        "seat_hold_failed": "Không thể giữ ghế. Vui lòng thử lại.",
+        "prepare_booking_failed": "Không thể lưu đơn hàng. Vui lòng thử lại.",
+        "payment_method_update_failed": "Không thể cập nhật phương thức thanh toán. Vui lòng thử lại."
       }
     },
     "my_ltc": {

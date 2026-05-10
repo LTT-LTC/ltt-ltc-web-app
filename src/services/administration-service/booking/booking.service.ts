@@ -6,6 +6,7 @@ export type { PaymentOutputDto };
 
 const prefix = "/payment-service";
 
+/** Admin/Manager: full payment list (requires Admin/Manager role). */
 const getBookingListAsync = async (params: any): Promise<PagedResultDto<PaymentOutputDto>> => {
     const response = await http.get<ApiResult<PagedResultDto<PaymentOutputDto>>>(`${prefix}/payment-all`, { params });
     return response.data.data;

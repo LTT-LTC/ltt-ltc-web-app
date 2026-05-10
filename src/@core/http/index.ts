@@ -172,6 +172,11 @@ function shouldUseCustomerAuthRefresh(failedRequestUrl?: string): boolean {
     return true;
   }
 
+  // Payment service customer APIs (JWT scoped to current user) must use the customer access token.
+  if (lower.includes("/payment-service/customer/")) {
+    return true;
+  }
+
   return lower.includes("/customer-service/");
 }
 

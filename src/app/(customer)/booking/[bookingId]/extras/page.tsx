@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useTransition } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dayjs from "dayjs";
 import { Minus, Plus } from "lucide-react";
@@ -36,7 +36,7 @@ const QtyStepper = ({ qty, onChange }: { qty: number; onChange: (delta: number) 
     </div>
 );
 
-const formatShowtimeLabel = (start?: string, end?: string) => {
+const formatShowtimeLabel = (start?: string, end?: string, emptyPlaceholder = "—") => {
     const fmt = (value?: string) => {
         if (!value) return "";
         const parsed = dayjs(value);
@@ -44,7 +44,7 @@ const formatShowtimeLabel = (start?: string, end?: string) => {
     };
     const left = fmt(start);
     const right = fmt(end);
-    if (!left) return "—";
+    if (!left) return emptyPlaceholder;
     if (!right) return left;
     return `${left} ~ ${right}`;
 };
@@ -62,6 +62,7 @@ export default function BookingExtrasPage() {
     const [productQty, setProductQty] = useState<Map<string, number>>(new Map());
     const [comboQty, setComboQty] = useState<Map<string, number>>(new Map());
     const [productsLoading, setProductsLoading] = useState<boolean>(true);
+    const [navPending, startNavTransition] = useTransition();
 
     useEffect(() => {
         if (!bookingState?.fnb) return;
@@ -132,12 +133,14 @@ export default function BookingExtrasPage() {
     const basePrice = bookingState?.basePrice ?? 0;
 
     const handleNext = () => {
-        if (!bookingId) return;
-        saveBookingState(bookingId, {
-            fnb: Array.from(productQty.entries()).map(([id, quantity]) => ({ id, quantity })),
-            combos: Array.from(comboQty.entries()).map(([id, quantity]) => ({ id, quantity })),
+        if (!bookingId || navPending) return;
+        startNavTransition(() => {
+            saveBookingState(bookingId, {
+                fnb: Array.from(productQty.entries()).map(([id, quantity]) => ({ id, quantity })),
+                combos: Array.from(comboQty.entries()).map(([id, quantity]) => ({ id, quantity })),
+            });
+            router.push(`/booking/${bookingId}/summary`);
         });
-        router.push(`/booking/${bookingId}/summary`);
     };
 
     if (ctxLoading || productsLoading) {
@@ -156,11 +159,12 @@ export default function BookingExtrasPage() {
         );
     }
 
-    const cinemaName = cinema?.name || "—";
+    const emptyPh = t("customer.booking.field.empty_placeholder");
+    const cinemaName = cinema?.name || emptyPh;
     const screenLabel = screen?.screenNumber
         ? `${t("customer.booking.room")} ${screen.screenNumber}${screen.screenType ? ` (${screen.screenType})` : ""}`
-        : "—";
-    const showtimeLabel = formatShowtimeLabel(showtime.startTime, showtime.endTime);
+        : emptyPh;
+    const showtimeLabel = formatShowtimeLabel(showtime.startTime, showtime.endTime, emptyPh);
 
     const extraLines: { label: string; value: string }[] = [];
     if (productTotal > 0) extraLines.push({ label: t("customer.booking.field.fnb"), value: formatVND(productTotal) });
@@ -231,7 +235,11 @@ export default function BookingExtrasPage() {
                                                 <ul className="mt-1 text-[10px] text-gray-500 space-y-0.5">
                                                     {combo.products.map((line) => (
                                                         <li key={`${combo.id}-${line.productId}`}>
-                                                            • {line.product?.name ?? line.productId} × {line.quantity}
+                                                            •{" "}
+                                                            {t("customer.booking.extras.combo_line_item", {
+                                                                name: line.product?.name ?? line.productId,
+                                                                qty: line.quantity,
+                                                            })}
                                                         </li>
                                                     ))}
                                                 </ul>
@@ -252,7 +260,7 @@ export default function BookingExtrasPage() {
             <div className="lg:sticky lg:top-4 lg:self-start">
                 <MovieTicket
                     movie={{
-                        title: movie?.title ?? showtime.movie?.title ?? "—",
+                        title: movie?.title ?? showtime.movie?.title ?? emptyPh,
                         originalTitle: movie?.originalTitle ?? showtime.movie?.originalTitle,
                         posterUrl: movie?.posterUrl ?? showtime.movie?.posterUrl,
                         ageRating: movie?.ratingCode ?? showtime.movie?.ratingCode,
@@ -269,8 +277,13 @@ export default function BookingExtrasPage() {
                     extraLines={extraLines}
                     primaryActionLabel={t("customer.booking.cta.continue_to_summary")}
                     onPrimaryAction={handleNext}
+                    primaryLoading={navPending}
+                    backLoading={navPending}
+                    primaryDisabled={navPending}
                     backTo={`/booking/${bookingId}/confirm-seats`}
                     skipBackConfirm
+                    holdExpiresAtMs={bookingState.seatHoldExpiresAt}
+                    onSeatHoldExpired={() => router.replace(`/booking/${bookingId}/seats`)}
                 />
             </div>
         </div>

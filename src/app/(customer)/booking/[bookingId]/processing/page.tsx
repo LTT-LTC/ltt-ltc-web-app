@@ -4,8 +4,10 @@ import React, { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
+import { BOOKING_PAYMENT_MOCK_SUCCESS } from "@/src/@core/booking/bookingPaymentConfig";
 import { useBookingContext } from "@/src/@core/booking/useBookingContext";
 import { clearBookingState, saveBookingState } from "@/src/@core/booking/bookingState";
+import { customerShowtimeService } from "@/src/services/customer-service/showtime/showtime.service";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 import {
     customerBookingService,
@@ -30,12 +32,22 @@ export default function BookingProcessingPage() {
 
     useEffect(() => {
         if (loading) return;
+        if (startedRef.current) return;
+
         if (!bookingState || !bookingState.seats?.length || !showtime) {
+            startedRef.current = true;
             setStatus("failed");
             setErrorMessage(t("customer.booking.invalid_session"));
             return;
         }
-        if (startedRef.current) return;
+
+        if (!bookingState.paymentOtpVerified) {
+            startedRef.current = true;
+            setStatus("failed");
+            setErrorMessage(t("customer.booking.processing.otp_required"));
+            return;
+        }
+
         startedRef.current = true;
 
         const items: CreateBookingItemInputDto[] = [];
@@ -51,31 +63,49 @@ export default function BookingProcessingPage() {
         });
 
         const payload: CreateBookingInputDto = {
+            bookingId,
             showtimeId: showtime.id,
             paymentMethod: bookingState.paymentMethod,
+            discountAmount: bookingState.discountAmount,
             items,
+        };
+
+        const runSuccessTimers = (ref: string) => {
+            setPaymentRef(ref);
+            if (bookingId) {
+                saveBookingState(bookingId, { paymentRef: ref });
+            }
+            setStatus("polling");
+            window.setTimeout(() => {
+                setStatus("succeeded");
+                if (bookingId) {
+                    void (async () => {
+                        if (showtime?.id) {
+                            await customerShowtimeService.releaseSeatHoldAsync(showtime.id, bookingId).catch(() => {});
+                        }
+                        clearBookingState(bookingId);
+                    })();
+                }
+                window.setTimeout(() => {
+                    router.push("/my-ltc/transaction-history");
+                }, 1500);
+            }, 1800);
         };
 
         const submit = async () => {
             setStatus("submitting");
+            if (BOOKING_PAYMENT_MOCK_SUCCESS) {
+                runSuccessTimers(`mock-${Date.now()}`);
+                return;
+            }
             try {
                 const booking = await customerBookingService.createBookingAsync(payload);
                 const ref = booking?.id || `pending-${Date.now()}`;
-                setPaymentRef(ref);
-                if (bookingId) {
-                    saveBookingState(bookingId, { paymentRef: ref });
-                }
-                setStatus("polling");
-                window.setTimeout(() => {
-                    setStatus("succeeded");
-                    if (bookingId) {
-                        clearBookingState(bookingId);
-                    }
-                    window.setTimeout(() => {
-                        router.push("/my-ltc/transaction-history");
-                    }, 1500);
-                }, 1800);
+                runSuccessTimers(ref);
             } catch (e) {
+                if (showtime?.id && bookingId) {
+                    await customerShowtimeService.releaseSeatHoldAsync(showtime.id, bookingId).catch(() => {});
+                }
                 setStatus("failed");
                 setErrorMessage(e instanceof Error ? e.message : t("customer.booking.processing.error"));
             }
@@ -106,7 +136,7 @@ export default function BookingProcessingPage() {
                     <p className="text-sm text-gray-500">
                         {errorMessage || t("customer.booking.processing.error")}
                     </p>
-                    <div className="flex justify-center gap-3 pt-2">
+                    <div className="flex justify-center gap-3 pt-2 flex-wrap">
                         <LTTButton variant="outline" onClick={() => router.push(`/booking/${bookingId}/payment`)}>
                             {t("customer.booking.cta.back_to_payment")}
                         </LTTButton>

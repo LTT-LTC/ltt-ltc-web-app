@@ -3,7 +3,7 @@
 import { useTranslation as useI18nTranslation } from "react-i18next";
 import { LANGUAGE_KEY } from "../const";
 
-const DEFAULT_LANGUAGE = "vi";
+const DEFAULT_LANGUAGE = "en";
 
 /**
  * Custom hook for localization.

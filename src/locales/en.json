@@ -1415,6 +1415,9 @@
     "booking": {
       "loading": "Preparing your booking session...",
       "invalid_session": "Booking session not found. Please pick a showtime again.",
+      "seats_error_no_context": "This booking link is missing showtime details. Open the movie page and choose a showtime again.",
+      "seats_error_showtime_load": "Could not load this showtime. Check your connection and try again.",
+      "seats_error_layout": "Seat map is not configured for this screen. Try another showtime or contact support.",
       "leave_confirm": "Are you sure you want to leave this booking session? Your changes may not be saved.",
       "exit_confirm": {
         "title": "Leave booking session?",
@@ -1440,7 +1443,7 @@
         "seats": "BOOK YOUR SEATS",
         "confirm": "Confirm Your Seats",
         "summary": "Order Summary",
-        "payment": "Choose a Payment Method"
+        "payment": "Payment"
       },
       "field": {
         "cinema": "Cinema",
@@ -1452,10 +1455,29 @@
         "seats": "Seats",
         "ticket_total": "Ticket total",
         "fnb": "Snacks & drinks",
-        "combos": "Combos"
+        "combos": "Combos",
+        "empty_placeholder": "—"
+      },
+      "ticket": {
+        "stub_title": "MOVIE TICKET",
+        "back": "Back",
+        "hold_timer": "Hold expires in {{time}}",
+        "hold_expired_toast": "Your seat hold has expired. Please choose seats again.",
+        "duration_mins": "{{mins}} min",
+        "price_row_label": "Ticket price",
+        "price_per_seat": "{{price}} / seat",
+        "no_seats_selected": "None selected",
+        "line_tickets": "Tickets ({{count}})",
+        "total": "Total",
+        "footer_note": "Purchased tickets are non-refundable.",
+        "back_confirm_title": "Go back?",
+        "back_confirm_message": "Your current selections are saved temporarily so you can return later. Are you sure you want to leave?",
+        "back_confirm_stay": "Stay",
+        "back_confirm_leave": "Go back"
       },
       "confirm": {
-        "subtitle": "Make sure everything looks right before continuing."
+        "subtitle": "Make sure everything looks right before continuing.",
+        "securing_seats": "Securing your seats..."
       },
       "summary": {
         "subtitle": "Review your order before paying.",
@@ -1473,11 +1495,52 @@
         "products_heading": "Snacks & Drinks",
         "combos_heading": "Combos",
         "empty_products": "No products available right now.",
-        "empty_combos": "No combos available right now."
+        "empty_combos": "No combos available right now.",
+        "combo_line_item": "{{name}} × {{qty}}"
       },
       "payment": {
         "subtitle": "How would you like to pay for this booking?",
-        "method_section": "PAYMENT METHOD"
+        "subtitle_card_only": "Pay securely with your credit or debit card.",
+        "subtitle_methods": "Pay by card on this site or use VNPAY (ATM, QR, international card).",
+        "method_section": "PAYMENT METHOD",
+        "vnpay_label": "VNPAY",
+        "vnpay_hint": "You will be redirected to VNPAY to complete payment. Amount matches your booking total.",
+        "vnpay_pay": "Pay with VNPAY",
+        "vnpay_error": "Could not start VNPAY checkout. Please try again.",
+        "vnpay_result": {
+          "success_title": "Returning from VNPAY",
+          "success_body": "If your payment succeeded, we will confirm your booking shortly. You can review your order below.",
+          "failure_title": "Payment not completed",
+          "failure_body": "The payment was cancelled or could not be verified. You can try again from the payment step.",
+          "back_booking": "Back to summary",
+          "retry": "Try payment again",
+          "home": "Home"
+        },
+        "card_number_label": "Card number",
+        "card_number_placeholder": "Enter card number",
+        "card_holder_label": "Cardholder name",
+        "card_holder_placeholder": "Enter cardholder name (no accents)",
+        "card_holder_hint": "Use Latin letters only, without diacritics.",
+        "card_expiry_label": "Release date",
+        "card_expiry_placeholder": "MM/YY"
+      },
+      "card_confirm": {
+        "title": "Confirm card details",
+        "message": "Please verify your card information before continuing.",
+        "card_number": "Card number",
+        "card_holder": "Cardholder",
+        "expiry": "Release date",
+        "cancel": "Edit",
+        "confirm": "Continue"
+      },
+      "otp": {
+        "title": "Enter verification code",
+        "subtitle": "We sent a one-time code to your phone. Enter it below to complete payment.",
+        "label": "OTP code",
+        "placeholder": "Enter OTP",
+        "submit": "Verify and continue",
+        "refresh_warning": "After you verify, do not refresh this page until you are redirected.",
+        "invalid": "Enter a 4–6 digit code."
       },
       "payment_method": {
         "cash": {
@@ -1505,7 +1568,8 @@
         "success_subtitle": "We are redirecting you to your transaction history.",
         "failed_title": "We couldn't complete your booking",
         "error": "Unexpected error. Please try again.",
-        "payment_ref": "Payment reference"
+        "payment_ref": "Payment reference",
+        "otp_required": "Complete card verification (OTP) before continuing."
       },
       "cta": {
         "back": "Back",
@@ -1525,7 +1589,11 @@
         "pick_seats": "Please pick at least one seat to continue.",
         "fetch_extras_error": "Failed to load snacks and combos.",
         "group_seats_not_found": "No adjacent seats are available for the selected group size.",
-        "drag_to_select_group": "Drag over seats to select your group area."
+        "drag_to_select_group": "Drag over seats to select your group area.",
+        "seat_hold_conflict": "These seats could not be held. Another booking may have taken them.",
+        "seat_hold_failed": "Could not secure your seats. Please try again.",
+        "prepare_booking_failed": "Could not save your order summary. Please try again.",
+        "payment_method_update_failed": "Could not update payment method. Please try again."
       }
     },
     "my_ltc": {

@@ -3,16 +3,21 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dayjs from "dayjs";
+import { toast } from "sonner";
 import MovieTicket, { formatVND } from "@/src/@core/component/customer/MovieTicket";
 import { useBookingContext } from "@/src/@core/booking/useBookingContext";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
+import {
+    customerBookingService,
+    type PrepareBookingLineItemDto,
+} from "@/src/services/customer-service/booking/booking.service";
 import {
     customerProductService,
     type CustomerComboOutputDto,
     type CustomerProductOutputDto,
 } from "@/src/services/customer-service/product/product.service";
 
-const formatShowtimeLabel = (start?: string, end?: string) => {
+const formatShowtimeLabel = (start?: string, end?: string, emptyPlaceholder = "—") => {
     const fmt = (value?: string) => {
         if (!value) return "";
         const parsed = dayjs(value);
@@ -20,7 +25,7 @@ const formatShowtimeLabel = (start?: string, end?: string) => {
     };
     const left = fmt(start);
     const right = fmt(end);
-    if (!left) return "—";
+    if (!left) return emptyPlaceholder;
     if (!right) return left;
     return `${left} ~ ${right}`;
 };
@@ -36,6 +41,7 @@ export default function BookingSummaryPage() {
     const [products, setProducts] = useState<CustomerProductOutputDto[]>([]);
     const [combos, setCombos] = useState<CustomerComboOutputDto[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
+    const [continueLoading, setContinueLoading] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -107,15 +113,74 @@ export default function BookingSummaryPage() {
         );
     }
 
-    const cinemaName = cinema?.name || "—";
+    const emptyPh = t("customer.booking.field.empty_placeholder");
+    const cinemaName = cinema?.name || emptyPh;
     const screenLabel = screen?.screenNumber
         ? `${t("customer.booking.room")} ${screen.screenNumber}${screen.screenType ? ` (${screen.screenType})` : ""}`
-        : "—";
-    const showtimeLabel = formatShowtimeLabel(showtime.startTime, showtime.endTime);
+        : emptyPh;
+    const showtimeLabel = formatShowtimeLabel(showtime.startTime, showtime.endTime, emptyPh);
 
     const extraLines: { label: string; value: string }[] = [];
     if (fnbTotal > 0) extraLines.push({ label: t("customer.booking.field.fnb"), value: formatVND(fnbTotal) });
     if (comboTotal > 0) extraLines.push({ label: t("customer.booking.field.combos"), value: formatVND(comboTotal) });
+
+    const handleContinueToPayment = async () => {
+        if (!bookingId || !showtime?.id || continueLoading) return;
+        setContinueLoading(true);
+        try {
+            const items: PrepareBookingLineItemDto[] = [];
+            const seatN = bookingState.seats.length;
+            if (seatN > 0 && ticketTotal > 0) {
+                const unit = ticketTotal / seatN;
+                items.push({
+                    itemType: "SEAT",
+                    quantity: seatN,
+                    unitPrice: unit,
+                    totalPrice: ticketTotal,
+                });
+            }
+            for (const line of fnbLines) {
+                items.push({
+                    itemType: "PRODUCT",
+                    referenceId: line.id,
+                    quantity: line.quantity,
+                    unitPrice: line.unitPrice,
+                    totalPrice: line.lineTotal,
+                });
+            }
+            for (const line of comboLines) {
+                items.push({
+                    itemType: "COMBO",
+                    referenceId: line.id,
+                    quantity: line.quantity,
+                    unitPrice: line.unitPrice,
+                    totalPrice: line.lineTotal,
+                });
+            }
+            await customerBookingService.prepareBookingForPaymentAsync(bookingId, {
+                showtimeId: showtime.id,
+                seatCodes: [...bookingState.seats],
+                snapshotJson: JSON.stringify({
+                    bookingId,
+                    grandTotal,
+                    ticketTotal,
+                    extrasTotal,
+                    discount,
+                    seats: bookingState.seats,
+                    fnb: bookingState.fnb,
+                    combos: bookingState.combos,
+                }),
+                discountAmount: discount,
+                totalPrice: grandTotal,
+                items,
+            });
+            router.push(`/booking/${bookingId}/payment`);
+        } catch (e) {
+            toast.error(e instanceof Error ? e.message : t("customer.booking.toast.prepare_booking_failed"));
+        } finally {
+            setContinueLoading(false);
+        }
+    };
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
@@ -176,7 +241,7 @@ export default function BookingSummaryPage() {
             <div className="lg:sticky lg:top-4 lg:self-start">
                 <MovieTicket
                     movie={{
-                        title: movie?.title ?? showtime.movie?.title ?? "—",
+                        title: movie?.title ?? showtime.movie?.title ?? emptyPh,
                         originalTitle: movie?.originalTitle ?? showtime.movie?.originalTitle,
                         posterUrl: movie?.posterUrl ?? showtime.movie?.posterUrl,
                         ageRating: movie?.ratingCode ?? showtime.movie?.ratingCode,
@@ -193,9 +258,14 @@ export default function BookingSummaryPage() {
                     discount={discount}
                     extraLines={extraLines}
                     primaryActionLabel={t("customer.booking.cta.continue_to_payment")}
-                    onPrimaryAction={() => router.push(`/booking/${bookingId}/payment`)}
+                    onPrimaryAction={() => void handleContinueToPayment()}
+                    primaryLoading={continueLoading}
+                    backLoading={continueLoading}
+                    primaryDisabled={continueLoading}
                     backTo={`/booking/${bookingId}/extras`}
                     skipBackConfirm
+                    holdExpiresAtMs={bookingState.seatHoldExpiresAt}
+                    onSeatHoldExpired={() => router.replace(`/booking/${bookingId}/seats`)}
                 />
             </div>
         </div>
