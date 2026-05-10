@@ -1,3 +1,5 @@
+import type { ShowtimeMovieDto } from "@/src/services/customer-service/showtime/models/output.model";
+
 export type { ShowtimeMovieDto } from "@/src/services/customer-service/showtime/models/output.model";
 
 export interface ShowtimeOutputDto {
