@@ -14,6 +14,9 @@ import { customerProfileService } from '@/src/services/customer-service/profile/
 import { CustomerProfileOutputDto } from '@/src/services/customer-service/profile/models/output.model';
 import { customerMemberTierService } from '@/src/services/customer-service/member-tier/member-tier.service';
 import { MemberTierOutputDto } from '@/src/services/administration-service/member-tier/models/output.model';
+import { useLocalization } from '@/src/@core/hooks/use-localization';
+import MembershipQrModal from '@/src/app/(customer)/my-ltc/_components/MembershipQrModal';
+import { formatMemberCardNumber } from '@/src/app/(customer)/my-ltc/_lib/formatMemberCardNumber';
 
 const MEMBER_TIER_CACHE_KEY = "customer_member_tier_cache_v1";
 
@@ -28,20 +31,9 @@ const vietnameseSafeFontFamily =
 const QR_LOADING_GIF =
     "data:image/gif;base64,R0lGODlhEAAQAPIAAP///wAAAMbGxgAAACH/C05FVFNDQVBFMi4wAwEAAAAh+QQJCgAAACwAAAAAEAAQAAADMwi63P4wyklrE2MIOggZnAdOmGYJRbExwroUm2qv2Kx7AQA7";
 
-const formatMemberCardNumber = (cardNumber?: string): string => {
-    if (!cardNumber) {
-        return "---- ---- ---- ----";
-    }
-
-    const digits = cardNumber.replace(/\D/g, "").slice(0, 16);
-    if (digits.length === 0) {
-        return "---- ---- ---- ----";
-    }
-
-    return digits.replace(/(.{4})/g, "$1 ").trim();
-};
-
 export default function MembershipCardPage() {
+    const { t } = useLocalization();
+    const [openQrModal, setOpenQrModal] = useState(false);
     const [openTierInfo, setOpenTierInfo] = useState(false);
     const [pointPagination, setPointPagination] = useState({ page: 1, fetch: 5, totalCount: 0 });
     const [memberCard, setMemberCard] = useState<MemberCardOutputDto | null>(null);
@@ -74,23 +66,9 @@ export default function MembershipCardPage() {
         },
     });
 
-    const requestCreateMutation = useLTTMutation({
-        mutationFn: () => customerMemberCardService.requestCreateAsync({}),
-        onSuccess: () => toast.success("Create request submitted. Please wait for admin approval."),
-        onError: (err) => toast.error(err.message || "Failed to submit create request."),
-    });
-
-    const requestUpdateMutation = useLTTMutation({
-        mutationFn: (id: string) => customerMemberCardService.requestUpdateAsync(id, {}),
-        onSuccess: () => toast.success("Update request submitted. Please wait for admin approval."),
-        onError: (err) => toast.error(err.message || "Failed to submit update request."),
-    });
-
-    const requestDeleteMutation = useLTTMutation({
-        mutationFn: (id: string) => customerMemberCardService.requestDeleteAsync(id, {}),
-        onSuccess: () => toast.success("Delete request submitted. Please wait for admin approval."),
-        onError: (err) => toast.error(err.message || "Failed to submit delete request."),
-    });
+    const cardManagementDisabledToast = () => {
+        toast.error(t('customer.my_ltc.membership_card.feature_available_soon'));
+    };
 
     const fetchPointHistory = () => {
         pointHistoryMutation.mutation({
@@ -201,22 +179,6 @@ export default function MembershipCardPage() {
         await loadTierInfoFromCacheOrApi();
     };
 
-    const handleRequestUpdate = () => {
-        if (!memberCard?.id) {
-            toast.error("No active card found.");
-            return;
-        }
-        requestUpdateMutation.mutation(memberCard.id);
-    };
-
-    const handleRequestDelete = () => {
-        if (!memberCard?.id) {
-            toast.error("No active card found.");
-            return;
-        }
-        requestDeleteMutation.mutation(memberCard.id);
-    };
-
     return (
         <div className="flex flex-col gap-6 animate-fade-in-up w-full">
             <div className="relative w-full max-w-lg mx-auto transform hover:scale-[1.02] transition-transform duration-500">
@@ -244,19 +206,24 @@ export default function MembershipCardPage() {
                             </div>
                             <h2 className="text-4xl font-black uppercase tracking-tighter italic">{cardInfo.memberLevel}</h2>
                         </div>
-                        <div className="bg-white/10 backdrop-blur-md p-2.5 rounded-xl border border-white/20 shadow-inner">
+                        <button
+                            type="button"
+                            onClick={() => setOpenQrModal(true)}
+                            className="bg-white/10 backdrop-blur-md p-2.5 rounded-xl border border-white/20 shadow-inner cursor-pointer transition hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                            aria-label={t('customer.my_ltc.membership_card.open_qr')}
+                        >
                             {profileQrUrl ? (
                                 <div className="relative w-20 h-20 rounded-sm overflow-hidden bg-white">
                                     {isQrLoading && (
                                         <img
                                             src={QR_LOADING_GIF}
-                                            alt="Loading QR"
+                                            alt=""
                                             className="absolute inset-0 m-auto w-8 h-8 object-contain"
                                         />
                                     )}
                                     <img
                                         src={profileQrUrl}
-                                        alt="Profile QR"
+                                        alt=""
                                         className={`w-20 h-20 rounded-sm bg-white object-cover transition-opacity duration-200 ${isQrLoading ? 'opacity-0' : 'opacity-100'}`}
                                         loading="lazy"
                                         onLoad={() => setIsQrLoading(false)}
@@ -273,7 +240,7 @@ export default function MembershipCardPage() {
                                     <div className="bg-[white] col-span-2 row-span-2 col-start-4 row-start-4"></div>
                                 </div>
                             )}
-                        </div>
+                        </button>
                     </div>
 
                     <div className="z-10 mt-auto">
@@ -303,6 +270,14 @@ export default function MembershipCardPage() {
                     </div>
                 </div>
             </div>
+
+            <MembershipQrModal
+                open={openQrModal}
+                onClose={() => setOpenQrModal(false)}
+                qrUrl={profileQrUrl}
+                customerName={fullName}
+                cardNumberDisplay={formatMemberCardNumber(memberCard?.cardNumber)}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                 <LTTCard className="p-6 md:p-8 shadow-sm border border-gray-100 rounded-xl bg-white flex flex-col justify-center">
@@ -354,30 +329,27 @@ export default function MembershipCardPage() {
             <LTTCard className="p-6 md:p-8 shadow-sm border border-gray-100 rounded-xl bg-white mb-8">
                 <div className="flex items-center gap-3 mb-8">
                     <div className="w-1.5 h-6 bg-[#cc3434] rounded-full"></div>
-                    <h2 className="text-xl font-black text-gray-900 tracking-tight uppercase">Card Management</h2>
+                    <h2 className="text-xl font-black text-gray-900 tracking-tight uppercase">{t('customer.my_ltc.membership_card.card_management')}</h2>
                 </div>
 
                 <div className="flex flex-wrap gap-4">
                     <LTTButton
                         className="rounded-xl font-bold bg-white text-gray-700 border-gray-200 hover:!border-[#cc3434] hover:!text-[#cc3434] h-12 px-6"
-                        onClick={() => requestCreateMutation.mutation()}
-                        loading={requestCreateMutation.isLoading}
+                        onClick={cardManagementDisabledToast}
                     >
-                        Request new card
+                        {t('customer.my_ltc.membership_card.request_new_card')}
                     </LTTButton>
                     <LTTButton
                         className="rounded-xl font-bold bg-white text-gray-700 border-gray-200 hover:!border-[#cc3434] hover:!text-[#cc3434] h-12 px-6"
-                        onClick={handleRequestUpdate}
-                        loading={requestUpdateMutation.isLoading}
+                        onClick={cardManagementDisabledToast}
                     >
-                        Update information
+                        {t('customer.my_ltc.membership_card.update_information')}
                     </LTTButton>
                     <LTTButton
                         className="rounded-xl font-bold bg-white text-[#cc3434] border-[#cc3434] hover:!bg-[#cc3434] hover:!text-white h-12 px-6 ml-0 md:ml-auto"
-                        onClick={handleRequestDelete}
-                        loading={requestDeleteMutation.isLoading}
+                        onClick={cardManagementDisabledToast}
                     >
-                        Delete card
+                        {t('customer.my_ltc.membership_card.delete_card')}
                     </LTTButton>
                 </div>
             </LTTCard>
@@ -444,5 +416,3 @@ export default function MembershipCardPage() {
         </div>
     );
 }
-
-

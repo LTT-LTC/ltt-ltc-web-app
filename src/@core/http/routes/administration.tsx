@@ -60,13 +60,6 @@ export const adminNavItems: NavItemConfig[] = [
     permissionKey: "admin:staff",
   },
   {
-    key: "member-card-requests",
-    label: "MemberCard Request",
-    path: "/administration/admin/member-card-request",
-    icon: Users,
-    permissionKey: "admin:staff",
-  },
-  {
     key: "staff",
     label: "Staff & RBAC",
     path: "/administration/admin/staff",

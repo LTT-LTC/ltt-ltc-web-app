@@ -12,6 +12,9 @@ import { Form, Input, Select, DatePicker } from 'antd';
 import dayjs from 'dayjs';
 import { useLocalization } from '@/src/@core/hooks/use-localization';
 import vnCityDistricts from "@/src/@core/const/location/vn-city-districts.json";
+import { customerMemberCardService } from '@/src/services/customer-service/member-card/member-card.service';
+import MembershipQrModal from '@/src/app/(customer)/my-ltc/_components/MembershipQrModal';
+import { formatMemberCardNumber } from '@/src/app/(customer)/my-ltc/_lib/formatMemberCardNumber';
 
 type AddressOption = {
     provinceCity: string;
@@ -102,6 +105,8 @@ const displayAddress = (address?: string): string => {
 export default function AccountDetailsPage() {
     const { t } = useLocalization();
     const [profile, setProfile] = useState<CustomerProfileOutputDto | null>(null);
+    const [qrModalOpen, setQrModalOpen] = useState(false);
+    const [memberCardNumberRaw, setMemberCardNumberRaw] = useState<string | undefined>(undefined);
     const [isEditing, setIsEditing] = useState(false);
     const [form] = Form.useForm();
     const selectedProvince = Form.useWatch("addressProvinceCity", form);
@@ -164,6 +169,21 @@ export default function AccountDetailsPage() {
         fetchProfile(undefined);
     }, []);
 
+    useEffect(() => {
+        let mounted = true;
+        customerMemberCardService
+            .getActiveAsync()
+            .then((card) => {
+                if (mounted) setMemberCardNumberRaw(card?.cardNumber);
+            })
+            .catch(() => {
+                if (mounted) setMemberCardNumberRaw(undefined);
+            });
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
     const handleUpdate = async (values: Record<string, unknown>) => {
         const address = stringifyAddressJson(
             values.addressProvinceCity as string | undefined,
@@ -189,15 +209,22 @@ export default function AccountDetailsPage() {
         { label: t('customer.my_ltc.account_details.fields.email'), key: 'emailAddress', value: profile?.emailAddress },
         { label: t('customer.my_ltc.account_details.fields.address'), key: 'address', value: profile?.address ? displayAddress(profile.address) : t('customer.my_ltc.account_details.not_updated') },
         {
-            label: "Profile QR URL",
+            label: t('customer.my_ltc.account_details.fields.profile_qr'),
             key: 'profileQRUrl',
             value: profile?.profileQRUrl ? (
-                <img
-                    src={profile.profileQRUrl}
-                    alt="Profile QR code"
-                    className="w-28 h-28 object-contain bg-white rounded-lg border border-gray-200 p-1"
-                    loading="lazy"
-                />
+                <button
+                    type="button"
+                    className="cursor-zoom-in rounded-lg border-0 bg-transparent p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#cc3434]"
+                    onClick={() => setQrModalOpen(true)}
+                    aria-label={t('customer.my_ltc.membership_card.open_qr')}
+                >
+                    <img
+                        src={profile.profileQRUrl}
+                        alt=""
+                        className="w-28 h-28 object-contain bg-white rounded-lg border border-gray-200 p-1 pointer-events-none"
+                        loading="lazy"
+                    />
+                </button>
             ) : "---",
             readOnly: true
         },
@@ -209,6 +236,13 @@ export default function AccountDetailsPage() {
 
     return (
         <div className="w-full animate-[fadeInUp_0.4s_ease-out_forwards]">
+            <MembershipQrModal
+                open={qrModalOpen}
+                onClose={() => setQrModalOpen(false)}
+                qrUrl={profile?.profileQRUrl ?? null}
+                customerName={profile?.name ?? ''}
+                cardNumberDisplay={formatMemberCardNumber(memberCardNumberRaw)}
+            />
             <LTTCard className="p-6 md:p-8 shadow-sm border border-gray-100 rounded-xl bg-white overflow-hidden relative">
                 <div className="flex justify-between items-center mb-8 border-b border-gray-100 pb-5">
                     <div className="flex items-center gap-3">
