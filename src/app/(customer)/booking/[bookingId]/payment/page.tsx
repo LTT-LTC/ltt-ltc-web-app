@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import dayjs from "dayjs";
-import { CreditCard, Loader2, Wallet } from "lucide-react";
+import { Loader2, Wallet } from "lucide-react";
 import MovieTicket, { formatVND } from "@/src/@core/component/customer/MovieTicket";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { LTTInput } from "@/src/@core/component/LTTShadcnUI/LTTInput";
@@ -115,7 +115,7 @@ export default function BookingPaymentPage() {
     const [holderName, setHolderName] = useState("");
     const [expiryDisplay, setExpiryDisplay] = useState("");
     const [confirmOpen, setConfirmOpen] = useState(false);
-    const [payMethod, setPayMethod] = useState<PayMethod>("card");
+    const [payMethod, setPayMethod] = useState<PayMethod>("vnpay");
     const [selectedBankCode, setSelectedBankCode] = useState<string>("");
     const [vnpayRedirecting, setVnpayRedirecting] = useState(false);
     const [cardConfirmLoading, setCardConfirmLoading] = useState(false);
@@ -351,12 +351,6 @@ export default function BookingPaymentPage() {
                     </h3>
                     <div className="space-y-3">
                         {methodBox(
-                            "card",
-                            <CreditCard className="h-5 w-5" />,
-                            t("customer.booking.payment_method.card.label"),
-                            t("customer.booking.payment_method.card.hint")
-                        )}
-                        {methodBox(
                             "vnpay",
                             <Wallet className="h-5 w-5" />,
                             t("customer.booking.payment.vnpay_label"),
@@ -365,77 +359,13 @@ export default function BookingPaymentPage() {
                     </div>
                 </div>
 
-                {payMethod === "card" ? (
-                    <div className="space-y-4 pt-2 border-t border-dashed border-gray-200">
-                        <div className="space-y-1.5">
-                            <LTTLabel htmlFor="card-number" className="text-sm font-semibold text-gray-800">
-                                {t("customer.booking.payment.card_number_label")}
-                            </LTTLabel>
-                            <LTTInput
-                                id="card-number"
-                                inputMode="numeric"
-                                autoComplete="cc-number"
-                                placeholder={t("customer.booking.payment.card_number_placeholder")}
-                                value={cardNumberDisplay}
-                                onChange={(e) => setCardNumberDisplay(formatCardGroups(e.target.value))}
-                                className="font-mono"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <LTTLabel htmlFor="card-holder" className="text-sm font-semibold text-gray-800">
-                                {t("customer.booking.payment.card_holder_label")}
-                            </LTTLabel>
-                            <LTTInput
-                                id="card-holder"
-                                autoComplete="cc-name"
-                                placeholder={t("customer.booking.payment.card_holder_placeholder")}
-                                value={holderName}
-                                onChange={(e) => setHolderName(e.target.value)}
-                            />
-                            <p className="text-xs text-gray-500">{t("customer.booking.payment.card_holder_hint")}</p>
-                        </div>
-                        <div className="space-y-1.5 max-w-[180px]">
-                            <LTTLabel htmlFor="card-expiry" className="text-sm font-semibold text-gray-800">
-                                {t("customer.booking.payment.card_expiry_label")}
-                            </LTTLabel>
-                            <LTTInput
-                                id="card-expiry"
-                                inputMode="numeric"
-                                autoComplete="cc-exp"
-                                placeholder={t("customer.booking.payment.card_expiry_placeholder")}
-                                value={expiryDisplay}
-                                onChange={(e) => setExpiryDisplay(formatExpiryInput(e.target.value))}
-                                className="font-mono"
-                            />
-                        </div>
-                        <div className="space-y-1.5 max-w-xs">
-                            <LTTLabel htmlFor="card-bank" className="text-sm font-semibold text-gray-800">
-                                {t("customer.booking.payment.bank_label")}
-                            </LTTLabel>
-                            <LTTSelect value={selectedBankCode} onValueChange={setSelectedBankCode}>
-                                <LTTSelectTrigger id="card-bank" className="w-full bg-white">
-                                    <LTTSelectValue placeholder={t("customer.booking.payment.bank_placeholder")} />
-                                </LTTSelectTrigger>
-                                <LTTSelectContent className="bg-white">
-                                    {CARD_BANK_CODES.map((code) => (
-                                        <LTTSelectItem key={code} value={code}>
-                                            {t(CARD_BANK_LABEL_KEY[code])}
-                                        </LTTSelectItem>
-                                    ))}
-                                </LTTSelectContent>
-                            </LTTSelect>
-                            <p className="text-xs text-gray-500">{t("customer.booking.otp.demo_card_hint")}</p>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="pt-2 border-t border-dashed border-gray-200 space-y-2">
-                        <p className="text-sm text-gray-700">
-                            <span className="font-semibold text-gray-900">{t("customer.booking.summary.grand_total")}: </span>
-                            {formatVND(grandTotal)}
-                        </p>
-                        <p className="text-xs text-gray-500">{t("customer.booking.payment.vnpay_hint")}</p>
-                    </div>
-                )}
+                <div className="pt-2 border-t border-dashed border-gray-200 space-y-2">
+                    <p className="text-sm text-gray-700">
+                        <span className="font-semibold text-gray-900">{t("customer.booking.summary.grand_total")}: </span>
+                        {formatVND(grandTotal)}
+                    </p>
+                    <p className="text-xs text-gray-500">{t("customer.booking.payment.vnpay_hint")}</p>
+                </div>
 
                 <div className="border-t border-dashed border-gray-200 pt-4 space-y-1.5 text-sm">
                     <Row label={t("customer.booking.summary.tickets")} value={`${bookingState.seats.length} ${t("customer.booking.summary.tickets_unit")}`} />

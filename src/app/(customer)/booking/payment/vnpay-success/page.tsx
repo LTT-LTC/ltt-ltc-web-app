@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2 } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
@@ -11,6 +11,11 @@ export default function VnpayBookingSuccessPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const bookingId = searchParams.get("bookingId");
+
+    useEffect(() => {
+        if (!bookingId) return;
+        router.replace(`/booking/${bookingId}/processing?vnpay=1&status=success`);
+    }, [bookingId, router]);
 
     return (
         <div className="max-w-lg mx-auto bg-white border border-gray-100 rounded-xl shadow-sm p-8 text-center space-y-4">

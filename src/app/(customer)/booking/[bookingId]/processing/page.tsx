@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { BOOKING_PAYMENT_MOCK_SUCCESS } from "@/src/@core/booking/bookingPaymentConfig";
@@ -16,6 +16,7 @@ export default function BookingProcessingPage() {
     const params = useParams<{ bookingId: string }>();
     const bookingId = params.bookingId;
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     const { bookingState, showtime, loading } = useBookingContext(bookingId);
 
@@ -23,10 +24,36 @@ export default function BookingProcessingPage() {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [paymentRef, setPaymentRef] = useState<string | null>(null);
     const startedRef = useRef<boolean>(false);
+    const isVnpayReturn = searchParams.get("vnpay") === "1";
+    const gatewayStatus = searchParams.get("status");
 
     useEffect(() => {
         if (loading) return;
         if (startedRef.current) return;
+
+        if (isVnpayReturn && gatewayStatus === "success") {
+            startedRef.current = true;
+            setStatus("succeeded");
+            if (bookingId) {
+                void (async () => {
+                    if (showtime?.id) {
+                        await customerShowtimeService.releaseSeatHoldAsync(showtime.id, bookingId).catch(() => {});
+                    }
+                    clearBookingState(bookingId);
+                })();
+            }
+            window.setTimeout(() => {
+                router.push("/my-ltc/transaction-history");
+            }, 1500);
+            return;
+        }
+
+        if (isVnpayReturn && gatewayStatus === "failed") {
+            startedRef.current = true;
+            setStatus("failed");
+            setErrorMessage(t("customer.booking.payment.vnpay_result.failure_body"));
+            return;
+        }
 
         if (!bookingState || !bookingState.seats?.length || !showtime) {
             startedRef.current = true;
@@ -78,7 +105,7 @@ export default function BookingProcessingPage() {
         };
 
         void submit();
-    }, [loading, bookingState, showtime, bookingId, router, t]);
+    }, [loading, bookingState, showtime, bookingId, router, t, isVnpayReturn, gatewayStatus]);
 
     return (
         <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-12 max-w-xl mx-auto text-center space-y-5">
