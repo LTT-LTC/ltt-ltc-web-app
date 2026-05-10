@@ -256,7 +256,7 @@ export default function BookingPaymentPage() {
                             }
                             showtimeLabel={formatShowtimeLabel(showtime.startTime, showtime.endTime, "—")}
                             selectedSeats={bookingState?.seats ?? []}
-                            basePrice={bookingState?.basePrice}
+                            basePrice={bookingState?.basePrice ?? 0}
                             ticketTotal={bookingState?.ticketTotal ?? 0}
                             extrasTotal={extrasTotal}
                             discount={bookingState?.discountAmount ?? 0}
