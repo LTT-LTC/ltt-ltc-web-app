@@ -1,14 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import dayjs from "dayjs";
 import type { LucideIcon } from "lucide-react";
 import {
   AlertTriangle,
   ArrowRight,
+  Building2,
   Calendar,
   CheckCircle2,
   Download,
+  Loader2,
+  RefreshCw,
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
@@ -45,6 +49,9 @@ import {
   LTTSelectValue,
 } from "@/src/@core/component/LTTShadcnUI/LTTSelect";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
+import { useRevenueMetrics } from "@/src/services/administration-service/booking/useRevenueMetrics";
+import { cinemaService, type CinemaOutputDto } from "@/src/services/administration-service/cinema/cinema.service";
+import { useDashboardData } from "@/src/services/administration-service/dashboard/useDashboardData";
 
 type Tone = "good" | "warn" | "danger" | "info" | "neutral" | "draft";
 type DashboardRole = "admin" | "manager";
@@ -65,44 +72,9 @@ type WorkflowLink = {
   tone: Tone;
 };
 
-const ADMIN_KPIS: KpiItem[] = [
-  { labelKey: "revenue_today", value: "₫84.2M", deltaKey: "revenue_today_delta", deltaTone: "good", subKey: "revenue_today_sub", subTone: "good" },
-  { labelKey: "tickets_sold_today", value: "1,847", deltaKey: "tickets_sold_today_delta", deltaTone: "good", subKey: "tickets_sold_today_sub", subTone: "good" },
-  { labelKey: "avg_occupancy_rate", value: "63%", deltaKey: "avg_occupancy_rate_delta", deltaTone: "neutral", subKey: "avg_occupancy_rate_sub", subTone: "warn" },
-  { labelKey: "member_transactions", value: "41%", deltaKey: "member_transactions_delta", deltaTone: "neutral", subKey: "member_transactions_sub", subTone: "info" },
-];
+// KPI values are now computed live from payment data via useRevenueMetrics.
 
-const MANAGER_KPIS: KpiItem[] = [
-  { labelKey: "revenue_today", value: "₫31.4M", deltaKey: "manager_revenue_today_delta", deltaTone: "good", subKey: "manager_revenue_today_sub", subTone: "good" },
-  { labelKey: "tickets_sold", value: "623", deltaKey: "tickets_sold_delta", deltaTone: "neutral", subKey: "tickets_sold_sub", subTone: "info" },
-  { labelKey: "fnb_spend_per_head", value: "₫48K", deltaKey: "fnb_spend_per_head_delta", deltaTone: "warn", subKey: "fnb_spend_per_head_sub", subTone: "warn" },
-  { labelKey: "avg_occupancy", value: "58%", deltaKey: "avg_occupancy_delta", deltaTone: "neutral", subKey: "avg_occupancy_sub", subTone: "warn" },
-];
-
-const REVENUE_TREND = [
-  { day: "Mon", tickets: 48, fnb: 22, gift: 4 },
-  { day: "Tue", tickets: 45, fnb: 20, gift: 3 },
-  { day: "Wed", tickets: 52, fnb: 24, gift: 4 },
-  { day: "Thu", tickets: 58, fnb: 26, gift: 5 },
-  { day: "Fri", tickets: 78, fnb: 32, gift: 7 },
-  { day: "Sat", tickets: 92, fnb: 40, gift: 8 },
-  { day: "Sun", tickets: 82, fnb: 36, gift: 6 },
-];
-
-const MANAGER_HOURLY_REVENUE = [
-  { h: "10", today: 1.2, yest: 1.0 },
-  { h: "11", today: 2.4, yest: 2.1 },
-  { h: "12", today: 4.1, yest: 3.6 },
-  { h: "13", today: 4.8, yest: 4.5 },
-  { h: "14", today: 5.6, yest: 5.0 },
-  { h: "15", today: 5.4, yest: 5.2 },
-  { h: "16", today: null as number | null, yest: 4.0 },
-  { h: "17", today: null as number | null, yest: 3.0 },
-  { h: "18", today: null as number | null, yest: 5.5 },
-  { h: "19", today: null as number | null, yest: 8.5 },
-  { h: "20", today: null as number | null, yest: 7.6 },
-  { h: "21", today: null as number | null, yest: 3.0 },
-];
+// Revenue trend and hourly data are now fetched live via useRevenueMetrics.
 
 const ADMIN_HALLS = [
   { name: "Hall 1 · Inception 2", pct: 91 },
@@ -113,13 +85,7 @@ const ADMIN_HALLS = [
   { name: "Hall 6 · Archive (limited)", pct: 21 },
 ];
 
-const ADMIN_TOP_MOVIES = [
-  { title: "Inception 2", revenue: "₫18.4M", badge: "8 days left", tone: "good" as Tone },
-  { title: "The Wild Robot 2", revenue: "₫15.1M", badge: "14 days left", tone: "good" as Tone },
-  { title: "Venom 3", revenue: "₫11.8M", badge: "3 days left", tone: "warn" as Tone },
-  { title: "Paddington 4", revenue: "₫9.2M", badge: "21 days left", tone: "info" as Tone },
-  { title: "Quiet Place 3", revenue: "₫4.1M", badge: "Low yield", tone: "danger" as Tone },
-];
+// Top movies data is now fetched live via useRevenueMetrics.
 
 const ADMIN_MEMBER_TIERS = [
   { name: "Gold", pct: 18, color: "bg-amber-500" },
@@ -142,59 +108,12 @@ const ADMIN_OPS_SNAPSHOT = [
   { label: "System uptime", value: "99.98% — 30 days", tone: "good" as Tone },
 ];
 
-type ScreenState = "now_showing" | "cleaning" | "idle" | "maintenance";
-
-const MANAGER_SCREENS: {
-  id: number;
-  seats: number;
-  state: ScreenState;
-  title: string;
-  sold?: number;
-  bottomLeft: string;
-  bottomRight: string;
-}[] = [
-  { id: 1, seats: 210, state: "now_showing", title: "Inception 2 · 14:00 session", sold: 191, bottomLeft: "191 / 210 seats", bottomRight: "Ends 16:12" },
-  { id: 2, seats: 180, state: "now_showing", title: "The Wild Robot 2 · 14:15 session", sold: 149, bottomLeft: "149 / 180 seats", bottomRight: "Ends 16:05" },
-  { id: 3, seats: 200, state: "cleaning", title: "Next: Venom 3 · 15:00 session", sold: 68, bottomLeft: "Ready in ~8 min", bottomRight: "68 sold / 200" },
-  { id: 4, seats: 160, state: "now_showing", title: "Paddington 4 · 13:30 session", sold: 99, bottomLeft: "99 / 160 seats", bottomRight: "Ends 15:22" },
-  { id: 5, seats: 140, state: "idle", title: "Next: Quiet Place 3 · 16:30 session", sold: 40, bottomLeft: "Only 40 sold / 140", bottomRight: "Idle 110 min" },
-  { id: 6, seats: 130, state: "maintenance", title: "Projector lamp replacement", bottomLeft: "Est. back 17:30", bottomRight: "2 shows cancelled" },
-];
-
-const MANAGER_SHOWTIMES = [
-  { time: "14:00", screen: "Sc.1", title: "Inception 2", dur: "132 min", seats: "191 / 210", tone: "good" as Tone },
-  { time: "14:15", screen: "Sc.2", title: "Wild Robot 2", dur: "110 min", seats: "149 / 180", tone: "good" as Tone },
-  { time: "15:00", screen: "Sc.3", title: "Venom 3", dur: "112 min", seats: "68 / 200", tone: "warn" as Tone },
-  { time: "16:00", screen: "Sc.1", title: "Inception 2", dur: "132 min", seats: "144 / 210", tone: "info" as Tone },
-  { time: "16:30", screen: "Sc.5", title: "Quiet Place 3", dur: "98 min", seats: "40 / 140 · Push promo", tone: "danger" as Tone },
-  { time: "19:00", screen: "Sc.2", title: "Wild Robot 2", dur: "110 min", seats: "201 / 180 — FULL", tone: "info" as Tone },
-  { time: "20:00", screen: "Sc.3", title: "Venom 3", dur: "112 min", seats: "Draft — confirm", tone: "draft" as Tone },
-];
-
 const MANAGER_FNB_TOP = [
   { name: "Combo L (popcorn+drink)", sold: 312 },
   { name: "Nachos set", sold: 148 },
   { name: "Hotdog", sold: 91 },
 ];
 
-const MANAGER_FNB_STOCK = [
-  { name: "Popcorn (lg)", pct: 11, color: "bg-red-500", text: "text-red-600" },
-  { name: "Nachos", pct: 28, color: "bg-amber-500", text: "text-amber-600" },
-  { name: "Cola (500ml)", pct: 74, color: "bg-emerald-500", text: "text-emerald-600" },
-  { name: "Hotdog", pct: 61, color: "bg-emerald-500", text: "text-emerald-600" },
-];
-
-const MANAGER_PROMOTIONS = [
-  { name: "Student Wed -15%", sub: "Expires tonight", badge: "↑ 41%", tone: "good" as Tone },
-  { name: "Combo upgrade ₫10K", sub: "Running all week", badge: "↑ 29%", tone: "good" as Tone },
-  { name: "Last-row couples deal", sub: "Draft — not live", badge: "Pending", tone: "warn" as Tone },
-];
-
-const MANAGER_PRICING_RULES = [
-  { name: "Peak surcharge (Sc.1, Sc.2)", badge: "Triggered", tone: "good" as Tone },
-  { name: "Early-bird -10% (before 12pm)", badge: "Active", tone: "info" as Tone },
-  { name: "VIP recliner premium +₫30K", badge: "Active", tone: "info" as Tone },
-];
 
 const ADMIN_WORKFLOW_LINKS: WorkflowLink[] = [
   { key: "refund_requests", href: "/administration/admin/refunds", count: "312", tone: "warn" },
@@ -231,26 +150,18 @@ const deltaIconByTone: Partial<Record<Tone, LucideIcon>> = {
   warn: TrendingDown,
 };
 
-const screenStateBadge: Record<ScreenState, { label: string; cls: string }> = {
-  now_showing: { label: "Now showing", cls: "bg-emerald-100 text-emerald-700" },
-  cleaning: { label: "Cleaning", cls: "bg-blue-100 text-blue-700" },
-  idle: { label: "Idle", cls: "bg-muted-shadcn text-muted-foreground-shadcn" },
-  maintenance: { label: "Maintenance", cls: "bg-red-100 text-red-700" },
-};
-
-const screenStateBar: Record<ScreenState, string> = {
-  now_showing: "bg-emerald-500",
-  cleaning: "bg-blue-500",
-  idle: "bg-amber-500",
-  maintenance: "bg-red-500",
-};
-
 const occupancyBarColor = (pct: number): string =>
   pct >= 80 ? "bg-emerald-500" : pct >= 60 ? "bg-blue-500" : pct >= 40 ? "bg-amber-500" : "bg-red-500";
 
-function RangeFilter() {
+const formatVnd = (n: number) => n.toLocaleString("vi-VN") + "đ";
+
+interface RangeFilterProps {
+  value: string;
+  onChange: (range: string, customFrom?: string, customTo?: string) => void;
+}
+
+function RangeFilter({ value, onChange }: RangeFilterProps) {
   const { t } = useLocalization();
-  const [range, setRange] = useState("today");
   const [customOpen, setCustomOpen] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -258,11 +169,12 @@ function RangeFilter() {
   return (
     <div className="flex items-center gap-2">
       <LTTSelect
-        value={range}
-        onValueChange={(value) => {
-          setRange(value);
-          if (value === "custom") {
+        value={value}
+        onValueChange={(v) => {
+          if (v === "custom") {
             setCustomOpen(true);
+          } else {
+            onChange(v);
           }
         }}
       >
@@ -304,7 +216,7 @@ function RangeFilter() {
             </LTTButton>
             <LTTButton
               onClick={() => {
-                setRange("custom");
+                onChange("custom", fromDate, toDate);
                 setCustomOpen(false);
               }}
               disabled={!fromDate || !toDate}
@@ -374,16 +286,125 @@ function WorkflowRequestPanel({ role }: { role: DashboardRole }) {
   );
 }
 
+function DisabledSection({ title, children }: { title?: string; children?: React.ReactNode }) {
+  return (
+    <div className="relative opacity-50 pointer-events-none select-none">
+      {children}
+      <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-background/60 backdrop-blur-[1px]">
+        <span className="rounded-md bg-muted-shadcn px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground-shadcn">
+          {title ?? "Coming soon"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function computeDateRange(range: string, customFrom?: string, customTo?: string) {
+  const now = dayjs();
+  switch (range) {
+    case "today":
+      return { from: now.startOf("day").toISOString(), to: now.endOf("day").toISOString() };
+    case "7d":
+      return { from: now.subtract(7, "day").startOf("day").toISOString(), to: now.endOf("day").toISOString() };
+    case "30d":
+      return { from: now.subtract(30, "day").startOf("day").toISOString(), to: now.endOf("day").toISOString() };
+    case "month":
+      return { from: now.startOf("month").toISOString(), to: now.endOf("day").toISOString() };
+    case "custom":
+      return {
+        from: customFrom ? dayjs(customFrom).startOf("day").toISOString() : now.subtract(7, "day").startOf("day").toISOString(),
+        to: customTo ? dayjs(customTo).endOf("day").toISOString() : now.endOf("day").toISOString(),
+      };
+    default:
+      return { from: now.subtract(7, "day").startOf("day").toISOString(), to: now.endOf("day").toISOString() };
+  }
+}
+
 export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
   const { t } = useLocalization();
-  const kpis = role === "admin" ? ADMIN_KPIS : MANAGER_KPIS;
   const titleKey = role === "admin" ? "admin_title" : "manager_title";
   const subtitleKey = role === "admin" ? "admin_subtitle" : "manager_subtitle";
   const ticketLegend = useMemo(() => t("admin.executive_dashboard.charts.ticket_legend"), [t]);
   const fnbLegend = useMemo(() => t("admin.executive_dashboard.charts.fnb_legend"), [t]);
-  const giftLegend = useMemo(() => t("admin.executive_dashboard.charts.gift_legend"), [t]);
   const todayLegend = useMemo(() => t("admin.executive_dashboard.charts.today"), [t]);
-  const yesterdayLegend = useMemo(() => t("admin.executive_dashboard.charts.yesterday"), [t]);
+
+  const today = dayjs();
+  const [range, setRange] = useState("7d");
+  const [customFrom, setCustomFrom] = useState<string | undefined>();
+  const [customTo, setCustomTo] = useState<string | undefined>();
+  const [selectedCinemaId, setSelectedCinemaId] = useState("all");
+  const [cinemas, setCinemas] = useState<CinemaOutputDto[]>([]);
+
+  useEffect(() => {
+    cinemaService.getCinemaListAsync({ page: 1, fetch: 100 }).then((res) => {
+      setCinemas(res.items ?? []);
+    }).catch(() => {});
+  }, []);
+
+  const dateRange = useMemo(() => computeDateRange(range, customFrom, customTo), [range, customFrom, customTo]);
+
+  const metrics = useRevenueMetrics({
+    fromDate: dateRange.from,
+    toDate: dateRange.to,
+    cinemaId: selectedCinemaId !== "all" ? selectedCinemaId : undefined,
+    todayDate: today.format("YYYY-MM-DD"),
+  });
+
+  const dashboard = useDashboardData({
+    fromDate: dateRange.from,
+    toDate: dateRange.to,
+    cinemaId: selectedCinemaId !== "all" ? selectedCinemaId : undefined,
+  });
+
+  const isLoading = metrics.loading || dashboard.loading;
+
+  const handleRefresh = () => {
+    metrics.reload();
+    dashboard.reload();
+  };
+
+  const handleRangeChange = (newRange: string, from?: string, to?: string) => {
+    setRange(newRange);
+    if (newRange === "custom") {
+      setCustomFrom(from);
+      setCustomTo(to);
+    }
+  };
+
+  const liveKpis = useMemo<KpiItem[]>(() => {
+    const fmt = (n: number) => n >= 1_000_000 ? `₫${(n / 1_000_000).toFixed(1)}M` : `₫${Math.round(n / 1000)}K`;
+    const totals = dashboard.summary?.totals ?? metrics.totals;
+    const occupancyRate = dashboard.hallOccupancy?.averageOccupancyRate;
+
+    return [
+      { labelKey: "revenue_today", value: isLoading ? "…" : fmt(totals.totalRevenue), deltaKey: "revenue_today_delta", deltaTone: "good", subKey: "revenue_today_sub", subTone: "good" },
+      { labelKey: "tickets_sold_today", value: isLoading ? "…" : totals.ticketsSold.toLocaleString(), deltaKey: "tickets_sold_today_delta", deltaTone: "good", subKey: "tickets_sold_today_sub", subTone: "good" },
+      { labelKey: "avg_occupancy_rate", value: isLoading ? "…" : occupancyRate != null ? `${occupancyRate}%` : "—", deltaKey: "avg_occupancy_rate_delta", deltaTone: occupancyRate != null && occupancyRate >= 60 ? "good" : "neutral", subKey: "avg_occupancy_rate_sub", subTone: occupancyRate != null && occupancyRate >= 60 ? "good" : "neutral" },
+    ];
+  }, [isLoading, metrics.totals, dashboard.summary, dashboard.hallOccupancy]);
+
+  const chartData = useMemo(() => {
+    const rows = dashboard.summary?.dailyBreakdown ?? metrics.dailyRows;
+    return rows.map((r) => ({
+      day: r.date.slice(5),
+      tickets: Math.round(r.ticketRevenue / 1_000_000 * 10) / 10,
+      fnb: Math.round(r.fnbRevenue / 1_000_000 * 10) / 10,
+    }));
+  }, [dashboard.summary, metrics.dailyRows]);
+
+  const hourlyData = useMemo(() => {
+    if (dashboard.summary?.hourlyTrend) {
+      return dashboard.summary.hourlyTrend.map((r) => ({
+        h: r.hour,
+        today: Math.round(r.revenue / 1_000_000 * 10) / 10 || null,
+      }));
+    }
+    return metrics.hourlyRows.map((r) => ({
+      h: r.h,
+      today: Math.round(r.revenue / 1_000_000 * 10) / 10 || null,
+    }));
+  }, [dashboard.summary, metrics.hourlyRows]);
+
   const formatCurrencyMillions = (value: unknown) => {
     const raw = Array.isArray(value) ? value[0] : value;
     return raw == null ? "—" : `₫${raw}M`;
@@ -396,33 +417,59 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
           <h1 className="font-heading text-2xl font-bold">{t(`admin.executive_dashboard.${titleKey}`)}</h1>
           <p className="mt-0.5 text-xs text-muted-foreground-shadcn">{t(`admin.executive_dashboard.${subtitleKey}`)}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <RangeFilter />
-          <LTTButton variant="outline" className="gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <RangeFilter value={range} onChange={handleRangeChange} />
+          <LTTButton
+            variant="outline"
+            size="icon"
+            title={t("admin.executive_dashboard.filters.refresh")}
+            onClick={handleRefresh}
+            disabled={isLoading}
+          >
+            <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+          </LTTButton>
+          <LTTSelect value={selectedCinemaId} onValueChange={setSelectedCinemaId}>
+            <LTTSelectTrigger className="w-48">
+              <Building2 className="mr-2 h-4 w-4 shrink-0 text-muted-foreground-shadcn" />
+              <LTTSelectValue placeholder={t("admin.executive_dashboard.filters.all_cinemas")} />
+            </LTTSelectTrigger>
+            <LTTSelectContent>
+              <LTTSelectItem value="all">{t("admin.executive_dashboard.filters.all_cinemas")}</LTTSelectItem>
+              {cinemas.map((c) => (
+                <LTTSelectItem key={c.id} value={c.id}>{c.name}</LTTSelectItem>
+              ))}
+            </LTTSelectContent>
+          </LTTSelect>
+          <LTTButton variant="outline" className="gap-2" onClick={handleRefresh}>
             <Download className="h-4 w-4" />
             {t("admin.executive_dashboard.export_report")}
           </LTTButton>
         </div>
       </div>
 
-      <KpiStrip items={kpis} />
+      <KpiStrip items={liveKpis} />
+
+      {isLoading && (
+        <div className="flex items-center justify-center gap-2 py-6 text-muted-foreground-shadcn">
+          <Loader2 className="h-4 w-4 animate-spin" /> Loading revenue data…
+        </div>
+      )}
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <div className="rounded-xl border border-border-shadcn bg-card p-4 my-4     ">
+        <div className="rounded-xl border border-border-shadcn bg-card p-4 my-4">
           <div className="mb-2 flex items-center justify-between">
             <h3 className="font-heading text-sm font-semibold">{t("admin.executive_dashboard.charts.revenue_breakdown_title")}</h3>
             <span className="text-[11px] text-muted-foreground-shadcn">{t("admin.executive_dashboard.charts.revenue_breakdown_subtitle")}</span>
           </div>
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={REVENUE_TREND}>
+            <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="day" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(value) => `₫${value}M`} />
               <Tooltip formatter={formatCurrencyMillions} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Bar dataKey="tickets" stackId="a" name={ticketLegend} fill="hsl(217 91% 60%)" />
-              <Bar dataKey="fnb" stackId="a" name={fnbLegend} fill="hsl(160 84% 39%)" />
-              <Bar dataKey="gift" stackId="a" name={giftLegend} fill="hsl(38 92% 50%)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="fnb" stackId="a" name={fnbLegend} fill="hsl(160 84% 39%)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -430,91 +477,259 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
         <div className="rounded-xl border border-border-shadcn bg-card p-4 my-4">
           <h3 className="mb-3 font-heading text-sm font-semibold">{t("admin.executive_dashboard.charts.hourly_revenue_title")}</h3>
           <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={MANAGER_HOURLY_REVENUE}>
+            <LineChart data={hourlyData}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="h" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(value) => `₫${value}M`} />
               <Tooltip formatter={formatCurrencyMillions} />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Line type="monotone" dataKey="today" name={todayLegend} stroke="hsl(217 91% 60%)" strokeWidth={2.5} dot={{ r: 3 }} />
-              <Line type="monotone" dataKey="yest" name={yesterdayLegend} stroke="hsl(0 0% 60%)" strokeWidth={1.5} strokeDasharray="4 4" dot={{ r: 2 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
 
+      {/* Revenue detail table */}
+      {!isLoading && (dashboard.summary?.dailyBreakdown ?? metrics.dailyRows).length > 0 && (
+        <div className="rounded-xl border border-border-shadcn bg-card overflow-hidden shadow-sm">
+          <div className="bg-muted-shadcn/30 px-5 py-3 border-b border-border-shadcn">
+            <h3 className="font-heading text-sm font-semibold uppercase tracking-wider text-muted-foreground-shadcn">
+              Revenue detail
+            </h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border-shadcn bg-muted-shadcn/50">
+                  <th className="px-4 py-3 text-left font-semibold">Date</th>
+                  <th className="px-4 py-3 text-right font-semibold">Ticket</th>
+                  <th className="px-4 py-3 text-right font-semibold">F&B</th>
+                  <th className="px-4 py-3 text-right font-semibold">Total</th>
+                  <th className="px-4 py-3 text-right font-semibold">Tickets</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(dashboard.summary?.dailyBreakdown ?? metrics.dailyRows).map((r) => (
+                  <tr key={r.date} className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/20 transition-colors">
+                    <td className="px-4 py-3 font-medium">{r.date}</td>
+                    <td className="px-4 py-3 text-right">{formatVnd(r.ticketRevenue)}</td>
+                    <td className="px-4 py-3 text-right">{formatVnd(r.fnbRevenue)}</td>
+                    <td className="px-4 py-3 text-right font-bold text-primary-shadcn">{formatVnd(r.totalRevenue)}</td>
+                    <td className="px-4 py-3 text-right">{r.ticketsSold}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {role === "admin" ? (
         <>
           <div className="grid gap-4 xl:grid-cols-2">
             <div className="rounded-xl border border-border-shadcn bg-card p-4">
-              <h3 className="mb-3 font-heading text-sm font-semibold">Hall occupancy — today&apos;s screenings</h3>
+              <h3 className="mb-3 font-heading text-sm font-semibold">Hall occupancy — screenings</h3>
               <div className="space-y-3">
-                {ADMIN_HALLS.map((hall) => (
-                  <div key={hall.name}>
-                    <div className="mb-1 flex items-center justify-between text-sm my-4">
-                      <span className="text-foreground/90">{hall.name}</span>
-                      <span className={cn("font-semibold", toneTextClass(hall.pct >= 80 ? "good" : hall.pct >= 60 ? "info" : hall.pct >= 40 ? "warn" : "danger"))}>
-                        {hall.pct}%
-                      </span>
+                {dashboard.hallOccupancy?.halls && dashboard.hallOccupancy.halls.length > 0 ? (
+                  dashboard.hallOccupancy.halls.map((hall) => (
+                    <div key={`${hall.screenId}-${hall.startTime}`}>
+                      <div className="mb-1 flex items-center justify-between text-sm my-4">
+                        <span className="text-foreground/90">{hall.screenName} · {hall.movieTitle}</span>
+                        <span className={cn("font-semibold", toneTextClass(hall.occupancyPercent >= 80 ? "good" : hall.occupancyPercent >= 60 ? "info" : hall.occupancyPercent >= 40 ? "warn" : "danger"))}>
+                          {hall.occupancyPercent}%
+                        </span>
+                      </div>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-muted-shadcn">
+                        <div className={cn("h-full rounded-full", occupancyBarColor(hall.occupancyPercent))} style={{ width: `${hall.occupancyPercent}%` }} />
+                      </div>
                     </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted-shadcn">
-                      <div className={cn("h-full rounded-full", occupancyBarColor(hall.pct))} style={{ width: `${hall.pct}%` }} />
-                    </div>
-                  </div>
-                ))}
+                  ))
+                ) : !isLoading ? (
+                  <p className="text-xs text-muted-foreground-shadcn py-4">No showtime data available</p>
+                ) : null}
               </div>
             </div>
 
-            <WorkflowRequestPanel role={role} />
+            <DisabledSection title="Coming soon">
+              <WorkflowRequestPanel role={role} />
+            </DisabledSection>
           </div>
 
           <div className="grid gap-4 lg:grid-cols-3 my-4">
             <div className="rounded-xl border border-border-shadcn bg-card p-4">
               <h3 className="mb-3 font-heading text-sm font-semibold">Top movies by revenue</h3>
               <div className="divide-y divide-border-shadcn">
-                {ADMIN_TOP_MOVIES.map((movie) => (
-                  <div key={movie.title} className="flex items-center justify-between py-2.5">
-                    <span className="text-sm">{movie.title}</span>
-                    <div className="text-right">
-                      <p className="text-sm font-semibold">{movie.revenue}</p>
-                      <span className={cn("mt-0.5 inline-block rounded-md px-1.5 py-0.5 text-[10px] font-medium", toneBgClass(movie.tone))}>{movie.badge}</span>
+                {(() => {
+                  const movies = dashboard.summary?.topMovies ?? metrics.topMovies;
+                  if (movies.length === 0 && !isLoading) {
+                    return <p className="text-xs text-muted-foreground-shadcn py-4">No data available</p>;
+                  }
+                  return movies.map((movie) => (
+                    <div key={movie.movieTitle || movie.showtimeId} className="flex items-center justify-between py-2.5">
+                      <span className="text-sm">{movie.movieTitle}</span>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold">₫{(movie.revenue / 1_000_000).toFixed(1)}M</p>
+                      </div>
                     </div>
+                  ));
+                })()}
+              </div>
+            </div>
+
+            <DisabledSection title="Coming soon">
+              <div className="rounded-xl border border-border-shadcn bg-card p-4">
+                <h3 className="mb-3 font-heading text-sm font-semibold">Member transactions</h3>
+                <div className="space-y-2.5 text-sm">
+                  <div className="flex items-center justify-between my-4">
+                    <span className="text-muted-foreground-shadcn">New sign-ups today</span>
+                    <span className="font-semibold">—</span>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-border-shadcn pt-2.5 my-4">
+                    <span className="text-muted-foreground-shadcn">Pending card requests</span>
+                    <span className="font-semibold">—</span>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-border-shadcn pt-2.5 my-4">
+                    <span className="text-muted-foreground-shadcn">Points redeemed today</span>
+                    <span className="font-semibold">—</span>
+                  </div>
+                </div>
+              </div>
+            </DisabledSection>
+
+            <div className="rounded-xl border border-border-shadcn bg-card p-4">
+              <h3 className="mb-3 font-heading text-sm font-semibold">Promotions & gift cards</h3>
+              <p className="mb-2 text-xs text-muted-foreground-shadcn">Active promotions</p>
+              <div className="space-y-2">
+                {(dashboard.promotionSummary?.activePromotions ?? ADMIN_PROMOTIONS).map((promotion) => (
+                  <div key={promotion.name} className="flex items-center justify-between gap-2 my-4">
+                    <span className="text-sm">{promotion.name}</span>
+                    <span className={cn("rounded-md px-2 py-0.5 text-[11px] font-medium", toneBgClass("status" in promotion && (promotion as { status: string }).status === "Active" ? "good" : (promotion as { tone?: Tone }).tone ?? "info"))}>
+                      {promotion.badge}
+                    </span>
                   </div>
                 ))}
+              </div>
+              <div className="mt-4 border-t border-border-shadcn pt-3">
+                <p className="mb-2 text-xs text-muted-foreground-shadcn">Gift card summary</p>
+                <div className="flex items-center justify-between text-sm my-4">
+                  <span className="text-muted-foreground-shadcn">Active gift codes</span>
+                  <span className="font-semibold">{dashboard.promotionSummary?.giftCardSummary?.activeGiftCards ?? "—"}</span>
+                </div>
+                <div className="mt-1.5 flex items-center justify-between text-sm my-4">
+                  <span className="text-muted-foreground-shadcn">Outstanding balance</span>
+                  <span className="font-semibold">{dashboard.promotionSummary?.giftCardSummary ? formatVnd(dashboard.promotionSummary.giftCardSummary.outstandingBalance) : "—"}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-2">
+            <DisabledSection title="Coming soon">
+              <div className="rounded-xl border border-border-shadcn bg-card p-4">
+                <h3 className="mb-3 font-heading text-sm font-semibold">{t("admin.executive_dashboard.alerts.title")}</h3>
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2 rounded-md border border-border-shadcn p-3 my-4">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-600" />
+                    <div>
+                      <p className="text-sm font-medium">Operational alerts</p>
+                      <p className="text-xs text-muted-foreground-shadcn">No data source connected yet</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </DisabledSection>
+
+            <DisabledSection title="Coming soon">
+              <div className="rounded-xl border border-border-shadcn bg-card p-4">
+                <h3 className="mb-3 font-heading text-sm font-semibold">Staff & operations snapshot</h3>
+                <div className="divide-y divide-border-shadcn">
+                  {ADMIN_OPS_SNAPSHOT.map((item) => (
+                    <div key={item.label} className="flex items-center justify-between py-2.5 text-sm">
+                      <span className="text-muted-foreground-shadcn">{item.label}</span>
+                      <span className={cn("font-medium", toneTextClass(item.tone))}>{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </DisabledSection>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Row 1: Hall occupancy + Today's showtimes */}
+          <div className="grid gap-4 xl:grid-cols-2">
+            <div className="rounded-xl border border-border-shadcn bg-card p-4">
+              <h3 className="mb-3 font-heading text-sm font-semibold">Hall occupancy — screenings</h3>
+              <div className="space-y-3">
+                {dashboard.hallOccupancy?.halls && dashboard.hallOccupancy.halls.length > 0 ? (
+                  dashboard.hallOccupancy.halls.map((hall) => (
+                    <div key={`${hall.screenId}-${hall.startTime}`}>
+                      <div className="mb-1 flex items-center justify-between text-sm my-4">
+                        <span className="text-foreground/90">{hall.screenName} · {hall.movieTitle}</span>
+                        <span className={cn("font-semibold", toneTextClass(hall.occupancyPercent >= 80 ? "good" : hall.occupancyPercent >= 60 ? "info" : hall.occupancyPercent >= 40 ? "warn" : "danger"))}>
+                          {hall.occupancyPercent}%
+                        </span>
+                      </div>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-muted-shadcn">
+                        <div className={cn("h-full rounded-full", occupancyBarColor(hall.occupancyPercent))} style={{ width: `${hall.occupancyPercent}%` }} />
+                      </div>
+                    </div>
+                  ))
+                ) : !isLoading ? (
+                  <p className="text-xs text-muted-foreground-shadcn py-4">No showtime data available</p>
+                ) : null}
               </div>
             </div>
 
             <div className="rounded-xl border border-border-shadcn bg-card p-4">
-              <h3 className="mb-3 font-heading text-sm font-semibold">Member loyalty health</h3>
-              <div className="space-y-2.5 text-sm ">
-                <div className="flex items-center justify-between my-4">
-                  <span className="text-muted-foreground-shadcn">New sign-ups today</span>
-                  <span className="font-semibold">47</span>
-                </div>
-                <div className="flex items-center justify-between border-t border-border-shadcn pt-2.5 my-4">
-                  <span className="text-muted-foreground-shadcn">Pending card requests</span>
-                  <LTTBadge variant="destructive">312 Action needed</LTTBadge>
-                </div>
-                <div className="flex items-center justify-between border-t border-border-shadcn pt-2.5 my-4">
-                  <span className="text-muted-foreground-shadcn">Points redeemed today</span>
-                  <span className="font-semibold">2,840 pts</span>
-                </div>
-                <div className="border-t border-border-shadcn pt-2.5">
-                  <p className="mb-3 font-heading text-sm font-semibold">Member tier distribution</p>
-                  <div className="space-y-2">
-                    {ADMIN_MEMBER_TIERS.map((tier) => (
-                      <div key={tier.name}>
-                        <div className="flex justify-between text-xs my-4">
-                          <span>{tier.name}</span>
-                          <span>{tier.pct}%</span>
+              <h3 className="mb-3 font-heading text-sm font-semibold">Today&apos;s showtime schedule</h3>
+              <div className="divide-y divide-border-shadcn">
+                {dashboard.hallOccupancy?.halls && dashboard.hallOccupancy.halls.length > 0 ? (
+                  dashboard.hallOccupancy.halls.map((hall) => {
+                    const seatPct = hall.totalSeats > 0 ? Math.round((hall.soldSeats / hall.totalSeats) * 100) : 0;
+                    const seatTone: Tone = seatPct >= 90 ? "info" : seatPct >= 60 ? "good" : seatPct >= 30 ? "warn" : "danger";
+                    return (
+                      <div key={`st-${hall.screenId}-${hall.startTime}`} className="flex items-center justify-between py-2.5 text-sm">
+                        <div className="min-w-0">
+                          <p className="font-medium">
+                            {hall.startTime} · {hall.screenName}
+                          </p>
+                          <p className="truncate text-xs text-muted-foreground-shadcn">
+                            {hall.movieTitle}
+                          </p>
                         </div>
-                        <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-muted-shadcn">
-                          <div className={cn("h-full", tier.color)} style={{ width: `${tier.pct}%` }} />
-                        </div>
+                        <span className={cn("ml-3 rounded-md px-2 py-1 text-[11px] font-medium whitespace-nowrap", toneBgClass(seatTone))}>
+                          {hall.soldSeats} / {hall.totalSeats} seats
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    );
+                  })
+                ) : !isLoading ? (
+                  <p className="text-xs text-muted-foreground-shadcn py-4">No showtime data available</p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          {/* Row 2: Top movies + Promotions & gift cards */}
+          <div className="grid gap-4 xl:grid-cols-2 my-4">
+            <div className="rounded-xl border border-border-shadcn bg-card p-4">
+              <h3 className="mb-3 font-heading text-sm font-semibold">Top movies by revenue</h3>
+              <div className="divide-y divide-border-shadcn">
+                {(() => {
+                  const movies = dashboard.summary?.topMovies ?? metrics.topMovies;
+                  if (movies.length === 0 && !isLoading) {
+                    return <p className="text-xs text-muted-foreground-shadcn py-4">No data available</p>;
+                  }
+                  return movies.map((movie) => (
+                    <div key={movie.movieTitle || movie.showtimeId} className="flex items-center justify-between py-2.5">
+                      <span className="text-sm">{movie.movieTitle}</span>
+                      <div className="text-right">
+                        <p className="text-sm font-semibold">₫{(movie.revenue / 1_000_000).toFixed(1)}M</p>
+                      </div>
+                    </div>
+                  ));
+                })()}
               </div>
             </div>
 
@@ -522,217 +737,73 @@ export function ExecutiveDashboard({ role }: { role: DashboardRole }) {
               <h3 className="mb-3 font-heading text-sm font-semibold">Promotions & gift cards</h3>
               <p className="mb-2 text-xs text-muted-foreground-shadcn">Active promotions</p>
               <div className="space-y-2">
-                {ADMIN_PROMOTIONS.map((promotion) => (
-                  <div key={promotion.name} className="flex items-center justify-between gap-2 my-4">
-                    <span className="text-sm">{promotion.name}</span>
-                    <span className={cn("rounded-md px-2 py-0.5 text-[11px] font-medium", toneBgClass(promotion.tone))}>{promotion.badge}</span>
-                  </div>
-                ))}
+                {(dashboard.promotionSummary?.activePromotions ?? []).length > 0 ? (
+                  dashboard.promotionSummary!.activePromotions.map((promotion) => (
+                    <div key={promotion.name} className="flex items-start justify-between gap-2 my-4">
+                      <div className="min-w-0">
+                        <p className="text-sm">{promotion.name}</p>
+                        {promotion.expiresAt && (
+                          <p className="text-xs text-muted-foreground-shadcn">Expires {dayjs(promotion.expiresAt).format("MMM D")}</p>
+                        )}
+                      </div>
+                      <span className={cn("rounded-md px-2 py-0.5 text-[11px] font-medium whitespace-nowrap", toneBgClass(promotion.status === "Active" ? "good" : "warn"))}>
+                        {promotion.badge ?? promotion.status}
+                      </span>
+                    </div>
+                  ))
+                ) : !isLoading ? (
+                  <p className="text-xs text-muted-foreground-shadcn py-2">No active promotions</p>
+                ) : null}
               </div>
               <div className="mt-4 border-t border-border-shadcn pt-3">
-                <p className="mb-2 text-xs text-muted-foreground-shadcn">Gift card liability</p>
+                <p className="mb-2 text-xs text-muted-foreground-shadcn">Gift card summary</p>
                 <div className="flex items-center justify-between text-sm my-4">
-                  <span className="text-muted-foreground-shadcn">Outstanding balance</span>
-                  <span className="font-semibold">₫142M</span>
+                  <span className="text-muted-foreground-shadcn">Active gift codes</span>
+                  <span className="font-semibold">{dashboard.promotionSummary?.giftCardSummary?.activeGiftCards ?? "—"}</span>
                 </div>
                 <div className="mt-1.5 flex items-center justify-between text-sm my-4">
-                  <span className="text-muted-foreground-shadcn">Redeemed today</span>
-                  <span className="font-semibold">₫6.3M</span>
+                  <span className="text-muted-foreground-shadcn">Outstanding balance</span>
+                  <span className="font-semibold">{dashboard.promotionSummary?.giftCardSummary ? formatVnd(dashboard.promotionSummary.giftCardSummary.outstandingBalance) : "—"}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-2">
-            <div className="rounded-xl border border-border-shadcn bg-card p-4">
-              <h3 className="mb-3 font-heading text-sm font-semibold">{t("admin.executive_dashboard.alerts.title")}</h3>
-              <div className="space-y-2">
-                <div className="flex items-start gap-2 rounded-md border border-border-shadcn p-3 my-4">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-600" />
-                  <div>
-                    <p className="text-sm font-medium">{t("admin.executive_dashboard.alerts.occupancy_low_title")}</p>
-                    <p className="text-xs text-muted-foreground-shadcn">{t("admin.executive_dashboard.alerts.occupancy_low_desc")}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2 rounded-md border border-border-shadcn p-3 my-4">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 text-red-600" />
-                  <div>
-                    <p className="text-sm font-medium">{t("admin.executive_dashboard.alerts.stock_low_title")}</p>
-                    <p className="text-xs text-muted-foreground-shadcn">{t("admin.executive_dashboard.alerts.stock_low_desc")}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2 rounded-md border border-border-shadcn p-3 my-4">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
-                  <div>
-                    <p className="text-sm font-medium">{t("admin.executive_dashboard.alerts.system_ok_title")}</p>
-                    <p className="text-xs text-muted-foreground-shadcn">{t("admin.executive_dashboard.alerts.system_ok_desc")}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-border-shadcn bg-card p-4">
-              <h3 className="mb-3 font-heading text-sm font-semibold">Staff & operations snapshot</h3>
-              <div className="divide-y divide-border-shadcn">
-                {ADMIN_OPS_SNAPSHOT.map((item) => (
-                  <div key={item.label} className="flex items-center justify-between py-2.5 text-sm">
-                    <span className="text-muted-foreground-shadcn">{item.label}</span>
-                    <span className={cn("font-medium", toneTextClass(item.tone))}>{item.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="rounded-xl border border-border-shadcn bg-card p-4">
-            <h3 className="mb-3 font-heading text-sm font-semibold">Live screen status</h3>
-            <div className="grid gap-4 lg:grid-cols-2">
-              {MANAGER_SCREENS.map((screen) => {
-                const pct =
-                  screen.sold && screen.state !== "maintenance"
-                    ? Math.min(100, Math.round((screen.sold / screen.seats) * 100))
-                    : screen.state === "maintenance"
-                      ? 100
-                      : 0;
-
-                return (
-                  <div key={screen.id} className="rounded-lg border border-border-shadcn p-3">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="text-sm font-semibold">
-                          Screen {screen.id} · {screen.seats} seats
-                        </p>
-                        <p className="mt-0.5 text-xs text-muted-foreground-shadcn">{screen.title}</p>
-                      </div>
-                      <span className={cn("rounded-md px-2 py-0.5 text-[11px] font-medium", screenStateBadge[screen.state].cls)}>
-                        {screenStateBadge[screen.state].label}
-                      </span>
-                    </div>
-                    <div className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-muted-shadcn">
-                      <div className={cn("h-full rounded-full", screenStateBar[screen.state])} style={{ width: `${pct}%` }} />
-                    </div>
-                    <div className="mt-1.5 flex items-center justify-between text-xs">
-                      <span className={screen.state === "idle" ? "text-amber-600" : screen.state === "maintenance" ? "text-red-600" : "text-muted-foreground-shadcn"}>
-                        {screen.bottomLeft}
-                      </span>
-                      <span className="text-muted-foreground-shadcn">{screen.bottomRight}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="grid gap-4 xl:grid-cols-2 my-4">
-            <div className="rounded-xl border border-border-shadcn bg-card p-4">
-              <h3 className="mb-3 font-heading text-sm font-semibold">Today&apos;s showtime schedule</h3>
-              <div className="divide-y divide-border-shadcn">
-                {MANAGER_SHOWTIMES.map((showtime) => (
-                  <div key={`${showtime.time}-${showtime.screen}`} className="flex items-center justify-between py-2.5 text-sm">
-                    <div className="min-w-0">
-                      <p className="font-medium">
-                        {showtime.time} · {showtime.screen}
-                      </p>
-                      <p className="truncate text-xs text-muted-foreground-shadcn">
-                        {showtime.title} · {showtime.dur}
-                      </p>
-                    </div>
-                    <span className={cn("ml-3 rounded-md px-2 py-1 text-[11px] font-medium whitespace-nowrap", toneBgClass(showtime.tone))}>
-                      {showtime.seats}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <WorkflowRequestPanel role={role} />
-          </div>
-
+          {/* Row 3 (disabled): F&B + Workflow + Operational alerts */}
           <div className="grid gap-4 lg:grid-cols-3">
-            <div className="rounded-xl border border-border-shadcn bg-card p-4">
-              <h3 className="mb-3 font-heading text-sm font-semibold">F&B / concessions</h3>
-              <p className="mb-2 text-xs text-muted-foreground-shadcn">Top sellers today</p>
-              <div className="space-y-1.5 text-sm">
-                {MANAGER_FNB_TOP.map((fnb) => (
-                  <div key={fnb.name} className="flex justify-between border-b border-border-shadcn pb-1.5 last:border-0 my-4">
-                    <span>{fnb.name}</span>
-                    <span className="text-muted-foreground-shadcn">{fnb.sold} sold</span>
-                  </div>
-                ))}
-              </div>
-              <p className="mb-2 mt-4 text-xs text-muted-foreground-shadcn">Stock levels</p>
-              <div className="space-y-2">
-                {MANAGER_FNB_STOCK.map((stock) => (
-                  <div key={stock.name} className=" my-4">
-                    <div className="flex justify-between text-xs">
-                      <span>{stock.name}</span>
-                      <span className={cn("font-semibold", stock.text)}>{stock.pct}%</span>
+            <DisabledSection title="Coming soon">
+              <div className="rounded-xl border border-border-shadcn bg-card p-4">
+                <h3 className="mb-3 font-heading text-sm font-semibold">F&B / concessions</h3>
+                <p className="mb-2 text-xs text-muted-foreground-shadcn">Top sellers today</p>
+                <div className="space-y-1.5 text-sm">
+                  {MANAGER_FNB_TOP.map((fnb) => (
+                    <div key={fnb.name} className="flex justify-between border-b border-border-shadcn pb-1.5 last:border-0 my-4">
+                      <span>{fnb.name}</span>
+                      <span className="text-muted-foreground-shadcn">{fnb.sold} sold</span>
                     </div>
-                    <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-muted-shadcn">
-                      <div className={cn("h-full", stock.color)} style={{ width: `${stock.pct}%` }} />
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            </DisabledSection>
 
-            <div className="rounded-xl border border-border-shadcn bg-card p-4">
-              <h3 className="mb-3 font-heading text-sm font-semibold">Promotions & pricing</h3>
-              <p className="mb-2 text-xs text-muted-foreground-shadcn">Active local promotions</p>
-              <div className="space-y-2">
-                {MANAGER_PROMOTIONS.map((promotion) => (
-                  <div key={promotion.name} className="flex items-start justify-between gap-2 my-4">
-                    <div className="min-w-0">
-                      <p className="text-sm">{promotion.name}</p>
-                      <p className="text-xs text-muted-foreground-shadcn">{promotion.sub}</p>
-                    </div>
-                    <span className={cn("rounded-md px-2 py-0.5 text-[11px] font-medium whitespace-nowrap", toneBgClass(promotion.tone))}>
-                      {promotion.badge}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <p className="mb-2 mt-4 text-xs text-muted-foreground-shadcn">Pricing rules active</p>
-              <div className="space-y-2">
-                {MANAGER_PRICING_RULES.map((rule) => (
-                  <div key={rule.name} className="flex items-center justify-between gap-2 my-4">
-                    <span className="text-sm">{rule.name}</span>
-                    <span className={cn("rounded-md px-2 py-0.5 text-[11px] font-medium whitespace-nowrap", toneBgClass(rule.tone))}>
-                      {rule.badge}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <DisabledSection title="Coming soon">
+              <WorkflowRequestPanel role={role} />
+            </DisabledSection>
 
-            <div className="rounded-xl border border-border-shadcn bg-card p-4">
-              <h3 className="mb-3 font-heading text-sm font-semibold">{t("admin.executive_dashboard.alerts.title")}</h3>
-              <div className="space-y-2">
-                <div className="flex items-start gap-2 rounded-md border border-border-shadcn p-3 my-4">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 text-red-600" />
-                  <div>
-                    <p className="text-sm font-medium">Screen 6 down — 2 shows cancelled</p>
-                    <p className="text-xs text-muted-foreground-shadcn">Lamp replacement in progress, est. back 17:30</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2 rounded-md border border-border-shadcn p-3 my-4">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-600" />
-                  <div>
-                    <p className="text-sm font-medium">F&B spend/head below target</p>
-                    <p className="text-xs text-muted-foreground-shadcn">Brief concession staff before 19:00 rush.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2 rounded-md border border-border-shadcn p-3 my-4">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 text-emerald-600" />
-                  <div>
-                    <p className="text-sm font-medium">19:00 Wild Robot 2 fully sold</p>
-                    <p className="text-xs text-muted-foreground-shadcn">Consider waitlist or standby queue.</p>
+            <DisabledSection title="Coming soon">
+              <div className="rounded-xl border border-border-shadcn bg-card p-4">
+                <h3 className="mb-3 font-heading text-sm font-semibold">{t("admin.executive_dashboard.alerts.title")}</h3>
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2 rounded-md border border-border-shadcn p-3 my-4">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-600" />
+                    <div>
+                      <p className="text-sm font-medium">Operational alerts</p>
+                      <p className="text-xs text-muted-foreground-shadcn">No data source connected yet</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </DisabledSection>
           </div>
         </>
       )}

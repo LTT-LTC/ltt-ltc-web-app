@@ -36,6 +36,7 @@ import vnCityDistricts from "@/src/@core/const/location/vn-city-districts.json";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
 import AdminTablePagination from "../_components/AdminTablePagination";
 import DomainTableStateRow from "@/src/app/(administration)/administration/_components/DomainTableStateRow";
+import { formatDateTimeValueGmt7 } from "@/src/@core/utils/date";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-100 text-green-700 border-green-200",
@@ -391,6 +392,7 @@ export default function CinemaConfigPage() {
                 <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.manager_name") || "Manager Name"}</th>
                 <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.screens")}</th>
                 <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.status")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.created")}</th>
                 <th className="px-4 py-3 text-left font-semibold">{t("admin.cinema_configuration.table.updated")}</th>
                 <th className="sticky right-0 z-20 px-4 py-3 text-right font-semibold bg-muted-shadcn/95">
                   {t("admin.cinema_configuration.table.actions")}
@@ -399,9 +401,9 @@ export default function CinemaConfigPage() {
             </thead>
             <tbody>
               {loading ? (
-                <DomainTableStateRow colSpan={11} state="loading" loadingText={t("admin.cinema_configuration.loading")} />
+                <DomainTableStateRow colSpan={12} state="loading" loadingText={t("admin.cinema_configuration.loading")} />
               ) : items.length === 0 ? (
-                <DomainTableStateRow colSpan={11} state="empty" emptyText={t("admin.cinema_configuration.empty")} />
+                <DomainTableStateRow colSpan={12} state="empty" emptyText={t("admin.cinema_configuration.empty")} />
               ) : (
                 items.map((item, idx) => (
                   <tr
@@ -434,8 +436,11 @@ export default function CinemaConfigPage() {
                             : item.status === "closed" ? t("admin.cinema_configuration.status.closed") : item.status || t("admin.cinema_configuration.status.active")}
                       </LTTBadge>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground-shadcn text-xs">
-                      {item.updatedAt}
+                    <td className="px-4 py-3 text-muted-foreground-shadcn text-xs whitespace-nowrap">
+                      {formatDateTimeValueGmt7(item.createdAt) || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground-shadcn text-xs whitespace-nowrap">
+                      {formatDateTimeValueGmt7(item.updatedAt) || "—"}
                     </td>
                     <td className="sticky right-0 z-10 px-4 py-3 bg-card">
                       <div className="flex justify-end gap-1">

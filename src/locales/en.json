@@ -987,6 +987,7 @@
         "manager_name": "Manager Name",
         "screens": "Screens",
         "status": "Status",
+        "created": "Created",
         "updated": "Updated",
         "actions": "Actions"
       },
@@ -1041,7 +1042,9 @@
         "from_date": "From",
         "to_date": "To",
         "cancel": "Cancel",
-        "apply": "Apply"
+        "apply": "Apply",
+        "refresh": "Refresh data",
+        "all_cinemas": "All cinemas"
       },
       "kpis": {
         "revenue_today": "Revenue today",
@@ -1736,44 +1739,6 @@
         "no_active_card": "No active card found.",
         "open_qr": "View QR code",
         "qr_enlarged_alt": "Enlarged membership QR code"
-      },
-      "transaction_history": {
-        "title": "Transaction History",
-        "list_fetch_error": "Could not load transactions. Please try again.",
-        "booking_detail_error": "Could not load booking details.",
-        "venue_fetch_error": "Could not load showtime or cinema details.",
-        "columns": {
-          "booking_id": "Booking ID",
-          "date": "Date",
-          "description": "Description",
-          "amount": "Amount",
-          "payment_method": "Payment method"
-        },
-        "detail": {
-          "title": "Transaction details",
-          "back": "Back to Transaction History",
-          "loading_booking": "Loading…",
-          "loading_venue": "Loading showtime…",
-          "booking_id": "Booking ID",
-          "paid_time": "Paid time",
-          "movie": "Movie",
-          "cinema": "Cinema",
-          "screen": "Screen",
-          "format": "Format",
-          "showtime": "Showtime",
-          "showtime_id": "Showtime ID",
-          "seats": "Seats",
-          "payment_method": "Payment method",
-          "status": "Status",
-          "amount": "Amount",
-          "ticket_extras_discount": "Ticket / extras / discount",
-          "fnb_title": "F&B (id × qty)",
-          "combos_title": "Combos (id × qty)"
-        },
-        "description": {
-          "booking_label": "Booking",
-          "booking_ref": "Booking {{id}}"
-        }
       }
     }
   },
