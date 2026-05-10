@@ -1,5 +1,6 @@
 import http from "@/src/@core/http";
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
+import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 
 export interface CreateBookingItemInputDto {
     itemType: "SEAT" | "COMBO" | "PRODUCT";
@@ -46,12 +47,35 @@ export interface BookingOutputDto {
     discountAmount: number;
     totalPrice: number;
     paidAmount?: number;
+    /** Comma-separated seat codes from API */
+    seatCodes?: string;
+    /** Cart/pricing JSON from prepare-for-payment */
+    snapshotJson?: string;
+    /** PascalCase when response JSON preserves .NET names */
+    SeatCodes?: string;
+    SnapshotJson?: string;
     createdAt?: string;
     updatedAt?: string;
     expiredAt?: string;
 }
 
+/** Query for `GET /customer-service/customer/booking` (ABP paging). */
+export interface GetBookingListParams {
+    page: number;
+    fetch: number;
+    /** ABP Dynamic LINQ sorting, e.g. `UpdatedAt DESC` */
+    sorting?: string;
+}
+
 const rootPath = "/customer-service/customer/booking";
+
+export const pickBookingSeatCodes = (item: BookingOutputDto): string | undefined => {
+    const s = item.seatCodes ?? item.SeatCodes;
+    return s?.trim() ? s : undefined;
+};
+
+export const pickBookingSnapshotJson = (item: BookingOutputDto): string | undefined =>
+    item.snapshotJson ?? item.SnapshotJson;
 
 const unwrap = <T>(payload: ApiResult<T> | T): T => {
     if (payload && typeof payload === "object" && "data" in (payload as Record<string, unknown>)) {
@@ -91,9 +115,31 @@ const deleteBookingAsync = async (id: string): Promise<void> => {
     await http.delete(`${rootPath}/${id}`);
 };
 
+const getBookingListAsync = async (params: GetBookingListParams): Promise<PagedResultDto<BookingOutputDto>> => {
+    const skipCount = Math.max(0, (params.page - 1) * params.fetch);
+    const response = await http.get<ApiResult<PagedResultDto<BookingOutputDto>> | PagedResultDto<BookingOutputDto>>(
+        rootPath,
+        {
+            params: {
+                skipCount,
+                maxResultCount: params.fetch,
+                sorting: params.sorting ?? "UpdatedAt DESC",
+            },
+        },
+    );
+    return unwrap(response.data);
+};
+
+const getBookingByIdAsync = async (id: string): Promise<BookingOutputDto> => {
+    const response = await http.get<ApiResult<BookingOutputDto> | BookingOutputDto>(`${rootPath}/${id}`);
+    return unwrap(response.data);
+};
+
 export const customerBookingService = {
     createBookingAsync,
     prepareBookingForPaymentAsync,
     updateBookingPaymentMethodAsync,
     deleteBookingAsync,
+    getBookingListAsync,
+    getBookingByIdAsync,
 };
