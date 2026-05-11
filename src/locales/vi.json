@@ -1739,6 +1739,26 @@
         "no_active_card": "Không tìm thấy thẻ đang hoạt động.",
         "open_qr": "Xem mã QR",
         "qr_enlarged_alt": "Mã QR thành viên phóng to"
+      },
+      "transaction_history": {
+        "title": "Lịch sử giao dịch",
+        "desc_transaction": "Giao dịch",
+        "desc_booking": "Đặt vé",
+        "desc_payment": "Thanh toán",
+        "fetch_failed": "Tải lịch sử giao dịch thất bại",
+        "fetch_detail_failed": "Tải chi tiết thanh toán thất bại",
+        "booking_id": "Mã đặt vé (Booking ID)",
+        "date": "Ngày",
+        "description": "Nội dung",
+        "amount": "Số tiền",
+        "back_button": "Quay lại lịch sử giao dịch",
+        "loading": "Đang tải...",
+        "details_title": "Chi tiết giao dịch",
+        "movie": "Phim",
+        "cinema": "Rạp",
+        "customer": "Khách hàng",
+        "payment_method": "Phương thức thanh toán",
+        "status": "Trạng thái"
       }
     }
   },

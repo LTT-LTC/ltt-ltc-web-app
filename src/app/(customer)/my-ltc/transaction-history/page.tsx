@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import LTTCard from '@/src/@core/component/AntD/LTTCard';
 import LTTTable from '@/src/@core/component/AntD/LTTTable';
 import LTTButton from '@/src/@core/component/AntD/LTTButton';
+import { useLocalization } from '@/src/@core/hooks/use-localization';
 import {
     customerPaymentService,
     PaymentOutputDto,
@@ -27,18 +28,19 @@ const displayDate = (item: PaymentOutputDto) =>
 
 const displayStatus = (item: PaymentOutputDto) => item.paymentStatus ?? item.status ?? '-';
 
-const buildDescription = (item: PaymentOutputDto) => {
+const buildDescription = (item: PaymentOutputDto, t: any) => {
     const parts: string[] = [];
     if (item.movieTitle) parts.push(item.movieTitle);
     if (item.cinemaName) parts.push(item.cinemaName);
     if (item.customerName) parts.push(item.customerName);
     if (parts.length) return parts.join(' • ');
-    if (item.gatewayTransactionId) return `Giao dịch ${item.gatewayTransactionId}`;
-    if (item.bookingId) return `Đặt vé ${item.bookingId}`;
-    return `Thanh toán ${item.id}`;
+    if (item.gatewayTransactionId) return `${t('customer.my_ltc.transaction_history.desc_transaction', 'Transaction')} ${item.gatewayTransactionId}`;
+    if (item.bookingId) return `${t('customer.my_ltc.transaction_history.desc_booking', 'Booking')} ${item.bookingId}`;
+    return `${t('customer.my_ltc.transaction_history.desc_payment', 'Payment')} ${item.id}`;
 };
 
 export default function TransactionHistoryPage() {
+    const { t } = useLocalization();
     const [pagination, setPagination] = useState({ page: 1, fetch: 5 });
     const [items, setItems] = useState<PaymentOutputDto[]>([]);
     const [totalCount, setTotalCount] = useState<number>(0);
@@ -63,7 +65,7 @@ export default function TransactionHistoryPage() {
                 if (!cancelled) {
                     setItems([]);
                     setTotalCount(0);
-                    toast.error(e instanceof Error ? e.message : 'Failed to load transactions');
+                    toast.error(e instanceof Error ? e.message : t('customer.my_ltc.transaction_history.fetch_failed', 'Failed to load transactions'));
                 }
             } finally {
                 if (!cancelled) setLoading(false);
@@ -92,7 +94,7 @@ export default function TransactionHistoryPage() {
             .catch((e) => {
                 if (!cancelled) {
                     setDetailPayment(null);
-                    toast.error(e instanceof Error ? e.message : 'Failed to load payment details');
+                    toast.error(e instanceof Error ? e.message : t('customer.my_ltc.transaction_history.fetch_detail_failed', 'Failed to load payment details'));
                     setDetailId(null);
                 }
             })
@@ -108,26 +110,26 @@ export default function TransactionHistoryPage() {
         return items.map((item) => ({
             id: item.id,
             date: displayDate(item) ? dayjs(displayDate(item)).format('DD/MM/YYYY HH:mm') : '-',
-            description: buildDescription(item),
+            description: buildDescription(item, t),
             amount: formatVnd(item.amount),
             type: item.paymentMethod || '-',
             raw: item,
         }));
-    }, [items]);
+    }, [items, t]);
 
     const columns = [
         {
-            title: 'Booking ID',
+            title: t('customer.my_ltc.transaction_history.booking_id', 'Booking ID'),
             dataIndex: 'bookingId',
             key: 'bookingId',
             width: '24%',
             render: (_: string, row: TransactionRow) => (
-                <span className="font-mono text-xs">{row.raw.bookingId ?? row.raw.id}</span>
+                <span className="font-mono text-xs break-all break-words whitespace-normal">{row.raw.bookingId ?? row.raw.id}</span>
             ),
         },
-        { title: 'Date', dataIndex: 'date', key: 'date', width: '20%' },
-        { title: 'Description', dataIndex: 'description', key: 'description', width: '36%' },
-        { title: 'Amount', dataIndex: 'amount', key: 'amount', width: '20%', render: (text: string) => <span className="font-bold text-gray-800">{text}</span> },
+        { title: t('customer.my_ltc.transaction_history.date', 'Date'), dataIndex: 'date', key: 'date', width: '20%' },
+        { title: t('customer.my_ltc.transaction_history.description', 'Description'), dataIndex: 'description', key: 'description', width: '36%', render: (text: string) => <span className="break-words whitespace-normal">{text}</span> },
+        { title: t('customer.my_ltc.transaction_history.amount', 'Amount'), dataIndex: 'amount', key: 'amount', width: '20%', render: (text: string) => <span className="font-bold text-gray-800">{text}</span> },
     ];
 
     const handleRowClick = (record: TransactionRow) => {
@@ -141,26 +143,28 @@ export default function TransactionHistoryPage() {
             <LTTCard className="p-6 md:p-8 shadow-sm border border-gray-100 rounded-xl bg-white">
                 {!detailId ? (
                     <>
-                        <h2 className="text-2xl font-bold mb-8 border-b pb-4 text-gray-800">Transaction History</h2>
-                        <LTTTable
-                            columns={columns}
-                            dataSource={dataSource}
-                            rowKey="id"
-                            loading={loading}
-                            className="border border-gray-100 rounded-lg shadow-sm cursor-pointer"
-                            onRow={(record) => ({
-                                onClick: () => handleRowClick(record as TransactionRow),
-                            })}
-                            rowClassName="hover:bg-gray-50 transition-colors"
-                            pagination={{
-                                totalCount,
-                                page: pagination.page,
-                                fetch: pagination.fetch,
-                                onChange: (page: number, fetch: number) => {
-                                    setPagination({ page, fetch });
-                                },
-                            }}
-                        />
+                        <h2 className="text-2xl font-bold mb-8 border-b pb-4 text-gray-800">{t('customer.my_ltc.transaction_history.title', 'Transaction History')}</h2>
+                        <div className="overflow-x-auto">
+                            <LTTTable
+                                columns={columns}
+                                dataSource={dataSource}
+                                rowKey="id"
+                                loading={loading}
+                                className="border border-gray-100 rounded-lg shadow-sm cursor-pointer min-w-[700px]"
+                                onRow={(record) => ({
+                                    onClick: () => handleRowClick(record as TransactionRow),
+                                })}
+                                rowClassName="hover:bg-gray-50 transition-colors"
+                                pagination={{
+                                    totalCount,
+                                    page: pagination.page,
+                                    fetch: pagination.fetch,
+                                    onChange: (page: number, fetch: number) => {
+                                        setPagination({ page, fetch });
+                                    },
+                                }}
+                            />
+                        </div>
                     </>
                 ) : (
                     <div className="flex flex-col gap-6 animate-fade-in-up">
@@ -170,36 +174,36 @@ export default function TransactionHistoryPage() {
                             onClick={() => setDetailId(null)}
                         >
                             <span className="flex items-center text-base">
-                                <span className="mr-2 text-xl font-bold">←</span> Quay lại Transaction History
+                                <span className="mr-2 text-xl font-bold">←</span> {t('customer.my_ltc.transaction_history.back_button', 'Back to Transaction History')}
                             </span>
                         </LTTButton>
 
                         {detailLoading || !selected ? (
-                            <p className="text-gray-600">{detailLoading ? 'Đang tải…' : ''}</p>
+                            <p className="text-gray-600">{detailLoading ? t('customer.my_ltc.transaction_history.loading', 'Loading...') : ''}</p>
                         ) : (
                             <>
-                                <h2 className="text-2xl font-bold mb-4 border-b pb-4 text-gray-800">Transaction Details</h2>
+                                <h2 className="text-2xl font-bold mb-4 border-b pb-4 text-gray-800">{t('customer.my_ltc.transaction_history.details_title', 'Transaction Details')}</h2>
 
                                 <div className="flex flex-col gap-4">
                                     <DetailRow
-                                        label="Booking ID"
+                                        label={t('customer.my_ltc.transaction_history.booking_id', 'Booking ID')}
                                         value={<span className="font-mono">{selected.bookingId ?? selected.id}</span>}
                                         first
                                     />
                                     <DetailRow
-                                        label="Date"
+                                        label={t('customer.my_ltc.transaction_history.date', 'Date')}
                                         value={
                                             displayDate(selected)
                                                 ? dayjs(displayDate(selected)).format('DD/MM/YYYY HH:mm')
                                                 : '-'
                                         }
                                     />
-                                    <DetailRow label="Movie" value={selected.movieTitle || '-'} />
-                                    <DetailRow label="Cinema" value={selected.cinemaName || '-'} />
-                                    <DetailRow label="Customer" value={selected.customerName || '-'} />
-                                    <DetailRow label="Payment method" value={selected.paymentMethod || '-'} />
-                                    <DetailRow label="Status" value={displayStatus(selected)} />
-                                    <DetailRow label="Amount" value={<span className="font-bold">{formatVnd(selected.amount)}</span>} />
+                                    <DetailRow label={t('customer.my_ltc.transaction_history.movie', 'Movie')} value={selected.movieTitle || '-'} />
+                                    <DetailRow label={t('customer.my_ltc.transaction_history.cinema', 'Cinema')} value={selected.cinemaName || '-'} />
+                                    <DetailRow label={t('customer.my_ltc.transaction_history.customer', 'Customer')} value={selected.customerName || '-'} />
+                                    <DetailRow label={t('customer.my_ltc.transaction_history.payment_method', 'Payment method')} value={selected.paymentMethod || '-'} />
+                                    <DetailRow label={t('customer.my_ltc.transaction_history.status', 'Status')} value={displayStatus(selected)} />
+                                    <DetailRow label={t('customer.my_ltc.transaction_history.amount', 'Amount')} value={<span className="font-bold">{formatVnd(selected.amount)}</span>} />
                                 </div>
                             </>
                         )}
