@@ -20,6 +20,7 @@ export interface CreateProductInputDto {
     name: string;
     description?: string;
     basePrice: number;
+    sellPrice: number;
     isActive: boolean;
     imageFile?: File;
     imageUrl?: string;
@@ -30,6 +31,7 @@ export interface UpdateProductInputDto {
     name: string;
     description?: string;
     basePrice: number;
+    sellPrice: number;
     isActive: boolean;
     imageFile?: File;
     imageUrl?: string;

@@ -174,7 +174,7 @@ export default function TransactionHistoryPage() {
                             onClick={() => setDetailId(null)}
                         >
                             <span className="flex items-center text-base">
-                                <span className="mr-2 text-xl font-bold">←</span> {t('customer.my_ltc.transaction_history.back_button', 'Back to Transaction History')}
+                                <span className="mx-3 text-xl font-bold">←</span> {t('customer.my_ltc.transaction_history.back_button', 'Back to Transaction History')}
                             </span>
                         </LTTButton>
 

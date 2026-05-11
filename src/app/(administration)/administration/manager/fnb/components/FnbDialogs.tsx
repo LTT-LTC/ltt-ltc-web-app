@@ -41,6 +41,7 @@ interface ProductFormState {
     name: string;
     productCategoryId: string;
     basePrice: number;
+    sellPrice: number;
     description: string;
     imageUrl: string;
     imageFile?: File;
@@ -56,6 +57,7 @@ interface CategoryFormState {
 interface ComboFormState {
     name: string;
     description: string;
+    totalPrice: number;
     isActive: boolean;
     imageUrl: string;
     imageFile?: File;
@@ -150,7 +152,7 @@ export default function FnbDialogs(props: FnbDialogsProps) {
         [products],
     );
 
-    const comboComputedTotal = useMemo(() => {
+    const comboComputedBasePrice = useMemo(() => {
         return comboForm.products.reduce((sum, line) => {
             if (!line.productId) return sum;
             const p = productById[line.productId];
@@ -250,6 +252,19 @@ export default function FnbDialogs(props: FnbDialogsProps) {
                                             setProductForm((prev) => ({
                                                 ...prev,
                                                 basePrice: Number(e.target.value) || 0,
+                                            }))
+                                        }
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <LTTLabel>{t("admin.fnb.form.sell_price")}</LTTLabel>
+                                    <LTTInput
+                                        type="number"
+                                        value={productForm.sellPrice}
+                                        onChange={(e) =>
+                                            setProductForm((prev) => ({
+                                                ...prev,
+                                                sellPrice: Number(e.target.value) || 0,
                                             }))
                                         }
                                     />
@@ -452,16 +467,29 @@ export default function FnbDialogs(props: FnbDialogsProps) {
                                 <div className="flex flex-col gap-1 sm:col-span-2 rounded-md border border-border-shadcn bg-muted-shadcn/20 px-4 py-3">
                                     <div className="flex items-center justify-between gap-3">
                                         <span className="text-sm font-medium text-foreground-shadcn">
-                                            {t("admin.fnb.form.combo_total_price")}
+                                            {t("admin.fnb.form.combo_base_price")}
                                         </span>
-                                        <span className="text-base font-semibold tabular-nums">{formatVnd(comboComputedTotal)}</span>
+                                        <span className="text-base font-semibold tabular-nums">{formatVnd(comboComputedBasePrice)}</span>
                                     </div>
-                                    {comboComputedTotal === 0 && comboForm.products.some((l) => l.productId) ? (
+                                    {comboComputedBasePrice === 0 && comboForm.products.some((l) => l.productId) ? (
                                         <p className="text-xs text-muted-foreground-shadcn">{t("admin.fnb.form.combo_total_zero_hint")}</p>
                                     ) : null}
                                     {hasComboLinesWithoutPrice ? (
                                         <p className="text-xs text-muted-foreground-shadcn">{t("admin.fnb.form.combo_total_unknown_hint")}</p>
                                     ) : null}
+                                </div>
+                                <div className="space-y-2 sm:col-span-2">
+                                    <LTTLabel>{t("admin.fnb.form.combo_total_price")}</LTTLabel>
+                                    <LTTInput
+                                        type="number"
+                                        value={comboForm.totalPrice}
+                                        onChange={(e) =>
+                                            setComboForm((prev) => ({
+                                                ...prev,
+                                                totalPrice: Number(e.target.value) || 0,
+                                            }))
+                                        }
+                                    />
                                 </div>
                                 <div className="flex items-center gap-2 sm:col-span-2">
                                     <LTTCheckbox

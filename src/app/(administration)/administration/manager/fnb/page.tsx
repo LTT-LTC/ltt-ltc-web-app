@@ -48,6 +48,7 @@ interface ProductFormState {
     name: string;
     productCategoryId: string;
     basePrice: number;
+    sellPrice: number;
     description: string;
     imageUrl: string;
     imageFile?: File;
@@ -63,6 +64,7 @@ interface CategoryFormState {
 interface ComboFormState {
     name: string;
     description: string;
+    totalPrice: number;
     isActive: boolean;
     imageUrl: string;
     imageFile?: File;
@@ -71,7 +73,7 @@ interface ComboFormState {
 
 const formatVnd = (amount: number) => `${amount.toLocaleString("vi-VN")}đ`;
 
-function computeComboTotalFromLines(
+function computeComboBasePriceFromLines(
     lines: ComboProductLineDto[],
     productMap: Record<string, ProductOutputDto>,
 ): number {
@@ -89,6 +91,7 @@ function buildProductSnapshot(f: ProductFormState): string {
         name: f.name,
         productCategoryId: f.productCategoryId,
         basePrice: f.basePrice,
+        sellPrice: f.sellPrice,
         description: f.description,
         imageUrl: f.imageUrl,
         isActive: f.isActive,
@@ -107,6 +110,7 @@ function buildComboSnapshot(f: ComboFormState): string {
     return JSON.stringify({
         name: f.name,
         description: f.description,
+        totalPrice: f.totalPrice,
         isActive: f.isActive,
         imageUrl: f.imageUrl,
         products: f.products.map((l) => ({ productId: l.productId, quantity: l.quantity })),
@@ -117,6 +121,7 @@ const defaultProductForm = (categoryId = ""): ProductFormState => ({
     name: "",
     productCategoryId: categoryId,
     basePrice: 0,
+    sellPrice: 0,
     description: "",
     imageUrl: "",
     imageFile: undefined,
@@ -132,6 +137,7 @@ const defaultCategoryForm: CategoryFormState = {
 const defaultComboForm: ComboFormState = {
     name: "",
     description: "",
+    totalPrice: 0,
     isActive: true,
     imageUrl: "",
     imageFile: undefined,
@@ -508,6 +514,7 @@ export default function FnBPage() {
             name: item.name,
             productCategoryId: item.productCategoryId,
             basePrice: Number(item.basePrice),
+            sellPrice: Number(item.sellPrice),
             description: item.description || "",
             imageUrl: item.imageUrl || "",
             imageFile: undefined,
@@ -533,6 +540,7 @@ export default function FnBPage() {
             name: productForm.name.trim(),
             description: productForm.description.trim() || undefined,
             basePrice: productForm.basePrice,
+            sellPrice: productForm.sellPrice,
             isActive: productForm.isActive,
             imageFile: productForm.imageFile,
             imageUrl: productForm.imageUrl.trim() || undefined,
@@ -607,6 +615,7 @@ export default function FnBPage() {
         const next: ComboFormState = {
             name: item.name,
             description: item.description || "",
+            totalPrice: Number(item.totalPrice) || 0,
             isActive: item.isActive,
             imageUrl: item.imageUrl || "",
             imageFile: undefined,
@@ -628,7 +637,7 @@ export default function FnBPage() {
         const payload: CreateComboInputDto = {
             name: comboForm.name.trim(),
             description: comboForm.description.trim() || undefined,
-            totalPrice: computeComboTotalFromLines(comboForm.products, productById),
+            totalPrice: comboForm.totalPrice,
             isActive: comboForm.isActive,
             imageFile: comboForm.imageFile,
             imageUrl: comboForm.imageUrl.trim() || undefined,

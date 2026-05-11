@@ -119,7 +119,7 @@ export default function BookingExtrasPage() {
     const productTotal = useMemo(() => {
         return Array.from(productQty.entries()).reduce((sum, [id, qty]) => {
             const product = products.find((item) => item.id === id);
-            return sum + (Number(product?.basePrice) || 0) * qty;
+            return sum + (Number(product?.sellPrice) || 0) * qty;
         }, 0);
     }, [productQty, products]);
 
@@ -199,7 +199,7 @@ export default function BookingExtrasPage() {
                                                 <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{product.description}</p>
                                             )}
                                             <div className="mt-auto pt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
-                                                <span className="font-bold text-[#cd1e25] text-sm whitespace-nowrap">{formatVND(Number(product.basePrice) || 0)}</span>
+                                                <span className="font-bold text-[#cd1e25] text-sm whitespace-nowrap">{formatVND(Number(product.sellPrice) || 0)}</span>
                                                 <QtyStepper qty={qty} onChange={(d) => setQty(productQty, setProductQty, product.id, d)} />
                                             </div>
                                         </div>
