@@ -1739,6 +1739,26 @@
         "no_active_card": "No active card found.",
         "open_qr": "View QR code",
         "qr_enlarged_alt": "Enlarged membership QR code"
+      },
+      "transaction_history": {
+        "title": "Transaction History",
+        "desc_transaction": "Transaction",
+        "desc_booking": "Booking",
+        "desc_payment": "Payment",
+        "fetch_failed": "Failed to load transactions",
+        "fetch_detail_failed": "Failed to load payment details",
+        "booking_id": "Booking ID",
+        "date": "Date",
+        "description": "Description",
+        "amount": "Amount",
+        "back_button": "Back to Transaction History",
+        "loading": "Loading...",
+        "details_title": "Transaction Details",
+        "movie": "Movie",
+        "cinema": "Cinema",
+        "customer": "Customer",
+        "payment_method": "Payment method",
+        "status": "Status"
       }
     }
   },

@@ -180,7 +180,7 @@ export default function BookingExtrasPage() {
                     {products.length === 0 ? (
                         <p className="text-sm text-gray-500">{t("customer.booking.extras.empty_products")}</p>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
                             {products.map((product) => {
                                 const qty = productQty.get(product.id) || 0;
                                 return (
@@ -198,7 +198,7 @@ export default function BookingExtrasPage() {
                                             {product.description && (
                                                 <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{product.description}</p>
                                             )}
-                                            <div className="mt-auto pt-2 flex items-center justify-between gap-2">
+                                            <div className="mt-auto pt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
                                                 <span className="font-bold text-[#cd1e25] text-sm whitespace-nowrap">{formatVND(Number(product.basePrice) || 0)}</span>
                                                 <QtyStepper qty={qty} onChange={(d) => setQty(productQty, setProductQty, product.id, d)} />
                                             </div>
@@ -215,7 +215,7 @@ export default function BookingExtrasPage() {
                     {combos.length === 0 ? (
                         <p className="text-sm text-gray-500">{t("customer.booking.extras.empty_combos")}</p>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
                             {combos.map((combo) => {
                                 const qty = comboQty.get(combo.id) || 0;
                                 return (
@@ -246,7 +246,7 @@ export default function BookingExtrasPage() {
                                                     ))}
                                                 </ul>
                                             )}
-                                            <div className="mt-auto pt-2 flex items-center justify-between gap-2">
+                                            <div className="mt-auto pt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
                                                 <span className="font-bold text-[#cd1e25] text-sm whitespace-nowrap">{formatVND(Number(combo.totalPrice) || 0)}</span>
                                                 <QtyStepper qty={qty} onChange={(d) => setQty(comboQty, setComboQty, combo.id, d)} />
                                             </div>
