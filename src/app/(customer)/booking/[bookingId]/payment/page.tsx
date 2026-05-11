@@ -260,6 +260,8 @@ export default function BookingPaymentPage() {
                             ticketTotal={bookingState?.ticketTotal ?? 0}
                             extrasTotal={extrasTotal}
                             discount={bookingState?.discountAmount ?? 0}
+                            primaryActionLabel={t("customer.booking.payment.vnpay_result.back_booking")}
+                            onPrimaryAction={() => router.push("/my-ltc/transaction-history")}
                             skipBackConfirm
                         />
                     </div>
