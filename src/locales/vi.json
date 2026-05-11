@@ -174,6 +174,7 @@
         "category_placeholder": "Chọn danh mục",
         "price": "Giá bán (VNĐ) *",
         "base_price": "Giá gốc",
+        "sell_price": "Giá bán",
         "description": "Mô tả sản phẩm",
         "description_placeholder": "Mô tả thành phần, kích thước...",
         "save": "Lưu thay đổi",
@@ -193,7 +194,8 @@
         "combo_add_product": "Thêm sản phẩm",
         "combo_empty_hint": "Chưa có sản phẩm. Thêm ít nhất một sản phẩm để định nghĩa combo.",
         "combo_choose_product": "Chọn sản phẩm",
-        "combo_total_price": "Tổng giá",
+        "combo_base_price": "Giá gốc (tự tính)",
+        "combo_total_price": "Giá bán",
         "combo_total_zero_hint": "Tổng bằng 0 cho đến khi chọn sản phẩm hợp lệ có giá.",
         "combo_total_unknown_hint": "Một số dòng tham chiếu sản phẩm không có trong danh sách hiện tại; tổng có thể chưa đầy đủ."
       },

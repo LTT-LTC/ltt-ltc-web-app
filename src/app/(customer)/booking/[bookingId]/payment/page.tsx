@@ -123,7 +123,7 @@ export default function BookingPaymentPage() {
         vnpayCleanedRef.current = true;
         (async () => {
             if (showtime?.id) {
-                await customerShowtimeService.releaseSeatHoldAsync(showtime.id, bookingId).catch(() => {});
+                await customerShowtimeService.releaseSeatHoldAsync(showtime.id, bookingId).catch(() => { });
             }
             clearBookingState(bookingId);
         })();
@@ -181,9 +181,9 @@ export default function BookingPaymentPage() {
             return {
                 id: line.id,
                 name: product?.name || line.id,
-                unitPrice: Number(product?.basePrice) || 0,
+                unitPrice: Number(product?.sellPrice) || 0,
                 quantity: line.quantity,
-                lineTotal: (Number(product?.basePrice) || 0) * line.quantity,
+                lineTotal: (Number(product?.sellPrice) || 0) * line.quantity,
             };
         });
     }, [bookingState?.fnb, products]);
@@ -390,14 +390,12 @@ export default function BookingPaymentPage() {
             <button
                 type="button"
                 onClick={() => pickPayMethod(method)}
-                className={`w-full rounded-xl border-2 px-4 py-3.5 flex items-start gap-3 shadow-sm text-left transition-colors ${
-                    active ? "border-[#cd1e25] bg-[#fff5f5]" : "border-gray-200 bg-white hover:border-gray-300"
-                }`}
+                className={`w-full rounded-xl border-2 px-4 py-3.5 flex items-start gap-3 shadow-sm text-left transition-colors ${active ? "border-[#cd1e25] bg-[#fff5f5]" : "border-gray-200 bg-white hover:border-gray-300"
+                    }`}
             >
                 <div
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-white ${
-                        active ? "bg-[#cd1e25]" : "bg-gray-400"
-                    }`}
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-white ${active ? "bg-[#cd1e25]" : "bg-gray-400"
+                        }`}
                 >
                     {icon}
                 </div>

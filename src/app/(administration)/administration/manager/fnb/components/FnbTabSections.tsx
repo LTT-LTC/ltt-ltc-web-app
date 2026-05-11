@@ -127,15 +127,16 @@ export default function FnbTabSections(props: FnbTabSectionsProps) {
                                     <th className="px-4 py-3 text-left font-semibold">Name</th>
                                     <th className="px-4 py-3 text-left font-semibold">Category</th>
                                     <th className="px-4 py-3 text-right font-semibold">Base Price</th>
+                                    <th className="px-4 py-3 text-right font-semibold">Sell Price</th>
                                     <th className="px-4 py-3 text-left font-semibold">Status</th>
                                     <th className="px-4 py-3 text-right font-semibold">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {isProductsLoading ? (
-                                    <DomainTableStateRow colSpan={7} state="loading" loadingText="Loading products..." />
+                                    <DomainTableStateRow colSpan={8} state="loading" loadingText="Loading products..." />
                                 ) : products.length === 0 ? (
-                                    <DomainTableStateRow colSpan={7} state="empty" emptyText="No products found." />
+                                    <DomainTableStateRow colSpan={8} state="empty" emptyText="No products found." />
                                 ) : (
                                     products.map((item) => (
                                         <tr key={item.id} className="border-b border-border-shadcn last:border-0 hover:bg-muted-shadcn/30 transition-colors">
@@ -153,6 +154,7 @@ export default function FnbTabSections(props: FnbTabSectionsProps) {
                                             <td className="px-4 py-3 font-medium">{item.name}</td>
                                             <td className="px-4 py-3">{categoryById[item.productCategoryId]?.name || "-"}</td>
                                             <td className="px-4 py-3 text-right font-semibold">{formatVnd(Number(item.basePrice))}</td>
+                                            <td className="px-4 py-3 text-right font-semibold text-[#cd1e25]">{formatVnd(Number(item.sellPrice))}</td>
                                             <td className="px-4 py-3">
                                                 <LTTBadge className={item.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}>
                                                     {item.isActive ? "Active" : "Inactive"}
@@ -267,16 +269,17 @@ export default function FnbTabSections(props: FnbTabSectionsProps) {
                                     <th className="w-10 px-3 py-3"></th>
                                     <th className="px-4 py-3 text-left font-semibold">Image</th>
                                     <th className="px-4 py-3 text-left font-semibold">Name</th>
-                                    <th className="px-4 py-3 text-right font-semibold">Total Price</th>
+                                    <th className="px-4 py-3 text-right font-semibold">Base Price</th>
+                                    <th className="px-4 py-3 text-right font-semibold">Sell Price</th>
                                     <th className="px-4 py-3 text-left font-semibold">Status</th>
                                     <th className="px-4 py-3 text-right font-semibold">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {isCombosLoading ? (
-                                    <DomainTableStateRow colSpan={6} state="loading" loadingText="Loading combos..." />
+                                    <DomainTableStateRow colSpan={7} state="loading" loadingText="Loading combos..." />
                                 ) : combos.length === 0 ? (
-                                    <DomainTableStateRow colSpan={6} state="empty" emptyText="No combos found." />
+                                    <DomainTableStateRow colSpan={7} state="empty" emptyText="No combos found." />
                                 ) : (
                                     combos.map((item) => {
                                         const isExpanded = expandedComboIds.has(item.id);
@@ -297,7 +300,8 @@ export default function FnbTabSections(props: FnbTabSectionsProps) {
                                                         )}
                                                     </td>
                                                     <td className="px-4 py-3 font-medium">{item.name}</td>
-                                                    <td className="px-4 py-3 text-right font-semibold">{formatVnd(Number(item.totalPrice))}</td>
+                                                    <td className="px-4 py-3 text-right font-semibold">{formatVnd(Number(item.basePrice))}</td>
+                                                    <td className="px-4 py-3 text-right font-semibold text-[#cd1e25]">{formatVnd(Number(item.totalPrice))}</td>
                                                     <td className="px-4 py-3">
                                                         <LTTBadge className={item.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}>
                                                             {item.isActive ? "Active" : "Inactive"}
@@ -321,7 +325,7 @@ export default function FnbTabSections(props: FnbTabSectionsProps) {
                                                 </tr>
                                                 {isExpanded && (
                                                     <tr className="border-b border-border-shadcn bg-muted-shadcn/20">
-                                                        <td className="px-4 py-3" colSpan={6}>
+                                                        <td className="px-4 py-3" colSpan={7}>
                                                             <div className="space-y-2">
                                                                 <p className="text-xs uppercase tracking-wide text-muted-foreground-shadcn">Bundled products</p>
                                                                 {item.products.length === 0 ? (

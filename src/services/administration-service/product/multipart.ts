@@ -35,6 +35,7 @@ export const buildProductFormData = (
     appendIfDefined(form, "Name", input.name);
     appendIfDefined(form, "Description", input.description ?? "");
     appendIfDefined(form, "BasePrice", input.basePrice);
+    appendIfDefined(form, "SellPrice", input.sellPrice);
     appendIfDefined(form, "IsActive", input.isActive);
     appendIfDefined(form, "ImageUrl", input.imageUrl ?? "");
     if (input.imageFile) {

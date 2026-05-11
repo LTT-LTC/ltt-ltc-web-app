@@ -72,9 +72,9 @@ export default function BookingSummaryPage() {
             return {
                 id: line.id,
                 name: product?.name || line.id,
-                unitPrice: Number(product?.basePrice) || 0,
+                unitPrice: Number(product?.sellPrice) || 0,
                 quantity: line.quantity,
-                lineTotal: (Number(product?.basePrice) || 0) * line.quantity,
+                lineTotal: (Number(product?.sellPrice) || 0) * line.quantity,
             };
         });
     }, [bookingState?.fnb, products]);

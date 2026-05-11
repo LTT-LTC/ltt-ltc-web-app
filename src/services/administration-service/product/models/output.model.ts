@@ -5,6 +5,7 @@ export interface ProductOutputDto {
     name: string;
     description?: string;
     basePrice: number;
+    sellPrice: number;
     imageUrl?: string;
     isActive: boolean;
     createdAt?: string;
@@ -31,6 +32,7 @@ export interface ComboOutputDto {
     description?: string;
     imageUrl?: string;
     totalPrice: number;
+    basePrice: number;
     isActive: boolean;
     createdAt?: string;
     updatedAt?: string;
