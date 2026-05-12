@@ -29,7 +29,7 @@ jobs:
         uses: tailscale/github-action@v2
         with:
           authkey: ${{ secrets.TS_AUTHKEY }}
-      # Setup SSH
+      # Setup SSH - Connect to Swarm Manager (Server 1)
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
@@ -37,12 +37,14 @@ jobs:
           ${{ secrets.SSH_PRIVATE_KEY }}
           EOF
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H 100.109.240.84 >> ~/.ssh/known_hosts
-      # Deploy on server
-      - name: SSH Deploy
+          ssh-keyscan -H 100.99.158.16 >> ~/.ssh/known_hosts
+      # Deploy to Docker Swarm
+      - name: SSH Deploy to Swarm
         run: |
-          ssh dranov@100.109.240.84 << 'EOF'
-            cd /home/dranov/Desktop/ltt-ltc
-            docker compose pull ltt-ltc-web-app
-            docker compose up -d --no-deps ltt-ltc-web-app
+          ssh kaka-server@100.99.158.16 << EOF
+            set -e
+            echo "Updating ltt-ltc-web-app service in Docker Swarm..."
+            docker service update --image $IMAGE_NAME:latest --force ltt-ltc_ltt-ltc-web-app
+            echo "Deployment complete!"
+            docker service ps ltt-ltc_ltt-ltc-web-app
           EOF

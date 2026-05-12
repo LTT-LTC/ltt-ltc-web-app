@@ -187,7 +187,9 @@ export default function CinemaConfigPage() {
   });
 
   const fetchData = () => {
-    listMutation.mutation({ page, fetch, keyword: debouncedSearch });
+    // Safeguard: cap page number to prevent overflow errors
+    const safePage = Math.min(Math.max(1, page), 1000000);
+    listMutation.mutation({ page: safePage, fetch, keyword: debouncedSearch });
   };
 
   const fetchScreenCounts = async (cinemas: CinemaOutputDto[]) => {

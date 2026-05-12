@@ -40,7 +40,12 @@ export default function DomainTablePagination({
   nextLabel = "Next",
   className,
 }: DomainTablePaginationProps) {
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  // Safeguard against overflow: cap values to safe integers
+  const safeTotalCount = Math.min(Math.max(0, totalCount || 0), Number.MAX_SAFE_INTEGER);
+  const safePage = Math.min(Math.max(1, page || 1), 1000000); // Cap page at 1 million
+  const safePageSize = Math.min(Math.max(1, pageSize || 10), 1000); // Cap page size at 1000
+
+  const totalPages = Math.max(1, Math.ceil(safeTotalCount / safePageSize));
 
   return (
     <div
@@ -51,7 +56,7 @@ export default function DomainTablePagination({
       </div>
       <div className="flex items-center gap-2">
         <LTTSelect
-          value={String(pageSize)}
+          value={String(safePageSize)}
           onValueChange={(value) => {
             onPageSizeChange(Number(value));
           }}
@@ -69,16 +74,16 @@ export default function DomainTablePagination({
         </LTTSelect>
         <LTTButton
           variant="outline"
-          onClick={() => onPageChange(Math.max(1, page - 1))}
-          disabled={page === 1 || loading}
+          onClick={() => onPageChange(Math.max(1, safePage - 1))}
+          disabled={safePage === 1 || loading}
         >
           {previousLabel}
         </LTTButton>
-        <span className="text-sm">{pageLabel(page, totalPages)}</span>
+        <span className="text-sm">{pageLabel(safePage, totalPages)}</span>
         <LTTButton
           variant="outline"
-          onClick={() => onPageChange(page + 1)}
-          disabled={page >= totalPages || loading}
+          onClick={() => onPageChange(Math.min(safePage + 1, totalPages))}
+          disabled={safePage >= totalPages || loading}
         >
           {nextLabel}
         </LTTButton>

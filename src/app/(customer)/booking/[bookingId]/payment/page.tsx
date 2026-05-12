@@ -31,7 +31,7 @@ import {
     type CustomerComboOutputDto,
     type CustomerProductOutputDto,
 } from "@/src/services/customer-service/product/product.service";
-import { customerBookingService } from "@/src/services/customer-service/booking/booking.service";
+import { customerBookingService, type BookingOutputDto } from "@/src/services/customer-service/booking/booking.service";
 import { vnpayPaymentService } from "@/src/services/payment-service/vnpay.service";
 import { toast } from "sonner";
 import { customerShowtimeService } from "@/src/services/customer-service/showtime/showtime.service";
@@ -78,6 +78,19 @@ const formatShowtimeLabel = (start?: string, end?: string, emptyPlaceholder = "�
     return `${left} ~ ${right}`;
 };
 
+interface BookingSnapshot {
+    ticketTotal?: number;
+    extrasTotal?: number;
+    grandTotal?: number;
+    discount?: number;
+    seats?: string[];
+}
+
+const parseSnapshot = (json?: string | null): BookingSnapshot => {
+    if (!json) return {};
+    try { return JSON.parse(json) as BookingSnapshot; } catch { return {}; }
+};
+
 type PayMethod = "card" | "vnpay";
 
 const CARD_BANK_CODES = ["NCB", "JCB", "BIDV", "VCB"] as const;
@@ -117,6 +130,7 @@ export default function BookingPaymentPage() {
     const { bookingState, showtime, screen, cinema, movie, loading } = useBookingContext(bookingId);
 
     const vnpayCleanedRef = useRef(false);
+    const [confirmedBooking, setConfirmedBooking] = useState<BookingOutputDto | null>(null);
 
     useEffect(() => {
         if (!vnpaySuccess || !bookingId || vnpayCleanedRef.current) return;
@@ -125,6 +139,8 @@ export default function BookingPaymentPage() {
             if (showtime?.id) {
                 await customerShowtimeService.releaseSeatHoldAsync(showtime.id, bookingId).catch(() => { });
             }
+            const booking = await customerBookingService.getBookingAsync(bookingId).catch(() => null);
+            setConfirmedBooking(booking);
             clearBookingState(bookingId);
         })();
     }, [vnpaySuccess, bookingId, showtime?.id]);
@@ -237,35 +253,44 @@ export default function BookingPaymentPage() {
                     </div>
                 </div>
 
-                {showtime && (
-                    <div className="lg:sticky lg:top-4 lg:self-start">
-                        <MovieTicket
-                            movie={{
-                                title: movie?.title ?? showtime.movie?.title ?? "—",
-                                originalTitle: movie?.originalTitle ?? showtime.movie?.originalTitle,
-                                posterUrl: movie?.posterUrl ?? showtime.movie?.posterUrl,
-                                ageRating: movie?.ratingCode ?? showtime.movie?.ratingCode,
-                                durationMins: movie?.durationMins ?? showtime.movie?.durationMins ?? showtime.durationMins,
-                            }}
-                            format={showtime.movieFormat}
-                            cinemaName={cinema?.name ?? "—"}
-                            screenLabel={
-                                screen?.screenNumber
-                                    ? `${t("customer.booking.room")} ${screen.screenNumber}${screen.screenType ? ` (${screen.screenType})` : ""}`
-                                    : "—"
-                            }
-                            showtimeLabel={formatShowtimeLabel(showtime.startTime, showtime.endTime, "—")}
-                            selectedSeats={bookingState?.seats ?? []}
-                            basePrice={bookingState?.basePrice ?? 0}
-                            ticketTotal={bookingState?.ticketTotal ?? 0}
-                            extrasTotal={extrasTotal}
-                            discount={bookingState?.discountAmount ?? 0}
-                            primaryActionLabel={t("customer.booking.payment.vnpay_result.back_booking")}
-                            onPrimaryAction={() => router.push("/my-ltc/transaction-history")}
-                            skipBackConfirm
-                        />
-                    </div>
-                )}
+                {showtime && (() => {
+                    const snap = parseSnapshot(confirmedBooking?.snapshotJson);
+                    const confirmedSeats = confirmedBooking?.seatCodes
+                        ? confirmedBooking.seatCodes.split(",").map((s) => s.trim()).filter(Boolean)
+                        : (snap.seats ?? []);
+                    const confirmedTicketTotal = snap.ticketTotal ?? confirmedBooking?.totalPrice ?? 0;
+                    const confirmedExtrasTotal = snap.extrasTotal ?? 0;
+                    const confirmedDiscount = snap.discount ?? confirmedBooking?.discountAmount ?? 0;
+                    return (
+                        <div className="lg:sticky lg:top-4 lg:self-start">
+                            <MovieTicket
+                                movie={{
+                                    title: movie?.title ?? showtime.movie?.title ?? "—",
+                                    originalTitle: movie?.originalTitle ?? showtime.movie?.originalTitle,
+                                    posterUrl: movie?.posterUrl ?? showtime.movie?.posterUrl,
+                                    ageRating: movie?.ratingCode ?? showtime.movie?.ratingCode,
+                                    durationMins: movie?.durationMins ?? showtime.movie?.durationMins ?? showtime.durationMins,
+                                }}
+                                format={showtime.movieFormat}
+                                cinemaName={cinema?.name ?? "—"}
+                                screenLabel={
+                                    screen?.screenNumber
+                                        ? `${t("customer.booking.room")} ${screen.screenNumber}${screen.screenType ? ` (${screen.screenType})` : ""}`
+                                        : "—"
+                                }
+                                showtimeLabel={formatShowtimeLabel(showtime.startTime, showtime.endTime, "—")}
+                                selectedSeats={confirmedSeats}
+                                basePrice={snap.ticketTotal && confirmedSeats.length > 0 ? snap.ticketTotal / confirmedSeats.length : 0}
+                                ticketTotal={confirmedTicketTotal}
+                                extrasTotal={confirmedExtrasTotal}
+                                discount={confirmedDiscount}
+                                primaryActionLabel={t("customer.booking.payment.vnpay_result.back_booking")}
+                                onPrimaryAction={() => router.push("/my-ltc/transaction-history")}
+                                skipBackConfirm
+                            />
+                        </div>
+                    );
+                })()}
             </div>
         );
     }
