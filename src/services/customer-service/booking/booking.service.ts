@@ -46,6 +46,8 @@ export interface BookingOutputDto {
     discountAmount: number;
     totalPrice: number;
     paidAmount?: number;
+    seatCodes?: string;
+    snapshotJson?: string;
     createdAt?: string;
     updatedAt?: string;
     expiredAt?: string;
@@ -87,12 +89,18 @@ const updateBookingPaymentMethodAsync = async (
     return unwrap(response.data);
 };
 
+const getBookingAsync = async (id: string): Promise<BookingOutputDto> => {
+    const response = await http.get<ApiResult<BookingOutputDto> | BookingOutputDto>(`${rootPath}/${id}`);
+    return unwrap(response.data);
+};
+
 const deleteBookingAsync = async (id: string): Promise<void> => {
     await http.delete(`${rootPath}/${id}`);
 };
 
 export const customerBookingService = {
     createBookingAsync,
+    getBookingAsync,
     prepareBookingForPaymentAsync,
     updateBookingPaymentMethodAsync,
     deleteBookingAsync,

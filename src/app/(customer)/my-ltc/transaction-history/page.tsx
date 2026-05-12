@@ -28,15 +28,32 @@ const displayDate = (item: PaymentOutputDto) =>
 
 const displayStatus = (item: PaymentOutputDto) => item.paymentStatus ?? item.status ?? '-';
 
+const resolveMovieName = (item: PaymentOutputDto) => item.movieName || item.movieTitle || '';
+
 const buildDescription = (item: PaymentOutputDto, t: any) => {
     const parts: string[] = [];
-    if (item.movieTitle) parts.push(item.movieTitle);
+    const movieName = resolveMovieName(item);
+    if (movieName) parts.push(movieName);
     if (item.cinemaName) parts.push(item.cinemaName);
     if (item.customerName) parts.push(item.customerName);
     if (parts.length) return parts.join(' • ');
     if (item.gatewayTransactionId) return `${t('customer.my_ltc.transaction_history.desc_transaction', 'Transaction')} ${item.gatewayTransactionId}`;
     if (item.bookingId) return `${t('customer.my_ltc.transaction_history.desc_booking', 'Booking')} ${item.bookingId}`;
     return `${t('customer.my_ltc.transaction_history.desc_payment', 'Payment')} ${item.id}`;
+};
+
+interface SnapshotFnbLine { name?: string; quantity?: number; unitPrice?: number; lineTotal?: number; }
+interface BookingSnapshotForDetail {
+    fnbLines?: SnapshotFnbLine[];
+    comboLines?: SnapshotFnbLine[];
+    ticketTotal?: number;
+    extrasTotal?: number;
+    grandTotal?: number;
+    discount?: number;
+}
+const parseSnapshotForDetail = (json?: string | null): BookingSnapshotForDetail => {
+    if (!json) return {};
+    try { return JSON.parse(json) as BookingSnapshotForDetail; } catch { return {}; }
 };
 
 export default function TransactionHistoryPage() {
@@ -198,12 +215,55 @@ export default function TransactionHistoryPage() {
                                                 : '-'
                                         }
                                     />
-                                    <DetailRow label={t('customer.my_ltc.transaction_history.movie', 'Movie')} value={selected.movieTitle || '-'} />
+                                    <DetailRow label={t('customer.my_ltc.transaction_history.movie', 'Movie')} value={resolveMovieName(selected) || '-'} />
                                     <DetailRow label={t('customer.my_ltc.transaction_history.cinema', 'Cinema')} value={selected.cinemaName || '-'} />
                                     <DetailRow label={t('customer.my_ltc.transaction_history.customer', 'Customer')} value={selected.customerName || '-'} />
+                                    {selected.bookingSeatCodes && (
+                                        <DetailRow
+                                            label={t('customer.my_ltc.transaction_history.seats', 'Seats')}
+                                            value={selected.bookingSeatCodes.split(',').map(s => s.trim()).filter(Boolean).join(', ') || '-'}
+                                        />
+                                    )}
+                                    <DetailRow
+                                        label={t('customer.my_ltc.transaction_history.booking_date', 'Booking date')}
+                                        value={selected.bookingCreatedAt ? dayjs(selected.bookingCreatedAt).format('DD/MM/YYYY HH:mm') : '-'}
+                                    />
+                                    <DetailRow
+                                        label={t('customer.my_ltc.transaction_history.paid_date', 'Paid date')}
+                                        value={selected.paidTime ? dayjs(selected.paidTime).format('DD/MM/YYYY HH:mm') : '-'}
+                                    />
                                     <DetailRow label={t('customer.my_ltc.transaction_history.payment_method', 'Payment method')} value={selected.paymentMethod || '-'} />
                                     <DetailRow label={t('customer.my_ltc.transaction_history.status', 'Status')} value={displayStatus(selected)} />
-                                    <DetailRow label={t('customer.my_ltc.transaction_history.amount', 'Amount')} value={<span className="font-bold">{formatVnd(selected.amount)}</span>} />
+                                    {(() => {
+                                        const snap = parseSnapshotForDetail(selected.bookingSnapshotJson);
+                                        const fnbLines = [...(snap.fnbLines ?? []), ...(snap.comboLines ?? [])];
+                                        if (!fnbLines.length) return null;
+                                        return (
+                                            <DetailRow
+                                                label={t('customer.my_ltc.transaction_history.snacks', 'Snacks & Combos')}
+                                                value={
+                                                    <ul className="list-none space-y-0.5">
+                                                        {fnbLines.map((line, i) => (
+                                                            <li key={i} className="text-sm">
+                                                                {line.name || '-'} × {line.quantity ?? 1}{line.lineTotal != null ? ` — ${formatVnd(line.lineTotal)}` : ''}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                }
+                                            />
+                                        );
+                                    })()}
+                                    {(selected.bookingDiscountAmount ?? 0) > 0 && (
+                                        <DetailRow
+                                            label={t('customer.my_ltc.transaction_history.discount', 'Discount')}
+                                            value={<span className="text-emerald-600">-{formatVnd(selected.bookingDiscountAmount ?? 0)}</span>}
+                                        />
+                                    )}
+                                    <DetailRow
+                                        label={t('customer.my_ltc.transaction_history.total', 'Total')}
+                                        value={<span className="font-bold">{formatVnd(selected.bookingTotalPrice ?? selected.amount)}</span>}
+                                    />
+                                    <DetailRow label={t('customer.my_ltc.transaction_history.amount', 'Amount paid')} value={<span className="font-bold">{formatVnd(selected.amount)}</span>} />
                                 </div>
                             </>
                         )}

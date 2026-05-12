@@ -34,6 +34,9 @@ export interface PaymentOutputDto {
     customerName?: string;
     status?: string;
     createdAt?: string;
+    /** @deprecated use movieName — kept for backwards compat */
     movieTitle?: string;
+    /** Matches BE JSON key `movieName` from booking enrichment */
+    movieName?: string;
     cinemaName?: string;
 }
