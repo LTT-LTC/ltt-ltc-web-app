@@ -131,6 +131,7 @@ export default function BookingPaymentPage() {
 
     const vnpayCleanedRef = useRef(false);
     const [confirmedBooking, setConfirmedBooking] = useState<BookingOutputDto | null>(null);
+    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
     useEffect(() => {
         if (!vnpaySuccess || !bookingId || vnpayCleanedRef.current) return;
@@ -139,8 +140,30 @@ export default function BookingPaymentPage() {
             if (showtime?.id) {
                 await customerShowtimeService.releaseSeatHoldAsync(showtime.id, bookingId).catch(() => { });
             }
-            const booking = await customerBookingService.getBookingAsync(bookingId).catch(() => null);
+
+            // Poll for booking status while IPN is being processed
+            setIsProcessingPayment(true);
+            const maxAttempts = 20; // 20 attempts * 2 seconds = 40 seconds max wait
+            let attempts = 0;
+
+            const pollBookingStatus = async (): Promise<BookingOutputDto | null> => {
+                const booking = await customerBookingService.getBookingAsync(bookingId).catch(() => null);
+                if (booking && (booking.paymentStatus === "PAID" || booking.bookingStatus === "CONFIRMED")) {
+                    return booking;
+                }
+                return null;
+            };
+
+            let booking = await pollBookingStatus();
+
+            while (!booking && attempts < maxAttempts) {
+                attempts++;
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+                booking = await pollBookingStatus();
+            }
+
             setConfirmedBooking(booking);
+            setIsProcessingPayment(false);
             clearBookingState(bookingId);
         })();
     }, [vnpaySuccess, bookingId, showtime?.id]);
@@ -233,6 +256,58 @@ export default function BookingPaymentPage() {
     }
 
     if (vnpaySuccess) {
+        if (isProcessingPayment) {
+            return (
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
+                    <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-12 text-center space-y-5">
+                        <Loader2 className="h-16 w-16 mx-auto text-[#cd1e25] animate-spin" />
+                        <h2 className="text-2xl font-bold text-gray-900">
+                            Processing your payment...
+                        </h2>
+                        <p className="text-sm text-gray-500">
+                            Please wait while we confirm your payment with VNPay. This may take a few seconds.
+                        </p>
+                    </div>
+
+                    {showtime && (() => {
+                        const seats = bookingState?.seats ?? [];
+                        const ticketTotal = bookingState?.ticketTotal ?? 0;
+                        const extrasTotal = 0; // FNB/combos not in booking state during processing
+                        const discount = bookingState?.discountAmount ?? 0;
+                        return (
+                            <div className="lg:sticky lg:top-4 lg:self-start">
+                                <MovieTicket
+                                    movie={{
+                                        title: movie?.title ?? showtime.movie?.title ?? "—",
+                                        originalTitle: movie?.originalTitle ?? showtime.movie?.originalTitle,
+                                        posterUrl: movie?.posterUrl ?? showtime.movie?.posterUrl,
+                                        ageRating: movie?.ratingCode ?? showtime.movie?.ratingCode,
+                                        durationMins: movie?.durationMins ?? showtime.movie?.durationMins ?? showtime.durationMins,
+                                    }}
+                                    format={showtime.movieFormat}
+                                    cinemaName={cinema?.name ?? "—"}
+                                    screenLabel={
+                                        screen?.screenNumber
+                                            ? `${t("customer.booking.room")} ${screen.screenNumber}${screen.screenType ? ` (${screen.screenType})` : ""}`
+                                            : "—"
+                                    }
+                                    showtimeLabel={formatShowtimeLabel(showtime.startTime, showtime.endTime, "—")}
+                                    selectedSeats={seats}
+                                    basePrice={ticketTotal && seats.length > 0 ? ticketTotal / seats.length : 0}
+                                    ticketTotal={ticketTotal}
+                                    extrasTotal={extrasTotal}
+                                    discount={discount}
+                                    primaryActionLabel=""
+                                    onPrimaryAction={() => { }}
+                                    skipBackConfirm
+                                />
+                            </div>
+                        );
+                    })()}
+                </div>
+            );
+        }
+
         return (
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
                 <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-12 text-center space-y-5">
