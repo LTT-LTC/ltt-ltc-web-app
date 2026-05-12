@@ -44,7 +44,16 @@ jobs:
           ssh kaka-server@100.99.158.16 << EOF
             set -e
             echo "Updating ltt-ltc-web-app service in Docker Swarm..."
-            docker service update --image $IMAGE_NAME:latest --force ltt-ltc_ltt-ltc-web-app
-            echo "Deployment complete!"
+            docker service update --detach --image $IMAGE_NAME:latest --force ltt-ltc_ltt-ltc-web-app
+            echo "Update triggered. Waiting 90s for convergence..."
+            sleep 90
             docker service ps ltt-ltc_ltt-ltc-web-app
+            REPLICAS=\$(docker service ls --filter name=ltt-ltc_ltt-ltc-web-app --format '{{.Replicas}}')
+            echo "Replicas: \$REPLICAS"
+            if [ "\$REPLICAS" != "1/1" ]; then
+              echo "ERROR: Service did not converge (got \$REPLICAS)"
+              docker service logs ltt-ltc_ltt-ltc-web-app --tail 30
+              exit 1
+            fi
+            echo "Deployment complete!"
           EOF
