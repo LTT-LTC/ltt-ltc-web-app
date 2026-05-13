@@ -1,5 +1,6 @@
 import http from "@/src/@core/http";
 import { ApiResult } from "@/src/@core/http/models/ApiResult";
+import { PagedResultDto } from "@/src/@core/http/models/PagedResultDto";
 
 export interface CreateBookingItemInputDto {
     itemType: "SEAT" | "COMBO" | "PRODUCT";
@@ -60,6 +61,11 @@ export interface ConfirmBookingPaymentOutputDto {
     paymentStatus?: string;
 }
 
+export interface GetBookingListInputDto {
+    page: number;
+    fetch: number;
+}
+
 const rootPath = "/customer-service/customer/booking";
 
 const unwrap = <T>(payload: ApiResult<T> | T): T => {
@@ -101,6 +107,19 @@ const getBookingAsync = async (id: string): Promise<BookingOutputDto> => {
     return unwrap(response.data);
 };
 
+const getBookingListAsync = async (params: GetBookingListInputDto): Promise<PagedResultDto<BookingOutputDto>> => {
+    const response = await http.get<ApiResult<PagedResultDto<BookingOutputDto>> | PagedResultDto<BookingOutputDto>>(
+        rootPath,
+        {
+            params: {
+                skipCount: Math.max(0, (params.page - 1) * params.fetch),
+                maxResultCount: params.fetch,
+            },
+        },
+    );
+    return unwrap(response.data);
+};
+
 const deleteBookingAsync = async (id: string): Promise<void> => {
     await http.delete(`${rootPath}/${id}`);
 };
@@ -117,6 +136,7 @@ const confirmBookingPaymentAsync = async (
 export const customerBookingService = {
     createBookingAsync,
     getBookingAsync,
+    getBookingListAsync,
     prepareBookingForPaymentAsync,
     updateBookingPaymentMethodAsync,
     deleteBookingAsync,
