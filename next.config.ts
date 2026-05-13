@@ -7,6 +7,14 @@ const nextConfig: NextConfig = {
     images: {
         unoptimized: true
     },
+    outputFileTracingRoot: __dirname,
+    outputFileTracingExcludes: {
+        "**/*": [
+            "**/.git/**/*",
+            "**/node_modules/**/*",
+            "**/.next/cache/**/*",
+        ],
+    },
     webpack(config) {
         config.module.rules.push({
             test: /\.svg$/,

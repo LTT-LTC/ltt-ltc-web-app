@@ -21,3 +21,5 @@ export const customerCinemaService = {
     getCinemaListAsync,
     getCinemaByIdAsync,
 };
+
+export type { CustomerCinemaOutputDto };
