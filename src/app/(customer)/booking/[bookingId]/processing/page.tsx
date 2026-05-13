@@ -7,7 +7,7 @@ import { LTTButton } from "@/src/@core/component/LTTShadcnUI/LTTButton";
 import { useBookingContext } from "@/src/@core/booking/useBookingContext";
 import { clearBookingState } from "@/src/@core/booking/bookingState";
 import { customerShowtimeService } from "@/src/services/customer-service/showtime/showtime.service";
-import { customerBookingService, type BookingOutputDto } from "@/src/services/customer-service/booking/booking.service";
+import { customerBookingService, type BookingOutputDto, type ConfirmBookingPaymentOutputDto } from "@/src/services/customer-service/booking/booking.service";
 import { customerShowtimeService as showtimeService, type CustomerShowtimeOutputDto } from "@/src/services/customer-service/showtime/showtime.service";
 import { vnpayPaymentService } from "@/src/services/payment-service/vnpay.service";
 import { useLocalization } from "@/src/@core/hooks/use-localization";
@@ -86,6 +86,28 @@ export default function BookingProcessingPage() {
                 }
             };
 
+            // Directly drive booking completion via customer-service (cross-checks payment-service internally).
+            // Called at attempt 1, then every 5 attempts. Falls back to manualComplete at attempt 20.
+            const tryConfirmPayment = async () => {
+                try {
+                    const result = await customerBookingService.confirmBookingPaymentAsync(bookingId);
+                    console.log("[Processing] confirmBookingPayment result:", result);
+                } catch (err) {
+                    console.warn("[Processing] confirmBookingPayment failed:", err);
+                }
+            };
+
+            const tryManualComplete = async () => {
+                try {
+                    const result = await vnpayPaymentService.manualCompleteVnPayPaymentAsync(bookingId);
+                    console.log("[Processing] manualComplete fallback result:", result);
+                } catch (err) {
+                    console.warn("[Processing] manualComplete fallback failed:", err);
+                }
+            };
+
+            // Attempt confirm-payment immediately before the first status check
+            await tryConfirmPayment();
             let booking = await checkBookingStatus();
 
             while (!booking && attempts < maxAttempts) {
@@ -93,6 +115,15 @@ export default function BookingProcessingPage() {
                 setPollingAttempts(attempts);
                 console.log(`[Processing] Polling attempt ${attempts}/${maxAttempts}`);
                 await new Promise(resolve => setTimeout(resolve, 2000));
+
+                if (attempts % 5 === 0) {
+                    await tryConfirmPayment();
+                }
+
+                if (attempts === 20) {
+                    await tryManualComplete();
+                }
+
                 booking = await checkBookingStatus();
             }
 
@@ -129,8 +160,7 @@ export default function BookingProcessingPage() {
                 setStatus("succeeded");
                 toast.success("Payment confirmed successfully!");
             } else {
-                // Try manual completion trigger
-                const result = await vnpayPaymentService.manualCompleteVnPayPaymentAsync(bookingId);
+                const result = await customerBookingService.confirmBookingPaymentAsync(bookingId);
                 if (result.success) {
                     toast.success(result.message || "Completion triggered, checking again...");
                     await new Promise(resolve => setTimeout(resolve, 2000));
