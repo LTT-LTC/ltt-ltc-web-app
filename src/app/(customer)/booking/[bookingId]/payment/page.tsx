@@ -134,19 +134,30 @@ export default function BookingPaymentPage() {
     const [confirmedShowtime, setConfirmedShowtime] = useState<CustomerShowtimeOutputDto | null>(null);
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
+    const [pollingAttempts, setPollingAttempts] = useState(0);
+    const [pollingTimeout, setPollingTimeout] = useState(false);
+
     useEffect(() => {
         if (!vnpaySuccess || !bookingId || vnpayCleanedRef.current) return;
         vnpayCleanedRef.current = true;
         (async () => {
             // Poll for booking status while IPN is being processed
             setIsProcessingPayment(true);
-            const maxAttempts = 20; // 20 attempts * 2 seconds = 40 seconds max wait
+            setPollingTimeout(false);
+            const maxAttempts = 30; // 30 attempts * 2 seconds = 60 seconds max wait (increased from 20)
             let attempts = 0;
 
             const pollBookingStatus = async (): Promise<BookingOutputDto | null> => {
-                const booking = await customerBookingService.getBookingAsync(bookingId).catch(() => null);
+                const booking = await customerBookingService.getBookingAsync(bookingId).catch((err) => {
+                    console.error("[VnPay Polling] Error fetching booking:", err);
+                    return null;
+                });
                 if (booking && (booking.paymentStatus === "PAID" || booking.bookingStatus === "CONFIRMED")) {
+                    console.log("[VnPay Polling] Booking confirmed:", booking.id, "status:", booking.bookingStatus, "payment:", booking.paymentStatus);
                     return booking;
+                }
+                if (booking) {
+                    console.log("[VnPay Polling] Booking not ready yet:", booking.id, "status:", booking.bookingStatus, "payment:", booking.paymentStatus);
                 }
                 return null;
             };
@@ -155,17 +166,30 @@ export default function BookingPaymentPage() {
 
             while (!booking && attempts < maxAttempts) {
                 attempts++;
+                setPollingAttempts(attempts);
+                console.log(`[VnPay Polling] Attempt ${attempts}/${maxAttempts} - waiting 2 seconds...`);
                 await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
                 booking = await pollBookingStatus();
             }
 
-            setConfirmedBooking(booking);
-            if (booking?.showtimeId) {
-                const showtimeDetail = await customerShowtimeService.getShowtimeByIdAsync(booking.showtimeId).catch(() => null);
-                setConfirmedShowtime(showtimeDetail);
+            if (!booking) {
+                console.warn(`[VnPay Polling] Timeout after ${maxAttempts} attempts. Booking not confirmed.`);
+                setPollingTimeout(true);
+                // Try one last time to get booking details for display
+                const lastAttempt = await customerBookingService.getBookingAsync(bookingId).catch(() => null);
+                if (lastAttempt) {
+                    console.log("[VnPay Polling] Final booking status:", lastAttempt.bookingStatus, lastAttempt.paymentStatus);
+                }
+                setConfirmedBooking(lastAttempt);
+            } else {
+                setConfirmedBooking(booking);
+                if (booking?.showtimeId) {
+                    const showtimeDetail = await customerShowtimeService.getShowtimeByIdAsync(booking.showtimeId).catch(() => null);
+                    setConfirmedShowtime(showtimeDetail);
+                }
+                clearBookingState(bookingId);
             }
             setIsProcessingPayment(false);
-            clearBookingState(bookingId);
         })();
     }, [vnpaySuccess, bookingId]);
 
@@ -256,8 +280,63 @@ export default function BookingPaymentPage() {
         );
     }
 
+    const handleRefreshStatus = async () => {
+        if (!bookingId) return;
+        setIsProcessingPayment(true);
+        setPollingTimeout(false);
+        try {
+            // First try normal booking status check
+            const booking = await customerBookingService.getBookingAsync(bookingId);
+            console.log("[VnPay Refresh] Booking status:", booking.bookingStatus, booking.paymentStatus);
+            if (booking && (booking.paymentStatus === "PAID" || booking.bookingStatus === "CONFIRMED")) {
+                setConfirmedBooking(booking);
+                if (booking?.showtimeId) {
+                    const showtimeDetail = await customerShowtimeService.getShowtimeByIdAsync(booking.showtimeId).catch(() => null);
+                    setConfirmedShowtime(showtimeDetail);
+                }
+                clearBookingState(bookingId);
+                toast.success("Payment confirmed successfully!");
+                return;
+            }
+
+            // If not confirmed, try manual completion trigger as fallback
+            console.log("[VnPay Refresh] Booking not confirmed yet, triggering manual completion check...");
+            const completionResult = await vnpayPaymentService.manualCompleteVnPayPaymentAsync(bookingId);
+            console.log("[VnPay Refresh] Manual completion result:", completionResult);
+
+            if (completionResult.success) {
+                toast.success(completionResult.message || "Payment completion triggered. Checking status...");
+                // Wait a moment for backend to process, then check again
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                const recheckBooking = await customerBookingService.getBookingAsync(bookingId);
+                if (recheckBooking && (recheckBooking.paymentStatus === "PAID" || recheckBooking.bookingStatus === "CONFIRMED")) {
+                    setConfirmedBooking(recheckBooking);
+                    if (recheckBooking?.showtimeId) {
+                        const showtimeDetail = await customerShowtimeService.getShowtimeByIdAsync(recheckBooking.showtimeId).catch(() => null);
+                        setConfirmedShowtime(showtimeDetail);
+                    }
+                    clearBookingState(bookingId);
+                    toast.success("Payment confirmed successfully!");
+                } else {
+                    toast.warning("Payment completion is still being processed. Please check your transaction history in a few moments.");
+                }
+            } else {
+                toast.warning(completionResult.message || "Payment is still being processed.");
+            }
+        } catch (err) {
+            console.error("[VnPay Refresh] Error:", err);
+            toast.error("Unable to check payment status. Please try again or contact support.");
+        } finally {
+            setIsProcessingPayment(false);
+        }
+    };
+
+    const handleGoToHistory = () => {
+        router.push("/my-ltc/transaction-history");
+    };
+
     if (vnpaySuccess) {
-        if (isProcessingPayment || !confirmedBooking) {
+        if (isProcessingPayment || (!confirmedBooking && !pollingTimeout)) {
             return (
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
                     <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-12 text-center space-y-5">
@@ -267,6 +346,47 @@ export default function BookingPaymentPage() {
                         </h2>
                         <p className="text-sm text-gray-500">
                             Please wait while we confirm your payment with VNPay. This may take a few seconds.
+                        </p>
+                        <p className="text-xs text-gray-400">
+                            Attempt {pollingAttempts}/30
+                        </p>
+                    </div>
+                </div>
+            );
+        }
+
+        // Timeout state - show refresh button
+        if (pollingTimeout && confirmedBooking && confirmedBooking.paymentStatus !== "PAID" && confirmedBooking.bookingStatus !== "CONFIRMED") {
+            return (
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
+                    <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-12 text-center space-y-5">
+                        <div className="h-16 w-16 mx-auto rounded-full bg-yellow-100 flex items-center justify-center">
+                            <Loader2 className="h-10 w-10 text-yellow-600" />
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900">
+                            Payment Processing Taking Longer Than Expected
+                        </h2>
+                        <p className="text-sm text-gray-500">
+                            Your payment may have been processed successfully, but we're still waiting for confirmation from our servers.
+                        </p>
+                        <div className="flex justify-center gap-3 pt-2">
+                            <LTTButton
+                                variant="outline"
+                                onClick={handleRefreshStatus}
+                                disabled={isProcessingPayment}
+                            >
+                                {isProcessingPayment && <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />}
+                                Check Status Again
+                            </LTTButton>
+                            <LTTButton
+                                className="bg-[#cd1e25] hover:bg-[#a8181d] text-white"
+                                onClick={handleGoToHistory}
+                            >
+                                View My Tickets
+                            </LTTButton>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-4">
+                            Current status: {confirmedBooking?.paymentStatus || "Unknown"} / {confirmedBooking?.bookingStatus || "Unknown"}
                         </p>
                     </div>
                 </div>
@@ -295,6 +415,7 @@ export default function BookingPaymentPage() {
 
                 <div className="lg:sticky lg:top-4 lg:self-start">
                     {(() => {
+                        if (!confirmedBooking) return null;
                         const snap = parseSnapshot(confirmedBooking.snapshotJson);
                         const confirmedSeats = confirmedBooking.seatCodes
                             ? confirmedBooking.seatCodes.split(",").map((s) => s.trim()).filter(Boolean)

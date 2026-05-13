@@ -17,6 +17,15 @@ export interface CreateVnPayPaymentUrlOutputDto {
     paymentUrl: string;
 }
 
+export interface ManualVnpayCompletionOutputDto {
+    success: boolean;
+    message: string;
+    bookingId: string;
+    paymentRequestId?: string;
+    paymentStatus?: string;
+    notificationSent: boolean;
+}
+
 const unwrap = <T>(payload: ApiResult<T> | T): T => {
     if (payload && typeof payload === "object" && "data" in (payload as Record<string, unknown>)) {
         return (payload as ApiResult<T>).data;
@@ -44,6 +53,20 @@ export const createVnPayPaymentUrlAsync = async (
     return dto.paymentUrl;
 };
 
+/**
+ * POST manual-complete/{bookingId} - Fallback for when IPN/browser return fail.
+ * Triggers manual completion check on the backend.
+ */
+export const manualCompleteVnPayPaymentAsync = async (
+    bookingId: string
+): Promise<ManualVnpayCompletionOutputDto> => {
+    const response = await http.post<ApiResult<ManualVnpayCompletionOutputDto> | ManualVnpayCompletionOutputDto>(
+        `${paymentApiBase}/manual-complete/${bookingId}`
+    );
+    return unwrap(response.data);
+};
+
 export const vnpayPaymentService = {
     createVnPayPaymentUrlAsync,
+    manualCompleteVnPayPaymentAsync,
 };
