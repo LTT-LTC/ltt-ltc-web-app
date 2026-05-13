@@ -80,6 +80,7 @@ export default function MembershipCardPage() {
     useEffect(() => {
         activeCardMutation.mutation();
         profileMutation.mutation();
+        fetchPointHistory();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
