@@ -21,7 +21,6 @@ export default function MyLtcLayout({
     { label: t('customer.my_ltc.nav.dashboard'), path: '/my-ltc' },
     { label: t('customer.my_ltc.nav.account_details'), path: '/my-ltc/account-details' },
     { label: t('customer.my_ltc.nav.membership_card'), path: '/my-ltc/membership-card' },
-    { label: t('customer.my_ltc.nav.points'), path: '/my-ltc/points' },
     { label: t('customer.my_ltc.nav.vouchers'), path: '/my-ltc/vouchers' },
     { label: t('customer.my_ltc.nav.transaction_history'), path: '/my-ltc/transaction-history' },
   ];
