@@ -53,6 +53,13 @@ export interface BookingOutputDto {
     expiredAt?: string;
 }
 
+export interface ConfirmBookingPaymentOutputDto {
+    success: boolean;
+    message: string;
+    bookingStatus?: string;
+    paymentStatus?: string;
+}
+
 const rootPath = "/customer-service/customer/booking";
 
 const unwrap = <T>(payload: ApiResult<T> | T): T => {
@@ -98,10 +105,20 @@ const deleteBookingAsync = async (id: string): Promise<void> => {
     await http.delete(`${rootPath}/${id}`);
 };
 
+const confirmBookingPaymentAsync = async (
+    bookingId: string
+): Promise<ConfirmBookingPaymentOutputDto> => {
+    const response = await http.post<ApiResult<ConfirmBookingPaymentOutputDto> | ConfirmBookingPaymentOutputDto>(
+        `${rootPath}/${bookingId}/confirm-payment`
+    );
+    return unwrap(response.data);
+};
+
 export const customerBookingService = {
     createBookingAsync,
     getBookingAsync,
     prepareBookingForPaymentAsync,
     updateBookingPaymentMethodAsync,
     deleteBookingAsync,
+    confirmBookingPaymentAsync,
 };
