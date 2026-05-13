@@ -148,7 +148,7 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center">
                         <span className="text-sm text-gray-500 mb-1">{t('customer.my_ltc.dashboard.membership_tier')}</span>
                         <span className="font-bold text-lg mb-3">{mockCustomer.memberLevel}</span>
@@ -168,18 +168,6 @@ export default function DashboardPage() {
                             className={compactViewButtonClass}
                             size="sm"
                             onClick={() => handleCardClick('/my-ltc/transaction-history')}
-                        >
-                            {t('customer.my_ltc.dashboard.view')}
-                        </LTTButton>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-xl p-4 flex flex-col items-center">
-                        <span className="text-sm text-gray-500 mb-1">{t('customer.my_ltc.dashboard.points')}</span>
-                        <span className="font-bold text-lg mb-3">{mockCustomer.currentPoints} P</span>
-                        <LTTButton
-                            className={compactViewButtonClass}
-                            size="sm"
-                            onClick={() => handleCardClick('/my-ltc/points')}
                         >
                             {t('customer.my_ltc.dashboard.view')}
                         </LTTButton>
