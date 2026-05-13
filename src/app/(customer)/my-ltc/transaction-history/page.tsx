@@ -9,13 +9,13 @@ import LTTButton from '@/src/@core/component/AntD/LTTButton';
 import { useLocalization } from '@/src/@core/hooks/use-localization';
 import { customerBookingService, type BookingOutputDto } from '@/src/services/customer-service/booking/booking.service';
 import {
-    customerPaymentService,
-    PaymentOutputDto,
-} from '@/src/services/customer-service/payment/payment.service';
-import {
     customerShowtimeService,
     type CustomerShowtimeOutputDto,
 } from '@/src/services/customer-service/showtime/showtime.service';
+import {
+    customerCinemaService,
+    type CustomerCinemaOutputDto,
+} from '@/src/services/customer-service/cinema/cinema.service';
 
 interface TransactionRow {
     id: string;
@@ -23,33 +23,26 @@ interface TransactionRow {
     description: string;
     amount: string;
     type: string;
-    raw: PaymentOutputDto & { booking?: BookingOutputDto; showtime?: CustomerShowtimeOutputDto };
+    raw: BookingOutputDto;
 }
 
 const formatVnd = (amount: number | undefined) => `${Math.round(amount || 0).toLocaleString('vi-VN', { maximumFractionDigits: 0 })} ₫`;
 
-const displayDate = (item: PaymentOutputDto) =>
-    item.paidTime ?? item.createdAt;
+const displayDate = (item: BookingOutputDto) => item.createdAt;
 
-const displayStatus = (item: PaymentOutputDto) => item.paymentStatus ?? item.status ?? '-';
+const displayStatus = (item: BookingOutputDto) => item.paymentStatus ?? item.bookingStatus ?? '-';
 
-const resolveMovieName = (item: PaymentOutputDto & { booking?: BookingOutputDto; showtime?: CustomerShowtimeOutputDto }) => {
-    // Prefer fetched showtime data over payment enrichment data
-    if (item.showtime?.movie?.title) return item.showtime.movie.title;
-    return item.movieName || item.movieTitle || '';
-};
+const buildDescription = (item: BookingOutputDto, t: any) => {
+    const seatCount = (item.seatCodes || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean).length;
 
-const buildDescription = (item: PaymentOutputDto & { booking?: BookingOutputDto; showtime?: CustomerShowtimeOutputDto }, t: any) => {
-    const parts: string[] = [];
-    const movieName = resolveMovieName(item);
-    if (movieName) parts.push(movieName);
-    // Use payment enrichment data for cinema name (showtime doesn't include cinema object)
-    if (item.cinemaName) parts.push(item.cinemaName);
-    if (item.customerName) parts.push(item.customerName);
-    if (parts.length) return parts.join(' • ');
-    if (item.gatewayTransactionId) return `${t('customer.my_ltc.transaction_history.desc_transaction', 'Transaction')} ${item.gatewayTransactionId}`;
-    if (item.bookingId) return `${t('customer.my_ltc.transaction_history.desc_booking', 'Booking')} ${item.bookingId}`;
-    return `${t('customer.my_ltc.transaction_history.desc_payment', 'Payment')} ${item.id}`;
+    if (seatCount > 0) {
+        return `${t('customer.my_ltc.transaction_history.desc_booking', 'Booking')} • ${seatCount} ${t('customer.my_ltc.transaction_history.seats', 'seats')}`;
+    }
+
+    return `${t('customer.my_ltc.transaction_history.desc_booking', 'Booking')} ${item.id}`;
 };
 
 interface SnapshotFnbLine { name?: string; quantity?: number; unitPrice?: number; lineTotal?: number; }
@@ -69,13 +62,13 @@ const parseSnapshotForDetail = (json?: string | null): BookingSnapshotForDetail 
 export default function TransactionHistoryPage() {
     const { t } = useLocalization();
     const [pagination, setPagination] = useState({ page: 1, fetch: 5 });
-    const [items, setItems] = useState<PaymentOutputDto[]>([]);
+    const [items, setItems] = useState<BookingOutputDto[]>([]);
     const [totalCount, setTotalCount] = useState<number>(0);
     const [loading, setLoading] = useState<boolean>(true);
     const [detailId, setDetailId] = useState<string | null>(null);
-    const [detailPayment, setDetailPayment] = useState<PaymentOutputDto | null>(null);
     const [detailBooking, setDetailBooking] = useState<BookingOutputDto | null>(null);
     const [detailShowtime, setDetailShowtime] = useState<CustomerShowtimeOutputDto | null>(null);
+    const [detailCinema, setDetailCinema] = useState<CustomerCinemaOutputDto | null>(null);
     const [detailLoading, setDetailLoading] = useState(false);
 
     useEffect(() => {
@@ -83,36 +76,13 @@ export default function TransactionHistoryPage() {
         const fetchPage = async () => {
             setLoading(true);
             try {
-                const result = await customerPaymentService.getMyPaymentsAsync({
+                const result = await customerBookingService.getBookingListAsync({
                     page: pagination.page,
                     fetch: pagination.fetch,
                 });
                 if (cancelled) return;
 
-                // Fetch booking and showtime details for each payment to get complete information
-                const paymentsWithDetails = await Promise.all(
-                    (result.items || []).map(async (payment) => {
-                        if (payment.bookingId) {
-                            try {
-                                const booking = await customerBookingService.getBookingAsync(payment.bookingId);
-                                let showtime: CustomerShowtimeOutputDto | null = null;
-                                if (booking?.showtimeId) {
-                                    try {
-                                        showtime = await customerShowtimeService.getShowtimeByIdAsync(booking.showtimeId);
-                                    } catch {
-                                        // Ignore showtime fetch errors
-                                    }
-                                }
-                                return { ...payment, booking, showtime };
-                            } catch {
-                                return payment;
-                            }
-                        }
-                        return payment;
-                    })
-                );
-
-                setItems(paymentsWithDetails);
+                setItems(result.items || []);
                 setTotalCount(result.totalCount || 0);
             } catch (e) {
                 if (!cancelled) {
@@ -132,37 +102,37 @@ export default function TransactionHistoryPage() {
 
     useEffect(() => {
         if (!detailId) {
-            setDetailPayment(null);
             setDetailBooking(null);
             setDetailShowtime(null);
+            setDetailCinema(null);
             setDetailLoading(false);
             return;
         }
         let cancelled = false;
-        setDetailPayment(null);
         setDetailBooking(null);
         setDetailShowtime(null);
+        setDetailCinema(null);
         setDetailLoading(true);
         void (async () => {
             try {
-                const payment = await customerPaymentService.getMyPaymentByIdAsync(detailId);
+                const booking = await customerBookingService.getBookingAsync(detailId);
                 if (cancelled) return;
-                setDetailPayment(payment);
+                setDetailBooking(booking);
 
-                if (payment.bookingId) {
-                    const booking = await customerBookingService.getBookingAsync(payment.bookingId).catch(() => null);
-                    if (cancelled) return;
-                    setDetailBooking(booking);
+                if (!booking.showtimeId) return;
 
-                    if (booking?.showtimeId) {
-                        const showtime = await customerShowtimeService.getShowtimeByIdAsync(booking.showtimeId).catch(() => null);
-                        if (!cancelled) setDetailShowtime(showtime);
-                    }
-                }
+                const showtime = await customerShowtimeService.getShowtimeByIdAsync(booking.showtimeId).catch(() => null);
+                if (cancelled) return;
+                setDetailShowtime(showtime);
+
+                if (!showtime?.cinemaId) return;
+
+                const cinema = await customerCinemaService.getCinemaByIdAsync(showtime.cinemaId).catch(() => null);
+                if (!cancelled) setDetailCinema(cinema);
             } catch (e) {
                 if (!cancelled) {
-                    setDetailPayment(null);
-                    toast.error(e instanceof Error ? e.message : t('customer.my_ltc.transaction_history.fetch_detail_failed', 'Failed to load payment details'));
+                    setDetailBooking(null);
+                    toast.error(e instanceof Error ? e.message : t('customer.my_ltc.transaction_history.fetch_detail_failed', 'Failed to load booking details'));
                     setDetailId(null);
                 }
             } finally {
@@ -179,7 +149,7 @@ export default function TransactionHistoryPage() {
             id: item.id,
             date: displayDate(item) ? dayjs(displayDate(item)).format('DD/MM/YYYY HH:mm') : '-',
             description: buildDescription(item, t),
-            amount: formatVnd(item.amount),
+            amount: formatVnd(item.paidAmount || item.totalPrice),
             type: item.paymentMethod || '-',
             raw: item,
         }));
@@ -192,7 +162,7 @@ export default function TransactionHistoryPage() {
             key: 'bookingId',
             width: '24%',
             render: (_: string, row: TransactionRow) => (
-                <span className="font-mono text-xs break-all wrap-break-word whitespace-normal">{row.raw.bookingId ?? row.raw.id}</span>
+                <span className="font-mono text-xs break-all wrap-break-word whitespace-normal">{row.raw.id}</span>
             ),
         },
         { title: t('customer.my_ltc.transaction_history.date'), dataIndex: 'date', key: 'date', width: '20%' },
@@ -204,23 +174,24 @@ export default function TransactionHistoryPage() {
         setDetailId(record.raw.id);
     };
 
-    const selected = detailPayment;
     const booking = detailBooking;
     const showtime = detailShowtime;
-    const snapshot = parseSnapshotForDetail(booking?.snapshotJson ?? selected?.bookingSnapshotJson);
-    const seatCodes = (booking?.seatCodes ?? selected?.bookingSeatCodes ?? '')
+    const cinema = detailCinema;
+    const snapshot = parseSnapshotForDetail(booking?.snapshotJson);
+    const seatCodes = (booking?.seatCodes || '')
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean);
     const snackLines = [...(snapshot.fnbLines ?? []), ...(snapshot.comboLines ?? [])];
-    const bookingCreatedAt = booking?.createdAt ?? selected?.bookingCreatedAt;
-    const paidAt = selected?.paidTime;
-    const paymentMethod = booking?.paymentMethod ?? selected?.paymentMethod;
-    const paymentStatus = booking?.paymentStatus ?? (selected ? displayStatus(selected) : '-');
-    const discountAmount = booking?.discountAmount ?? selected?.bookingDiscountAmount ?? snapshot.discount ?? 0;
-    const totalAmount = booking?.totalPrice ?? selected?.bookingTotalPrice ?? selected?.amount;
-    const bookingHeaderMovie = selected?.movieName || selected?.movieTitle || showtime?.movie?.title || '-';
-    const bookingHeaderCinema = selected?.cinemaName || '-';
+    const bookingCreatedAt = booking?.createdAt;
+    const paidAt = booking?.paymentStatus === 'PAID' ? booking?.updatedAt : undefined;
+    const paymentMethod = booking?.paymentMethod;
+    const paymentStatus = booking ? displayStatus(booking) : '-';
+    const discountAmount = booking?.discountAmount ?? snapshot.discount ?? 0;
+    const totalAmount = booking?.totalPrice ?? 0;
+    const amountPaid = booking?.paidAmount ?? booking?.totalPrice ?? 0;
+    const bookingHeaderMovie = showtime?.movie?.title || '-';
+    const bookingHeaderCinema = cinema?.name || '-';
     const bookingRoom = showtime?.screenName || '-';
     const bookingShowtimeLabel = showtime ? `${dayjs(showtime.startTime).format('DD/MM/YYYY HH:mm')} - ${dayjs(showtime.endTime).format('HH:mm')}` : '-';
 
@@ -264,7 +235,7 @@ export default function TransactionHistoryPage() {
                             </span>
                         </LTTButton>
 
-                        {detailLoading || !selected ? (
+                        {detailLoading || !booking ? (
                             <p className="text-gray-600">{detailLoading ? t('customer.my_ltc.transaction_history.loading', 'Loading...') : ''}</p>
                         ) : (
                             <>
@@ -273,16 +244,16 @@ export default function TransactionHistoryPage() {
                                 <div className="flex flex-col gap-4">
                                     <DetailRow
                                         label={t('customer.my_ltc.transaction_history.booking_id', 'Booking ID')}
-                                        value={<span className="font-mono">{booking?.id ?? selected.bookingId ?? selected.id}</span>}
+                                        value={<span className="font-mono">{booking.id}</span>}
                                         first
                                     />
                                     <DetailRow
                                         label={t('customer.my_ltc.transaction_history.movie', 'Movie')}
-                                        value={bookingHeaderMovie || '-'}
+                                        value={bookingHeaderMovie}
                                     />
                                     <DetailRow
                                         label={t('customer.my_ltc.transaction_history.cinema', 'Cinema')}
-                                        value={bookingHeaderCinema || '-'}
+                                        value={bookingHeaderCinema}
                                     />
                                     <DetailRow
                                         label={t('customer.my_ltc.transaction_history.room', 'Room')}
@@ -300,7 +271,7 @@ export default function TransactionHistoryPage() {
                                                 : '-'
                                         }
                                     />
-                                    <DetailRow label={t('customer.my_ltc.transaction_history.customer', 'Customer')} value={selected.customerName || '-'} />
+                                    <DetailRow label={t('customer.my_ltc.transaction_history.customer', 'Customer')} value="-" />
                                     <DetailRow
                                         label={t('customer.my_ltc.transaction_history.seats', 'Seats')}
                                         value={seatCodes.join(', ') || '-'}
@@ -335,7 +306,7 @@ export default function TransactionHistoryPage() {
                                         label={t('customer.my_ltc.transaction_history.total', 'Total')}
                                         value={<span className="font-bold">{formatVnd(totalAmount)}</span>}
                                     />
-                                    <DetailRow label={t('customer.my_ltc.transaction_history.amount', 'Amount paid')} value={<span className="font-bold">{formatVnd(selected.amount)}</span>} />
+                                    <DetailRow label={t('customer.my_ltc.transaction_history.amount', 'Amount paid')} value={<span className="font-bold">{formatVnd(amountPaid)}</span>} />
                                 </div>
                             </>
                         )}

@@ -315,6 +315,7 @@ export default function MembershipCardPage() {
                     columns={pointHistoryColumns}
                     dataSource={pointHistoryRows}
                     rowKey="id"
+                    loading={pointHistoryMutation.isLoading}
                     className="border border-gray-50 rounded-xl overflow-hidden"
                     pagination={{
                         totalCount: pointPagination.totalCount,

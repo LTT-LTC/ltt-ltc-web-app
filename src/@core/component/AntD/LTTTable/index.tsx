@@ -23,6 +23,7 @@ const LTTTable = ({
   pagination,
   ...props
 }: LTTTableProps) => {
+  const hasLoadingProp = props.loading !== undefined;
   const loadingConfig =
     typeof props.loading === "boolean"
       ? {
@@ -32,14 +33,16 @@ const LTTTable = ({
           ...(props.loading || {}),
         };
 
-  const animatedLoading = {
-    ...loadingConfig,
-    indicator: (
-      <div className="flex items-center justify-center">
-        <img src="/images/main/LTTAppLoading.gif" alt="Loading" className="h-10 w-10 object-contain" />
-      </div>
-    ),
-  };
+  const animatedLoading = hasLoadingProp
+    ? {
+        ...loadingConfig,
+        indicator: (
+          <div className="flex items-center justify-center">
+            <img src="/images/main/LTTAppLoading.gif" alt="Loading" className="h-10 w-10 object-contain" />
+          </div>
+        ),
+      }
+    : false;
 
   return (
     <>
